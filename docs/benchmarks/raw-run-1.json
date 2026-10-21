@@ -1,0 +1,181 @@
+[
+ {
+  "model": "moonshotai/kimi-k2.6",
+  "task": "validateLevel",
+  "error": "Error code: 404 - {'status': 404, 'title': 'Not Found', 'detail': \"Function '23d4f03a-b8a6",
+  "secs": 1.4
+ },
+ {
+  "model": "moonshotai/kimi-k2.6",
+  "task": "sokobanMove",
+  "error": "Error code: 404 - {'status': 404, 'title': 'Not Found', 'detail': \"Function '23d4f03a-b8a6",
+  "secs": 1.4
+ },
+ {
+  "model": "z-ai/glm-5.3",
+  "task": "validateLevel",
+  "error": "Request timed out.",
+  "secs": 241.2
+ },
+ {
+  "model": "z-ai/glm-5.3",
+  "task": "sokobanMove",
+  "error": "Request timed out.",
+  "secs": 241.2
+ },
+ {
+  "model": "z-ai/glm-5.3-flash",
+  "task": "validateLevel",
+  "error": "Request timed out.",
+  "secs": 240.0
+ },
+ {
+  "model": "z-ai/glm-5.3-flash",
+  "task": "sokobanMove",
+  "error": "Request timed out.",
+  "secs": 240.0
+ },
+ {
+  "model": "deepseek-ai/deepseek-v4.1-flash",
+  "task": "validateLevel",
+  "error": "Request timed out.",
+  "secs": 240.2
+ },
+ {
+  "model": "deepseek-ai/deepseek-v4.1-flash",
+  "task": "sokobanMove",
+  "error": "Request timed out.",
+  "secs": 240.2
+ },
+ {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "task": "validateLevel",
+  "secs": 36.7,
+  "tokens": 1861,
+  "passed": 12,
+  "total": 12,
+  "failed": []
+ },
+ {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "task": "sokobanMove",
+  "secs": 33.5,
+  "tokens": 3045,
+  "passed": 16,
+  "total": 16,
+  "failed": []
+ },
+ {
+  "model": "nvidia/nemotron-3-super-120b-a12b",
+  "task": "validateLevel",
+  "error": "Error code: 404 - {'status': 404, 'title': 'Not Found', 'detail': \"Function 'ac74040f-9fc9",
+  "secs": 0.2
+ },
+ {
+  "model": "nvidia/nemotron-3-super-120b-a12b",
+  "task": "sokobanMove",
+  "error": "Error code: 404 - {'status': 404, 'title': 'Not Found', 'detail': \"Function 'ac74040f-9fc9",
+  "secs": 0.2
+ },
+ {
+  "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+  "task": "validateLevel",
+  "error": "Error code: 404 - {'status': 404, 'title': 'Not Found', 'detail': \"Function '84bf12ff-edbd",
+  "secs": 0.2
+ },
+ {
+  "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+  "task": "sokobanMove",
+  "error": "Error code: 404 - {'status': 404, 'title': 'Not Found', 'detail': \"Function '84bf12ff-edbd",
+  "secs": 0.2
+ },
+ {
+  "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "task": "validateLevel",
+  "secs": 48.9,
+  "tokens": 4413,
+  "passed": 12,
+  "total": 12,
+  "failed": []
+ },
+ {
+  "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "task": "sokobanMove",
+  "passed": 0,
+  "total": 0,
+  "failed": [
+   "no-code"
+  ],
+  "secs": 85.4,
+  "tokens": 8000
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "task": "validateLevel",
+  "error": "Request timed out.",
+  "secs": 240.0
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "task": "sokobanMove",
+  "error": "Request timed out.",
+  "secs": 240.0
+ },
+ {
+  "model": "openai/gpt-oss-20b",
+  "task": "validateLevel",
+  "secs": 146.4,
+  "tokens": 1236,
+  "passed": 12,
+  "total": 12,
+  "failed": []
+ },
+ {
+  "model": "openai/gpt-oss-20b",
+  "task": "sokobanMove",
+  "error": "Request timed out.",
+  "secs": 240.3
+ },
+ {
+  "model": "poolside/laguna-xs-2.1",
+  "task": "validateLevel",
+  "error": "Error code: 503 - {'error': {'message': 'ResourceExhausted: Worker local total request lim",
+  "secs": 0.4
+ },
+ {
+  "model": "poolside/laguna-xs-2.1",
+  "task": "sokobanMove",
+  "error": "Error code: 503 - {'error': {'message': 'ResourceExhausted: Worker local total request lim",
+  "secs": 0.4
+ },
+ {
+  "model": "stepfun-ai/step-5-preview",
+  "task": "validateLevel",
+  "secs": 156.4,
+  "tokens": 7498,
+  "passed": 12,
+  "total": 12,
+  "failed": []
+ },
+ {
+  "model": "stepfun-ai/step-5-preview",
+  "task": "sokobanMove",
+  "secs": 122.3,
+  "tokens": 3320,
+  "passed": 16,
+  "total": 16,
+  "failed": []
+ },
+ {
+  "model": "mistralai/codestral-22b-instruct-v0.1",
+  "task": "validateLevel",
+  "error": "Error code: 404 - {'status': 404, 'title': 'Not Found', 'detail': \"Function '9a10b012-e6df",
+  "secs": 0.2
+ },
+ {
+  "model": "mistralai/codestral-22b-instruct-v0.1",
+  "task": "sokobanMove",
+  "error": "Error code: 404 - {'status': 404, 'title': 'Not Found', 'detail': \"Function '9a10b012-e6df",
+  "secs": 0.2
+ }
+]

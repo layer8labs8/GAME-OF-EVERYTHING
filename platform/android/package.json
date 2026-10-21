@@ -1,0 +1,13 @@
+{
+  "name": "goe-android-shell",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor shell used to wrap one mechanic's www/ folder into an APK",
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}

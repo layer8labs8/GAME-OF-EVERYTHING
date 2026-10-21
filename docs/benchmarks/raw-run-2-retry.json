@@ -1,0 +1,99 @@
+[
+ {
+  "model": "z-ai/glm-5.3",
+  "task": "validateLevel",
+  "error": "Error code: 504",
+  "secs": 303.3
+ },
+ {
+  "model": "z-ai/glm-5.3",
+  "task": "sokobanMove",
+  "error": "Error code: 504",
+  "secs": 303.3
+ },
+ {
+  "model": "z-ai/glm-5.3-flash",
+  "task": "validateLevel",
+  "secs": 288.0,
+  "tokens": 6095,
+  "passed": 12,
+  "total": 12,
+  "failed": []
+ },
+ {
+  "model": "z-ai/glm-5.3-flash",
+  "task": "sokobanMove",
+  "secs": 173.7,
+  "tokens": 2236,
+  "passed": 16,
+  "total": 16,
+  "failed": []
+ },
+ {
+  "model": "deepseek-ai/deepseek-v4.1-flash",
+  "task": "validateLevel",
+  "secs": 184.7,
+  "tokens": 2167,
+  "passed": 12,
+  "total": 12,
+  "failed": []
+ },
+ {
+  "model": "deepseek-ai/deepseek-v4.1-flash",
+  "task": "sokobanMove",
+  "secs": 278.5,
+  "tokens": 5578,
+  "passed": 16,
+  "total": 16,
+  "failed": []
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "task": "validateLevel",
+  "error": "Error code: 504",
+  "secs": 302.2
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "task": "sokobanMove",
+  "error": "Error code: 504",
+  "secs": 302.1
+ },
+ {
+  "model": "poolside/laguna-xs-2.1",
+  "task": "validateLevel",
+  "secs": 248.6,
+  "tokens": 760,
+  "passed": 12,
+  "total": 12,
+  "failed": []
+ },
+ {
+  "model": "poolside/laguna-xs-2.1",
+  "task": "sokobanMove",
+  "secs": 94.9,
+  "tokens": 840,
+  "passed": 10,
+  "total": 16,
+  "failed": [
+   "push-floor",
+   "push-target",
+   "push-off-target",
+   "vertical",
+   "target-to-target",
+   "solved"
+  ]
+ },
+ {
+  "model": "openai/gpt-oss-20b",
+  "task": "validateLevel",
+  "error": "Error code: 504",
+  "secs": 302.2
+ },
+ {
+  "model": "openai/gpt-oss-20b",
+  "task": "sokobanMove",
+  "error": "Error code: 504",
+  "secs": 302.2
+ }
+]

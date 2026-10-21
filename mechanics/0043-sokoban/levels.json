@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "mechanic": "sokoban",
+  "levels": [
+    {
+      "id": "001",
+      "name": "First push",
+      "difficulty": 1,
+      "data": {
+        "grid": [
+          "#######",
+          "#@ $ .#",
+          "#######"
+        ]
+      },
+      "par": 3,
+      "solution": "RRR"
+    },
+    {
+      "id": "002",
+      "name": "Down and across",
+      "difficulty": 1,
+      "data": {
+        "grid": [
+          "######",
+          "#@   #",
+          "# $  #",
+          "#  . #",
+          "######"
+        ]
+      },
+      "par": 5,
+      "solution": "DRURD"
+    },
+    {
+      "id": "003",
+      "name": "Two crates up",
+      "difficulty": 2,
+      "data": {
+        "grid": [
+          "#######",
+          "# . . #",
+          "#  $$ #",
+          "#  @  #",
+          "#######"
+        ]
+      },
+      "par": 6,
+      "solution": "RULDLU"
+    },
+    {
+      "id": "004",
+      "name": "Mind the wall",
+      "difficulty": 2,
+      "data": {
+        "grid": [
+          "#######",
+          "#     #",
+          "# $#$ #",
+          "# .@. #",
+          "#######"
+        ]
+      },
+      "par": 10,
+      "solution": "LLUURDURRD"
+    },
+    {
+      "id": "005",
+      "name": "Pairs",
+      "difficulty": 2,
+      "data": {
+        "grid": [
+          "########",
+          "#      #",
+          "# $  $ #",
+          "#      #",
+          "# .  . #",
+          "#@     #",
+          "########"
+        ]
+      },
+      "par": 14,
+      "solution": "UUUURDDUURRRDD"
+    },
+    {
+      "id": "006",
+      "name": "Behind the wall",
+      "difficulty": 3,
+      "data": {
+        "grid": [
+          "########",
+          "#   #  #",
+          "# $ # .#",
+          "#   #  #",
+          "#@     #",
+          "#      #",
+          "########"
+        ]
+      },
+      "par": 16,
+      "solution": "UUURDDLDRRRRDRUU"
+    },
+    {
+      "id": "007",
+      "name": "Three in a row",
+      "difficulty": 3,
+      "data": {
+        "grid": [
+          "#######",
+          "#     #",
+          "# $$$ #",
+          "#     #",
+          "# ... #",
+          "#  @  #",
+          "#######"
+        ]
+      },
+      "par": 19,
+      "solution": "UULLUURDDUURDDUURDD"
+    },
+    {
+      "id": "008",
+      "name": "Two chambers",
+      "difficulty": 3,
+      "data": {
+        "grid": [
+          "#########",
+          "#   #   #",
+          "# $ # $ #",
+          "#   #   #",
+          "# . # . #",
+          "#   @   #",
+          "#########"
+        ]
+      },
+      "par": 20,
+      "solution": "LUUUULDDRDDRRUUUURDD"
+    }
+  ]
+}

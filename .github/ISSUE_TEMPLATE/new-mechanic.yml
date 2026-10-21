@@ -1,0 +1,32 @@
+name: New mechanic
+description: Propose a mechanic that is missing from the registry
+labels: [mechanic]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Mechanic name
+      placeholder: Merge Puzzle
+    validations:
+      required: true
+  - type: dropdown
+    id: family
+    attributes:
+      label: Family
+      options: [Action, Shooter, Platformer, Puzzle, Cards & Board, Strategy, RPG, Roguelike, Adventure, Simulation, Survival, Idle, Rhythm, Racing, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: rules
+    attributes:
+      label: Rules in your own words
+      description: Describe how it plays. Do not paste text, art or levels from an existing game.
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Three "this must be true" examples
+      description: Short input and expected-result examples. These become the independent tests.
+    validations:
+      required: true

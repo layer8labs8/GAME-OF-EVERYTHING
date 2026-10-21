@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Block Master</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { N, SHAPES, createState, place, canPlace, bounds } = BlockLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const CELL = 40;
+const BX = 20;
+const BY = 120;
+const TRAY_Y = 470;
+const SLOT_W = W / 3;
+const LIFT = 70;
+const COLORS = ['', '#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#4dabf7', '#b197fc'];
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('block-puzzle-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let drag = null;
+let overAt = 0;
+let flashes = [];
+let floaters = [];
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawCell(x, y, s, color, alpha) {
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  rrect(x + 1, y + 1, s - 2, s - 2, s * 0.18);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  rrect(x + s * 0.1, y + s * 0.1, s * 0.8, s * 0.32, s * 0.12);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function drawPiece(piece, x, y, s, alpha) {
+  for (const [dr, dc] of SHAPES[piece.shape]) drawCell(x + dc * s, y + dr * s, s, COLORS[piece.color], alpha);
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function dropTarget() {
+  const piece = state.tray[drag.slot];
+  const { h, w } = bounds(SHAPES[piece.shape]);
+  const tlx = drag.x - (w * CELL) / 2;
+  const tly = drag.y - LIFT - (h * CELL) / 2;
+  return { r: Math.round((tly - BY) / CELL), c: Math.round((tlx - BX) / CELL), tlx, tly };
+}
+
+function restart() {
+  state = createState(Date.now());
+  drag = null;
+  flashes = [];
+  floaters = [];
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (state.over) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (p.y < TRAY_Y - 10) return;
+  const slot = Math.min(2, Math.max(0, Math.floor(p.x / SLOT_W)));
+  if (!state.tray[slot]) return;
+  canvas.setPointerCapture(e.pointerId);
+  drag = { slot, x: p.x, y: p.y };
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const p = toLogical(e);
+  drag.x = p.x;
+  drag.y = p.y;
+});
+
+function finishDrag() {
+  if (!drag) return;
+  const d = dropTarget();
+  const res = place(state, drag.slot, d.r, d.c);
+  drag = null;
+  if (!res.ok) return;
+  for (const r of res.rows) for (let c = 0; c < N; c++) flashes.push({ r, c, t: 0 });
+  for (const c of res.cols) for (let r = 0; r < N; r++) flashes.push({ r, c, t: 0 });
+  if (res.cleared > 0) {
+    const label = state.combo > 1 ? 'Combo x' + state.combo : '+' + res.gain;
+    floaters.push({ text: label, x: W / 2, y: BY + (N * CELL) / 2, t: 0 });
+  }
+  if (state.over) {
+    overAt = performance.now();
+    if (state.score > best) {
+      best = state.score;
+      try { localStorage.setItem('block-puzzle-best', best); } catch (err) {}
+    }
+  }
+}
+canvas.addEventListener('pointerup', finishDrag);
+canvas.addEventListener('pointercancel', () => { drag = null; });
+
+function draw(dt) {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#1b2440');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 20, 40);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 20, 40);
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 38px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(state.score, 20, 82);
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 20, 78);
+
+  ctx.fillStyle = '#141b33';
+  rrect(BX - 6, BY - 6, N * CELL + 12, N * CELL + 12, 12);
+  ctx.fill();
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      const v = state.board[r][c];
+      if (v) drawCell(BX + c * CELL, BY + r * CELL, CELL, COLORS[v], 1);
+      else {
+        ctx.fillStyle = '#1f2a4a';
+        rrect(BX + c * CELL + 2, BY + r * CELL + 2, CELL - 4, CELL - 4, 6);
+        ctx.fill();
+      }
+    }
+  }
+
+  let target = null;
+  if (drag) {
+    const d = dropTarget();
+    const piece = state.tray[drag.slot];
+    if (canPlace(state.board, SHAPES[piece.shape], d.r, d.c)) {
+      target = d;
+      drawPiece(piece, BX + d.c * CELL, BY + d.r * CELL, CELL, 0.35);
+    }
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const piece = state.tray[i];
+    if (!piece || (drag && drag.slot === i)) continue;
+    const { h, w } = bounds(SHAPES[piece.shape]);
+    const s = Math.min(28, 108 / Math.max(h, w));
+    drawPiece(piece, i * SLOT_W + (SLOT_W - w * s) / 2, TRAY_Y + 70 - (h * s) / 2, s, 1);
+  }
+
+  if (drag) {
+    const d = dropTarget();
+    drawPiece(state.tray[drag.slot], d.tlx, d.tly, CELL, 0.92);
+  }
+
+  for (const f of flashes) {
+    f.t += dt;
+    ctx.globalAlpha = Math.max(0, 0.6 - f.t * 1.8);
+    ctx.fillStyle = '#ffffff';
+    rrect(BX + f.c * CELL + 2, BY + f.r * CELL + 2, CELL - 4, CELL - 4, 6);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  flashes = flashes.filter((f) => f.t < 0.35);
+
+  for (const f of floaters) {
+    f.t += dt;
+    ctx.globalAlpha = Math.max(0, 1 - f.t / 0.9);
+    ctx.fillStyle = '#ffe066';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y - f.t * 50);
+  }
+  ctx.globalAlpha = 1;
+  floaters = floaters.filter((f) => f.t < 0.9);
+
+  if (state.over) {
+    ctx.fillStyle = 'rgba(11,16,32,0.8)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.fillText('Game over', W / 2, H / 2 - 30);
+    ctx.font = '24px system-ui, sans-serif';
+    ctx.fillText('Score: ' + state.score, W / 2, H / 2 + 8);
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to restart', W / 2, H / 2 + 48);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

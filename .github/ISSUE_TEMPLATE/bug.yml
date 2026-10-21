@@ -1,0 +1,21 @@
+name: Bug report
+description: Something in a mechanic or a tool behaves wrongly
+labels: [bug]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: Mechanic id or tool
+      placeholder: 0002-block-placement-puzzle
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps or a failing test

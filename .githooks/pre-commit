@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks commits that contain API keys or key files. Enable with: npm run setup
+node tools/check_no_secrets.js --staged

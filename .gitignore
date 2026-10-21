@@ -1,0 +1,24 @@
+# secrets (also enforced by tools/check_no_secrets.js)
+nvidia.txt
+.env
+.env.*
+!.env.example
+kaggle.json
+*.pem
+*.key
+*.keystore
+*.jks
+secrets/
+
+# dependencies and build output
+node_modules/
+build/
+*.apk
+*.aab
+
+# local
+.claude/
+*.log
+.DS_Store
+Thumbs.db
+__pycache__/

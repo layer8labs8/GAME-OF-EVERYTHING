@@ -1,0 +1,68 @@
+name: Build APK
+
+# Builds a debug APK for ONE mechanic. Run it from the Actions tab or with:
+#   gh workflow run apk.yml -f mechanic=0002
+on:
+  workflow_dispatch:
+    inputs:
+      mechanic:
+        description: 'Mechanic id from registry/mechanics.json (for example 0002)'
+        required: true
+        type: string
+
+concurrency:
+  group: apk-${{ inputs.mechanic }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      MECHANIC: ${{ inputs.mechanic }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/android/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test this mechanic
+        run: node --test mechanics/"$MECHANIC"-*/test.js
+
+      - name: Prepare web app and Capacitor config
+        id: prep
+        run: node tools/prepare_apk.js "$MECHANIC"
+
+      - name: Install Capacitor
+        working-directory: build/apk
+        run: npm ci
+
+      - name: Create Android project
+        working-directory: build/apk
+        run: |
+          npx cap add android
+          node ../../tools/prepare_apk.js --patch-manifest android
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: build/apk/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: goe-${{ steps.prep.outputs.id }}-${{ steps.prep.outputs.slug }}-debug-apk
+          path: build/apk/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 3
+          if-no-files-found: error

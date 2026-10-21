@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Falling Rocks</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { W, H, createState, step } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let targetX = W / 2;
+let overAt = 0;
+const keys = { left: false, right: false };
+
+function pointerX(e) {
+  const rect = canvas.getBoundingClientRect();
+  return (e.clientX - rect.left) / scale;
+}
+function restart() {
+  state = createState(Date.now());
+  targetX = W / 2;
+}
+canvas.addEventListener('pointerdown', (e) => {
+  if (state.over) { if (performance.now() - overAt > 400) restart(); return; }
+  targetX = pointerX(e);
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (e.buttons || e.pointerType === 'touch') targetX = pointerX(e);
+});
+addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+  if (state.over && (e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+});
+addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+});
+
+function draw() {
+  ctx.fillStyle = '#0b1020';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#8a93a8';
+  for (const k of state.rocks) {
+    ctx.beginPath();
+    ctx.arc(k.x, k.y, k.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const p = state.player;
+  ctx.fillStyle = '#4fd1c5';
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y - p.r);
+  ctx.lineTo(p.x + p.r, p.y + p.r);
+  ctx.lineTo(p.x - p.r, p.y + p.r);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = '20px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(state.score, 12, 28);
+  ctx.textAlign = 'right';
+  ctx.fillText('Best ' + best, W - 12, 28);
+
+  if (state.over) {
+    ctx.fillStyle = 'rgba(11,16,32,0.75)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.textAlign = 'center';
+    ctx.font = '32px system-ui, sans-serif';
+    ctx.fillText('Game over', W / 2, H / 2 - 20);
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Score: ' + state.score, W / 2, H / 2 + 14);
+    ctx.fillText('Tap to restart', W / 2, H / 2 + 52);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (keys.left) targetX = Math.max(0, targetX - 420 * dt);
+  if (keys.right) targetX = Math.min(W, targetX + 420 * dt);
+  const wasOver = state.over;
+  step(state, dt, targetX);
+  if (state.over && !wasOver) {
+    overAt = performance.now();
+    if (state.score > best) {
+      best = state.score;
+      try { localStorage.setItem('best', best); } catch (e) {}
+    }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
