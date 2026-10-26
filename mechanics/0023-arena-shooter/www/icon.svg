@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="100" fill="#0d0912" />
+  <circle cx="256" cy="256" r="210" fill="#1b1224" stroke="#e11d48" stroke-width="8"/>
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#f43f5e" stroke-width="4" stroke-dasharray="16 12"/>
+  <!-- Crosshairs -->
+  <line x1="256" y1="70" x2="256" y2="442" stroke="#e11d48" stroke-width="6"/>
+  <line x1="70" y1="256" x2="442" y2="256" stroke="#e11d48" stroke-width="6"/>
+  <!-- Core Flare -->
+  <circle cx="256" cy="256" r="40" fill="#f43f5e"/>
+  <circle cx="256" cy="256" r="20" fill="#ffffff"/>
+  <!-- Muzzle Flash Spikes -->
+  <polygon points="256,160 270,220 242,220" fill="#fb7185"/>
+  <polygon points="256,352 270,292 242,292" fill="#fb7185"/>
+  <polygon points="160,256 220,270 220,242" fill="#fb7185"/>
+  <polygon points="352,256 292,270 292,242" fill="#fb7185"/>
+</svg>

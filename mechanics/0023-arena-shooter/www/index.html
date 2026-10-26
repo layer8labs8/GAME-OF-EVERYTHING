@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Crimson Arena - Arena Shooter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0912">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #09060d;
+      color: #fce7f3;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #e11d48;
+      text-shadow: 0 0 10px rgba(225, 29, 72, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .hud span { color: #f8fafc; }
+    canvas {
+      background: #140d1e;
+      border: 2px solid #3b1d3d;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1 / 1;
+    }
+    .weapon-bar {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 8px;
+    }
+    .wep-btn {
+      flex: 1;
+      background: #1f142b;
+      border: 1px solid #4a2850;
+      color: #e2e8f0;
+      border-radius: 6px;
+      padding: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+    }
+    .wep-btn.active {
+      background: #881337;
+      border-color: #f43f5e;
+      color: #fff;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) repeat(2, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 8px;
+    }
+    .btn {
+      background: #251636;
+      color: #f8fafc;
+      border: 1px solid #4c2859;
+      border-radius: 6px;
+      padding: 10px 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.08s ease;
+    }
+    .btn:active {
+      transform: translateY(2px);
+      background: #4c2859;
+      border-color: #f43f5e;
+    }
+    .btn-fire {
+      background: #831843;
+      border-color: #ec4899;
+      color: #fdf2f8;
+    }
+    .btn-dodge {
+      background: #3b0764;
+      border-color: #a855f7;
+      color: #f3e8ff;
+    }
+    .key-hint {
+      font-size: 0.65rem;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Crimson Arena</h1>
+      <div class="hud">
+        <div>WAVE: <span id="hud-wave">1/5</span></div>
+        <div>SCORE: <span id="hud-score">0</span></div>
+      </div>
+    </header>
+    <canvas id="canvas" width="400" height="400"></canvas>
+    <div class="weapon-bar">
+      <div class="wep-btn active" id="wep-blaster">1: BLASTER [∞]</div>
+      <div class="wep-btn" id="wep-shotgun">2: SHOTGUN [<span id="ammo-shells">12</span>]</div>
+      <div class="wep-btn" id="wep-plasma">3: PLASMA [<span id="ammo-plasma">6</span>]</div>
+    </div>
+    <div class="controls">
+      <button class="btn" id="btn-up">▲<span class="key-hint">W</span></button>
+      <button class="btn" id="btn-down">▼<span class="key-hint">S</span></button>
+      <button class="btn" id="btn-left">◀<span class="key-hint">A</span></button>
+      <button class="btn" id="btn-right">▶<span class="key-hint">D</span></button>
+      <button class="btn btn-fire" id="btn-fire">🔥 Fire<span class="key-hint">Space / IJKL</span></button>
+      <button class="btn btn-dodge" id="btn-dodge">⚡ Dodge<span class="key-hint">Shift</span></button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    const logic = window.CrimsonArena;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const hudWave = document.getElementById('hud-wave');
+    const hudScore = document.getElementById('hud-score');
+    const ammoShells = document.getElementById('ammo-shells');
+    const ammoPlasma = document.getElementById('ammo-plasma');
+    const wepBlaster = document.getElementById('wep-blaster');
+    const wepShotgun = document.getElementById('wep-shotgun');
+    const wepPlasma = document.getElementById('wep-plasma');
+
+    let state = logic.createState(Math.floor(Math.random() * 100000));
+    let lastFacing = 'n';
+
+    function triggerAction(action) {
+      if (logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+        return;
+      }
+      const legal = logic.legalActions(state);
+      if (legal.includes(action)) {
+        logic.step(state, action);
+        render();
+      }
+    }
+
+    function move(dir) {
+      lastFacing = dir;
+      triggerAction(`move_${dir}`);
+    }
+
+    function fire(dir) {
+      triggerAction(`fire_${dir || lastFacing}`);
+    }
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      const code = e.code;
+      if (code === 'KeyW' || code === 'ArrowUp') move('n');
+      else if (code === 'KeyS' || code === 'ArrowDown') move('s');
+      else if (code === 'KeyA' || code === 'ArrowLeft') move('w');
+      else if (code === 'KeyD' || code === 'ArrowRight') move('e');
+      else if (code === 'KeyI') fire('n');
+      else if (code === 'KeyK') fire('s');
+      else if (code === 'KeyJ') fire('w');
+      else if (code === 'KeyL') fire('e');
+      else if (code === 'Space') fire(lastFacing);
+      else if (code === 'ShiftLeft' || code === 'ShiftRight') triggerAction('dodge');
+      else if (code === 'Digit1') triggerAction('select_blaster');
+      else if (code === 'Digit2') triggerAction('select_shotgun');
+      else if (code === 'Digit3') triggerAction('select_plasma');
+      else if (code === 'KeyR' && logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+      }
+    });
+
+    // Touch bindings
+    document.getElementById('btn-up').addEventListener('pointerdown', () => move('n'));
+    document.getElementById('btn-down').addEventListener('pointerdown', () => move('s'));
+    document.getElementById('btn-left').addEventListener('pointerdown', () => move('w'));
+    document.getElementById('btn-right').addEventListener('pointerdown', () => move('e'));
+    document.getElementById('btn-fire').addEventListener('pointerdown', () => fire(lastFacing));
+    document.getElementById('btn-dodge').addEventListener('pointerdown', () => triggerAction('dodge'));
+
+    wepBlaster.addEventListener('pointerdown', () => triggerAction('select_blaster'));
+    wepShotgun.addEventListener('pointerdown', () => triggerAction('select_shotgun'));
+    wepPlasma.addEventListener('pointerdown', () => triggerAction('select_plasma'));
+
+    function render() {
+      hudWave.textContent = `${state.wave}/5`;
+      hudScore.textContent = logic.score(state);
+      ammoShells.textContent = state.player.shells;
+      ammoPlasma.textContent = state.player.plasma;
+
+      if (wepBlaster && wepBlaster.classList) {
+        wepBlaster.classList.toggle('active', state.player.weapon === 'blaster');
+        wepShotgun.classList.toggle('active', state.player.weapon === 'shotgun');
+        wepPlasma.classList.toggle('active', state.player.weapon === 'plasma');
+      }
+
+      // Arena background
+      ctx.fillStyle = '#0f0a17';
+      ctx.fillRect(0, 0, 400, 400);
+
+      // Arena perimeter
+      ctx.strokeStyle = '#4c1d42';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(30, 30, 340, 340);
+
+      // Hazard Lines
+      ctx.strokeStyle = 'rgba(225, 29, 72, 0.15)';
+      ctx.lineWidth = 1;
+      for (let i = 60; i < 370; i += 40) {
+        ctx.beginPath();
+        ctx.moveTo(i, 30);
+        ctx.lineTo(i, 370);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(30, i);
+        ctx.lineTo(370, i);
+        ctx.stroke();
+      }
+
+      // Pickups
+      for (const pk of state.pickups) {
+        ctx.save();
+        ctx.translate(pk.x, pk.y);
+        if (pk.type === 'medkit') {
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(-8, -8, 16, 16);
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(-6, -2, 12, 4);
+          ctx.fillRect(-2, -6, 4, 12);
+        } else if (pk.type === 'shells') {
+          ctx.fillStyle = '#eab308';
+          ctx.fillRect(-7, -7, 14, 14);
+        } else if (pk.type === 'plasma') {
+          ctx.fillStyle = '#06b6d4';
+          ctx.beginPath();
+          ctx.arc(0, 0, 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Projectiles
+      for (const pr of state.projectiles) {
+        ctx.save();
+        if (pr.owner === 'player') {
+          if (pr.pierce) {
+            ctx.fillStyle = '#22d3ee';
+            ctx.shadowColor = '#06b6d4';
+            ctx.shadowBlur = 8;
+            ctx.fillRect(pr.x - 4, pr.y - 4, 8, 8);
+          } else {
+            ctx.fillStyle = '#f43f5e';
+            ctx.shadowColor = '#e11d48';
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.arc(pr.x, pr.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          ctx.fillStyle = '#84cc16';
+          ctx.shadowColor = '#65a30d';
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.arc(pr.x, pr.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Enemies
+      for (const e of state.enemies) {
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        if (e.type === 'drone') {
+          ctx.fillStyle = '#e11d48';
+          ctx.beginPath();
+          ctx.arc(0, 0, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fda4af';
+          ctx.stroke();
+        } else if (e.type === 'spitter') {
+          ctx.fillStyle = '#84cc16';
+          ctx.beginPath();
+          ctx.arc(0, 0, 13, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#bef264';
+          ctx.stroke();
+        } else if (e.type === 'juggernaut') {
+          ctx.fillStyle = '#581c87';
+          ctx.beginPath();
+          ctx.arc(0, 0, 20, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Health bar
+          const barW = 32;
+          ctx.fillStyle = 'rgba(0,0,0,0.6)';
+          ctx.fillRect(-barW / 2, -28, barW, 4);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-barW / 2, -28, barW * (e.hp / e.maxHp), 4);
+        }
+
+        ctx.restore();
+      }
+
+      // Player
+      const p = state.player;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+
+      // Body
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Gun Turret
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      let gx = 0, gy = 0;
+      if (lastFacing === 'n') gy = -18;
+      else if (lastFacing === 's') gy = 18;
+      else if (lastFacing === 'w') gx = -18;
+      else if (lastFacing === 'e') gx = 18;
+      ctx.lineTo(gx, gy);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Top HUD: Health Bar
+      ctx.fillStyle = 'rgba(15, 10, 23, 0.8)';
+      ctx.fillRect(16, 12, 130, 10);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(16, 12, 130 * (p.hp / p.maxHp), 10);
+      ctx.strokeStyle = '#4a2850';
+      ctx.strokeRect(16, 12, 130, 10);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillText(`HP ${p.hp}`, 20, 20);
+
+      // Overlays
+      if (state.won) {
+        ctx.fillStyle = 'rgba(9, 6, 13, 0.88)';
+        ctx.fillRect(0, 0, 400, 400);
+        ctx.fillStyle = '#4ade80';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('ARENA CONQUERED', 200, 180);
+        ctx.fillStyle = '#fce7f3';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Final Score: ${logic.score(state)}`, 200, 210);
+        ctx.fillText('Tap or press R to battle again', 200, 240);
+      } else if (state.lost) {
+        ctx.fillStyle = 'rgba(9, 6, 13, 0.88)';
+        ctx.fillRect(0, 0, 400, 400);
+        ctx.fillStyle = '#f43f5e';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('WARRIOR DEFEATED', 200, 180);
+        ctx.fillStyle = '#fce7f3';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Slain on Wave ${state.wave}`, 200, 210);
+        ctx.fillText('Tap or press R to restart', 200, 240);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

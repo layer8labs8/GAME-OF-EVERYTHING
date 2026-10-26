@@ -1,0 +1,158 @@
+{
+  "schema": 1,
+  "mechanic": "puzzle-platformer",
+  "levels": [
+    {
+      "id": "001",
+      "name": "First Steps",
+      "difficulty": 1,
+      "par": 4,
+      "solution": "RRRR",
+      "data": {
+        "map": [
+          "#######",
+          "#@._.!#",
+          "#######"
+        ]
+      }
+    },
+    {
+      "id": "002",
+      "name": "The First Vault",
+      "difficulty": 1,
+      "par": 4,
+      "solution": "RKRR",
+      "data": {
+        "map": [
+          "#######",
+          "#.....#",
+          "#@.#.!#",
+          "#######"
+        ]
+      }
+    },
+    {
+      "id": "003",
+      "name": "Box Push",
+      "difficulty": 1,
+      "par": 5,
+      "solution": "RRRKR",
+      "data": {
+        "map": [
+          "########",
+          "#......#",
+          "#@.$._!#",
+          "########"
+        ]
+      }
+    },
+    {
+      "id": "004",
+      "name": "Locked Gate",
+      "difficulty": 2,
+      "par": 6,
+      "solution": "RRRRKR",
+      "data": {
+        "map": [
+          "#########",
+          "#.......#",
+          "#@.$._D!#",
+          "#########"
+        ]
+      }
+    },
+    {
+      "id": "005",
+      "name": "The Stepping Stone",
+      "difficulty": 2,
+      "par": 6,
+      "solution": "RRRRRK",
+      "data": {
+        "map": [
+          "#########",
+          "#......!#",
+          "#@.$...##",
+          "#####_###",
+          "#########"
+        ]
+      }
+    },
+    {
+      "id": "006",
+      "name": "Pit Bridge",
+      "difficulty": 2,
+      "par": 8,
+      "solution": "RRRRKRRR",
+      "data": {
+        "map": [
+          "###########",
+          "#.........#",
+          "#@.$..#.D!#",
+          "####_######",
+          "###########"
+        ]
+      }
+    },
+    {
+      "id": "007",
+      "name": "Double Hurdle",
+      "difficulty": 3,
+      "par": 8,
+      "solution": "RKRRKRRR",
+      "data": {
+        "map": [
+          "###########",
+          "#.........#",
+          "#@.#..#_D!#",
+          "###########"
+        ]
+      }
+    },
+    {
+      "id": "008",
+      "name": "High Platform",
+      "difficulty": 3,
+      "par": 8,
+      "solution": "RRKRRRKR",
+      "data": {
+        "map": [
+          "###########",
+          "#.......D!#",
+          "#@.$_#..###",
+          "###########"
+        ]
+      }
+    },
+    {
+      "id": "009",
+      "name": "Dual Crates",
+      "difficulty": 4,
+      "par": 10,
+      "solution": "RRKRRRRRKR",
+      "data": {
+        "map": [
+          "#############",
+          "#...........#",
+          "#@.$.$._..D!#",
+          "#############"
+        ]
+      }
+    },
+    {
+      "id": "010",
+      "name": "Master Breach",
+      "difficulty": 5,
+      "par": 10,
+      "solution": "RRKRRRRKRR",
+      "data": {
+        "map": [
+          "#############",
+          "#..........!#",
+          "#@.$.#..$.#D#",
+          "#####_#####_#",
+          "#############"
+        ]
+      }
+    }
+  ]
+}

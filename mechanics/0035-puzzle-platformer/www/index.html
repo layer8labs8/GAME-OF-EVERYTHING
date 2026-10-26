@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Portal Shift - Puzzle Platformer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0b111e">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #070c16;
+      color: #e0f2fe;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .hud span { color: #f8fafc; }
+    .level-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .nav-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    canvas {
+      background: #0b111e;
+      border: 2px solid #1e293b;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 400 / 280;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 10px;
+    }
+    .btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.08s ease;
+    }
+    .btn:active {
+      transform: translateY(2px);
+      background: #334155;
+      border-color: #38bdf8;
+    }
+    .btn-jump {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #e0f2fe;
+    }
+    .btn-reset {
+      background: #881337;
+      border-color: #f43f5e;
+      color: #ffe4e6;
+    }
+    .key-hint {
+      font-size: 0.65rem;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Portal Shift</h1>
+      <div class="hud">
+        <div>SCORE: <span id="hud-score">0</span></div>
+      </div>
+    </header>
+    <div class="level-bar">
+      <button class="nav-btn" id="btn-prev">◀ Prev</button>
+      <div id="level-title">Level 1: First Steps (Par: 4)</div>
+      <button class="nav-btn" id="btn-next">Next ▶</button>
+    </div>
+    <canvas id="canvas" width="400" height="280"></canvas>
+    <div class="controls">
+      <button class="btn btn-jump" id="btn-jl">▲ Leap ◀<span class="key-hint">Q / W</span></button>
+      <button class="btn" id="btn-left">◀ Left<span class="key-hint">A / ◀</span></button>
+      <button class="btn btn-reset" id="btn-reset">↺ Reset<span class="key-hint">R</span></button>
+      <button class="btn" id="btn-right">Right ▶<span class="key-hint">D / ▶</span></button>
+      <button class="btn btn-jump" id="btn-jr">▲ Leap ▶<span class="key-hint">E / ▲</span></button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    const logic = window.PortalShift;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const hudScore = document.getElementById('hud-score');
+    const levelTitle = document.getElementById('level-title');
+
+    let currentLevel = 0;
+    let state = logic.createState(1, { levelIndex: currentLevel });
+
+    function loadLevel(idx) {
+      currentLevel = (idx + logic.DEFAULT_LEVELS.length) % logic.DEFAULT_LEVELS.length;
+      state = logic.createState(1, { levelIndex: currentLevel });
+      render();
+    }
+
+    function triggerAction(action) {
+      if (logic.isOver(state)) {
+        if (state.won) {
+          loadLevel(currentLevel + 1);
+        } else {
+          loadLevel(currentLevel);
+        }
+        return;
+      }
+      const legal = logic.legalActions(state);
+      if (legal.includes(action)) {
+        logic.step(state, action);
+        render();
+      }
+    }
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      const code = e.code;
+      if (code === 'KeyA' || code === 'ArrowLeft') triggerAction('L');
+      else if (code === 'KeyD' || code === 'ArrowRight') triggerAction('R');
+      else if (code === 'KeyQ' || code === 'KeyW') triggerAction('J');
+      else if (code === 'KeyE' || code === 'ArrowUp') triggerAction('K');
+      else if (code === 'KeyR') loadLevel(currentLevel);
+    });
+
+    // Touch bindings
+    document.getElementById('btn-left').addEventListener('pointerdown', () => triggerAction('L'));
+    document.getElementById('btn-right').addEventListener('pointerdown', () => triggerAction('R'));
+    document.getElementById('btn-jl').addEventListener('pointerdown', () => triggerAction('J'));
+    document.getElementById('btn-jr').addEventListener('pointerdown', () => triggerAction('K'));
+    document.getElementById('btn-reset').addEventListener('pointerdown', () => loadLevel(currentLevel));
+
+    document.getElementById('btn-prev').addEventListener('pointerdown', () => loadLevel(currentLevel - 1));
+    document.getElementById('btn-next').addEventListener('pointerdown', () => loadLevel(currentLevel + 1));
+
+    function render() {
+      levelTitle.textContent = `Lvl ${currentLevel + 1}: ${state.levelName} (Moves: ${state.movesCount} / Par: ${state.par})`;
+      hudScore.textContent = logic.score(state);
+
+      const gw = state.width;
+      const gh = state.height;
+      const TILE = Math.min(32, Math.floor(360 / gw), Math.floor(240 / gh));
+      const offsetX = Math.floor((400 - gw * TILE) / 2);
+      const offsetY = Math.floor((280 - gh * TILE) / 2);
+
+      // Background
+      ctx.fillStyle = '#070c16';
+      ctx.fillRect(0, 0, 400, 280);
+
+      // Check door state: open if all switches pressed
+      const switchesPressed = state.switches.length === 0 || state.switches.every(s => 
+        state.crates.some(c => c.x === s.x && c.y === s.y) || (state.player.x === s.x && state.player.y === s.y)
+      );
+
+      // Walls
+      for (const w of state.walls) {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(offsetX + w.x * TILE, offsetY + w.y * TILE, TILE, TILE);
+        ctx.strokeStyle = '#334155';
+        ctx.strokeRect(offsetX + w.x * TILE + 1, offsetY + w.y * TILE + 1, TILE - 2, TILE - 2);
+      }
+
+      // Pressure Switches
+      for (const s of state.switches) {
+        const isDown = state.crates.some(c => c.x === s.x && c.y === s.y) || (state.player.x === s.x && state.player.y === s.y);
+        ctx.fillStyle = isDown ? '#22c55e' : '#eab308';
+        ctx.fillRect(offsetX + s.x * TILE + 2, offsetY + (s.y + 1) * TILE - (isDown ? 3 : 6), TILE - 4, isDown ? 3 : 6);
+      }
+
+      // Doors
+      for (const d of state.doors) {
+        if (!switchesPressed) {
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(offsetX + d.x * TILE + 2, offsetY + d.y * TILE + 2, TILE - 4, TILE - 4);
+          ctx.strokeStyle = '#f87171';
+          ctx.strokeRect(offsetX + d.x * TILE + 2, offsetY + d.y * TILE + 2, TILE - 4, TILE - 4);
+        } else {
+          ctx.strokeStyle = 'rgba(74, 222, 128, 0.4)';
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(offsetX + d.x * TILE + 2, offsetY + d.y * TILE + 2, TILE - 4, TILE - 4);
+          ctx.setLineDash([]);
+        }
+      }
+
+      // Exit Portal
+      const ex = state.exit;
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.ellipse(offsetX + ex.x * TILE + TILE / 2, offsetY + ex.y * TILE + TILE / 2, TILE * 0.4, TILE * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Crates
+      for (const c of state.crates) {
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(offsetX + c.x * TILE + 2, offsetY + c.y * TILE + 2, TILE - 4, TILE - 4);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.strokeRect(offsetX + c.x * TILE + 2, offsetY + c.y * TILE + 2, TILE - 4, TILE - 4);
+        // Cross brace
+        ctx.strokeStyle = '#92400e';
+        ctx.beginPath();
+        ctx.moveTo(offsetX + c.x * TILE + 2, offsetY + c.y * TILE + 2);
+        ctx.lineTo(offsetX + (c.x + 1) * TILE - 2, offsetY + (c.y + 1) * TILE - 2);
+        ctx.moveTo(offsetX + (c.x + 1) * TILE - 2, offsetY + c.y * TILE + 2);
+        ctx.lineTo(offsetX + c.x * TILE + 2, offsetY + (c.y + 1) * TILE - 2);
+        ctx.stroke();
+      }
+
+      // Player
+      const p = state.player;
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(offsetX + p.x * TILE + TILE / 2, offsetY + p.y * TILE + TILE / 2, TILE * 0.38, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#bae6fd';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Visor
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillRect(offsetX + p.x * TILE + TILE / 2 - 2, offsetY + p.y * TILE + TILE / 2 - 4, 6, 3);
+
+      // Overlays
+      if (state.won) {
+        ctx.fillStyle = 'rgba(7, 12, 22, 0.88)';
+        ctx.fillRect(0, 0, 400, 280);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('CHAMBER SOLVED', 200, 120);
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Solved in ${state.movesCount} moves (Par: ${state.par})`, 200, 150);
+        ctx.fillText('Tap or press Next to continue', 200, 180);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

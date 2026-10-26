@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chrono Matrix - Time Slowdown</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0e15">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #090a10;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 420px;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #f43f5e;
+      text-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .hud span { color: #f8fafc; }
+    canvas {
+      background: #11131f;
+      border: 2px solid #272a3e;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 1 / 1;
+    }
+    .status-banner {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: #181b29;
+      border-radius: 6px;
+      margin-top: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .status-banner .time-indicator {
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr) repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 360px;
+      margin-top: 10px;
+    }
+    .btn {
+      background: #1e2233;
+      color: #f8fafc;
+      border: 1px solid #333850;
+      border-radius: 6px;
+      padding: 10px 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.08s ease;
+    }
+    .btn:active {
+      transform: translateY(2px);
+      background: #333850;
+      border-color: #38bdf8;
+    }
+    .btn-shoot {
+      background: #4c0519;
+      border-color: #f43f5e;
+      color: #ffe4e6;
+    }
+    .btn-wait {
+      background: #082f49;
+      border-color: #0284c7;
+      color: #e0f2fe;
+    }
+    .key-hint {
+      font-size: 0.65rem;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Chrono Matrix</h1>
+      <div class="hud">
+        <div>ROOM: <span id="hud-room">1/3</span></div>
+        <div>SCORE: <span id="hud-score">0</span></div>
+      </div>
+    </header>
+    <canvas id="canvas" width="360" height="360"></canvas>
+    <div class="status-banner">
+      <div>HP: <span id="hud-hp" style="color: #4ade80;">❤❤❤</span> | AMMO: <span id="hud-ammo" style="color: #fde047;">4</span></div>
+      <div class="time-indicator">TIME FROZEN</div>
+    </div>
+    <div class="controls">
+      <button class="btn" id="btn-up">▲ Up<span class="key-hint">W / ▲</span></button>
+      <button class="btn" id="btn-down">▼ Down<span class="key-hint">S / ▼</span></button>
+      <button class="btn" id="btn-left">◀ Left<span class="key-hint">A / ◀</span></button>
+      <button class="btn" id="btn-right">▶ Right<span class="key-hint">D / ▶</span></button>
+      <button class="btn btn-shoot" id="btn-shoot">🎯 Shoot<span class="key-hint">F / Space</span></button>
+      <button class="btn btn-wait" id="btn-wait">⏱ Wait<span class="key-hint">E</span></button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    const logic = window.ChronoMatrix;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const hudRoom = document.getElementById('hud-room');
+    const hudScore = document.getElementById('hud-score');
+    const hudHp = document.getElementById('hud-hp');
+    const hudAmmo = document.getElementById('hud-ammo');
+
+    let state = logic.createState(Math.floor(Math.random() * 100000));
+    let lastFacing = 'n';
+
+    function triggerAction(action) {
+      if (logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+        return;
+      }
+      const legal = logic.legalActions(state);
+      if (legal.includes(action)) {
+        logic.step(state, action);
+        render();
+      }
+    }
+
+    function tryMoveOrPunch(dir) {
+      lastFacing = dir;
+      const punchAction = `punch_${dir}`;
+      const moveAction = `move_${dir}`;
+      const legals = logic.legalActions(state);
+      if (legals.includes(punchAction)) {
+        triggerAction(punchAction);
+      } else if (legals.includes(moveAction)) {
+        triggerAction(moveAction);
+      }
+    }
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      const code = e.code;
+      if (code === 'KeyW' || code === 'ArrowUp') tryMoveOrPunch('n');
+      else if (code === 'KeyS' || code === 'ArrowDown') tryMoveOrPunch('s');
+      else if (code === 'KeyA' || code === 'ArrowLeft') tryMoveOrPunch('w');
+      else if (code === 'KeyD' || code === 'ArrowRight') tryMoveOrPunch('e');
+      else if (code === 'KeyF' || code === 'Space') {
+        const shootAction = `shoot_${lastFacing}`;
+        triggerAction(shootAction);
+      } else if (code === 'KeyE') {
+        triggerAction('wait');
+      } else if (code === 'KeyR' && logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+      }
+    });
+
+    // Touch button bindings
+    document.getElementById('btn-up').addEventListener('pointerdown', () => tryMoveOrPunch('n'));
+    document.getElementById('btn-down').addEventListener('pointerdown', () => tryMoveOrPunch('s'));
+    document.getElementById('btn-left').addEventListener('pointerdown', () => tryMoveOrPunch('w'));
+    document.getElementById('btn-right').addEventListener('pointerdown', () => tryMoveOrPunch('e'));
+    document.getElementById('btn-shoot').addEventListener('pointerdown', () => triggerAction(`shoot_${lastFacing}`));
+    document.getElementById('btn-wait').addEventListener('pointerdown', () => triggerAction('wait'));
+
+    function render() {
+      hudRoom.textContent = `${state.room}/3`;
+      hudScore.textContent = logic.score(state);
+      hudHp.textContent = '❤'.repeat(Math.max(0, state.player.hp));
+      hudAmmo.textContent = state.player.ammo;
+
+      const TILE = 36;
+      ctx.fillStyle = '#0d0f19';
+      ctx.fillRect(0, 0, 360, 360);
+
+      // Floor Grid
+      ctx.strokeStyle = '#1b1f33';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 10; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * TILE, 0);
+        ctx.lineTo(i * TILE, 360);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i * TILE);
+        ctx.lineTo(360, i * TILE);
+        ctx.stroke();
+      }
+
+      // Pillars / Walls
+      for (const p of state.pillars) {
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(p.x * TILE + 2, p.y * TILE + 2, TILE - 4, TILE - 4);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.strokeRect(p.x * TILE + 2, p.y * TILE + 2, TILE - 4, TILE - 4);
+      }
+
+      // Pickups (Ammo drops)
+      for (const pk of state.pickups) {
+        ctx.fillStyle = '#eab308';
+        ctx.beginPath();
+        ctx.arc(pk.x * TILE + TILE / 2, pk.y * TILE + TILE / 2, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fef08a';
+        ctx.stroke();
+      }
+
+      // Bullets (with motion trail)
+      for (const b of state.bullets) {
+        const cx = b.x * TILE + TILE / 2;
+        const cy = b.y * TILE + TILE / 2;
+        ctx.fillStyle = b.owner === 'player' ? '#38bdf8' : '#f43f5e';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Trail
+        ctx.strokeStyle = b.owner === 'player' ? 'rgba(56, 189, 248, 0.4)' : 'rgba(244, 63, 94, 0.4)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx - b.dx * 18, cy - b.dy * 18);
+        ctx.stroke();
+      }
+
+      // Enemies
+      for (const e of state.enemies) {
+        const cx = e.x * TILE + TILE / 2;
+        const cy = e.y * TILE + TILE / 2;
+
+        ctx.fillStyle = e.type === 'brawler' ? '#dc2626' : '#e11d48';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fda4af';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Gun / Fist icon
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(cx - 3, cy - 3, 6, 6);
+      }
+
+      // Player
+      const p = state.player;
+      const px = p.x * TILE + TILE / 2;
+      const py = p.y * TILE + TILE / 2;
+
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.arc(px, py, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Facing Reticle
+      ctx.fillStyle = '#f8fafc';
+      let rdx = 0, rdy = 0;
+      if (lastFacing === 'n') rdy = -10;
+      else if (lastFacing === 's') rdy = 10;
+      else if (lastFacing === 'w') rdx = -10;
+      else if (lastFacing === 'e') rdx = 10;
+      ctx.beginPath();
+      ctx.arc(px + rdx, py + rdy, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Overlays
+      if (state.won) {
+        ctx.fillStyle = 'rgba(9, 10, 16, 0.88)';
+        ctx.fillRect(0, 0, 360, 360);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('FACILITY CLEARED', 180, 160);
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Final Score: ${logic.score(state)}`, 180, 190);
+        ctx.fillText('Tap or press R to breach again', 180, 220);
+      } else if (state.lost) {
+        ctx.fillStyle = 'rgba(9, 10, 16, 0.88)';
+        ctx.fillRect(0, 0, 360, 360);
+        ctx.fillStyle = '#f43f5e';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('SYSTEM SHATTERED', 180, 160);
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Eliminated in Room ${state.room}`, 180, 190);
+        ctx.fillText('Tap or press R to restart', 180, 220);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
