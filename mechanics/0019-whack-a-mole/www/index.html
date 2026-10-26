@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Burrow Bonk</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { MAX_STEPS, createState, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const BX = 24;
+const BY = 156;
+const CELL = 96;
+const GAP = 12;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0019-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let accum = 0;
+let overAt = 0;
+let pops = [];
+
+function restart() {
+  state = createState(Date.now());
+  accum = 0;
+  overAt = 0;
+  pops = [];
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function finishCheck() {
+  if (isOver(state) && !overAt) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0019-best', best); } catch (e) {}
+    }
+  }
+}
+
+function bonk(idx) {
+  if (isOver(state)) return;
+  const r = Math.floor(idx / 3);
+  const c = idx % 3;
+  const cx = BX + c * (CELL + GAP) + CELL / 2;
+  const cy = BY + r * (CELL + GAP) + CELL / 2;
+  const kind = state.holes[idx].kind;
+  const res = step(state, idx);
+  const text = kind === 'bomb' ? 'BOOM!' : res.reward > 0 ? '+' + res.reward : 'Miss';
+  const color = kind === 'bomb' ? '#ff6b6b' : res.reward > 0 ? '#ffd43b' : '#8a93a8';
+  pops.push({ x: cx, y: cy - 10, text, color, t: 0 });
+  finishCheck();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  for (let i = 0; i < 9; i++) {
+    const r = Math.floor(i / 3);
+    const c = i % 3;
+    const x = BX + c * (CELL + GAP);
+    const y = BY + r * (CELL + GAP);
+    if (p.x >= x && p.x <= x + CELL && p.y >= y && p.y <= y + CELL) {
+      bonk(i);
+      return;
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const n = Number(e.key);
+  if (n >= 1 && n <= 9) bonk(n - 1);
+});
+
+function draw(dt) {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#18243e');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 24, 38);
+  ctx.textAlign = 'center';
+  ctx.fillText('TIME LEFT', W / 2, 38);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 24, 38);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 30px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(score(state), 24, 74);
+  ctx.fillStyle = '#4fd1c5';
+  ctx.textAlign = 'center';
+  ctx.fillText(Math.max(0, MAX_STEPS - state.stepCount), W / 2, 74);
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 24, 72);
+
+  // Lives and combo
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = i < state.lives ? '#ff6b6b' : '#2a3554';
+    ctx.beginPath();
+    ctx.arc(40 + i * 20, 112, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (state.combo > 1) {
+    ctx.fillStyle = '#ffd43b';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`Combo x${state.combo}`, W - 24, 117);
+  }
+
+  for (let i = 0; i < 9; i++) {
+    const r = Math.floor(i / 3);
+    const c = i % 3;
+    const x = BX + c * (CELL + GAP);
+    const y = BY + r * (CELL + GAP);
+    const h = state.holes[i];
+
+    ctx.fillStyle = '#141e38';
+    rrect(x, y, CELL, CELL, 16);
+    ctx.fill();
+    ctx.strokeStyle = '#2b3d6b';
+    ctx.lineWidth = 2;
+    rrect(x, y, CELL, CELL, 16);
+    ctx.stroke();
+
+    // Dark burrow pit
+    ctx.fillStyle = '#090e1c';
+    ctx.beginPath();
+    ctx.ellipse(x + CELL / 2, y + CELL * 0.72, CELL * 0.34, CELL * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (h.kind === 'mole' || h.kind === 'gold') {
+      ctx.fillStyle = h.kind === 'gold' ? '#ffd43b' : '#d9822b';
+      rrect(x + CELL * 0.24, y + CELL * 0.22, CELL * 0.52, CELL * 0.52, 22);
+      ctx.fill();
+      ctx.fillStyle = '#0b1020';
+      ctx.beginPath();
+      ctx.arc(x + CELL * 0.4, y + CELL * 0.42, 3.2, 0, Math.PI * 2);
+      ctx.arc(x + CELL * 0.6, y + CELL * 0.42, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ff8787';
+      ctx.beginPath();
+      ctx.arc(x + CELL * 0.5, y + CELL * 0.5, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (h.kind === 'bomb') {
+      ctx.fillStyle = '#ff4d4f';
+      ctx.beginPath();
+      ctx.arc(x + CELL / 2, y + CELL * 0.48, CELL * 0.24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffd43b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + CELL * 0.38, y + CELL * 0.36);
+      ctx.lineTo(x + CELL * 0.62, y + CELL * 0.6);
+      ctx.moveTo(x + CELL * 0.62, y + CELL * 0.36);
+      ctx.lineTo(x + CELL * 0.38, y + CELL * 0.6);
+      ctx.stroke();
+    }
+  }
+
+  for (const p of pops) {
+    p.t += dt;
+    ctx.globalAlpha = Math.max(0, 1 - p.t / 0.65);
+    ctx.fillStyle = p.color;
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y - p.t * 36);
+  }
+  ctx.globalAlpha = 1;
+  pops = pops.filter((p) => p.t < 0.65);
+
+  ctx.fillStyle = '#6c7793';
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Bonk critters & gold! Avoid red hazards.', W / 2, 536);
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.84)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.fillText(state.lives <= 0 ? 'Boom! Out of Lives' : 'Time Up!', W / 2, H / 2 - 32);
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state), W / 2, H / 2 + 8);
+    ctx.fillStyle = '#4fd1c5';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to play again', W / 2, H / 2 + 50);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (!isOver(state)) {
+    accum += dt;
+    while (accum >= 0.42 && !isOver(state)) {
+      accum -= 0.42;
+      step(state, 'wait');
+      finishCheck();
+    }
+  }
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

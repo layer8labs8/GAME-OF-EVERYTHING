@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#182030"/>
+      <stop offset="100%" stop-color="#0c0f17"/>
+    </linearGradient>
+    <linearGradient id="tank" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="100" fill="url(#bg)"/>
+  <!-- Left tread -->
+  <rect x="130" y="160" width="50" height="200" rx="15" fill="#334155"/>
+  <!-- Right tread -->
+  <rect x="332" y="160" width="50" height="200" rx="15" fill="#334155"/>
+  <!-- Tank chassis -->
+  <rect x="160" y="180" width="192" height="160" rx="20" fill="url(#tank)"/>
+  <!-- Turret base -->
+  <circle cx="256" cy="260" r="48" fill="#166534"/>
+  <!-- Barrel -->
+  <rect x="242" y="100" width="28" height="130" rx="6" fill="#14532d"/>
+  <!-- Muzzle flash ring -->
+  <circle cx="256" cy="90" r="16" fill="#f59e0b"/>
+  <!-- Border -->
+  <rect x="20" y="20" width="472" height="472" rx="80" fill="none" stroke="#334155" stroke-width="8"/>
+</svg>

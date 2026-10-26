@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "mechanic": "pipe-connect",
+  "levels": [
+    {
+      "id": "001",
+      "name": "Direct Conduit",
+      "difficulty": 1,
+      "data": { "pipes": [2,0,0,0,0,5,0,0,0,0,5,0,0,0,0,5,0,0,0,0,3,10,10,10,8] },
+      "par": 1,
+      "solution": "a"
+    },
+    {
+      "id": "002",
+      "name": "Dual Elbow",
+      "difficulty": 1,
+      "data": { "pipes": [2,0,0,0,0,5,0,0,0,0,5,0,0,0,0,5,0,0,0,0,3,10,10,10,4] },
+      "par": 2,
+      "solution": "ay"
+    },
+    {
+      "id": "003",
+      "name": "Corner Shift",
+      "difficulty": 2,
+      "data": { "pipes": [4,0,0,0,0,5,0,0,0,0,5,0,0,0,0,5,0,0,0,0,6,10,10,10,8] },
+      "par": 3,
+      "solution": "uuu"
+    },
+    {
+      "id": "004",
+      "name": "Zig-Zag Aqueduct",
+      "difficulty": 2,
+      "data": { "pipes": [2,9,0,0,0,0,5,0,0,0,0,3,10,12,0,0,0,0,5,0,0,0,0,3,8] },
+      "par": 3,
+      "solution": "bbb"
+    },
+    {
+      "id": "005",
+      "name": "S-Bend Flow",
+      "difficulty": 3,
+      "data": { "pipes": [4,12,0,0,0,0,5,0,0,0,0,3,10,6,0,0,0,0,5,0,0,0,0,3,8] },
+      "par": 4,
+      "solution": "aaan"
+    },
+    {
+      "id": "006",
+      "name": "Spiral Circuit",
+      "difficulty": 3,
+      "data": { "pipes": [2,0,0,0,0,3,10,12,0,0,0,0,5,0,0,0,0,3,10,12,0,0,0,0,2] },
+      "par": 4,
+      "solution": "ayyy"
+    },
+    {
+      "id": "007",
+      "name": "Hydro Spiral",
+      "difficulty": 4,
+      "data": { "pipes": [2,0,0,0,0,6,10,9,0,0,0,0,5,0,0,0,0,3,10,12,0,0,0,0,1] },
+      "par": 7,
+      "solution": "afffhhh"
+    },
+    {
+      "id": "008",
+      "name": "Pressure Grid",
+      "difficulty": 4,
+      "data": { "pipes": [8,0,0,0,0,3,10,12,0,0,0,0,5,0,0,0,0,6,10,12,0,0,0,0,1] },
+      "par": 6,
+      "solution": "aaarrr"
+    },
+    {
+      "id": "009",
+      "name": "Grand Manifold",
+      "difficulty": 5,
+      "data": { "pipes": [8,0,0,0,0,6,10,12,0,0,0,0,5,0,0,0,0,3,10,12,0,0,0,0,8] },
+      "par": 7,
+      "solution": "aaafffy"
+    },
+    {
+      "id": "010",
+      "name": "Hydro Master",
+      "difficulty": 5,
+      "data": { "pipes": [8,0,0,0,0,6,10,12,0,0,0,0,5,0,0,0,0,6,10,12,0,0,0,0,1] },
+      "par": 9,
+      "solution": "aaafffrrr"
+    }
+  ]
+}

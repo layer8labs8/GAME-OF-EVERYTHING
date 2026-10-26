@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Beat Pulse</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { LANES, TARGET_Y, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const LANE_X = [54, 138, 222, 306];
+const LANE_W = 76;
+
+const LANE_COLORS = [
+  { fill: '#06b6d4', glow: '#67e8f9', key: 'D' },
+  { fill: '#a855f7', glow: '#d8b4fe', key: 'F' },
+  { fill: '#f43f5e', glow: '#fda4af', key: 'J' },
+  { fill: '#f59e0b', glow: '#fde68a', key: 'K' }
+];
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0170-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let ratingPopup = null;
+let lanePressed = [false, false, false, false];
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  ratingPopup = null;
+  lanePressed = [false, false, false, false];
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function triggerTap(lane) {
+  if (isOver(state)) return;
+  lanePressed[lane] = true;
+  setTimeout(() => { lanePressed[lane] = false; }, 100);
+
+  const res = step(state, `tap_${lane}`);
+  if (state.lastRating !== 'none') {
+    ratingPopup = { text: state.lastRating.toUpperCase(), t: 0.6 };
+  }
+
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0170-best', best); } catch (e) {}
+    }
+  }
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  for (let l = 0; l < 4; l++) {
+    const lx = LANE_X[l] - LANE_W / 2;
+    if (p.x >= lx && p.x <= lx + LANE_W) {
+      triggerTap(l);
+      break;
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  if (k === 'd' || k === '1') triggerTap(0);
+  else if (k === 'f' || k === '2') triggerTap(1);
+  else if (k === 'j' || k === '3') triggerTap(2);
+  else if (k === 'k' || k === '4') triggerTap(3);
+  else if (k === 'r') restart();
+});
+
+let tickAcc = 0;
+function updateSim(dt) {
+  tickAcc += dt;
+  const STEP_TIME = 1 / 30;
+
+  while (tickAcc >= STEP_TIME && !isOver(state)) {
+    tickAcc -= STEP_TIME;
+    const res = step(state, 'wait');
+    if (res.done) {
+      overAt = performance.now();
+      const sc = score(state);
+      if (sc > best) {
+        best = sc;
+        try { localStorage.setItem('goe-0170-best', best); } catch (e) {}
+      }
+    }
+  }
+
+  if (ratingPopup) {
+    ratingPopup.t -= dt;
+    if (ratingPopup.t <= 0) ratingPopup = null;
+  }
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0a0d1e');
+  bg.addColorStop(1, '#02040a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Highway dividers
+  for (let l = 0; l < 4; l++) {
+    const lx = LANE_X[l] - LANE_W / 2;
+    ctx.fillStyle = l % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)';
+    ctx.fillRect(lx, 100, LANE_W, H - 100);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(lx, 100);
+    ctx.lineTo(lx, H);
+    ctx.stroke();
+  }
+
+  // Receptors at TARGET_Y
+  for (let l = 0; l < 4; l++) {
+    const lx = LANE_X[l];
+    const col = LANE_COLORS[l];
+
+    ctx.fillStyle = lanePressed[l] ? col.fill : 'rgba(30,41,59,0.7)';
+    ctx.strokeStyle = col.fill;
+    ctx.lineWidth = 2.5;
+    rrect(lx - LANE_W / 2 + 4, TARGET_Y - 14, LANE_W - 8, 28, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = lanePressed[l] ? '#ffffff' : col.glow;
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(col.key, lx, TARGET_Y + 5);
+  }
+
+  // Falling Notes
+  for (const n of state.notes) {
+    if (n.hit) continue;
+    const lx = LANE_X[n.lane];
+    const col = LANE_COLORS[n.lane];
+
+    ctx.fillStyle = col.fill;
+    ctx.shadowColor = col.glow;
+    ctx.shadowBlur = 10;
+    rrect(lx - LANE_W / 2 + 6, n.y - 12, LANE_W - 12, 24, 6);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(lx - 12, n.y - 3, 24, 6);
+  }
+
+  // Rating Popup
+  if (ratingPopup) {
+    ctx.fillStyle = ratingPopup.text === 'PERFECT' ? '#22c55e' : (ratingPopup.text === 'GOOD' ? '#06b6d4' : (ratingPopup.text === 'OK' ? '#f59e0b' : '#f43f5e'));
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(ratingPopup.text, W / 2, TARGET_Y - 60);
+  }
+
+  // Combo Streak
+  if (state.streak >= 3 && !isOver(state)) {
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${state.streak} COMBO`, W / 2, TARGET_Y - 95);
+  }
+
+  // Health Bar
+  ctx.fillStyle = '#1e293b';
+  rrect(24, 18, W - 48, 10, 5);
+  ctx.fill();
+
+  ctx.fillStyle = state.health > 30 ? '#22c55e' : '#f43f5e';
+  rrect(24, 18, (W - 48) * (state.health / 100), 10, 5);
+  ctx.fill();
+
+  // HUD
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 24, 52);
+  ctx.textAlign = 'center';
+  ctx.fillText('BEAT', W / 2, 52);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 24, 52);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 26px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(score(state), 24, 82);
+  ctx.fillStyle = '#06b6d4';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${state.stepCount} / 400`, W / 2, 82);
+  ctx.fillStyle = '#a855f7';
+  ctx.font = 'bold 20px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 24, 80);
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.85)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.won ? '#22c55e' : '#f43f5e';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.won ? 'Track Complete!' : 'Song Failed', W / 2, H / 2 - 32);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 8);
+    ctx.fillStyle = '#06b6d4';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to replay', W / 2, H / 2 + 50);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  updateSim(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

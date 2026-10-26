@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Neon Serpent</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { W: GW, H: GH, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const CELL = 25;
+const BX = (W - GW * CELL) / 2;
+const BY = 82;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0016-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let queue = [];
+let accum = 0;
+let pulse = 0;
+let overAt = 0;
+let swipeStart = null;
+
+function restart() {
+  state = createState(Date.now());
+  queue = [];
+  accum = 0;
+  overAt = 0;
+}
+
+function queueDir(dir) {
+  if (isOver(state)) return;
+  const ref = queue.length ? queue[queue.length - 1] : state.dir;
+  const opp = { U: 'D', D: 'U', L: 'R', R: 'L' }[ref];
+  if (dir === ref || dir === opp) return;
+  if (queue.length < 2) queue.push(dir);
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+const DPAD = [
+  { dir: 'U', x: 152, y: 500, w: 56, h: 52, label: '▲' },
+  { dir: 'L', x: 90, y: 558, w: 56, h: 52, label: '◀' },
+  { dir: 'D', x: 152, y: 558, w: 56, h: 52, label: '▼' },
+  { dir: 'R', x: 214, y: 558, w: 56, h: 52, label: '▶' },
+];
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  for (const b of DPAD) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      queueDir(b.dir);
+      return;
+    }
+  }
+  swipeStart = p;
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  if (!swipeStart) return;
+  const p = toLogical(e);
+  const dx = p.x - swipeStart.x;
+  const dy = p.y - swipeStart.y;
+  swipeStart = null;
+  if (Math.hypot(dx, dy) >= 20) {
+    if (Math.abs(dx) > Math.abs(dy)) queueDir(dx > 0 ? 'R' : 'L');
+    else queueDir(dy > 0 ? 'D' : 'U');
+  }
+});
+
+canvas.addEventListener('pointercancel', () => { swipeStart = null; });
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === 'ArrowUp' || e.key === 'w') queueDir('U');
+  else if (e.key === 'ArrowDown' || e.key === 's') queueDir('D');
+  else if (e.key === 'ArrowLeft' || e.key === 'a') queueDir('L');
+  else if (e.key === 'ArrowRight' || e.key === 'd') queueDir('R');
+});
+
+function tickInterval() {
+  return Math.max(0.075, 0.145 - state.eaten * 0.0025);
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#131d38');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const cur = score(state);
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 30, 32);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 30, 32);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 28px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(cur, 30, 64);
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 30, 62);
+
+  // Arena frame
+  ctx.fillStyle = '#10182f';
+  rrect(BX - 4, BY - 4, GW * CELL + 8, GH * CELL + 8, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#283862';
+  ctx.lineWidth = 2;
+  rrect(BX - 4, BY - 4, GW * CELL + 8, GH * CELL + 8, 10);
+  ctx.stroke();
+
+  for (let y = 0; y < GH; y++) {
+    for (let x = 0; x < GW; x++) {
+      if ((x + y) % 2 === 0) {
+        ctx.fillStyle = '#141e3a';
+        ctx.fillRect(BX + x * CELL, BY + y * CELL, CELL, CELL);
+      }
+    }
+  }
+
+  if (state.food) {
+    const fx = BX + state.food.x * CELL + CELL / 2;
+    const fy = BY + state.food.y * CELL + CELL / 2;
+    const r = CELL * (0.33 + 0.06 * Math.sin(pulse * 6));
+    ctx.fillStyle = '#ff6b6b';
+    ctx.beginPath();
+    ctx.arc(fx, fy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd8a8';
+    ctx.beginPath();
+    ctx.arc(fx - r * 0.28, fy - r * 0.28, r * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (let i = state.snake.length - 1; i >= 0; i--) {
+    const seg = state.snake[i];
+    const x = BX + seg.x * CELL;
+    const y = BY + seg.y * CELL;
+    ctx.fillStyle = i === 0 ? '#4fd1c5' : i % 2 === 0 ? '#38b2ac' : '#2c9a94';
+    rrect(x + 2, y + 2, CELL - 4, CELL - 4, i === 0 ? 7 : 5);
+    ctx.fill();
+    if (i === 0) {
+      ctx.fillStyle = '#0b1020';
+      ctx.beginPath();
+      ctx.arc(x + CELL * 0.36, y + CELL * 0.38, 2.2, 0, Math.PI * 2);
+      ctx.arc(x + CELL * 0.64, y + CELL * 0.38, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  for (const b of DPAD) {
+    ctx.fillStyle = '#1c2848';
+    rrect(b.x, b.y, b.w, b.h, 10);
+    ctx.fill();
+    ctx.strokeStyle = '#2f4273';
+    ctx.lineWidth = 1.5;
+    rrect(b.x, b.y, b.w, b.h, 10);
+    ctx.stroke();
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = 'bold 17px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + 1);
+  }
+  ctx.textBaseline = 'alphabetic';
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.82)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.won ? '#69db7c' : '#e8ecf5';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.won ? 'Board Cleared!' : 'Game Over', W / 2, H / 2 - 30);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Score: ' + cur, W / 2, H / 2 + 8);
+    ctx.fillStyle = '#4fd1c5';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to restart', W / 2, H / 2 + 48);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  pulse += dt;
+  if (!isOver(state)) {
+    accum += dt;
+    const stepDt = tickInterval();
+    while (accum >= stepDt && !isOver(state)) {
+      accum -= stepDt;
+      const legal = legalActions(state);
+      let act = queue.shift() || state.dir;
+      if (!legal.includes(act)) act = legal[0];
+      const res = step(state, act);
+      if (res.done) {
+        overAt = performance.now();
+        const sc = score(state);
+        if (sc > best) {
+          best = sc;
+          try { localStorage.setItem('goe-0016-best', best); } catch (e) {}
+        }
+      }
+    }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1c1917">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Crown Draughts</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #1c1917;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { MAX_STEPS, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0085-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let selectedCell = null; // { r, c }
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  selectedCell = null;
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+const BOARD_X = 20;
+const BOARD_Y = 130;
+const CELL_SIZE = 40;
+
+function tryMove(moveStr) {
+  if (isOver(state)) return;
+  try {
+    step(state, moveStr);
+    selectedCell = null;
+    if (isOver(state)) {
+      overAt = performance.now();
+      const sc = score(state);
+      if (sc > best) {
+        best = sc;
+        try { localStorage.setItem('goe-0085-best', best); } catch (e) {}
+      }
+    }
+  } catch (err) {
+    selectedCell = null;
+  }
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  // Board square tap
+  if (p.x >= BOARD_X && p.x <= BOARD_X + 8 * CELL_SIZE &&
+      p.y >= BOARD_Y && p.y <= BOARD_Y + 8 * CELL_SIZE) {
+    const c = Math.floor((p.x - BOARD_X) / CELL_SIZE);
+    const r = Math.floor((p.y - BOARD_Y) / CELL_SIZE);
+
+    const val = state.board[r][c];
+    const legal = legalActions(state);
+
+    if (val > 0) {
+      // Tapped own piece -> select it if it has legal moves
+      const pieceMoves = legal.filter((m) => m.startsWith(`${r},${c}->`));
+      if (pieceMoves.length > 0) {
+        selectedCell = { r, c };
+      }
+      return;
+    }
+
+    // Tapped an empty square
+    if (selectedCell) {
+      const attemptMove = `${selectedCell.r},${selectedCell.c}->${r},${c}`;
+      if (legal.includes(attemptMove)) {
+        tryMove(attemptMove);
+        return;
+      } else {
+        selectedCell = null;
+      }
+    }
+  }
+
+  // Restart Button (y: 540 to 585)
+  if (p.x >= 110 && p.x <= 250 && p.y >= 540 && p.y <= 585) {
+    restart();
+    return;
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === 'r' || e.key === 'R') restart();
+});
+
+function draw() {
+  ctx.fillStyle = '#1c1917';
+  ctx.fillRect(0, 0, W, H);
+
+  // Top Status Bar
+  ctx.fillStyle = '#292524';
+  rrect(15, 12, W - 30, 48, 10);
+  ctx.fill();
+
+  ctx.fillStyle = '#a8a29e';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('PLAYER (RED)', 26, 28);
+  ctx.textAlign = 'center';
+  ctx.fillText('STATUS', W / 2, 28);
+  ctx.textAlign = 'right';
+  ctx.fillText('AI (BLACK)', W - 26, 28);
+
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.fillStyle = '#ef4444';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${state.playerPieces} men`, 26, 48);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.won ? 'VICTORY' : 'YOUR TURN', W / 2, 48);
+
+  ctx.fillStyle = '#cbd5e1';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${state.aiPieces} men`, W - 26, 48);
+
+  // Board Outer Frame
+  ctx.fillStyle = '#44403c';
+  rrect(BOARD_X - 6, BOARD_Y - 6, 8 * CELL_SIZE + 12, 8 * CELL_SIZE + 12, 8);
+  ctx.fill();
+
+  const legal = legalActions(state);
+  const targetsForSelected = selectedCell
+    ? legal
+        .filter((m) => m.startsWith(`${selectedCell.r},${selectedCell.c}->`))
+        .map((m) => m.split('->')[1].split(',').map(Number))
+    : [];
+
+  // 8x8 Board Squares
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const rx = BOARD_X + c * CELL_SIZE;
+      const ry = BOARD_Y + r * CELL_SIZE;
+      const isDark = (r + c) % 2 === 1;
+
+      ctx.fillStyle = isDark ? '#78350f' : '#fed7aa';
+      ctx.fillRect(rx, ry, CELL_SIZE, CELL_SIZE);
+
+      // Highlight selected cell
+      if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.fillRect(rx, ry, CELL_SIZE, CELL_SIZE);
+      }
+
+      // Legal landing spot indicator
+      const isTarget = targetsForSelected.some(([tr, tc]) => tr === r && tc === c);
+      if (isTarget) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(rx + CELL_SIZE / 2, ry + CELL_SIZE / 2, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw Checkers Piece
+      const val = state.board[r][c];
+      if (val !== 0) {
+        const isPlayer = val > 0;
+        const isKing = Math.abs(val) === 2;
+
+        ctx.fillStyle = isPlayer ? '#dc2626' : '#1e293b';
+        ctx.strokeStyle = isPlayer ? '#f87171' : '#0f172a';
+        ctx.lineWidth = 2.5;
+
+        ctx.beginPath();
+        ctx.arc(rx + CELL_SIZE / 2, ry + CELL_SIZE / 2, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Inner ridge
+        ctx.beginPath();
+        ctx.arc(rx + CELL_SIZE / 2, ry + CELL_SIZE / 2, 10, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Crown on King
+        if (isKing) {
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 14px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('♚', rx + CELL_SIZE / 2, ry + CELL_SIZE / 2 + 5);
+        }
+      }
+    }
+  }
+
+  // Captures & Turn Info
+  ctx.fillStyle = '#a8a29e';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Player Captures: ${state.stats.playerCaptures}   AI Captures: ${state.stats.aiCaptures}`, W / 2, 480);
+  ctx.fillText(`Score: ${score(state)}   Best: ${best}`, W / 2, 505);
+
+  // New Match Button
+  ctx.fillStyle = '#292524';
+  ctx.strokeStyle = '#57534e';
+  ctx.lineWidth = 1.5;
+  rrect(110, 535, 140, 44, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('NEW MATCH', 180, 562);
+
+  // Game Over Overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(28, 25, 23, 0.92)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = state.won ? '#4ade80' : '#ef4444';
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.won ? 'CHECKERS VICTORY!' : 'CHECKERS DEFEAT', W / 2, H / 2 - 50);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'All opponent pieces captured or blocked!' : 'The AI cleared your forces.', W / 2, H / 2 - 15);
+    ctx.fillText(`Final Pieces: Red ${state.playerPieces} vs Black ${state.aiPieces}`, W / 2, H / 2 + 10);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 55);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to play again', W / 2, H / 2 + 105);
+  }
+}
+
+function frame(now) {
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

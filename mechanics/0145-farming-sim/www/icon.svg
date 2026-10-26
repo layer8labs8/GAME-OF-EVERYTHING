@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#0f172a"/>
+  <!-- Soil Mound -->
+  <path d="M16 100 Q64 74 112 100 L112 116 Q64 120 16 116 Z" fill="#78350f"/>
+  <!-- Stems -->
+  <path d="M64 90 Q62 50 64 24" stroke="#22c55e" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M64 64 Q44 48 36 54 Q44 72 64 68" fill="#16a34a"/>
+  <path d="M64 54 Q84 38 92 44 Q84 62 64 58" fill="#16a34a"/>
+  <!-- Wheat / Fruit Top -->
+  <ellipse cx="64" cy="22" rx="10" ry="14" fill="#facc15"/>
+  <ellipse cx="54" cy="28" rx="8" ry="10" fill="#eab308"/>
+  <ellipse cx="74" cy="28" rx="8" ry="10" fill="#eab308"/>
+</svg>

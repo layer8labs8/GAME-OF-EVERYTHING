@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0c0f17">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Iron Tracks</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0c0f17;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const {
+  GRID_SIZE,
+  MAX_STEPS,
+  TOTAL_ENEMIES,
+  createState,
+  legalActions,
+  step,
+  isOver,
+  score
+} = GameLogic;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let state = createState(Date.now());
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  overAt = 0;
+}
+
+const CELL = 32;
+const GRID_X = (W - GRID_SIZE * CELL) / 2; // (360 - 320) / 2 = 20
+const GRID_Y = 80;
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function doAction(actionName) {
+  if (isOver(state)) return;
+  if (!legalActions(state).includes(actionName)) return;
+  const res = step(state, actionName);
+  if (res.done) overAt = performance.now();
+}
+
+// Touch controls handling
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  // D-pad center at (110, 520)
+  const dpx = 110;
+  const dpy = 520;
+  if (p.x >= dpx - 30 && p.x <= dpx + 30 && p.y >= dpy - 75 && p.y <= dpy - 25) {
+    doAction('move_n');
+    return;
+  }
+  if (p.x >= dpx - 30 && p.x <= dpx + 30 && p.y >= dpy + 25 && p.y <= dpy + 75) {
+    doAction('move_s');
+    return;
+  }
+  if (p.x >= dpx - 75 && p.x <= dpx - 25 && p.y >= dpy - 30 && p.y <= dpy + 30) {
+    doAction('move_w');
+    return;
+  }
+  if (p.x >= dpx + 25 && p.x <= dpx + 75 && p.y >= dpy - 30 && p.y <= dpy + 30) {
+    doAction('move_e');
+    return;
+  }
+  if (p.x >= dpx - 20 && p.x <= dpx + 20 && p.y >= dpy - 20 && p.y <= dpy + 20) {
+    doAction('wait');
+    return;
+  }
+
+  // Fire button at (275, 520), radius 42
+  const fdx = p.x - 275;
+  const fdy = p.y - 520;
+  if (fdx * fdx + fdy * fdy <= 42 * 42) {
+    doAction('fire');
+    return;
+  }
+
+  // Grid tap to move/turn
+  const gx = Math.floor((p.x - GRID_X) / CELL);
+  const gy = Math.floor((p.y - GRID_Y) / CELL);
+  if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
+    const dx = gx - state.player.x;
+    const dy = gy - state.player.y;
+    if (Math.abs(dx) + Math.abs(dy) === 1) {
+      if (dx === 1) doAction('move_e');
+      else if (dx === -1) doAction('move_w');
+      else if (dy === 1) doAction('move_s');
+      else if (dy === -1) doAction('move_n');
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  if (e.key === 'ArrowUp' || e.key === 'w') doAction('move_n');
+  else if (e.key === 'ArrowDown' || e.key === 's') doAction('move_s');
+  else if (e.key === 'ArrowLeft' || e.key === 'a') doAction('move_w');
+  else if (e.key === 'ArrowRight' || e.key === 'd') doAction('move_e');
+  else if (e.key === ' ' || e.key === 'j' || e.key === 'k') doAction('fire');
+  else if (e.key === 'e') doAction('wait');
+  else if (e.key === 'r') restart();
+});
+
+function drawRoundedRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y + x, y, r);
+  ctx.closePath();
+}
+
+function drawTank(x, y, dir, isEnemy) {
+  const cx = x + CELL / 2;
+  const cy = y + CELL / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  let angle = 0;
+  if (dir === 'E') angle = Math.PI / 2;
+  else if (dir === 'S') angle = Math.PI;
+  else if (dir === 'W') angle = -Math.PI / 2;
+  ctx.rotate(angle);
+
+  // Treads
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(-12, -12, 6, 24);
+  ctx.fillRect(6, -12, 6, 24);
+
+  // Chassis
+  ctx.fillStyle = isEnemy ? '#dc2626' : '#16a34a';
+  ctx.fillRect(-7, -10, 14, 20);
+
+  // Turret
+  ctx.fillStyle = isEnemy ? '#991b1b' : '#15803d';
+  ctx.beginPath();
+  ctx.arc(0, 0, 5.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cannon barrel
+  ctx.fillRect(-2, -15, 4, 10);
+
+  ctx.restore();
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#111827');
+  bg.addColorStop(1, '#0c0f17');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header HUD
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('ARMOR HULL', 20, 28);
+  ctx.textAlign = 'center';
+  ctx.fillText('HOSTILE BATTALION', W / 2, 28);
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE', W - 20, 28);
+
+  // Lives
+  ctx.fillStyle = '#ef4444';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('♥ '.repeat(state.player.lives) || 'CRITICAL', 20, 50);
+
+  // Enemies remaining
+  ctx.fillStyle = '#f59e0b';
+  ctx.textAlign = 'center';
+  const remaining = TOTAL_ENEMIES - state.enemiesDestroyed;
+  ctx.fillText(`ARMOR: ${remaining}/${TOTAL_ENEMIES}`, W / 2, 50);
+
+  // Score
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'right';
+  ctx.fillText(score(state), W - 20, 50);
+
+  // Arena Background
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(GRID_X - 4, GRID_Y - 4, GRID_SIZE * CELL + 8, GRID_SIZE * CELL + 8);
+
+  // Render Grid Tiles
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const x = GRID_X + c * CELL;
+      const y = GRID_Y + r * CELL;
+      const cell = state.grid[r][c];
+
+      if (cell === '.') {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+      } else if (cell === 'B') {
+        // Brick
+        ctx.fillStyle = '#c2410c';
+        ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+        ctx.strokeStyle = '#7c2d12';
+        ctx.strokeRect(x + 2, y + 2, CELL - 4, CELL - 4);
+      } else if (cell === 'S') {
+        // Steel
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.strokeRect(x + 2, y + 2, CELL - 4, CELL - 4);
+      }
+    }
+  }
+
+  // Draw HQ Base
+  const hqx = GRID_X + state.hq.x * CELL;
+  const hqy = GRID_Y + state.hq.y * CELL;
+  if (state.hq.alive) {
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(hqx + 1, hqy + 1, CELL - 2, CELL - 2);
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('★', hqx + CELL / 2, hqy + CELL / 2 + 6);
+  } else {
+    ctx.fillStyle = '#450a0a';
+    ctx.fillRect(hqx + 1, hqy + 1, CELL - 2, CELL - 2);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✖', hqx + CELL / 2, hqy + CELL / 2 + 5);
+  }
+
+  // Draw Enemies
+  for (const en of state.enemies) {
+    drawTank(GRID_X + en.x * CELL, GRID_Y + en.y * CELL, en.dir, true);
+  }
+
+  // Draw Player
+  if (state.player.lives > 0) {
+    drawTank(GRID_X + state.player.x * CELL, GRID_Y + state.player.y * CELL, state.player.dir, false);
+  }
+
+  // Draw Bullets
+  for (const b of state.bullets) {
+    const bx = GRID_X + b.x * CELL + CELL / 2;
+    const by = GRID_Y + b.y * CELL + CELL / 2;
+    ctx.fillStyle = b.fromPlayer ? '#facc15' : '#ef4444';
+    ctx.beginPath();
+    ctx.arc(bx, by, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // D-Pad and Fire Controls
+  const dpx = 110;
+  const dpy = 520;
+
+  function drawPad(bx, by, bw, bh, txt) {
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#475569';
+    ctx.strokeRect(bx, by, bw, bh);
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(txt, bx + bw / 2, by + bh / 2 + 5);
+  }
+
+  drawPad(dpx - 22, dpy - 70, 44, 38, '▲');
+  drawPad(dpx - 22, dpy + 32, 44, 38, '▼');
+  drawPad(dpx - 70, dpy - 22, 38, 44, '◀');
+  drawPad(dpx + 32, dpy - 22, 38, 44, '▶');
+  drawPad(dpx - 18, dpy - 18, 36, 36, '●');
+
+  // Big Fire Button
+  ctx.fillStyle = state.player.reload === 0 ? '#ef4444' : '#7f1d1d';
+  ctx.beginPath();
+  ctx.arc(275, 520, 40, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = state.player.reload === 0 ? '#fca5a5' : '#450a0a';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('FIRE', 275, 526);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('WASD / Arrows to move · Space to Fire', W / 2, 610);
+
+  // End Modal
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(12, 15, 23, 0.92)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = 'center';
+    if (state.won) {
+      ctx.fillStyle = '#22c55e';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('VICTORY ACHIEVED', W / 2, H / 2 - 40);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('All enemy armor neutralized!', W / 2, H / 2 - 6);
+    } else if (!state.hq.alive) {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('BASE DESTROYED', W / 2, H / 2 - 40);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('Command HQ fell to enemy fire!', W / 2, H / 2 - 6);
+    } else {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('TANK COMPROMISED', W / 2, H / 2 - 40);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('All hull armor destroyed!', W / 2, H / 2 - 6);
+    }
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 32);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Tap anywhere to redeploy', W / 2, H / 2 + 75);
+  }
+}
+
+function frame() {
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

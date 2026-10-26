@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0d1117">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Titan Trials</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0d1117;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const {
+  PLAYER_MAX_HP,
+  PLAYER_MAX_STAMINA,
+  BOSS_ROSTER,
+  createState,
+  legalActions,
+  step,
+  isOver,
+  score
+} = GameLogic;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let state = createState(Date.now());
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  overAt = 0;
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function doAction(actionName) {
+  if (isOver(state)) return;
+  if (!legalActions(state).includes(actionName)) return;
+  const res = step(state, actionName);
+  if (res.done) overAt = performance.now();
+}
+
+function drawRoundedRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Button layout: 2 columns x 3 rows
+const BUTTONS = [
+  { action: 'light_slash', label: 'Light Slash', cost: '15 STA', col: 0, row: 0 },
+  { action: 'heavy_smash', label: 'Heavy Smash', cost: '35 STA', col: 1, row: 0 },
+  { action: 'parry', label: 'Parry Stance', cost: '10 STA', col: 0, row: 1 },
+  { action: 'dodge', label: 'Evade Roll', cost: '20 STA', col: 1, row: 1 },
+  { action: 'heal', label: 'Heal Potion', cost: '+35 HP', col: 0, row: 2 },
+  { action: 'rest', label: 'Catch Breath', cost: '+40 STA', col: 1, row: 2 },
+];
+
+const BTN_W = 150;
+const BTN_H = 50;
+const BTN_X0 = 24;
+const BTN_Y0 = 440;
+const BTN_GAP = 12;
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  for (const b of BUTTONS) {
+    const bx = BTN_X0 + b.col * (BTN_W + BTN_GAP);
+    const by = BTN_Y0 + b.row * (BTN_H + 8);
+    if (p.x >= bx && p.x <= bx + BTN_W && p.y >= by && p.y <= by + BTN_H) {
+      doAction(b.action);
+      return;
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  if (e.key === '1' || e.key === 'q') doAction('light_slash');
+  else if (e.key === '2' || e.key === 'w') doAction('heavy_smash');
+  else if (e.key === '3' || e.key === 'e') doAction('parry');
+  else if (e.key === '4' || e.key === 'a') doAction('dodge');
+  else if (e.key === '5' || e.key === 's') doAction('heal');
+  else if (e.key === '6' || e.key === 'd' || e.key === ' ') doAction('rest');
+  else if (e.key === 'r') restart();
+});
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#171424');
+  bg.addColorStop(1, '#09080e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top Arena Header
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('GAUNTLET PROGRESS', 24, 28);
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE', W - 24, 28);
+
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`TITAN ${state.bossIdx + 1} / ${BOSS_ROSTER.length}: ${state.boss.name}`, 24, 50);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'right';
+  ctx.fillText(score(state), W - 24, 50);
+
+  // Boss Health Bar Card
+  ctx.fillStyle = '#1e1b2e';
+  drawRoundedRect(24, 68, W - 48, 140, 12);
+  ctx.fill();
+  ctx.strokeStyle = '#332e4d';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Boss Avatar / Icon
+  ctx.fillStyle = state.boss.stunned > 0 ? '#38bdf8' : state.boss.windup ? '#ef4444' : '#e2e8f0';
+  ctx.beginPath();
+  ctx.arc(64, 112, 28, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.boss.stunned > 0 ? '★' : state.boss.windup ? '!' : '⚔', 64, 120);
+
+  // Boss HP Bar
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`HP: ${state.boss.hp} / ${state.boss.maxHp}`, 105, 96);
+
+  ctx.fillStyle = '#0f172a';
+  drawRoundedRect(105, 104, 210, 16, 6);
+  ctx.fill();
+
+  const bossHpRatio = Math.max(0, state.boss.hp / state.boss.maxHp);
+  ctx.fillStyle = state.boss.windup ? '#ef4444' : '#f59e0b';
+  drawRoundedRect(105, 104, 210 * bossHpRatio, 16, 6);
+  ctx.fill();
+
+  // Boss State Indicator
+  ctx.font = 'bold 13px sans-serif';
+  if (state.boss.stunned > 0) {
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText(`STUNNED (${state.boss.stunned} turns remaining)`, 105, 142);
+  } else if (state.boss.windup) {
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText(`⚠ WINDING UP: ${state.boss.intent}!`, 105, 142);
+  } else {
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('Poised for strike...', 105, 142);
+  }
+
+  // Combat Log Banner
+  ctx.fillStyle = '#141220';
+  drawRoundedRect(24, 220, W - 48, 54, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#2a2640';
+  ctx.stroke();
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.lastEvent, W / 2, 252);
+
+  // Player Stats Card
+  ctx.fillStyle = '#1e1b2e';
+  drawRoundedRect(24, 286, W - 48, 136, 12);
+  ctx.fill();
+  ctx.strokeStyle = '#332e4d';
+  ctx.stroke();
+
+  // HP Bar
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`PLAYER HP: ${state.player.hp} / ${PLAYER_MAX_HP}`, 40, 312);
+
+  ctx.fillStyle = '#0f172a';
+  drawRoundedRect(40, 320, W - 80, 14, 5);
+  ctx.fill();
+  const hpRatio = Math.max(0, state.player.hp / PLAYER_MAX_HP);
+  ctx.fillStyle = hpRatio > 0.3 ? '#22c55e' : '#ef4444';
+  drawRoundedRect(40, 320, (W - 80) * hpRatio, 14, 5);
+  ctx.fill();
+
+  // Stamina Bar
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText(`STAMINA: ${state.player.stamina} / ${PLAYER_MAX_STAMINA}`, 40, 354);
+
+  ctx.fillStyle = '#0f172a';
+  drawRoundedRect(40, 362, W - 80, 14, 5);
+  ctx.fill();
+  const staRatio = Math.max(0, state.player.stamina / PLAYER_MAX_STAMINA);
+  ctx.fillStyle = '#38bdf8';
+  drawRoundedRect(40, 362, (W - 80) * staRatio, 14, 5);
+  ctx.fill();
+
+  // Potions & Combo
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText(`Potions: ${'🧪 '.repeat(state.player.potions) || 'EMPTY'}`, 40, 400);
+
+  ctx.fillStyle = '#ec4899';
+  ctx.textAlign = 'right';
+  ctx.fillText(`Combo: x${state.player.combo}`, W - 40, 400);
+
+  // Action Buttons
+  const legals = legalActions(state);
+  for (const b of BUTTONS) {
+    const isAvail = legals.includes(b.action);
+    const bx = BTN_X0 + b.col * (BTN_W + BTN_GAP);
+    const by = BTN_Y0 + b.row * (BTN_H + 8);
+
+    ctx.fillStyle = isAvail ? '#2d2847' : '#141220';
+    drawRoundedRect(bx, by, BTN_W, BTN_H, 8);
+    ctx.fill();
+
+    ctx.strokeStyle = isAvail ? '#4f46e5' : '#232035';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    ctx.fillStyle = isAvail ? '#ffffff' : '#475569';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(b.label, bx + 12, by + 24);
+
+    ctx.fillStyle = isAvail ? '#38bdf8' : '#334155';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(b.cost, bx + 12, by + 40);
+  }
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Tap cards or press 1-6 / Q-D to act', W / 2, 622);
+
+  // Game Over / Victory Modal
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(9, 8, 14, 0.94)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = 'center';
+    if (state.won) {
+      ctx.fillStyle = '#22c55e';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('TRIALS CONQUERED', W / 2, H / 2 - 40);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('All colossal titans slain!', W / 2, H / 2 - 8);
+    } else {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('FALLEN IN COMBAT', W / 2, H / 2 - 40);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(`Defeated by ${state.boss.name}`, W / 2, H / 2 - 8);
+    }
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 30);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Tap anywhere to challenge again', W / 2, H / 2 + 75);
+  }
+}
+
+function frame() {
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

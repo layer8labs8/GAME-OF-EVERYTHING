@@ -11,10 +11,12 @@
     "test": "node --test \"mechanics/**/test.js\" \"tools/**/*.test.js\"",
     "registry:check": "node tools/check_registry.js",
     "levels:check": "node tools/check_levels.js",
+    "bots:check": "node tools/check_bots.js",
+    "playable:check": "node tools/check_playable.js",
     "status": "node tools/make_status.js",
     "status:check": "node tools/make_status.js --check",
     "secrets": "node tools/check_no_secrets.js --all",
-    "verify": "npm test && npm run registry:check && npm run levels:check && npm run status:check && npm run secrets",
+    "verify": "npm test && npm run registry:check && npm run levels:check && npm run bots:check && npm run playable:check && npm run status:check && npm run secrets",
     "setup": "git config core.hooksPath .githooks"
   }
 }

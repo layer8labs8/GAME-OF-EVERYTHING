@@ -37,7 +37,17 @@ for (const m of registry.mechanics) {
   if (rank < LOGIC && fs.existsSync(dir)) errors.push(`${label}: folder exists but status is "${m.status}"`);
   if (rank >= LOGIC && !(has('www/logic.js') && has('test.js'))) errors.push(`${label}: status "${m.status}" needs www/logic.js and test.js`);
   if (rank >= PLAYABLE && !has('www/index.html')) errors.push(`${label}: status "${m.status}" needs www/index.html`);
-  if (m.bot && !has('env.js')) errors.push(`${label}: bot is true but env.js is missing`);
+  if (m.bot) {
+    // bot is true when www/logic.js implements the bot API (see docs/MECHANIC-SPEC.md)
+    try {
+      const api = require(path.join(dir, 'www', 'logic.js'));
+      for (const fn of ['createState', 'legalActions', 'step', 'isOver', 'score']) {
+        if (typeof api[fn] !== 'function') errors.push(`${label}: bot is true but logic.js does not export ${fn}`);
+      }
+    } catch (e) {
+      errors.push(`${label}: bot is true but www/logic.js cannot be loaded: ${e.message}`);
+    }
+  }
   if (m.levels !== undefined && !LEVELS.includes(m.levels)) errors.push(`${label}: levels must be one of ${LEVELS.join(', ')}`);
   if (rank >= LOGIC && m.levels === undefined) errors.push(`${label}: status "${m.status}" needs a levels value`);
   if (m.levels === 'data' && !(has('levels.json') && has('solver.js'))) errors.push(`${label}: levels "data" needs levels.json and solver.js`);

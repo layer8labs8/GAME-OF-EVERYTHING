@@ -4,15 +4,16 @@
 
 ```text
 mechanics/0002-block-placement-puzzle/
+  SPEC.md            optional rules and state specification
   test.js            node:test file, runs with `npm test`
-  env.js             optional bot interface (see below)
   levels.json        only when levels is "data" (see LEVELS.md)
   solver.js          only when levels is "data" (see LEVELS.md)
   www/
-    logic.js         pure rules, no DOM, no clock
+    logic.js         pure rules (and bot interface when bot is true), no DOM, no clock
     index.html       canvas screen that loads logic.js
-    manifest.json    optional PWA manifest
-    icon.svg
+    manifest.json    PWA manifest (required for playable status)
+    sw.js            offline service worker (required for playable status)
+    icon.svg         vector app icon (required for playable status)
 ```
 
 The folder name is `<id>-<slug>` and must match an entry in `registry/mechanics.json`.
@@ -24,11 +25,11 @@ The folder name is `<id>-<slug>` and must match an entry in `registry/mechanics.
 | `idea` | Listed, nothing written | none (the folder must not exist) |
 | `spec` | Rules written down | none yet |
 | `logic` | Rules implemented and tested | `www/logic.js`, `test.js` |
-| `playable` | A person can play it | plus `www/index.html` |
+| `playable` | A person can play it | plus `www/index.html`, `www/manifest.json`, `www/sw.js`, `www/icon.svg` |
 | `polished` | Art, sound and feel reviewed by a person | same files |
 | `shipped` | Released on a store | same files |
 
-`bot` is a separate flag. When it is `true`, `env.js` must exist.
+`bot` is a separate flag. When it is `true`, `www/logic.js` must export the standard bot interface and pass `npm run bots:check`.
 
 `levels` is `none`, `endless` or `data` and is required from `logic` upward. The contract for `data` levels is in [LEVELS.md](LEVELS.md).
 
@@ -47,17 +48,19 @@ The folder name is `<id>-<slug>` and must match an entry in `registry/mechanics.
 - Cover the rules, the edge cases (borders, empty input, game over) and determinism (same seed, same game).
 - **Independence:** the tests should come from examples a person states ("this move must give this board"), not only from whoever wrote `logic.js`. Tests written by the same model that wrote the logic copy the same misunderstanding.
 
-## `env.js` (bot interface, draft)
+## Bot interface (in `www/logic.js`)
+
+When `bot` is `true`, `www/logic.js` exports these five functions:
 
 ```js
-reset(seed)            // -> state
-legalActions(state)    // -> array of actions (plain JSON values)
-step(state, action)    // -> { state, reward, done }
-observe(state)         // -> plain JSON the bot may see
-score(state)           // -> number
+createState(seed)      // -> plain JSON state (integer rng state stored inside)
+legalActions(state)    // -> array of distinct legal actions (empty when isOver(state) is true)
+step(state, action)    // -> mutates state in place, returns { reward: number, done: boolean }; throws Error on illegal action
+isOver(state)          // -> boolean
+score(state)           // -> finite number
 ```
 
-This is a draft. It is meant to be small enough that a random bot, a scripted bot and a learning agent can all use it. It is finalised in Phase 1 of the [roadmap](ROADMAP.md) before more modules are written.
+`tools/writer/contract_check.js` and `npm run bots:check` verify purity, JSON serialisability, seed determinism, illegal-action rejection without state mutation, consistency between `done`, `isOver` and `legalActions`, and bounded termination across 20 random seeds.
 
 ## Registry entry
 

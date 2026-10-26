@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#070b14">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Shadow Infiltrator</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #070b14;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const {
+  GRID_W,
+  GRID_H,
+  MAX_STEPS,
+  createState,
+  legalActions,
+  step,
+  isOver,
+  score,
+  getGuardVisionTiles
+} = GameLogic;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let state = createState(Date.now());
+let pebbleMode = false;
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  pebbleMode = false;
+  overAt = 0;
+}
+
+// Grid layout parameters
+const CELL = 32;
+const GRID_X = (W - GRID_W * CELL) / 2; // (360 - 320) / 2 = 20
+const GRID_Y = 88;
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function doAction(actionName) {
+  if (isOver(state)) return;
+  if (!legalActions(state).includes(actionName)) return;
+  const res = step(state, actionName);
+  if (res.done) overAt = performance.now();
+  pebbleMode = false;
+}
+
+function handleDirection(dir) {
+  if (pebbleMode) {
+    doAction('pebble_' + dir);
+  } else {
+    doAction(dir);
+  }
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  // D-pad controls
+  // Center: (180, 480), button radius 32
+  const cx = 180;
+  const cy = 480;
+
+  // Up
+  if (p.x >= cx - 35 && p.x <= cx + 35 && p.y >= cy - 85 && p.y <= cy - 35) {
+    handleDirection('up');
+    return;
+  }
+  // Down
+  if (p.x >= cx - 35 && p.x <= cx + 35 && p.y >= cy + 35 && p.y <= cy + 85) {
+    handleDirection('down');
+    return;
+  }
+  // Left
+  if (p.x >= cx - 85 && p.x <= cx - 35 && p.y >= cy - 35 && p.y <= cy + 35) {
+    handleDirection('left');
+    return;
+  }
+  // Right
+  if (p.x >= cx + 35 && p.x <= cx + 85 && p.y >= cy - 35 && p.y <= cy + 35) {
+    handleDirection('right');
+    return;
+  }
+  // Wait (center)
+  if (p.x >= cx - 30 && p.x <= cx + 30 && p.y >= cy - 30 && p.y <= cy + 30) {
+    doAction('wait');
+    return;
+  }
+
+  // Pebble toggle button (bottom left)
+  if (p.x >= 24 && p.x <= 104 && p.y >= 540 && p.y <= 590) {
+    if (state.pebbles > 0) pebbleMode = !pebbleMode;
+    return;
+  }
+
+  // Direct grid tapping
+  const gx = Math.floor((p.x - GRID_X) / CELL);
+  const gy = Math.floor((p.y - GRID_Y) / CELL);
+  if (gx >= 0 && gx < GRID_W && gy >= 0 && gy < GRID_H) {
+    const dx = gx - state.player.x;
+    const dy = gy - state.player.y;
+    if (Math.abs(dx) + Math.abs(dy) === 1) {
+      if (dx === 1) handleDirection('right');
+      else if (dx === -1) handleDirection('left');
+      else if (dy === 1) handleDirection('down');
+      else if (dy === -1) handleDirection('up');
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  if (e.key === 'ArrowUp' || e.key === 'w') handleDirection('up');
+  else if (e.key === 'ArrowDown' || e.key === 's') handleDirection('down');
+  else if (e.key === 'ArrowLeft' || e.key === 'a') handleDirection('left');
+  else if (e.key === 'ArrowRight' || e.key === 'd') handleDirection('right');
+  else if (e.key === ' ' || e.key === 'e') doAction('wait');
+  else if (e.key === 'p' || e.key === 'q') {
+    if (state.pebbles > 0) pebbleMode = !pebbleMode;
+  } else if (e.key === 'r') restart();
+});
+
+function drawRoundedRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d1527');
+  bg.addColorStop(1, '#070b14');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header HUD
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('MISSION INTEL', 20, 32);
+  ctx.textAlign = 'center';
+  ctx.fillText('PEBBLES', W / 2, 32);
+  ctx.textAlign = 'right';
+  ctx.fillText('STEPS', W - 20, 32);
+
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'left';
+  if (state.intelCollected) {
+    ctx.fillStyle = '#10b981';
+    ctx.fillText('RETRIEVED (HEAD TO EXIT)', 20, 54);
+  } else {
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText('ENCRYPTED CORE', 20, 54);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = state.pebbles > 0 ? '#f59e0b' : '#64748b';
+  ctx.fillText(`● `.repeat(state.pebbles) || 'NONE', W / 2, 54);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillText(`${state.stepCount}/${MAX_STEPS}`, W - 20, 54);
+
+  // Draw Grid Arena
+  ctx.fillStyle = '#0a0f1d';
+  ctx.fillRect(GRID_X - 4, GRID_Y - 4, GRID_W * CELL + 8, GRID_H * CELL + 8);
+
+  for (let r = 0; r < GRID_H; r++) {
+    for (let c = 0; c < GRID_W; c++) {
+      const x = GRID_X + c * CELL;
+      const y = GRID_Y + r * CELL;
+      const ch = state.grid[r][c];
+
+      if (ch === '#') {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+        ctx.strokeStyle = '#334155';
+        ctx.strokeRect(x + 1.5, y + 1.5, CELL - 3, CELL - 3);
+      } else {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+
+        // Intel location
+        if (!state.intelCollected && c === state.intelPos.x && r === state.intelPos.y) {
+          ctx.fillStyle = '#38bdf8';
+          drawRoundedRect(x + 6, y + 6, CELL - 12, CELL - 12, 4);
+          ctx.fill();
+          ctx.fillStyle = '#0369a1';
+          ctx.beginPath();
+          ctx.arc(x + CELL / 2, y + CELL / 2, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Exit vent
+        if (c === state.exitPos.x && r === state.exitPos.y) {
+          ctx.fillStyle = state.intelCollected ? '#059669' : '#047857';
+          drawRoundedRect(x + 4, y + 4, CELL - 8, CELL - 8, 4);
+          ctx.fill();
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('E', x + CELL / 2, y + CELL / 2 + 4);
+        }
+      }
+    }
+  }
+
+  // Draw Guard Vision Cones
+  for (const g of state.guards) {
+    const vtiles = getGuardVisionTiles(g, state.grid);
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.28)';
+    for (const t of vtiles) {
+      if (state.grid[t.y][t.x] !== '#') {
+        const tx = GRID_X + t.x * CELL;
+        const ty = GRID_Y + t.y * CELL;
+        ctx.fillRect(tx + 2, ty + 2, CELL - 4, CELL - 4);
+      }
+    }
+  }
+
+  // Draw Distraction Noise Ping
+  if (state.lastNoise) {
+    const nx = GRID_X + state.lastNoise.x * CELL + CELL / 2;
+    const ny = GRID_Y + state.lastNoise.y * CELL + CELL / 2;
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(nx, ny, 16, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Draw Guards
+  for (const g of state.guards) {
+    const gx = GRID_X + g.x * CELL + CELL / 2;
+    const gy = GRID_Y + g.y * CELL + CELL / 2;
+    ctx.fillStyle = g.investigate ? '#f59e0b' : '#ef4444';
+    ctx.beginPath();
+    ctx.arc(gx, gy, CELL / 2 - 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Direction indicator
+    ctx.strokeStyle = '#fca5a5';
+    ctx.lineWidth = 3;
+    let dx = 0, dy = 0;
+    if (g.dir === 'N') dy = -10;
+    else if (g.dir === 'S') dy = 10;
+    else if (g.dir === 'E') dx = 10;
+    else if (g.dir === 'W') dx = -10;
+    ctx.beginPath();
+    ctx.moveTo(gx, gy);
+    ctx.lineTo(gx + dx, gy + dy);
+    ctx.stroke();
+  }
+
+  // Draw Player
+  const px = GRID_X + state.player.x * CELL + CELL / 2;
+  const py = GRID_Y + state.player.y * CELL + CELL / 2;
+  ctx.fillStyle = '#10b981';
+  ctx.beginPath();
+  ctx.arc(px, py, CELL / 2 - 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Night vision goggles
+  ctx.fillStyle = '#6ee7b7';
+  ctx.beginPath();
+  ctx.arc(px - 3, py - 2, 2.5, 0, Math.PI * 2);
+  ctx.arc(px + 3, py - 2, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // D-Pad and Buttons Controls
+  const cx = 180;
+  const cy = 480;
+
+  function drawPadBtn(bx, by, bw, bh, txt, active) {
+    ctx.fillStyle = active ? '#334155' : '#1e293b';
+    drawRoundedRect(bx, by, bw, bh, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(txt, bx + bw / 2, by + bh / 2 + 5);
+  }
+
+  drawPadBtn(cx - 30, cy - 80, 60, 40, '▲', false);
+  drawPadBtn(cx - 30, cy + 40, 60, 40, '▼', false);
+  drawPadBtn(cx - 80, cy - 20, 40, 40, '◀', false);
+  drawPadBtn(cx + 40, cy - 20, 40, 40, '▶', false);
+  drawPadBtn(cx - 25, cy - 20, 50, 40, 'WAIT', false);
+
+  // Pebble toggle button
+  ctx.fillStyle = pebbleMode ? '#f59e0b' : '#1e293b';
+  drawRoundedRect(24, 530, 96, 44, 8);
+  ctx.fill();
+  ctx.strokeStyle = pebbleMode ? '#fbbf24' : '#475569';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = pebbleMode ? '#0f172a' : '#f8fafc';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(pebbleMode ? 'AIMING...' : 'THROW', 72, 557);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('Tap D-pad or swipe', W / 2, 600);
+
+  // Game Over / Victory Modal
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(7, 11, 20, 0.92)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = 'center';
+    if (state.won) {
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('MISSION COMPLETE', W / 2, H / 2 - 40);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('Data extracted undetected!', W / 2, H / 2 - 6);
+    } else if (state.captured) {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('INFILTRATOR CAPTURED', W / 2, H / 2 - 40);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('Security spotted your position!', W / 2, H / 2 - 6);
+    } else {
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillText('FACILITY LOCKDOWN', W / 2, H / 2 - 40);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('Exceeded time limit.', W / 2, H / 2 - 6);
+    }
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 32);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Tap anywhere to retry', W / 2, H / 2 + 75);
+  }
+}
+
+function frame() {
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

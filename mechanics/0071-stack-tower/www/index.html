@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Sky Stacker</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { TRACK_W, createState, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const TX = (W - TRACK_W) / 2;
+const SLAB_H = 24;
+const BASE_Y = 530;
+
+const PALETTE = [
+  '#4fd1c5', '#38d9a9', '#69db7c', '#ffd43b',
+  '#ffa94d', '#ff8787', '#f783ac', '#9775fa',
+];
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0071-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let camY = 0;
+let flash = 0;
+let debris = [];
+let acc = 0;
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  camY = 0;
+  flash = 0;
+  debris = [];
+  acc = 0;
+  overAt = 0;
+}
+
+function triggerDrop() {
+  if (isOver(state)) return;
+  const top = state.tower[state.tower.length - 1];
+  const mx = state.mover.x;
+  const mw = state.mover.w;
+  const colorIdx = state.tower.length % PALETTE.length;
+  const res = step(state, 'drop');
+
+  if (state.lastDrop === 'perfect') {
+    flash = 0.45;
+  } else if (state.lastDrop === 'trimmed') {
+    const placed = state.tower[state.tower.length - 1];
+    if (mx < placed.x) {
+      debris.push({ x: mx, y: state.tower.length - 1, w: placed.x - mx, vy: 0, colorIdx });
+    } else if (mx + mw > placed.x + placed.w) {
+      debris.push({ x: placed.x + placed.w, y: state.tower.length - 1, w: mx + mw - (placed.x + placed.w), vy: 0, colorIdx });
+    }
+  } else if (state.lastDrop === 'miss') {
+    debris.push({ x: mx, y: state.tower.length, w: mw, vy: 0, colorIdx });
+  }
+
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0071-best', best); } catch (e) {}
+    }
+  }
+}
+
+canvas.addEventListener('pointerdown', () => {
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  triggerDrop();
+});
+
+addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === ' ' || e.key === 'ArrowDown' || e.key === 'Enter') {
+    e.preventDefault();
+    triggerDrop();
+  }
+});
+
+function slabScreenY(levelIdx) {
+  return BASE_Y - levelIdx * SLAB_H + camY;
+}
+
+function drawSlab(x, y, w, color, highlight) {
+  ctx.fillStyle = color;
+  ctx.fillRect(TX + x, y, w, SLAB_H - 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.fillRect(TX + x, y, w, 4);
+  if (highlight > 0) {
+    ctx.strokeStyle = `rgba(255,255,255,${highlight})`;
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(TX + x - 2, y - 2, w + 4, SLAB_H + 2);
+  }
+}
+
+function update(dt) {
+  const targetCam = Math.max(0, (state.tower.length - 10) * SLAB_H);
+  camY += (targetCam - camY) * Math.min(1, dt * 8);
+  if (flash > 0) flash = Math.max(0, flash - dt);
+
+  for (let i = debris.length - 1; i >= 0; i--) {
+    debris[i].vy += 26 * dt;
+    debris[i].y -= debris[i].vy * dt;
+    if (slabScreenY(debris[i].y) > H + 60) debris.splice(i, 1);
+  }
+
+  if (isOver(state)) return;
+  acc += dt;
+  const STEP_DT = 1 / 60;
+  while (acc >= STEP_DT && !isOver(state)) {
+    acc -= STEP_DT;
+    const res = step(state, 'wait');
+    if (res.done) {
+      overAt = performance.now();
+      const sc = score(state);
+      if (sc > best) {
+        best = sc;
+        try { localStorage.setItem('goe-0071-best', best); } catch (e) {}
+      }
+    }
+  }
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#182852');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle track guides
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(TX, 110);
+  ctx.lineTo(TX, H);
+  ctx.moveTo(TX + TRACK_W, 110);
+  ctx.lineTo(TX + TRACK_W, H);
+  ctx.stroke();
+
+  // Pedestal below base
+  const pedY = slabScreenY(0) + SLAB_H - 2;
+  if (pedY < H) {
+    ctx.fillStyle = '#142042';
+    ctx.fillRect(TX + 72, pedY, 136, H - pedY);
+  }
+
+  // Stacked tower slabs
+  for (let i = 0; i < state.tower.length; i++) {
+    const sy = slabScreenY(i);
+    if (sy > H + 30 || sy < -40) continue;
+    const b = state.tower[i];
+    const hl = i === state.tower.length - 1 && flash > 0 ? flash * 2 : 0;
+    drawSlab(b.x, sy, b.w, PALETTE[b.colorIdx % PALETTE.length], hl);
+  }
+
+  // Falling trimmed pieces
+  for (const d of debris) {
+    drawSlab(d.x, slabScreenY(d.y), d.w, PALETTE[d.colorIdx % PALETTE.length], 0);
+  }
+
+  // Active sweeping slab
+  if (!isOver(state) && state.mover) {
+    const my = slabScreenY(state.tower.length);
+    const cIdx = state.tower.length % PALETTE.length;
+    drawSlab(state.mover.x, my, state.mover.w, PALETTE[cIdx], 0.35);
+  }
+
+  // HUD
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 28, 40);
+  ctx.textAlign = 'center';
+  ctx.fillText('HEIGHT', W / 2, 40);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 28, 40);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 30px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(score(state), 28, 76);
+  ctx.fillStyle = '#4fd1c5';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.height, W / 2, 76);
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 28, 74);
+
+  if (state.streak > 0 && !isOver(state)) {
+    ctx.fillStyle = '#ffd43b';
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`PERFECT x${state.streak}`, W / 2, 106);
+  } else if (state.height === 0 && !isOver(state)) {
+    ctx.fillStyle = '#8a93a8';
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Tap anywhere to drop the slab', W / 2, 604);
+  }
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.82)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Tower Toppled', W / 2, H / 2 - 36);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText(`Height ${state.height}  •  Score ${score(state)}`, W / 2, H / 2 + 6);
+    ctx.fillStyle = '#4fd1c5';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to build again', W / 2, H / 2 + 48);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

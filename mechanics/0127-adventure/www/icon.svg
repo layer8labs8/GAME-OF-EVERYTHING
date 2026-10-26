@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#080c14"/>
+  <!-- Compass Circle -->
+  <circle cx="64" cy="64" r="44" fill="#0e7490" stroke="#38bdf8" stroke-width="4"/>
+  <circle cx="64" cy="64" r="36" fill="#0c4a6e"/>
+  <!-- Compass Star -->
+  <polygon points="64,28 72,56 100,64 72,72 64,100 56,72 28,64 56,56" fill="#fbbf24"/>
+  <polygon points="64,36 70,58 92,64 70,70 64,92 58,70 36,64 58,58" fill="#f59e0b"/>
+  <circle cx="64" cy="64" r="6" fill="#f8fafc"/>
+</svg>

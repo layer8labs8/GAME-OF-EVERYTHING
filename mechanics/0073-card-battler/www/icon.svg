@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#0b0f19"/>
+  <!-- Card 1 (Red Attack) -->
+  <rect x="24" y="24" width="48" height="72" rx="8" fill="#450a0a" stroke="#ef4444" stroke-width="3" transform="rotate(-12 48 60)"/>
+  <path d="M48 38 L48 68 M40 48 L56 48" stroke="#fca5a5" stroke-width="4" stroke-linecap="round" transform="rotate(-12 48 60)"/>
+  <!-- Card 2 (Blue Defend / Spell) -->
+  <rect x="56" y="32" width="48" height="72" rx="8" fill="#082f49" stroke="#38bdf8" stroke-width="3" transform="rotate(12 80 68)"/>
+  <circle cx="80" cy="68" r="14" fill="#0284c7" transform="rotate(12 80 68)"/>
+  <polygon points="80,58 88,74 72,74" fill="#facc15" transform="rotate(12 80 68)"/>
+</svg>

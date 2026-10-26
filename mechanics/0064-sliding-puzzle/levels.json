@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "mechanic": "sliding-puzzle",
+  "levels": [
+    {
+      "id": "001",
+      "name": "First Slide",
+      "difficulty": 1,
+      "data": { "tiles": [1, 2, 0, 4, 5, 3, 7, 8, 6] },
+      "par": 2,
+      "solution": "DD"
+    },
+    {
+      "id": "002",
+      "name": "Corner Exchange",
+      "difficulty": 1,
+      "data": { "tiles": [1, 0, 2, 4, 5, 3, 7, 8, 6] },
+      "par": 3,
+      "solution": "RDD"
+    },
+    {
+      "id": "003",
+      "name": "Triangle Turn",
+      "difficulty": 1,
+      "data": { "tiles": [1, 5, 2, 4, 0, 3, 7, 8, 6] },
+      "par": 4,
+      "solution": "URDD"
+    },
+    {
+      "id": "004",
+      "name": "Crossroad",
+      "difficulty": 2,
+      "data": { "tiles": [1, 5, 2, 4, 8, 3, 0, 7, 6] },
+      "par": 6,
+      "solution": "RUURDD"
+    },
+    {
+      "id": "005",
+      "name": "Center Swap",
+      "difficulty": 2,
+      "data": { "tiles": [1, 5, 2, 0, 8, 3, 4, 7, 6] },
+      "par": 7,
+      "solution": "DRUURDD"
+    },
+    {
+      "id": "006",
+      "name": "Side Loop",
+      "difficulty": 2,
+      "data": { "tiles": [0, 5, 2, 1, 8, 3, 4, 7, 6] },
+      "par": 8,
+      "solution": "DDRUURDD"
+    },
+    {
+      "id": "007",
+      "name": "Clockwise Twist",
+      "difficulty": 3,
+      "data": { "tiles": [5, 8, 2, 1, 0, 3, 4, 7, 6] },
+      "par": 10,
+      "solution": "ULDDRUURDD"
+    },
+    {
+      "id": "008",
+      "name": "Orbit Shift",
+      "difficulty": 3,
+      "data": { "tiles": [5, 8, 2, 1, 7, 3, 0, 4, 6] },
+      "par": 12,
+      "solution": "RUULDDRUURDD"
+    },
+    {
+      "id": "009",
+      "name": "Double Helix",
+      "difficulty": 4,
+      "data": { "tiles": [0, 8, 2, 5, 7, 3, 1, 4, 6] },
+      "par": 14,
+      "solution": "DDRUULDDRUURDD"
+    },
+    {
+      "id": "010",
+      "name": "Mirror Maze",
+      "difficulty": 4,
+      "data": { "tiles": [8, 7, 2, 5, 0, 3, 1, 4, 6] },
+      "par": 16,
+      "solution": "ULDDRUULDDRUURDD"
+    },
+    {
+      "id": "011",
+      "name": "Serpent Gate",
+      "difficulty": 5,
+      "data": { "tiles": [8, 7, 2, 5, 4, 3, 0, 1, 6] },
+      "par": 18,
+      "solution": "UURDDLUURDDLUURRDD"
+    },
+    {
+      "id": "012",
+      "name": "The Grand Shuffle",
+      "difficulty": 5,
+      "data": { "tiles": [8, 7, 0, 5, 4, 2, 1, 6, 3] },
+      "par": 20,
+      "solution": "DDLUULDDRUULDDRUURDD"
+    }
+  ]
+}

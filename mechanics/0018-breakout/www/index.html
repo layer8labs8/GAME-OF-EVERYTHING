@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Shard Breaker</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { W: CW, H: CH, PADDLE_Y, createState, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const CX = (W - CW) / 2;
+const CY = 104;
+const ROW_COLORS = ['#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#4dabf7'];
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0018-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let targetX = null;
+const keys = { left: false, right: false };
+let accum = 0;
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  targetX = null;
+  accum = 0;
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function toArenaX(e) {
+  const rect = canvas.getBoundingClientRect();
+  return (e.clientX - rect.left) / scale - CX;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  canvas.setPointerCapture(e.pointerId);
+  targetX = toArenaX(e);
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (e.buttons || e.pointerType === 'touch') targetX = toArenaX(e);
+});
+canvas.addEventListener('pointerup', () => { targetX = null; });
+canvas.addEventListener('pointercancel', () => { targetX = null; });
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+});
+addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+});
+
+function pickAction() {
+  if (keys.left && !keys.right) return 'L';
+  if (keys.right && !keys.left) return 'R';
+  if (targetX !== null) {
+    if (targetX < state.paddleX - 5) return 'L';
+    if (targetX > state.paddleX + 5) return 'R';
+  }
+  return 'S';
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#16213e');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 24, 34);
+  ctx.textAlign = 'center';
+  ctx.fillText(`WAVE ${state.wave}`, W / 2, 34);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 24, 34);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 28px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(score(state), 24, 68);
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 24, 66);
+
+  // Lives dots
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = i < state.lives ? '#ff6b6b' : '#2a3554';
+    ctx.beginPath();
+    ctx.arc(W / 2 - 18 + i * 18, 60, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Chamber
+  ctx.fillStyle = '#0f162c';
+  rrect(CX, CY, CW, CH, 12);
+  ctx.fill();
+  ctx.strokeStyle = '#293a66';
+  ctx.lineWidth = 2;
+  rrect(CX, CY, CW, CH, 12);
+  ctx.stroke();
+
+  for (const br of state.bricks) {
+    ctx.fillStyle = ROW_COLORS[br.row % ROW_COLORS.length];
+    rrect(CX + br.x, CY + br.y, br.w, br.h, 4);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    rrect(CX + br.x + 2, CY + br.y + 2, br.w - 4, 4, 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#4fd1c5';
+  rrect(CX + state.paddleX - state.paddleW / 2, CY + PADDLE_Y - 6, state.paddleW, 12, 6);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(CX + state.ball.x, CY + state.ball.y, state.ball.r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#6c7793';
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Slide finger or press Left / Right to aim', W / 2, 584);
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.84)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.fillText('Game Over', W / 2, H / 2 - 32);
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state), W / 2, H / 2 + 8);
+    ctx.fillStyle = '#4fd1c5';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to restart', W / 2, H / 2 + 50);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (!isOver(state)) {
+    accum += dt;
+    const stepDt = 1 / 60;
+    while (accum >= stepDt && !isOver(state)) {
+      accum -= stepDt;
+      const res = step(state, pickAction());
+      if (res.done) {
+        overAt = performance.now();
+        const sc = score(state);
+        if (sc > best) {
+          best = sc;
+          try { localStorage.setItem('goe-0018-best', best); } catch (e) {}
+        }
+      }
+    }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

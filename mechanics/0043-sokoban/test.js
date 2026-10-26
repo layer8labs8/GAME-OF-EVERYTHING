@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { move, isSolved, play } = require('./www/logic.js');
+const { LEVELS, move, isSolved, play, createState, legalActions, step, isOver, score } = require('./www/logic.js');
 const { validateLevel, solve, replay } = require('./solver.js');
 
 test('walking onto floor and onto a target', () => {
@@ -114,4 +114,21 @@ test('every shipped level is well formed and solvable', () => {
     assert.equal(result.solvable, true, `level ${level.id}`);
     assert.equal(level.par, result.moves.length, `par of level ${level.id}`);
   }
+  assert.deepEqual(
+    LEVELS,
+    doc.levels.map((l) => ({ id: l.id, name: l.name, difficulty: l.difficulty, par: l.par, grid: l.data.grid }))
+  );
+});
+
+test('bot interface plays through level 001 and enforces illegal-action check', () => {
+  const s = createState(1, 0);
+  assert.equal(isOver(s), false);
+  assert.deepEqual(legalActions(s), ['R']);
+  assert.throws(() => step(s, 'U'), /illegal/i);
+  step(s, 'R');
+  step(s, 'R');
+  const fin = step(s, 'R');
+  assert.equal(fin.done, true);
+  assert.equal(isOver(s), true);
+  assert.equal(score(s), 125);
 });

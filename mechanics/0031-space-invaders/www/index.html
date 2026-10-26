@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Cosmic Invaders</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #000000;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { W, H, CANNON_Y, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0031-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+let leftHeld = false;
+let rightHeld = false;
+let fireHeld = false;
+
+function doStep(act) {
+  if (isOver(state)) return;
+  const legal = legalActions(state);
+  const chosen = legal.includes(act) ? act : 'wait';
+  try {
+    step(state, chosen);
+    if (isOver(state)) {
+      overAt = performance.now();
+      const sc = score(state);
+      if (sc > best) {
+        best = sc;
+        try { localStorage.setItem('goe-0031-best', best); } catch (e) {}
+      }
+    }
+  } catch (err) {}
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  // Left button (x: 20 to 100, y: 580 to 630)
+  if (p.x >= 20 && p.x <= 100 && p.y >= 580 && p.y <= 630) {
+    leftHeld = true;
+    return;
+  }
+  // Right button (x: 110 to 190, y: 580 to 630)
+  if (p.x >= 110 && p.x <= 190 && p.y >= 580 && p.y <= 630) {
+    rightHeld = true;
+    return;
+  }
+  // Fire button (x: 240 to 340, y: 575 to 630)
+  if (p.x >= 240 && p.x <= 340 && p.y >= 575 && p.y <= 630) {
+    fireHeld = true;
+    doStep('fire');
+    return;
+  }
+
+  // Tap anywhere on upper field to aim / fire
+  if (p.x < state.player.x - 10) leftHeld = true;
+  else if (p.x > state.player.x + 10) rightHeld = true;
+  else doStep('fire');
+});
+
+canvas.addEventListener('pointerup', () => {
+  leftHeld = false;
+  rightHeld = false;
+  fireHeld = false;
+});
+canvas.addEventListener('pointercancel', () => {
+  leftHeld = false;
+  rightHeld = false;
+  fireHeld = false;
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftHeld = true;
+  else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightHeld = true;
+  else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') doStep('fire');
+  else if (e.key === 'r') restart();
+});
+
+addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftHeld = false;
+  else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightHeld = false;
+});
+
+// Fixed step timer
+let tickAcc = 0;
+function update(dt) {
+  tickAcc += dt;
+  const STEP_TIME = 1 / 30;
+
+  while (tickAcc >= STEP_TIME && !isOver(state)) {
+    tickAcc -= STEP_TIME;
+    let act = 'wait';
+    if (leftHeld) act = 'left';
+    else if (rightHeld) act = 'right';
+    doStep(act);
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, W, H);
+
+  // Top Arcade HUD
+  ctx.font = 'bold 12px "Courier New", monospace';
+  ctx.fillStyle = '#ef4444';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE<1>', 24, 24);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(String(state.points).padStart(5, '0'), 24, 40);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'center';
+  ctx.fillText('HI-SCORE', W / 2, 24);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(String(Math.max(state.points, best)).padStart(5, '0'), W / 2, 40);
+
+  ctx.fillStyle = '#22c55e';
+  ctx.textAlign = 'right';
+  ctx.fillText('WAVE', W - 24, 24);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(String(state.wave).padStart(2, '0'), W - 24, 40);
+
+  // Red line below HUD
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(15, 48);
+  ctx.lineTo(W - 15, 48);
+  ctx.stroke();
+
+  // Draw Mystery UFO
+  if (state.ufo) {
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.ellipse(state.ufo.x, state.ufo.y, 18, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.arc(state.ufo.x, state.ufo.y - 3, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw Invaders
+  for (let i = 0; i < state.invaders.length; i++) {
+    const inv = state.invaders[i];
+    if (!inv.alive) continue;
+
+    ctx.textAlign = 'center';
+    if (inv.type === 'squid') {
+      ctx.fillStyle = '#06b6d4';
+      ctx.fillRect(inv.x - 8, inv.y - 8, 16, 16);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(inv.x - 4, inv.y - 2, 3, 3);
+      ctx.fillRect(inv.x + 2, inv.y - 2, 3, 3);
+    } else if (inv.type === 'crab') {
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(inv.x - 10, inv.y - 7, 20, 14);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(inv.x - 5, inv.y - 2, 3, 3);
+      ctx.fillRect(inv.x + 2, inv.y - 2, 3, 3);
+    } else {
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(inv.x - 11, inv.y - 8, 22, 16);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(inv.x - 6, inv.y - 2, 3, 3);
+      ctx.fillRect(inv.x + 3, inv.y - 2, 3, 3);
+    }
+  }
+
+  // Draw Bunkers
+  for (let bi = 0; bi < state.bunkers.length; bi++) {
+    const bunker = state.bunkers[bi];
+    for (let si = 0; si < bunker.length; si++) {
+      const seg = bunker[si];
+      if (seg.hp > 0) {
+        ctx.fillStyle = seg.hp === 3 ? '#22c55e' : seg.hp === 2 ? '#84cc16' : '#eab308';
+        ctx.fillRect(seg.x - seg.w / 2, seg.y - seg.h / 2, seg.w, seg.h);
+      }
+    }
+  }
+
+  // Draw Alien Bombs
+  ctx.fillStyle = '#f8fafc';
+  for (let b = 0; b < state.bombs.length; b++) {
+    const bomb = state.bombs[b];
+    ctx.fillRect(bomb.x - 2, bomb.y - 6, 4, 12);
+  }
+
+  // Draw Player Bullet
+  if (state.player.bullet) {
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(state.player.bullet.x - 2, state.player.bullet.y - 6, 4, 12);
+  }
+
+  // Draw Cannon
+  ctx.fillStyle = '#22c55e';
+  // Base
+  ctx.fillRect(state.player.x - 14, state.player.y - 4, 28, 12);
+  // Barrel
+  ctx.fillRect(state.player.x - 3, state.player.y - 12, 6, 8);
+
+  // Bottom baseline / green barrier
+  ctx.strokeStyle = '#22c55e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(15, 595);
+  ctx.lineTo(W - 15, 595);
+  ctx.stroke();
+
+  // Lives display
+  ctx.font = 'bold 12px "Courier New", monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.fillText(`LIVES: ${state.player.lives}`, 24, 615);
+
+  // Touch control hints
+  ctx.fillStyle = '#475569';
+  ctx.textAlign = 'center';
+  ctx.fillText('◀  [A]     [D]  ▶', 105, 615);
+  ctx.fillStyle = '#ef4444';
+  ctx.fillText('[FIRE]', 285, 615);
+
+  // Game Over Overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = state.breached ? '#ef4444' : '#facc15';
+    ctx.font = 'bold 28px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.breached ? 'INVASION BREACH!' : 'GAME OVER', W / 2, H / 2 - 40);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '16px "Courier New", monospace';
+    ctx.fillText(`FINAL SCORE: ${state.points}`, W / 2, H / 2);
+    ctx.fillText(`WAVES CLEARED: ${state.wave - 1}`, W / 2, H / 2 + 30);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '14px "Courier New", monospace';
+    ctx.fillText('TAP OR PRESS ENTER TO RETRY', W / 2, H / 2 + 80);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#064e3b"/>
+  <!-- Card base -->
+  <rect x="28" y="18" width="72" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"/>
+  <!-- Ace of Spades -->
+  <text x="36" y="38" font-family="system-ui, sans-serif" font-weight="bold" font-size="16" fill="#0f172a">A</text>
+  <text x="36" y="52" font-family="system-ui, sans-serif" font-size="14" fill="#0f172a">♠</text>
+  <!-- Center Spade -->
+  <path d="M64 48 C56 62 46 68 54 80 C58 86 62 86 64 82 C66 86 70 86 74 80 C82 68 72 62 64 48 Z" fill="#0f172a"/>
+  <path d="M62 80 L60 92 L68 92 L66 80 Z" fill="#0f172a"/>
+</svg>

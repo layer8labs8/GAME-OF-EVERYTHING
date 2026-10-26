@@ -6,23 +6,27 @@ flowchart TB
     REG[registry/mechanics.json]
   end
   subgraph Per mechanic
-    LOGIC[www/logic.js<br/>pure rules]
+    LOGIC[www/logic.js<br/>pure rules + bot API]
     TEST[test.js<br/>independent tests]
-    UI[www/index.html<br/>canvas screen]
-    ENV[env.js<br/>bot interface - optional]
+    UI[www/index.html<br/>canvas screen + PWA]
   end
   subgraph Tooling
     CHK[tools/check_registry.js]
+    BOT[tools/check_bots.js]
+    PLY[tools/check_playable.js]
     STS[tools/make_status.js]
     SEC[tools/check_no_secrets.js]
     APK[tools/prepare_apk.js]
   end
   REG --> CHK
+  REG --> BOT
+  REG --> PLY
   REG --> STS
   REG --> APK
   LOGIC --> TEST
   LOGIC --> UI
-  LOGIC --> ENV
+  LOGIC --> BOT
+  UI --> PLY
   APK --> CI[.github/workflows/apk.yml]
 ```
 

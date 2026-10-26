@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Harvest Haven</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0f172a;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { MAX_DAYS, MAX_STEPS, MAX_ENERGY, CROPS, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0145-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let selectedCrop = 'wheat';
+let showMarket = false;
+let message = 'Welcome to Harvest Haven!';
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  selectedCrop = 'wheat';
+  showMarket = false;
+  message = 'Welcome to Harvest Haven!';
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function tryAction(act) {
+  if (isOver(state)) return;
+  try {
+    step(state, act);
+    if (isOver(state)) {
+      overAt = performance.now();
+      const sc = score(state);
+      if (sc > best) {
+        best = sc;
+        try { localStorage.setItem('goe-0145-best', best); } catch (e) {}
+      }
+    }
+  } catch (err) {
+    message = err.message;
+  }
+}
+
+// 3x3 Grid geometry
+const GRID_X = 25;
+const GRID_Y = 105;
+const PLOT_SIZE = 96;
+const PLOT_GAP = 10;
+
+function getPlotRect(i) {
+  const col = i % 3;
+  const row = Math.floor(i / 3);
+  return {
+    x: GRID_X + col * (PLOT_SIZE + PLOT_GAP),
+    y: GRID_Y + row * (PLOT_SIZE + PLOT_GAP),
+    w: PLOT_SIZE,
+    h: PLOT_SIZE,
+  };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  // Market Modal Open
+  if (showMarket) {
+    // Close button (top right of modal)
+    if (p.x >= 280 && p.x <= 330 && p.y >= 90 && p.y <= 130) {
+      showMarket = false;
+      return;
+    }
+    // Crop buy/sell rows
+    const cropKeys = ['wheat', 'carrot', 'berry'];
+    for (let i = 0; i < cropKeys.length; i++) {
+      const crop = cropKeys[i];
+      const rowY = 160 + i * 85;
+      // Buy button
+      if (p.x >= 170 && p.x <= 240 && p.y >= rowY && p.y <= rowY + 38) {
+        tryAction({ type: 'buy_seed', crop });
+        return;
+      }
+      // Sell button
+      if (p.x >= 250 && p.x <= 325 && p.y >= rowY && p.y <= rowY + 38) {
+        tryAction({ type: 'sell', crop });
+        return;
+      }
+    }
+    // Tap outside modal
+    if (p.y < 80 || p.y > 520 || p.x < 15 || p.x > 345) {
+      showMarket = false;
+    }
+    return;
+  }
+
+  // Check plot taps
+  for (let i = 0; i < 9; i++) {
+    const r = getPlotRect(i);
+    if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) {
+      const plot = state.grid[i];
+      if (plot.status === 'wild') {
+        tryAction({ type: 'clear', plot: i });
+      } else if (plot.status === 'tilled') {
+        if (state.seeds[selectedCrop] > 0) {
+          tryAction({ type: 'plant', plot: i, crop: selectedCrop });
+        } else {
+          message = `No ${selectedCrop} seeds! Visit market.`;
+        }
+      } else if (plot.status === 'planted') {
+        if (!plot.watered) {
+          tryAction({ type: 'water', plot: i });
+        } else {
+          message = 'Plot is already hydrated!';
+        }
+      } else if (plot.status === 'ripe') {
+        tryAction({ type: 'harvest', plot: i });
+      }
+      return;
+    }
+  }
+
+  // Seed Selector Tabs (y: 435 to 495)
+  const seedKeys = ['wheat', 'carrot', 'berry'];
+  for (let i = 0; i < seedKeys.length; i++) {
+    const sx = 20 + i * 108;
+    if (p.x >= sx && p.x <= sx + 102 && p.y >= 435 && p.y <= 495) {
+      selectedCrop = seedKeys[i];
+      return;
+    }
+  }
+
+  // Sleep Button (y: 515 to 575, x: 20 to 170)
+  if (p.x >= 20 && p.x <= 170 && p.y >= 515 && p.y <= 575) {
+    tryAction({ type: 'rest' });
+    return;
+  }
+
+  // Market Button (y: 515 to 575, x: 190 to 340)
+  if (p.x >= 190 && p.x <= 340 && p.y >= 515 && p.y <= 575) {
+    showMarket = true;
+    return;
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === '1') selectedCrop = 'wheat';
+  else if (e.key === '2') selectedCrop = 'carrot';
+  else if (e.key === '3') selectedCrop = 'berry';
+  else if (e.key === 'm' || e.key === 'M') showMarket = !showMarket;
+  else if (e.key === ' ' || e.key === 'Enter') tryAction({ type: 'rest' });
+  else if (e.key === 'r') restart();
+});
+
+function draw() {
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Top Status Bar
+  ctx.fillStyle = '#1e293b';
+  rrect(15, 12, W - 30, 48, 12);
+  ctx.fill();
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SEASON DAY', 28, 28);
+  ctx.textAlign = 'center';
+  ctx.fillText('WEATHER', W / 2, 28);
+  ctx.textAlign = 'right';
+  ctx.fillText('GOLD', W - 28, 28);
+
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${state.day} / ${MAX_DAYS}`, 28, 48);
+
+  ctx.fillStyle = state.weather === 'rainy' ? '#60a5fa' : '#facc15';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.weather === 'rainy' ? 'Rainy' : 'Sunny', W / 2, 48);
+
+  ctx.fillStyle = '#fbbf24';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${state.coins} g`, W - 28, 48);
+
+  // Energy / Stamina Bar
+  ctx.fillStyle = '#1e293b';
+  rrect(15, 68, W - 30, 26, 8);
+  ctx.fill();
+
+  const energyFrac = Math.max(0, Math.min(1, state.energy / MAX_ENERGY));
+  ctx.fillStyle = energyFrac < 0.25 ? '#ef4444' : energyFrac < 0.55 ? '#eab308' : '#10b981';
+  if (energyFrac > 0) {
+    rrect(17, 70, (W - 34) * energyFrac, 22, 6);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`STAMINA: ${state.energy} / ${MAX_ENERGY}`, W / 2, 85);
+
+  // Draw 3x3 Plot Grid
+  for (let i = 0; i < 9; i++) {
+    const r = getPlotRect(i);
+    const plot = state.grid[i];
+
+    if (plot.status === 'wild') {
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = '#475569';
+    } else if (plot.status === 'tilled') {
+      ctx.fillStyle = '#78350f';
+      ctx.strokeStyle = '#92400e';
+    } else if (plot.status === 'planted') {
+      ctx.fillStyle = plot.watered ? '#451a03' : '#572505';
+      ctx.strokeStyle = plot.watered ? '#38bdf8' : '#b45309';
+    } else if (plot.status === 'ripe') {
+      ctx.fillStyle = '#14532d';
+      ctx.strokeStyle = '#22c55e';
+    }
+
+    ctx.lineWidth = plot.status === 'ripe' || (plot.status === 'planted' && plot.watered) ? 3 : 1.5;
+    rrect(r.x, r.y, r.w, r.h, 12);
+    ctx.fill();
+    ctx.stroke();
+
+    // Plot Content
+    ctx.textAlign = 'center';
+    if (plot.status === 'wild') {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 24px system-ui, sans-serif';
+      ctx.fillText('*', r.x + r.w / 2, r.y + 44);
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.fillText('Clear (-5)', r.x + r.w / 2, r.y + 68);
+    } else if (plot.status === 'tilled') {
+      ctx.fillStyle = '#fde68a';
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.fillText('TILLED', r.x + r.w / 2, r.y + 44);
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText('Plant (-2)', r.x + r.w / 2, r.y + 66);
+    } else if (plot.status === 'planted') {
+      const cropName = plot.crop ? plot.crop.toUpperCase() : '';
+      const needed = CROPS[plot.crop].growthNeeded;
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.fillText(cropName, r.x + r.w / 2, r.y + 32);
+
+      // Growth progress dots
+      const dotY = r.y + 50;
+      for (let d = 0; d < needed; d++) {
+        const dotX = r.x + r.w / 2 - (needed - 1) * 7 + d * 14;
+        ctx.fillStyle = d < plot.growth ? '#4ade80' : '#475569';
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillStyle = plot.watered ? '#38bdf8' : '#f59e0b';
+      ctx.fillText(plot.watered ? 'Hydrated' : 'Water (-3)', r.x + r.w / 2, r.y + 76);
+    } else if (plot.status === 'ripe') {
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 15px system-ui, sans-serif';
+      ctx.fillText(plot.crop ? plot.crop.toUpperCase() : 'RIPE', r.x + r.w / 2, r.y + 42);
+      ctx.fillStyle = '#86efac';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.fillText('HARVEST!', r.x + r.w / 2, r.y + 68);
+    }
+  }
+
+  // Seed Selector Tray (y: 435 to 495)
+  const crops = ['wheat', 'carrot', 'berry'];
+  const labels = ['Wheat (5g)', 'Carrot (12g)', 'Berry (25g)'];
+  for (let i = 0; i < crops.length; i++) {
+    const c = crops[i];
+    const sx = 20 + i * 108;
+    const isSel = selectedCrop === c;
+
+    ctx.fillStyle = isSel ? '#1e293b' : '#0f172a';
+    ctx.strokeStyle = isSel ? '#38bdf8' : '#334155';
+    ctx.lineWidth = isSel ? 2.5 : 1;
+    rrect(sx, 435, 102, 60, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = isSel ? '#38bdf8' : '#e2e8f0';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.fillText(labels[i], sx + 51, 455);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.fillText(`x ${state.seeds[c]}`, sx + 51, 480);
+  }
+
+  // Bottom Buttons: Sleep & Market
+  // Sleep
+  ctx.fillStyle = '#4f46e5';
+  rrect(20, 515, 150, 56, 12);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SLEEP (Next Day)', 95, 542);
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.fillStyle = '#c7d2fe';
+  ctx.fillText('+50 Stamina', 95, 558);
+
+  // Market
+  ctx.fillStyle = '#059669';
+  rrect(190, 515, 150, 56, 12);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MARKET STALL', 265, 542);
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.fillStyle = '#a7f3d0';
+  ctx.fillText('Trade Seeds & Crops', 265, 558);
+
+  // Footer Info / Help
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Harvested: ${state.stats.totalHarvested}   Score: ${score(state)}   Best: ${best}`, W / 2, 600);
+
+  // Market Modal Overlay
+  if (showMarket) {
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    rrect(20, 80, W - 40, 440, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('TOWN MARKET', W / 2, 115);
+
+    // Close button (X)
+    ctx.fillStyle = '#ef4444';
+    rrect(280, 95, 34, 26, 6);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.fillText('X', 297, 113);
+
+    const cropKeys = ['wheat', 'carrot', 'berry'];
+    const cropDisplay = ['Wheat', 'Carrot', 'Berry'];
+
+    for (let i = 0; i < cropKeys.length; i++) {
+      const c = cropKeys[i];
+      const rowY = 150 + i * 90;
+      const info = CROPS[c];
+      const count = state.inventory[c];
+
+      ctx.fillStyle = '#0f172a';
+      rrect(32, rowY, W - 64, 76, 10);
+      ctx.fill();
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.fillText(cropDisplay[i], 44, rowY + 24);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.fillText(`Have: ${count} crops, ${state.seeds[c]} seeds`, 44, rowY + 44);
+      ctx.fillText(`Sell: ${info.sellPrice}g  Seed: ${info.seedCost}g`, 44, rowY + 62);
+
+      // Buy Seed button
+      const canBuy = state.coins >= info.seedCost;
+      ctx.fillStyle = canBuy ? '#0284c7' : '#334155';
+      rrect(170, rowY + 18, 66, 38, 8);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('BUY', 203, rowY + 35);
+      ctx.fillStyle = '#facc15';
+      ctx.fillText(`${info.seedCost}g`, 203, rowY + 49);
+
+      // Sell All button
+      const canSell = count > 0;
+      ctx.fillStyle = canSell ? '#d97706' : '#334155';
+      rrect(244, rowY + 18, 72, 38, 8);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('SELL', 280, rowY + 35);
+      ctx.fillStyle = '#facc15';
+      ctx.fillText(`+${count * info.sellPrice}g`, 280, rowY + 49);
+    }
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Tap outside or X to return to farm', W / 2, 490);
+  }
+
+  // Game Over Overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 26px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Season Concluded!', W / 2, H / 2 - 80);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(`Final Gold: ${state.coins} g`, W / 2, H / 2 - 35);
+    ctx.fillText(`Total Harvested: ${state.stats.totalHarvested} crops`, W / 2, H / 2 - 10);
+    ctx.fillText(`Gross Revenue: ${state.stats.totalEarned} g`, W / 2, H / 2 + 15);
+
+    ctx.fillStyle = '#4ade80';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 60);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to begin new season', W / 2, H / 2 + 110);
+  }
+}
+
+function frame(now) {
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

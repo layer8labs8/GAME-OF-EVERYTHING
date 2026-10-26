@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Twenty-One</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { MAX_HANDS, handInfo, handTotal, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const SUITS = ['\u2660', '\u2665', '\u2666', '\u2663'];
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0086-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  overAt = 0;
+}
+
+function doAction(act) {
+  if (!legalActions(state).includes(act)) return;
+  const res = step(state, act);
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0086-best', best); } catch (e) {}
+    }
+  }
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (p.x >= 90 && p.x <= 270 && p.y >= 522 && p.y <= 578) {
+      restart();
+    } else if (performance.now() - overAt > 500) {
+      restart();
+    }
+    return;
+  }
+  if (state.phase === 'between') {
+    if (p.x >= 80 && p.x <= 280 && p.y >= 518 && p.y <= 578) {
+      doAction('deal');
+    }
+    return;
+  }
+  // Player buttons
+  const acts = legalActions(state);
+  const canDouble = acts.includes('double');
+  if (canDouble) {
+    if (p.x >= 22 && p.x <= 122 && p.y >= 518 && p.y <= 578) doAction('hit');
+    else if (p.x >= 130 && p.x <= 230 && p.y >= 518 && p.y <= 578) doAction('stand');
+    else if (p.x >= 238 && p.x <= 338 && p.y >= 518 && p.y <= 578) doAction('double');
+  } else {
+    if (p.x >= 32 && p.x <= 172 && p.y >= 518 && p.y <= 578) doAction('hit');
+    else if (p.x >= 188 && p.x <= 328 && p.y >= 518 && p.y <= 578) doAction('stand');
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (state.phase === 'between') {
+    if (e.key === ' ' || e.key === 'Enter' || e.key === 'n') doAction('deal');
+    return;
+  }
+  if (e.key === 'h' || e.key === 'H' || e.key === ' ') doAction('hit');
+  else if (e.key === 's' || e.key === 'S' || e.key === 'Enter') doAction('stand');
+  else if (e.key === 'd' || e.key === 'D') doAction('double');
+});
+
+function drawCardFace(x, y, card, hidden) {
+  const cw = 68;
+  const ch = 96;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.35)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 3;
+
+  if (hidden) {
+    ctx.fillStyle = '#254180';
+    rrect(x, y, cw, ch, 9);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#4fd1c5';
+    ctx.lineWidth = 2;
+    rrect(x + 6, y + 6, cw - 12, ch - 12, 6);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  ctx.fillStyle = '#f8f9fa';
+  rrect(x, y, cw, ch, 9);
+  ctx.fill();
+  ctx.restore();
+
+  const rank = RANKS[card % 13];
+  const suitIdx = Math.floor(card / 13);
+  const suit = SUITS[suitIdx];
+  const isRed = suitIdx === 1 || suitIdx === 2;
+  ctx.fillStyle = isRed ? '#e03131' : '#18243d';
+
+  ctx.font = 'bold 17px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(rank, x + 8, y + 22);
+  ctx.font = '15px system-ui, sans-serif';
+  ctx.fillText(suit, x + 8, y + 39);
+
+  ctx.font = '32px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(suit, x + cw / 2, y + ch / 2 + 14);
+}
+
+function drawHandRow(cards, cy, hideSecond) {
+  const cw = 68;
+  const stepX = Math.min(54, (280 - cw) / Math.max(1, cards.length - 1));
+  const totalW = cw + stepX * (cards.length - 1);
+  const startX = (W - totalW) / 2;
+  for (let i = 0; i < cards.length; i++) {
+    drawCardFace(startX + i * stepX, cy, cards[i], hideSecond && i === 1);
+  }
+}
+
+function drawBtn(x, y, w, h, label, bg) {
+  ctx.fillStyle = bg;
+  rrect(x, y, w, h, 13);
+  ctx.fill();
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x + w / 2, y + h / 2 + 6);
+}
+
+function resultBanner(res) {
+  if (res === 'blackjack') return { text: 'BLACKJACK! +30', col: '#ffd43b' };
+  if (res === 'win') return { text: `YOU WIN +${state.currentBet}`, col: '#69db7c' };
+  if (res === 'push') return { text: 'PUSH (TIE)', col: '#4fd1c5' };
+  if (res === 'bust') return { text: `BUST -${state.currentBet}`, col: '#ff6b6b' };
+  if (res === 'lose') return { text: `DEALER WINS -${state.currentBet}`, col: '#ff6b6b' };
+  return null;
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#13332e');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Table arc
+  ctx.strokeStyle = 'rgba(79,209,197,0.16)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(W / 2, 260, 155, 0.15 * Math.PI, 0.85 * Math.PI);
+  ctx.stroke();
+
+  // HUD
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('CHIPS', 26, 38);
+  ctx.textAlign = 'center';
+  ctx.fillText('HAND', W / 2, 38);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 26, 38);
+
+  ctx.fillStyle = '#ffd43b';
+  ctx.font = 'bold 28px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(state.chips, 26, 72);
+  ctx.fillStyle = '#e8ecf5';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${state.round} / ${MAX_HANDS}`, W / 2, 72);
+  ctx.fillStyle = '#4fd1c5';
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 26, 70);
+
+  // Dealer section
+  const dLabel = state.revealDealer
+    ? `DEALER  •  ${handTotal(state.dealer)}`
+    : `DEALER  •  ${handTotal([state.dealer[0]])} + ?`;
+  ctx.fillStyle = '#a5d8ff';
+  ctx.font = 'bold 14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(dLabel, W / 2, 122);
+  drawHandRow(state.dealer, 138, !state.revealDealer);
+
+  // Result pill or bet pill
+  const banner = resultBanner(state.handResult);
+  if (banner) {
+    ctx.fillStyle = 'rgba(11,16,32,0.75)';
+    rrect(70, 262, 220, 40, 20);
+    ctx.fill();
+    ctx.fillStyle = banner.col;
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(banner.text, W / 2, 288);
+  } else {
+    ctx.fillStyle = 'rgba(11,16,32,0.5)';
+    rrect(115, 266, 130, 32, 16);
+    ctx.fill();
+    ctx.fillStyle = '#ffd43b';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`WAGER: ${state.currentBet}`, W / 2, 287);
+  }
+
+  // Player section
+  const pInfo = handInfo(state.player);
+  const softTxt = pInfo.soft && pInfo.total < 21 ? ' (soft)' : '';
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`PLAYER  •  ${pInfo.total}${softTxt}`, W / 2, 336);
+  drawHandRow(state.player, 352, false);
+
+  // Controls
+  if (state.phase === 'player') {
+    const canDouble = legalActions(state).includes('double');
+    if (canDouble) {
+      drawBtn(22, 518, 100, 56, 'HIT', '#2b8a83');
+      drawBtn(130, 518, 100, 56, 'STAND', '#364fc7');
+      drawBtn(238, 518, 100, 56, 'DOUBLE', '#d96b27');
+    } else {
+      drawBtn(32, 518, 140, 56, 'HIT', '#2b8a83');
+      drawBtn(188, 518, 140, 56, 'STAND', '#364fc7');
+    }
+  } else if (state.phase === 'between') {
+    drawBtn(80, 518, 200, 56, 'NEXT HAND', '#2b8a83');
+  } else {
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Series Complete — Final Stack: ${state.chips}`, W / 2, 496);
+    drawBtn(90, 522, 180, 54, 'NEW SERIES', '#364fc7');
+  }
+}
+
+function frame() {
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

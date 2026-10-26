@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#090a10">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Horde Survivor</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #090a10;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { W, H, MAX_STEPS, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0005-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+let moveTarget = null;
+let keys = {};
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  moveTarget = p;
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (moveTarget) {
+    moveTarget = toLogical(e);
+  }
+});
+
+canvas.addEventListener('pointerup', () => { moveTarget = null; });
+canvas.addEventListener('pointercancel', () => { moveTarget = null; });
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  keys[e.key] = true;
+});
+
+addEventListener('keyup', (e) => {
+  keys[e.key] = false;
+});
+
+function getAction() {
+  let dx = 0;
+  let dy = 0;
+
+  if (keys['ArrowUp'] || keys['w'] || keys['W']) dy -= 1;
+  if (keys['ArrowDown'] || keys['s'] || keys['S']) dy += 1;
+  if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx -= 1;
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
+
+  if (moveTarget) {
+    const pdx = moveTarget.x - state.player.x;
+    const pdy = moveTarget.y - state.player.y;
+    const dist = Math.sqrt(pdx * pdx + pdy * pdy);
+    if (dist > 12) {
+      if (Math.abs(pdx) > 10) dx = Math.sign(pdx);
+      if (Math.abs(pdy) > 10) dy = Math.sign(pdy);
+    }
+  }
+
+  if (dx === 0 && dy < 0) return 'up';
+  if (dx === 0 && dy > 0) return 'down';
+  if (dx < 0 && dy === 0) return 'left';
+  if (dx > 0 && dy === 0) return 'right';
+  if (dx < 0 && dy < 0) return 'up_left';
+  if (dx > 0 && dy < 0) return 'up_right';
+  if (dx < 0 && dy > 0) return 'down_left';
+  if (dx > 0 && dy > 0) return 'down_right';
+  return 'wait';
+}
+
+function doStep(act) {
+  if (isOver(state)) return;
+  try {
+    step(state, act);
+    if (isOver(state)) {
+      overAt = performance.now();
+      const sc = score(state);
+      if (sc > best) {
+        best = sc;
+        try { localStorage.setItem('goe-0005-best', best); } catch (e) {}
+      }
+    }
+  } catch (err) {}
+}
+
+let tickAcc = 0;
+function update(dt) {
+  tickAcc += dt;
+  const STEP_TIME = 1 / 30;
+
+  while (tickAcc >= STEP_TIME && !isOver(state)) {
+    tickAcc -= STEP_TIME;
+    doStep(getAction());
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#090a10';
+  ctx.fillRect(0, 0, W, H);
+
+  // Background Cobblestone Grid
+  ctx.strokeStyle = '#151722';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  // Draw Holy Aura
+  const p = state.player;
+  const aura = p.weapons.aura;
+  ctx.fillStyle = 'rgba(250, 204, 21, 0.08)';
+  ctx.strokeStyle = 'rgba(250, 204, 21, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, aura.radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Draw XP Gems
+  for (let i = 0; i < state.gems.length; i++) {
+    const gem = state.gems[i];
+    ctx.fillStyle = '#06b6d4';
+    ctx.beginPath();
+    ctx.arc(gem.x, gem.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw Enemies
+  for (let i = 0; i < state.enemies.length; i++) {
+    const en = state.enemies[i];
+    if (en.type === 'bat') {
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.arc(en.x, en.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (en.type === 'skeleton') {
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.arc(en.x, en.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(en.x, en.y, 12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Draw Projectiles
+  ctx.fillStyle = '#38bdf8';
+  for (let i = 0; i < state.projectiles.length; i++) {
+    const proj = state.projectiles[i];
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw Player
+  ctx.fillStyle = '#3b82f6';
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 11, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Player HP mini bar above head
+  const hpRatio = Math.max(0, p.hp / p.maxHp);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(p.x - 14, p.y - 20, 28, 4);
+  ctx.fillStyle = hpRatio < 0.3 ? '#ef4444' : '#22c55e';
+  ctx.fillRect(p.x - 14, p.y - 20, 28 * hpRatio, 4);
+
+  // Top Full Width XP Bar (y: 0 to 6)
+  const xpRatio = Math.max(0, Math.min(1, p.xp / p.nextXp));
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(0, 0, W, 8);
+  ctx.fillStyle = '#06b6d4';
+  ctx.fillRect(0, 0, W * xpRatio, 8);
+
+  // Top HUD Bar
+  ctx.fillStyle = '#111827';
+  rrect(15, 14, W - 30, 42, 8);
+  ctx.fill();
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SURVIVOR LV', 26, 28);
+  ctx.textAlign = 'center';
+  ctx.fillText('HORDE KILLS', W / 2, 28);
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE', W - 26, 28);
+
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'left';
+  ctx.fillText(`LV ${p.level}`, 26, 46);
+
+  ctx.fillStyle = '#ef4444';
+  ctx.textAlign = 'center';
+  ctx.fillText(`💀 ${state.kills}`, W / 2, 46);
+
+  ctx.fillStyle = '#fbbf24';
+  ctx.textAlign = 'right';
+  ctx.fillText(score(state), W - 26, 46);
+
+  // Bottom Survival Time
+  const timeLeft = Math.max(0, MAX_STEPS - state.stepCount);
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Survival Time Left: ${timeLeft} steps | Drag / WASD to move`, W / 2, H - 20);
+
+  // Game Over Overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(9, 10, 16, 0.92)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = state.won ? '#4ade80' : '#ef4444';
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.won ? 'DAWN BREAKS - SURVIVED!' : 'OVERWHELMED BY HORDE', W / 2, H / 2 - 50);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(`Final Level: LV ${p.level}`, W / 2, H / 2 - 15);
+    ctx.fillText(`Monsters Exterminated: ${state.kills}`, W / 2, H / 2 + 10);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 55);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to play again', W / 2, H / 2 + 105);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

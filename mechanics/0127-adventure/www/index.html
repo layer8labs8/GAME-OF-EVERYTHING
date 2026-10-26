@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#080c14">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Isle of Whispers</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #080c14;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { MAX_STEPS, ROOM_DATA, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0127-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let selectedItem = null;
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  selectedItem = null;
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function tryAction(act) {
+  if (isOver(state)) return;
+  try {
+    step(state, act);
+    selectedItem = null;
+    if (isOver(state)) {
+      overAt = performance.now();
+      const sc = score(state);
+      if (sc > best) {
+        best = sc;
+        try { localStorage.setItem('goe-0127-best', best); } catch (e) {}
+      }
+    }
+  } catch (err) {
+    state.lastMessage = err.message;
+  }
+}
+
+// Room Color Themes
+const ROOM_THEMES = {
+  shore: { bg1: '#0e7490', bg2: '#ca8a04', name: 'SHIPWRECK SHORE' },
+  jungle: { bg1: '#14532d', bg2: '#166534', name: 'EMERALD JUNGLE' },
+  ruins: { bg1: '#78350f', bg2: '#b45309', name: 'SUN TEMPLE RUINS' },
+  caves: { bg1: '#1e1b4b', bg2: '#4338ca', name: 'CRYSTAL GROTTO' },
+  cliff: { bg1: '#1e293b', bg2: '#0284c7', name: 'LIGHTHOUSE CLIFF' },
+};
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  const room = state.currentRoom;
+  const rdata = ROOM_DATA[room];
+  const itemsOnGround = state.roomItems[room] || [];
+
+  // 1. Navigation exit buttons (y: 200 to 240)
+  for (let i = 0; i < rdata.exits.length; i++) {
+    const ex = rdata.exits[i];
+    const bx = 18 + i * 165;
+    if (p.x >= bx && p.x <= bx + 155 && p.y >= 200 && p.y <= 240) {
+      tryAction({ type: 'go', room: ex });
+      return;
+    }
+  }
+
+  // 2. Ground item pickups (y: 250 to 290)
+  for (let i = 0; i < itemsOnGround.length; i++) {
+    const it = itemsOnGround[i];
+    const ix = 18 + i * 110;
+    if (p.x >= ix && p.x <= ix + 100 && p.y >= 250 && p.y <= 286) {
+      tryAction({ type: 'take', item: it });
+      return;
+    }
+  }
+
+  // 3. Room Fixtures (y: 300 to 390)
+  // Left fixture
+  if (rdata.fixtures[0]) {
+    const fix0 = rdata.fixtures[0];
+    if (p.x >= 18 && p.x <= 170 && p.y >= 300 && p.y <= 360) {
+      if (selectedItem) {
+        tryAction({ type: 'use', item: selectedItem, target: fix0 });
+      } else {
+        tryAction({ type: 'inspect', target: fix0 });
+      }
+      return;
+    }
+  }
+  // Right fixture
+  if (rdata.fixtures[1]) {
+    const fix1 = rdata.fixtures[1];
+    if (p.x >= 190 && p.x <= 342 && p.y >= 300 && p.y <= 360) {
+      if (fix1 === 'stranded_sailor' && !selectedItem) {
+        tryAction({ type: 'talk', npc: 'stranded_sailor' });
+      } else if (selectedItem) {
+        tryAction({ type: 'use', item: selectedItem, target: fix1 });
+      } else {
+        tryAction({ type: 'inspect', target: fix1 });
+      }
+      return;
+    }
+  }
+
+  // 4. Inventory Pouch Items (y: 530 to 610)
+  for (let i = 0; i < state.inventory.length; i++) {
+    const item = state.inventory[i];
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const ix = 18 + col * 110;
+    const iy = 535 + row * 40;
+    if (p.x >= ix && p.x <= ix + 102 && p.y >= iy && p.y <= iy + 34) {
+      if (selectedItem === item) selectedItem = null;
+      else selectedItem = item;
+      return;
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const rdata = ROOM_DATA[state.currentRoom];
+  if (e.key === '1' && rdata.exits[0]) tryAction({ type: 'go', room: rdata.exits[0] });
+  else if (e.key === '2' && rdata.exits[1]) tryAction({ type: 'go', room: rdata.exits[1] });
+  else if (e.key === 't' || e.key === 'T') {
+    const items = state.roomItems[state.currentRoom] || [];
+    if (items.length) tryAction({ type: 'take', item: items[0] });
+  } else if (e.key === 'r') restart();
+});
+
+function draw() {
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, W, H);
+
+  const theme = ROOM_THEMES[state.currentRoom];
+
+  // Top Status Bar
+  ctx.fillStyle = '#111827';
+  rrect(15, 12, W - 30, 48, 10);
+  ctx.fill();
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('ISLAND EXPLORATION', 26, 28);
+  ctx.textAlign = 'center';
+  ctx.fillText('QUESTS DONE', W / 2, 28);
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE', W - 26, 28);
+
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Step ${state.stepCount} / ${MAX_STEPS}`, 26, 48);
+
+  ctx.fillStyle = '#4ade80';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${state.questsCompleted} / 5`, W / 2, 48);
+
+  ctx.fillStyle = '#fbbf24';
+  ctx.textAlign = 'right';
+  ctx.fillText(score(state), W - 26, 48);
+
+  // Room Banner Illustration
+  const grad = ctx.createLinearGradient(18, 68, 18, 188);
+  grad.addColorStop(0, theme.bg1);
+  grad.addColorStop(1, theme.bg2);
+  ctx.fillStyle = grad;
+  rrect(18, 68, W - 36, 120, 12);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 18px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(theme.name, W / 2, 102);
+
+  // Narrative Message / Clue Log Box (y: 375 to 495)
+  ctx.fillStyle = '#111827';
+  rrect(18, 375, W - 36, 110, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#1f2937';
+  ctx.stroke();
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('CHRONICLE & OBSERVATION:', 30, 396);
+
+  ctx.fillStyle = '#f1f5f9';
+  ctx.font = '12px system-ui, sans-serif';
+  // Simple word wrap
+  const words = state.lastMessage.split(' ');
+  let line = '';
+  let lineY = 416;
+  for (let i = 0; i < words.length; i++) {
+    const testLine = line + words[i] + ' ';
+    if (ctx.measureText(testLine).width > 290 && i > 0) {
+      ctx.fillText(line, 30, lineY);
+      line = words[i] + ' ';
+      lineY += 16;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, 30, lineY);
+
+  // Exits navigation buttons (y: 200 to 240)
+  const rdata = ROOM_DATA[state.currentRoom];
+  for (let i = 0; i < rdata.exits.length; i++) {
+    const ex = rdata.exits[i];
+    const bx = 18 + i * 165;
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1.5;
+    rrect(bx, 200, 155, 38, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Go: ${ROOM_DATA[ex].name}`, bx + 77, 224);
+  }
+
+  // Items on ground (y: 250 to 286)
+  const itemsOnGround = state.roomItems[state.currentRoom] || [];
+  if (itemsOnGround.length) {
+    for (let i = 0; i < itemsOnGround.length; i++) {
+      const it = itemsOnGround[i];
+      const ix = 18 + i * 110;
+      ctx.fillStyle = '#14532d';
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 1;
+      rrect(ix, 250, 100, 36, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Take: ${it.replace('_', ' ')}`, ix + 50, 272);
+    }
+  } else {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('No loose items on the ground here.', 24, 272);
+  }
+
+  // Room Fixtures (y: 300 to 360)
+  for (let i = 0; i < rdata.fixtures.length; i++) {
+    const fix = rdata.fixtures[i];
+    const fx = 18 + i * 172;
+    const isTarget = selectedItem !== null;
+
+    ctx.fillStyle = isTarget ? '#1e1b4b' : '#1e293b';
+    ctx.strokeStyle = isTarget ? '#a855f7' : '#475569';
+    ctx.lineWidth = isTarget ? 2 : 1;
+    rrect(fx, 300, 154, 60, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = isTarget ? '#c084fc' : '#ffffff';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(fix.replace('_', ' ').toUpperCase(), fx + 77, 325);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.fillText(isTarget ? `Tap to USE ${selectedItem}` : (fix === 'stranded_sailor' ? 'Tap to TALK' : 'Tap to INSPECT'), fx + 77, 345);
+  }
+
+  // Inventory Pouch Header (y: 505)
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(selectedItem ? `INVENTORY POUCH (Selected: ${selectedItem})` : 'INVENTORY POUCH (Tap item to use on fixture)', 22, 520);
+
+  // Inventory items grid (y: 535)
+  if (state.inventory.length === 0) {
+    ctx.fillStyle = '#475569';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.fillText('Pouch is currently empty. Explore and take items.', 22, 550);
+  } else {
+    for (let i = 0; i < state.inventory.length; i++) {
+      const it = state.inventory[i];
+      const col = i % 3;
+      const row = Math.floor(i / 3);
+      const ix = 18 + col * 110;
+      const iy = 535 + row * 40;
+      const isSel = selectedItem === it;
+
+      ctx.fillStyle = isSel ? '#7e22ce' : '#1e293b';
+      ctx.strokeStyle = isSel ? '#c084fc' : '#334155';
+      ctx.lineWidth = isSel ? 2 : 1;
+      rrect(ix, iy, 102, 34, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = isSel ? '#ffffff' : '#cbd5e1';
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(it.replace('_', ' '), ix + 51, iy + 21);
+    }
+  }
+
+  // Game Over / Victory Overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(8, 12, 20, 0.94)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = state.won ? '#4ade80' : '#ef4444';
+    ctx.font = 'bold 26px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.won ? 'BEACON LIT - RESCUED!' : 'TIME HAS EXPIRED', W / 2, H / 2 - 60);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'The rescue brigantine sails into the bay!' : 'The island winds silenced your tale.', W / 2, H / 2 - 20);
+    ctx.fillText(`Quests Solved: ${state.questsCompleted} / 5`, W / 2, H / 2 + 5);
+    ctx.fillText(`Artifacts Retained: ${state.inventory.length}`, W / 2, H / 2 + 30);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 75);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to begin new voyage', W / 2, H / 2 + 120);
+  }
+}
+
+function frame(now) {
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

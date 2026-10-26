@@ -13,8 +13,8 @@ Checked boxes are done. Unchecked boxes are intentions, not promises.
 ## Phase 1: contract and pilot
 
 - [x] Level contract: `levels` registry field, `levels.json`, solver and checker ([LEVELS](LEVELS.md)), with Sokoban as the reference
-- [ ] Finalise the bot interface (`env.js`)
-- [ ] Build the writer-checker loop ([PIPELINE](PIPELINE.md))
+- [x] Finalise the bot interface (`www/logic.js` + `tools/writer/contract_check.js`)
+- [x] Build the writer-checker loop ([PIPELINE](PIPELINE.md))
 - [ ] Pilot: 10 different mechanics through the loop
 - [ ] Measure solved share, loops per mechanic, tokens, rejected patches
 

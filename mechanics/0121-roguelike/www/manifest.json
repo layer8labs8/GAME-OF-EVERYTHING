@@ -1,0 +1,12 @@
+{
+  "name": "Abyssal Crypt",
+  "short_name": "Abyssal Crypt",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#07090e",
+  "theme_color": "#07090e",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

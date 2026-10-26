@@ -1,0 +1,12 @@
+{
+  "name": "Frost Outpost",
+  "short_name": "Frost Outpost",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#090e17",
+  "theme_color": "#090e17",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

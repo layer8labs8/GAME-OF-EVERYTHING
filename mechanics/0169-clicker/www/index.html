@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Coin Forge</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { MAX_TURNS, upgradeCost, tapPower, autoRate, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const COIN_X = W / 2;
+const COIN_Y = 232;
+const COIN_R = 76;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0169-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let pulse = 0;
+let autoAcc = 0;
+let popups = [];
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  pulse = 0;
+  autoAcc = 0;
+  popups = [];
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function perform(act, px, py) {
+  if (!legalActions(state).includes(act)) return;
+  const res = step(state, act);
+  if (act === 'tap') {
+    pulse = 1;
+    popups.push({
+      x: px || COIN_X,
+      y: py || COIN_Y - 20,
+      txt: (state.lastCrit ? 'CRIT +' : '+') + res.reward,
+      col: state.lastCrit ? '#ff922b' : '#ffd43b',
+      t: 0.75,
+    });
+  } else if (res.reward > 0) {
+    popups.push({ x: COIN_X + 36, y: COIN_Y - 36, txt: '+' + res.reward, col: '#4fd1c5', t: 0.65 });
+  }
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0169-best', best); } catch (e) {}
+    }
+  }
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+const UPGRADES = [
+  { id: 'up_tap', name: 'Heavy Hammer', desc: '+2 base coin per strike', y: 372 },
+  { id: 'up_auto', name: 'Auto Bellows', desc: '+2 passive coin per step', y: 452 },
+  { id: 'up_mult', name: 'Blast Furnace', desc: '+1x global forge multiplier', y: 532 },
+];
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  const dx = p.x - COIN_X;
+  const dy = p.y - COIN_Y;
+  if (dx * dx + dy * dy <= (COIN_R + 18) * (COIN_R + 18)) {
+    perform('tap', p.x, p.y);
+    return;
+  }
+  for (const u of UPGRADES) {
+    if (p.x >= 24 && p.x <= 336 && p.y >= u.y && p.y <= u.y + 68) {
+      perform(u.id);
+      return;
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    perform('tap', COIN_X, COIN_Y - 12);
+  } else if (e.key === '1') perform('up_tap');
+  else if (e.key === '2') perform('up_auto');
+  else if (e.key === '3') perform('up_mult');
+});
+
+function update(dt) {
+  if (pulse > 0) pulse = Math.max(0, pulse - dt * 5);
+  for (let i = popups.length - 1; i >= 0; i--) {
+    popups[i].y -= 42 * dt;
+    popups[i].t -= dt;
+    if (popups[i].t <= 0) popups.splice(i, 1);
+  }
+  if (!isOver(state) && state.autoLevel > 0) {
+    autoAcc += dt;
+    if (autoAcc >= 1.0) {
+      autoAcc -= 1.0;
+      perform('tick');
+    }
+  }
+}
+
+function levelOf(id) {
+  if (id === 'up_tap') return state.tapLevel;
+  if (id === 'up_auto') return state.autoLevel;
+  return state.multLevel;
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#1f1b38');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // HUD
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('COINS', 24, 36);
+  ctx.textAlign = 'center';
+  ctx.fillText('TOTAL FORGED', W / 2, 36);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 24, 36);
+
+  ctx.fillStyle = '#ffd43b';
+  ctx.font = 'bold 28px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(state.coins, 24, 68);
+  ctx.fillStyle = '#e8ecf5';
+  ctx.textAlign = 'center';
+  ctx.fillText(score(state), W / 2, 68);
+  ctx.fillStyle = '#4fd1c5';
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 24, 66);
+
+  // Shift remaining bar
+  const rem = MAX_TURNS - state.stepCount;
+  ctx.fillStyle = '#141d38';
+  rrect(24, 84, W - 48, 12, 6);
+  ctx.fill();
+  ctx.fillStyle = rem <= 25 ? '#ff8787' : '#4fd1c5';
+  rrect(24, 84, Math.max(0, ((W - 48) * rem) / MAX_TURNS), 12, 6);
+  ctx.fill();
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Shift Actions Left: ${rem}   •   Strike: +${tapPower(state)}   •   Auto: +${autoRate(state)}`, W / 2, 114);
+
+  // Golden Anvil Medallion
+  const r = COIN_R * (1 - pulse * 0.08);
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,212,59,0.32)';
+  ctx.shadowBlur = 24;
+  ctx.fillStyle = '#f08c00';
+  ctx.beginPath();
+  ctx.arc(COIN_X, COIN_Y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = '#ffd43b';
+  ctx.beginPath();
+  ctx.arc(COIN_X, COIN_Y, r - 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#fff3bf';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(COIN_X, COIN_Y, r - 18, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = '#5c3c00';
+  ctx.font = 'bold 24px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('FORGE', COIN_X, COIN_Y + 8);
+
+  // Floating popups
+  for (const p of popups) {
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.t * 1.6));
+    ctx.fillStyle = p.col;
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.txt, p.x, p.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // Upgrade cards
+  const acts = legalActions(state);
+  for (const u of UPGRADES) {
+    const canBuy = acts.includes(u.id);
+    const cost = upgradeCost(u.id, state);
+    const lvl = levelOf(u.id);
+
+    ctx.fillStyle = canBuy ? '#1d315c' : '#131d38';
+    rrect(24, u.y, 312, 68, 12);
+    ctx.fill();
+    ctx.strokeStyle = canBuy ? '#4fd1c5' : '#233259';
+    ctx.lineWidth = 1.5;
+    rrect(24, u.y, 312, 68, 12);
+    ctx.stroke();
+
+    ctx.fillStyle = canBuy ? '#e8ecf5' : '#7482a3';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${u.name}  (Lv.${lvl})`, 40, u.y + 28);
+
+    ctx.fillStyle = '#8a93a8';
+    ctx.font = '13px system-ui, sans-serif';
+    ctx.fillText(u.desc, 40, u.y + 50);
+
+    ctx.fillStyle = canBuy ? '#ffd43b' : '#5c6b8a';
+    ctx.font = 'bold 17px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${cost} c`, 320, u.y + 40);
+  }
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.85)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffd43b';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Shift Complete!', W / 2, H / 2 - 36);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText(`Total Forged: ${score(state)}`, W / 2, H / 2 + 6);
+    ctx.fillStyle = '#4fd1c5';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to start new shift', W / 2, H / 2 + 48);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

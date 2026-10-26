@@ -120,6 +120,23 @@
     },
     {
       "id": "008",
+      "name": "Narrow escape",
+      "difficulty": 3,
+      "data": {
+        "grid": [
+          "#######",
+          "#@    #",
+          "# $ # #",
+          "#   $ #",
+          "# . . #",
+          "#######"
+        ]
+      },
+      "par": 19,
+      "solution": "RDDLDRRUUURRDDLLULD"
+    },
+    {
+      "id": "009",
       "name": "Two chambers",
       "difficulty": 3,
       "data": {
@@ -135,6 +152,58 @@
       },
       "par": 20,
       "solution": "LUUUULDDRDDRRUUUURDD"
+    },
+    {
+      "id": "010",
+      "name": "Side pocket",
+      "difficulty": 4,
+      "data": {
+        "grid": [
+          "########",
+          "#   .. #",
+          "# #$$# #",
+          "# @    #",
+          "#      #",
+          "########"
+        ]
+      },
+      "par": 15,
+      "solution": "RUDLLUURRRLDDRU"
+    },
+    {
+      "id": "011",
+      "name": "Switchback",
+      "difficulty": 4,
+      "data": {
+        "grid": [
+          "########",
+          "# .  # #",
+          "# $  $ #",
+          "###  . #",
+          "  # @  #",
+          "  ######"
+        ]
+      },
+      "par": 28,
+      "solution": "UUULLLDRRURDLDRDRRUULLDLURUL"
+    },
+    {
+      "id": "012",
+      "name": "Inner vault",
+      "difficulty": 4,
+      "data": {
+        "grid": [
+          "#########",
+          "#   .   #",
+          "# #$#$# #",
+          "# . @ . #",
+          "#   $   #",
+          "#       #",
+          "#########"
+        ]
+      },
+      "par": 31,
+      "solution": "LUDRRRRUULLDULLDDRRDLLDLULUUURR"
     }
   ]
 }

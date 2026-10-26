@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Flow Conduit</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { SIZE, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const LEVELS = [
+  { id: "001", name: "Direct Conduit", diff: 1, pipes: [2,0,0,0,0,5,0,0,0,0,5,0,0,0,0,5,0,0,0,0,3,10,10,10,8], par: 1 },
+  { id: "002", name: "Dual Elbow", diff: 1, pipes: [2,0,0,0,0,5,0,0,0,0,5,0,0,0,0,5,0,0,0,0,3,10,10,10,4], par: 2 },
+  { id: "003", name: "Corner Shift", diff: 2, pipes: [4,0,0,0,0,5,0,0,0,0,5,0,0,0,0,5,0,0,0,0,6,10,10,10,8], par: 3 },
+  { id: "004", name: "Zig-Zag Aqueduct", diff: 2, pipes: [2,9,0,0,0,0,5,0,0,0,0,3,10,12,0,0,0,0,5,0,0,0,0,3,8], par: 3 },
+  { id: "005", name: "S-Bend Flow", diff: 3, pipes: [4,12,0,0,0,0,5,0,0,0,0,3,10,6,0,0,0,0,5,0,0,0,0,3,8], par: 4 },
+  { id: "006", name: "Spiral Circuit", diff: 3, pipes: [2,0,0,0,0,3,10,12,0,0,0,0,5,0,0,0,0,3,10,12,0,0,0,0,2], par: 4 },
+  { id: "007", name: "Hydro Spiral", diff: 4, pipes: [2,0,0,0,0,6,10,9,0,0,0,0,5,0,0,0,0,3,10,12,0,0,0,0,1], par: 7 },
+  { id: "008", name: "Pressure Grid", diff: 4, pipes: [8,0,0,0,0,3,10,12,0,0,0,0,5,0,0,0,0,6,10,12,0,0,0,0,1], par: 6 },
+  { id: "009", name: "Grand Manifold", diff: 5, pipes: [8,0,0,0,0,6,10,12,0,0,0,0,5,0,0,0,0,3,10,12,0,0,0,0,8], par: 7 },
+  { id: "010", name: "Hydro Master", diff: 5, pipes: [8,0,0,0,0,6,10,12,0,0,0,0,5,0,0,0,0,6,10,12,0,0,0,0,1], par: 9 }
+];
+
+const W = 360;
+const H = 640;
+const BX = 20;
+const BY = 142;
+const GAP = 6;
+const CELL = 59.2;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let levelIdx = 0;
+let isRandomMode = false;
+let state = createState(null, LEVELS[0].pipes);
+let cursor = 0;
+let overAt = 0;
+
+function loadLevel(idx) {
+  levelIdx = Math.max(0, Math.min(LEVELS.length - 1, idx));
+  isRandomMode = false;
+  state = createState(null, LEVELS[levelIdx].pipes);
+  cursor = 0;
+  overAt = 0;
+}
+
+function restart() {
+  if (isRandomMode) {
+    state = createState(Date.now());
+  } else {
+    state = createState(null, LEVELS[levelIdx].pipes);
+  }
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function rotateTile(idx) {
+  if (isOver(state)) return;
+  if (!legalActions(state).includes(idx)) return;
+  const res = step(state, idx);
+  if (res.done) {
+    overAt = performance.now();
+  }
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 300) {
+      if (state.connected && !isRandomMode && levelIdx < LEVELS.length - 1) {
+        loadLevel(levelIdx + 1);
+      } else {
+        restart();
+      }
+    }
+    return;
+  }
+
+  // Level selector prev/next
+  if (p.y >= 88 && p.y <= 126 && !isRandomMode) {
+    if (p.x >= 20 && p.x <= 70 && levelIdx > 0) {
+      loadLevel(levelIdx - 1);
+      return;
+    }
+    if (p.x >= W - 70 && p.x <= W - 20 && levelIdx < LEVELS.length - 1) {
+      loadLevel(levelIdx + 1);
+      return;
+    }
+  }
+
+  // Bottom action buttons
+  if (p.y >= 518 && p.y <= 564) {
+    if (p.x >= 25 && p.x <= 165) {
+      restart();
+      return;
+    }
+    if (p.x >= 195 && p.x <= 335) {
+      isRandomMode = true;
+      state = createState(Date.now());
+      overAt = 0;
+      return;
+    }
+  }
+
+  // Grid tiles
+  for (let i = 0; i < 25; i++) {
+    const r = Math.floor(i / SIZE);
+    const c = i % SIZE;
+    const x = BX + c * (CELL + GAP);
+    const y = BY + r * (CELL + GAP);
+    if (p.x >= x && p.x <= x + CELL && p.y >= y && p.y <= y + CELL) {
+      cursor = i;
+      rotateTile(i);
+      return;
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 300) {
+      if (state.connected && !isRandomMode && levelIdx < LEVELS.length - 1) loadLevel(levelIdx + 1);
+      else restart();
+    }
+    return;
+  }
+  if (e.key === 'ArrowRight' || e.key === 'd') cursor = (cursor + 1) % 25;
+  else if (e.key === 'ArrowLeft' || e.key === 'a') cursor = (cursor + 24) % 25;
+  else if (e.key === 'ArrowDown' || e.key === 's') cursor = (cursor + 5) % 25;
+  else if (e.key === 'ArrowUp' || e.key === 'w') cursor = (cursor + 20) % 25;
+  else if (e.key === ' ' || e.key === 'Enter') rotateTile(cursor);
+  else if (e.key === 'r') restart();
+});
+
+function drawPipe(x, y, s, mask, wet, idx) {
+  ctx.fillStyle = idx === 0 ? '#163547' : idx === 24 ? '#2b2447' : '#16213e';
+  rrect(x, y, s, s, 10);
+  ctx.fill();
+  ctx.strokeStyle = cursor === idx ? '#ffd43b' : '#283966';
+  ctx.lineWidth = cursor === idx ? 2 : 1.2;
+  rrect(x, y, s, s, 10);
+  ctx.stroke();
+
+  if (mask === 0) return;
+
+  const cx = x + s / 2;
+  const cy = y + s / 2;
+  ctx.strokeStyle = wet ? '#4fd1c5' : '#6c7a9c';
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  if (mask & 1) { ctx.moveTo(cx, cy); ctx.lineTo(cx, y + 3); }
+  if (mask & 2) { ctx.moveTo(cx, cy); ctx.lineTo(x + s - 3, cy); }
+  if (mask & 4) { ctx.moveTo(cx, cy); ctx.lineTo(cx, y + s - 3); }
+  if (mask & 8) { ctx.moveTo(cx, cy); ctx.lineTo(x + 3, cy); }
+  ctx.stroke();
+
+  ctx.fillStyle = idx === 0 ? '#4fd1c5' : idx === 24 ? '#ffd43b' : wet ? '#4fd1c5' : '#6c7a9c';
+  ctx.beginPath();
+  ctx.arc(cx, cy, idx === 0 || idx === 24 ? 9 : 6, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#16203d');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top HUD
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('PAR', 24, 34);
+  ctx.textAlign = 'center';
+  ctx.fillText('MOVES', W / 2, 34);
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE', W - 24, 34);
+
+  ctx.fillStyle = '#4fd1c5';
+  ctx.font = 'bold 24px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(isRandomMode ? '—' : LEVELS[levelIdx].par, 24, 62);
+
+  ctx.fillStyle = state.movesLeft <= 8 ? '#ff6b6b' : '#e8ecf5';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${state.stepCount} / ${state.movesLeft}`, W / 2, 62);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.textAlign = 'right';
+  ctx.fillText(score(state), W - 24, 62);
+
+  // Level selector banner
+  ctx.fillStyle = '#121b33';
+  rrect(20, 82, W - 40, 42, 10);
+  ctx.fill();
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  const label = isRandomMode ? 'Random Mode' : `Level ${levelIdx + 1}/${LEVELS.length}: ${LEVELS[levelIdx].name}`;
+  ctx.fillText(label, W / 2, 108);
+
+  if (!isRandomMode) {
+    ctx.fillStyle = levelIdx > 0 ? '#4fd1c5' : '#4a5568';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('◀', 38, 108);
+
+    ctx.fillStyle = levelIdx < LEVELS.length - 1 ? '#4fd1c5' : '#4a5568';
+    ctx.fillText('▶', W - 38, 108);
+  }
+
+  // Draw Pipes
+  for (let i = 0; i < 25; i++) {
+    const r = Math.floor(i / SIZE);
+    const c = i % SIZE;
+    drawPipe(BX + c * (CELL + GAP), BY + r * (CELL + GAP), CELL, state.pipes[i], state.wet[i], i);
+  }
+
+  // Bottom action buttons
+  ctx.fillStyle = '#1d2b4f';
+  rrect(25, 518, 140, 46, 12);
+  ctx.fill();
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Reset Level', 95, 546);
+
+  ctx.fillStyle = isRandomMode ? '#22544f' : '#1d2b4f';
+  rrect(195, 518, 140, 46, 12);
+  ctx.fill();
+  ctx.fillStyle = isRandomMode ? '#4fd1c5' : '#e8ecf5';
+  ctx.fillText('Random Mode', 265, 546);
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.88)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.connected ? '#69db7c' : '#ff6b6b';
+    ctx.font = 'bold 32px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.connected ? 'Conduit Connected!' : 'Out of Rotations', W / 2, H / 2 - 32);
+
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = '20px system-ui, sans-serif';
+    const parInfo = !isRandomMode ? `  ·  Par: ${LEVELS[levelIdx].par}` : '';
+    ctx.fillText(`Moves: ${state.stepCount}${parInfo}`, W / 2, H / 2 + 8);
+
+    ctx.fillStyle = '#4fd1c5';
+    ctx.font = '16px system-ui, sans-serif';
+    const nextMsg = !isRandomMode && levelIdx < LEVELS.length - 1 ? 'Tap to play Next Level' : 'Tap to retry';
+    ctx.fillText(nextMsg, W / 2, H / 2 + 50);
+  }
+}
+
+function frame() {
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

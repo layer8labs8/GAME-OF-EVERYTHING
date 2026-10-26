@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Number Box</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { MAX_MISTAKES, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const BX = 32;
+const BY = 136;
+const CELL = 74;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0068-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let selected = state.board.indexOf(0);
+let flashWrong = null;
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  selected = state.board.indexOf(0);
+  flashWrong = null;
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function enterDigit(d) {
+  if (isOver(state) || selected < 0 || state.board[selected] !== 0) return;
+  const act = { cell: selected, digit: d };
+  if (!legalActions(state).some((a) => a.cell === act.cell && a.digit === act.digit)) return;
+  const prevMistakes = state.mistakes;
+  const res = step(state, act);
+  if (state.mistakes > prevMistakes) {
+    flashWrong = { cell: selected, digit: d, t: 0.55 };
+  } else {
+    const nextEmpty = state.board.indexOf(0);
+    if (nextEmpty >= 0) selected = nextEmpty;
+  }
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0068-best', best); } catch (e) {}
+    }
+  }
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  // Check 4x4 grid
+  if (p.x >= BX && p.x <= BX + CELL * 4 && p.y >= BY && p.y <= BY + CELL * 4) {
+    const c = Math.min(3, Math.floor((p.x - BX) / CELL));
+    const r = Math.min(3, Math.floor((p.y - BY) / CELL));
+    selected = r * 4 + c;
+    return;
+  }
+  // Check digit buttons 1..4
+  for (let d = 1; d <= 4; d++) {
+    const dx = 32 + (d - 1) * 76;
+    if (p.x >= dx && p.x <= dx + 68 && p.y >= 468 && p.y <= 532) {
+      enterDigit(d);
+      return;
+    }
+  }
+  if (p.x >= 120 && p.x <= 240 && p.y >= 556 && p.y <= 598) restart();
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key >= '1' && e.key <= '4') enterDigit(Number(e.key));
+  else if (e.key === 'ArrowRight' || e.key === 'd') selected = (selected + 1) % 16;
+  else if (e.key === 'ArrowLeft' || e.key === 'a') selected = (selected + 15) % 16;
+  else if (e.key === 'ArrowDown' || e.key === 's') selected = (selected + 4) % 16;
+  else if (e.key === 'ArrowUp' || e.key === 'w') selected = (selected + 12) % 16;
+  else if (e.key === 'r') restart();
+});
+
+function draw(dt) {
+  if (flashWrong) {
+    flashWrong.t -= dt;
+    if (flashWrong.t <= 0) flashWrong = null;
+  }
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#162240');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 32, 42);
+  ctx.textAlign = 'center';
+  ctx.fillText('MISTAKES', W / 2, 42);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 32, 42);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 30px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(score(state), 32, 78);
+  ctx.fillStyle = state.mistakes >= 2 ? '#ff6b6b' : '#4fd1c5';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${state.mistakes} / ${MAX_MISTAKES}`, W / 2, 78);
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 32, 76);
+
+  ctx.fillStyle = '#121b34';
+  rrect(BX - 6, BY - 6, CELL * 4 + 12, CELL * 4 + 12, 14);
+  ctx.fill();
+
+  const selR = Math.floor(selected / 4);
+  const selC = selected % 4;
+
+  for (let i = 0; i < 16; i++) {
+    const r = Math.floor(i / 4);
+    const c = i % 4;
+    const x = BX + c * CELL;
+    const y = BY + r * CELL;
+    const isSel = i === selected;
+    const isPeer = r === selR || c === selC;
+
+    ctx.fillStyle = isSel ? '#2b437a' : isPeer ? '#1b294d' : '#162240';
+    ctx.fillRect(x + 2, y + 2, CELL - 4, CELL - 4);
+
+    if (flashWrong && flashWrong.cell === i) {
+      ctx.fillStyle = 'rgba(255,107,107,0.35)';
+      ctx.fillRect(x + 2, y + 2, CELL - 4, CELL - 4);
+    }
+
+    const v = state.board[i];
+    if (v !== 0) {
+      ctx.fillStyle = state.given[i] ? '#e8ecf5' : '#4fd1c5';
+      ctx.font = 'bold 34px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(v, x + CELL / 2, y + CELL / 2 + 2);
+    } else if (flashWrong && flashWrong.cell === i) {
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = 'bold 34px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(flashWrong.digit, x + CELL / 2, y + CELL / 2 + 2);
+    }
+  }
+  ctx.textBaseline = 'alphabetic';
+
+  // Bold 2x2 sub-box dividers
+  ctx.strokeStyle = '#4a63a3';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(BX + CELL * 2, BY);
+  ctx.lineTo(BX + CELL * 2, BY + CELL * 4);
+  ctx.moveTo(BX, BY + CELL * 2);
+  ctx.lineTo(BX + CELL * 4, BY + CELL * 2);
+  ctx.stroke();
+
+  // Digit keypad 1..4
+  for (let d = 1; d <= 4; d++) {
+    const dx = 32 + (d - 1) * 76;
+    ctx.fillStyle = '#203059';
+    rrect(dx, 468, 68, 64, 14);
+    ctx.fill();
+    ctx.strokeStyle = '#3b5494';
+    ctx.lineWidth = 1.5;
+    rrect(dx, 468, 68, 64, 14);
+    ctx.stroke();
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(d, dx + 34, 510);
+  }
+
+  ctx.fillStyle = '#192647';
+  rrect(120, 556, 120, 42, 10);
+  ctx.fill();
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = 'bold 14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('New Puzzle', W / 2, 582);
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.84)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.solved ? '#69db7c' : '#ff6b6b';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.fillText(state.solved ? 'Grid Complete!' : 'Too Many Mistakes', W / 2, H / 2 - 32);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state), W / 2, H / 2 + 8);
+    ctx.fillStyle = '#4fd1c5';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to play again', W / 2, H / 2 + 50);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

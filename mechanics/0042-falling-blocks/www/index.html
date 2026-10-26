@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Quad Drop</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { W: GW, H: GH, SHAPES, ghostY, createState, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const CELL = 22;
+const BX = 26;
+const BY = 86;
+const COLORS = ['', '#4fd1c5', '#ffd43b', '#b197fc', '#69db7c', '#ff6b6b', '#4dabf7', '#ffa94d'];
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0042-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let accum = 0;
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  accum = 0;
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawBlock(x, y, s, color, alpha) {
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  rrect(x + 1, y + 1, s - 2, s - 2, 4);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.26)';
+  rrect(x + 2, y + 2, s - 4, Math.max(3, s * 0.25), 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function doAct(act) {
+  if (isOver(state)) return;
+  if (act === 'left' || act === 'right' || act === 'rotate') state.stallCount = 0;
+  const res = step(state, act);
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0042-best', best); } catch (e) {}
+    }
+  }
+}
+
+const BTNS = [
+  { act: 'left', x: 18, y: 548, w: 62, h: 56, label: '◀' },
+  { act: 'right', x: 86, y: 548, w: 62, h: 56, label: '▶' },
+  { act: 'rotate', x: 154, y: 548, w: 64, h: 56, label: '⟳' },
+  { act: 'down', x: 224, y: 548, w: 56, h: 56, label: '▼' },
+  { act: 'drop', x: 286, y: 548, w: 56, h: 56, label: '⤓' },
+];
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  for (const b of BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      doAct(b.act);
+      return;
+    }
+  }
+  doAct('rotate');
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'a') doAct('left');
+  else if (e.key === 'ArrowRight' || e.key === 'd') doAct('right');
+  else if (e.key === 'ArrowUp' || e.key === 'w') doAct('rotate');
+  else if (e.key === 'ArrowDown' || e.key === 's') doAct('down');
+  else if (e.key === ' ') doAct('drop');
+});
+
+function fallInterval() {
+  const level = Math.floor(state.lines / 8);
+  return Math.max(0.14, 0.55 - level * 0.05);
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#15203d');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 26, 34);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 26, 34);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 28px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(score(state), 26, 66);
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 26, 64);
+
+  // Well background
+  ctx.fillStyle = '#0e162b';
+  rrect(BX - 4, BY - 4, GW * CELL + 8, GH * CELL + 8, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#293b69';
+  ctx.lineWidth = 2;
+  rrect(BX - 4, BY - 4, GW * CELL + 8, GH * CELL + 8, 8);
+  ctx.stroke();
+
+  for (let r = 0; r < GH; r++) {
+    for (let c = 0; c < GW; c++) {
+      const v = state.board[r][c];
+      if (v) drawBlock(BX + c * CELL, BY + r * CELL, CELL, COLORS[v], 1);
+      else {
+        ctx.fillStyle = '#131d38';
+        ctx.fillRect(BX + c * CELL + 1, BY + r * CELL + 1, CELL - 2, CELL - 2);
+      }
+    }
+  }
+
+  if (!isOver(state)) {
+    const gy = ghostY(state);
+    const p = state.piece;
+    for (const [dx, dy] of p.cells) {
+      drawBlock(BX + (p.x + dx) * CELL, BY + (gy + dy) * CELL, CELL, COLORS[p.color], 0.24);
+    }
+    for (const [dx, dy] of p.cells) {
+      drawBlock(BX + (p.x + dx) * CELL, BY + (p.y + dy) * CELL, CELL, COLORS[p.color], 1);
+    }
+  }
+
+  // Side info panel
+  const px = 260;
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('NEXT', px + 40, 108);
+
+  ctx.fillStyle = '#121c36';
+  rrect(px, 118, 80, 74, 10);
+  ctx.fill();
+  const nextCells = SHAPES[state.nextKind];
+  for (const [dx, dy] of nextCells) {
+    drawBlock(px + 12 + dx * 14, 134 + dy * 14, 14, COLORS[state.nextKind + 1], 1);
+  }
+
+  ctx.fillStyle = '#8a93a8';
+  ctx.fillText('LINES', px + 40, 232);
+  ctx.fillStyle = '#4fd1c5';
+  ctx.font = 'bold 24px system-ui, sans-serif';
+  ctx.fillText(state.lines, px + 40, 262);
+
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.fillText('LEVEL', px + 40, 306);
+  ctx.fillStyle = '#ffd43b';
+  ctx.font = 'bold 24px system-ui, sans-serif';
+  ctx.fillText(1 + Math.floor(state.lines / 8), px + 40, 336);
+
+  // Touch buttons
+  for (const b of BTNS) {
+    ctx.fillStyle = '#1c294a';
+    rrect(b.x, b.y, b.w, b.h, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#334880';
+    ctx.lineWidth = 1.5;
+    rrect(b.x, b.y, b.w, b.h, 12);
+    ctx.stroke();
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + 1);
+  }
+  ctx.textBaseline = 'alphabetic';
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.84)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Game Over', W / 2, H / 2 - 32);
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state), W / 2, H / 2 + 8);
+    ctx.fillStyle = '#4fd1c5';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to restart', W / 2, H / 2 + 50);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  if (!isOver(state)) {
+    accum += dt;
+    const stepDt = fallInterval();
+    while (accum >= stepDt && !isOver(state)) {
+      accum -= stepDt;
+      doAct('down');
+    }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

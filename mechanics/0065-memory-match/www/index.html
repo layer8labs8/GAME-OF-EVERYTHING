@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Pair Recall</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+const BX = 22;
+const BY = 150;
+const GAP = 10;
+const CARD = 71;
+
+const PALETTE = [
+  '#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c',
+  '#38d9a9', '#4dabf7', '#9775fa', '#f783ac',
+];
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0065-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let mismatch = null; // { a, b, timer }
+let cursor = 0;
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  mismatch = null;
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawSymbol(sym, cx, cy, r) {
+  ctx.fillStyle = PALETTE[sym];
+  ctx.strokeStyle = PALETTE[sym];
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  if (sym === 0) {
+    // Circle
+    ctx.arc(cx, cy, r * 0.72, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (sym === 1) {
+    // Diamond
+    ctx.moveTo(cx, cy - r * 0.85);
+    ctx.lineTo(cx + r * 0.85, cy);
+    ctx.lineTo(cx, cy + r * 0.85);
+    ctx.lineTo(cx - r * 0.85, cy);
+    ctx.closePath();
+    ctx.fill();
+  } else if (sym === 2) {
+    // 5-point Star
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      const rad = i % 2 === 0 ? r * 0.88 : r * 0.4;
+      const px = cx + Math.cos(a) * rad;
+      const py = cy + Math.sin(a) * rad;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  } else if (sym === 3) {
+    // Triangle
+    ctx.moveTo(cx, cy - r * 0.82);
+    ctx.lineTo(cx + r * 0.82, cy + r * 0.68);
+    ctx.lineTo(cx - r * 0.82, cy + r * 0.68);
+    ctx.closePath();
+    ctx.fill();
+  } else if (sym === 4) {
+    // Hexagon
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI) / 3;
+      const px = cx + Math.cos(a) * r * 0.8;
+      const py = cy + Math.sin(a) * r * 0.8;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  } else if (sym === 5) {
+    // Ring
+    ctx.arc(cx, cy, r * 0.68, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (sym === 6) {
+    // Plus Cross
+    const w = r * 0.34;
+    const l = r * 0.8;
+    ctx.fillRect(cx - w, cy - l, w * 2, l * 2);
+    ctx.fillRect(cx - l, cy - w, l * 2, w * 2);
+  } else {
+    // Square with cutout
+    rrect(cx - r * 0.72, cy - r * 0.72, r * 1.44, r * 1.44, 6);
+    ctx.fill();
+    ctx.fillStyle = '#1b2644';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function flipIndex(idx) {
+  if (isOver(state)) return;
+  if (mismatch) mismatch = null;
+  const legal = legalActions(state);
+  if (!legal.includes(idx)) return;
+  const prevFirst = state.firstFlip;
+  const res = step(state, idx);
+  if (prevFirst !== null && !state.grid[idx].matched) {
+    mismatch = { a: prevFirst, b: idx, timer: 0.65 };
+  }
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0065-best', best); } catch (e) {}
+    }
+  }
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  for (let i = 0; i < 16; i++) {
+    const r = Math.floor(i / 4);
+    const c = i % 4;
+    const x = BX + c * (CARD + GAP);
+    const y = BY + r * (CARD + GAP);
+    if (p.x >= x && p.x <= x + CARD && p.y >= y && p.y <= y + CARD) {
+      cursor = i;
+      flipIndex(i);
+      return;
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === 'ArrowRight' || e.key === 'd') cursor = (cursor + 1) % 16;
+  else if (e.key === 'ArrowLeft' || e.key === 'a') cursor = (cursor + 15) % 16;
+  else if (e.key === 'ArrowDown' || e.key === 's') cursor = (cursor + 4) % 16;
+  else if (e.key === 'ArrowUp' || e.key === 'w') cursor = (cursor + 12) % 16;
+  else if (e.key === ' ' || e.key === 'Enter') flipIndex(cursor);
+  else if (e.key === 'r') restart();
+});
+
+function draw(dt) {
+  if (mismatch) {
+    mismatch.timer -= dt;
+    if (mismatch.timer <= 0) mismatch = null;
+  }
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#192340');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const pairs = state.grid.filter((c) => c.matched).length / 2;
+  const curScore = score(state);
+
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 22, 42);
+  ctx.textAlign = 'center';
+  ctx.fillText('TURNS LEFT', W / 2, 42);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 22, 42);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 30px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(curScore, 22, 78);
+  ctx.fillStyle = state.turnsLeft <= 4 ? '#ff6b6b' : '#4fd1c5';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.turnsLeft, W / 2, 78);
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 24px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 22, 76);
+
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Matched Pairs: ${pairs} / 8`, W / 2, 118);
+
+  for (let i = 0; i < 16; i++) {
+    const r = Math.floor(i / 4);
+    const c = i % 4;
+    const x = BX + c * (CARD + GAP);
+    const y = BY + r * (CARD + GAP);
+    const card = state.grid[i];
+    const preview = mismatch && (mismatch.a === i || mismatch.b === i);
+    const up = card.faceUp || card.matched || preview;
+
+    if (up) {
+      ctx.fillStyle = card.matched ? '#16313a' : preview ? '#362032' : '#1b2644';
+      rrect(x, y, CARD, CARD, 12);
+      ctx.fill();
+      ctx.strokeStyle = card.matched ? '#38d9a9' : preview ? '#ff6b6b' : '#4dabf7';
+      ctx.lineWidth = 2;
+      rrect(x, y, CARD, CARD, 12);
+      ctx.stroke();
+      drawSymbol(card.symbol, x + CARD / 2, y + CARD / 2, 22);
+    } else {
+      ctx.fillStyle = '#24335a';
+      rrect(x, y, CARD, CARD, 12);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      rrect(x + 5, y + 5, CARD - 10, CARD * 0.34, 8);
+      ctx.fill();
+      ctx.strokeStyle = cursor === i ? '#4fd1c5' : '#334678';
+      ctx.lineWidth = cursor === i ? 2.2 : 1.2;
+      rrect(x, y, CARD, CARD, 12);
+      ctx.stroke();
+      ctx.fillStyle = '#4c6199';
+      ctx.beginPath();
+      ctx.arc(x + CARD / 2, y + CARD / 2, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  ctx.fillStyle = '#6c7793';
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Flip two cards to match all 8 pairs', W / 2, 528);
+
+  if (isOver(state) && !mismatch) {
+    const won = pairs === 8;
+    ctx.fillStyle = 'rgba(11,16,32,0.84)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = won ? '#69db7c' : '#e8ecf5';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.fillText(won ? 'All Pairs Found!' : 'Out of Turns', W / 2, H / 2 - 34);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Score: ' + curScore, W / 2, H / 2 + 8);
+    ctx.fillStyle = '#4fd1c5';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to play again', W / 2, H / 2 + 52);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

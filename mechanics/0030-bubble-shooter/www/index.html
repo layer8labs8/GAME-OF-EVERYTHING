@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Orb Popper</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { COLS, ROWS, CELLS, ANGLES, cellPos, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+const COLORS = [
+  null,
+  { fill: '#f43f5e', border: '#be123c', glow: '#fb7185' },
+  { fill: '#06b6d4', border: '#0891b2', glow: '#67e8f9' },
+  { fill: '#10b981', border: '#059669', glow: '#6ee7b7' },
+  { fill: '#f59e0b', border: '#d97706', glow: '#fcd34d' }
+];
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0030-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let currentAngle = 0;
+let aiming = false;
+let particles = [];
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  currentAngle = 0;
+  aiming = false;
+  particles = [];
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function fireAt(angle) {
+  if (isOver(state)) return;
+  // Snap to closest legal angle
+  let bestAngle = ANGLES[0];
+  let minDiff = Infinity;
+  for (const a of ANGLES) {
+    const diff = Math.abs(a - angle);
+    if (diff < minDiff) {
+      minDiff = diff;
+      bestAngle = a;
+    }
+  }
+
+  const prevPoints = state.points;
+  const res = step(state, bestAngle);
+
+  if (res.reward > 0) {
+    for (let i = 0; i < 12; i++) {
+      const a = Math.random() * Math.PI * 2;
+      particles.push({
+        x: 180,
+        y: 200,
+        vx: Math.cos(a) * (2 + Math.random() * 4),
+        vy: Math.sin(a) * (2 + Math.random() * 4),
+        life: 0.6,
+        col: COLORS[state.currentOrb].fill
+      });
+    }
+  }
+
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0030-best', best); } catch (e) {}
+    }
+  }
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  aiming = true;
+  updateAim(p);
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!aiming || isOver(state)) return;
+  const p = toLogical(e);
+  updateAim(p);
+});
+
+window.addEventListener('pointerup', () => {
+  if (!aiming || isOver(state)) return;
+  aiming = false;
+  fireAt(currentAngle);
+});
+
+function updateAim(p) {
+  const dx = p.x - 180;
+  const dy = p.y - 580;
+  if (dy < -10) {
+    let deg = (Math.atan2(dx, -dy) * 180) / Math.PI;
+    deg = Math.max(-60, Math.min(60, deg));
+    currentAngle = deg;
+  }
+}
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'a') {
+    currentAngle = Math.max(-60, currentAngle - 15);
+  } else if (e.key === 'ArrowRight' || e.key === 'd') {
+    currentAngle = Math.min(60, currentAngle + 15);
+  } else if (e.key === ' ' || e.key === 'Enter') {
+    fireAt(currentAngle);
+  } else if (e.key === 'r') restart();
+});
+
+function drawOrb(type, cx, cy, rad) {
+  const c = COLORS[type];
+  if (!c) return;
+
+  const grad = ctx.createRadialGradient(cx - rad * 0.3, cy - rad * 0.3, rad * 0.1, cx, cy, rad);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.3, c.glow);
+  grad.addColorStop(0.8, c.fill);
+  grad.addColorStop(1, c.border);
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = c.border;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function update(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#10162f');
+  bg.addColorStop(1, '#0b1020');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // HUD
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 24, 34);
+  ctx.textAlign = 'center';
+  ctx.fillText('SHOTS', W / 2, 34);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 24, 34);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 26px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(score(state), 24, 66);
+  ctx.fillStyle = state.shotsLeft <= 10 ? '#f43f5e' : '#06b6d4';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.shotsLeft, W / 2, 66);
+  ctx.fillStyle = '#10b981';
+  ctx.font = 'bold 20px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 24, 64);
+
+  // Ceiling indicator & Danger line
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(14, 22);
+  ctx.lineTo(W - 14, 22);
+  ctx.stroke();
+
+  // Danger baseline at row 8
+  ctx.strokeStyle = 'rgba(244,63,94,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(14, 44 + 8 * 44 - 22);
+  ctx.lineTo(W - 14, 44 + 8 * 44 - 22);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Grid orbs
+  for (let i = 0; i < CELLS; i++) {
+    const orb = state.grid[i];
+    if (orb !== 0) {
+      const p = cellPos(i);
+      drawOrb(orb, p.x, p.y, 18);
+    }
+  }
+
+  // Trajectory guide line
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 6]);
+
+  const rad = ((currentAngle - 90) * Math.PI) / 180;
+  const targetLen = 140;
+  ctx.beginPath();
+  ctx.moveTo(180, 580);
+  ctx.lineTo(180 + Math.cos(rad) * targetLen, 580 + Math.sin(rad) * targetLen);
+  ctx.stroke();
+  ctx.restore();
+
+  // Cannon Base
+  ctx.fillStyle = '#1e293b';
+  ctx.beginPath();
+  ctx.arc(180, 596, 32, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Rotating Barrel
+  ctx.save();
+  ctx.translate(180, 580);
+  ctx.rotate((currentAngle * Math.PI) / 180);
+  ctx.fillStyle = '#334155';
+  rrect(-12, -36, 24, 36, 6);
+  ctx.fill();
+  ctx.restore();
+
+  // Current loaded orb
+  drawOrb(state.currentOrb, 180, 580, 16);
+
+  // Next upcoming orb indicator
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('NEXT', 110, 584);
+  drawOrb(state.nextOrb, 110, 604, 12);
+
+  // Particles
+  for (const p of particles) {
+    ctx.fillStyle = p.col;
+    ctx.globalAlpha = Math.max(0, p.life * 1.6);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.85)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.won ? '#10b981' : '#f43f5e';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.won ? 'Grid Cleared!' : 'Ceiling Breached', W / 2, H / 2 - 32);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 8);
+    ctx.fillStyle = '#06b6d4';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to reload', W / 2, H / 2 + 50);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

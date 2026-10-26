@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#07090e"/>
+  <!-- Crypt Arch -->
+  <path d="M28 108 L28 54 Q64 18 100 54 L100 108 Z" fill="#111827" stroke="#374151" stroke-width="4"/>
+  <!-- Glowing Runes / Stairs -->
+  <polygon points="64,48 76,64 64,80 52,64" fill="#a855f7"/>
+  <circle cx="64" cy="64" r="5" fill="#f3e8ff"/>
+  <path d="M44 94 L84 94" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M50 102 L78 102" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+</svg>

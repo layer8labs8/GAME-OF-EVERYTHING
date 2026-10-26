@@ -1,6 +1,6 @@
 # Writer and checker pipeline
 
-**Status: planned.** The two existing mechanics were written by hand with tests. This page describes the loop to build in Phase 1. Original notes: [notes/original-idea.md](notes/original-idea.md).
+**Status: active prototype.** `tools/writer/loop.py` and `tools/writer/contract_check.js` implement the writer-checker loop, evaluated in [benchmarks/writer-pilot-1.md](benchmarks/writer-pilot-1.md). Original notes: [notes/original-idea.md](notes/original-idea.md).
 
 ## Roles
 

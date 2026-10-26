@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#064e3b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Klondike Solitaire</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #064e3b;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { SUITS, getColor, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0047-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let selected = null; // { type: 'waste' } or { type: 'tableau', col, cardIndex }
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  selected = null;
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+const CARD_W = 42;
+const CARD_H = 60;
+const TOP_Y = 65;
+const TABLEAU_Y = 145;
+
+const SUIT_ICONS = { S: '♠', H: '♥', D: '♦', C: '♣' };
+const RANK_NAMES = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+function tryAction(act) {
+  if (isOver(state)) return false;
+  try {
+    step(state, act);
+    selected = null;
+    if (isOver(state)) {
+      overAt = performance.now();
+      const sc = score(state);
+      if (sc > best) {
+        best = sc;
+        try { localStorage.setItem('goe-0047-best', best); } catch (e) {}
+      }
+    }
+    return true;
+  } catch (err) {
+    selected = null;
+    return false;
+  }
+}
+
+function autoFoundation() {
+  // Check waste to foundation
+  if (tryAction({ type: 'waste_to_foundation' })) return true;
+
+  // Check each tableau column to foundation
+  for (let c = 0; c < 7; c++) {
+    if (tryAction({ type: 'tableau_to_foundation', col: c })) return true;
+  }
+  return false;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  // 1. Stock tap (x: 14 to 56, y: TOP_Y to TOP_Y + CARD_H)
+  if (p.x >= 14 && p.x <= 14 + CARD_W && p.y >= TOP_Y && p.y <= TOP_Y + CARD_H) {
+    tryAction({ type: 'draw' });
+    return;
+  }
+
+  // 2. Waste tap (x: 64 to 106, y: TOP_Y to TOP_Y + CARD_H)
+  if (p.x >= 64 && p.x <= 64 + CARD_W && p.y >= TOP_Y && p.y <= TOP_Y + CARD_H) {
+    if (state.waste.length > 0) {
+      // First try quick move to foundation
+      if (!tryAction({ type: 'waste_to_foundation' })) {
+        selected = selected && selected.type === 'waste' ? null : { type: 'waste' };
+      }
+    }
+    return;
+  }
+
+  // 3. Foundation piles tap (x: 148, 196, 244, 292, y: TOP_Y)
+  for (let s = 0; s < 4; s++) {
+    const fx = 148 + s * 48;
+    if (p.x >= fx && p.x <= fx + CARD_W && p.y >= TOP_Y && p.y <= TOP_Y + CARD_H) {
+      if (selected) {
+        if (selected.type === 'waste') {
+          tryAction({ type: 'waste_to_foundation' });
+        } else if (selected.type === 'tableau') {
+          tryAction({ type: 'tableau_to_foundation', col: selected.col });
+        }
+      }
+      return;
+    }
+  }
+
+  // 4. Tableau tap
+  for (let c = 0; c < 7; c++) {
+    const colX = 14 + c * 48;
+    const col = state.tableau[c];
+
+    // Check empty column tap
+    if (col.length === 0) {
+      if (p.x >= colX && p.x <= colX + CARD_W && p.y >= TABLEAU_Y && p.y <= TABLEAU_Y + CARD_H) {
+        if (selected) {
+          if (selected.type === 'waste') {
+            tryAction({ type: 'waste_to_tableau', col: c });
+          } else if (selected.type === 'tableau') {
+            tryAction({ type: 'tableau_to_tableau', fromCol: selected.col, cardIndex: selected.cardIndex, toCol: c });
+          }
+        }
+        return;
+      }
+      continue;
+    }
+
+    // Check cards in column (from top card downwards)
+    let curY = TABLEAU_Y;
+    for (let i = 0; i < col.length; i++) {
+      const isLast = i === col.length - 1;
+      const h = isLast ? CARD_H : (col[i].faceUp ? 22 : 14);
+
+      if (p.x >= colX && p.x <= colX + CARD_W && p.y >= curY && p.y <= curY + h) {
+        const card = col[i];
+        if (!card.faceUp) return;
+
+        if (selected) {
+          if (selected.type === 'waste') {
+            if (tryAction({ type: 'waste_to_tableau', col: c })) return;
+          } else if (selected.type === 'tableau') {
+            if (selected.col !== c) {
+              if (tryAction({ type: 'tableau_to_tableau', fromCol: selected.col, cardIndex: selected.cardIndex, toCol: c })) return;
+            }
+          }
+        }
+
+        // Try double-click/quick foundation move if it's the top card
+        if (isLast && tryAction({ type: 'tableau_to_foundation', col: c })) {
+          return;
+        }
+
+        // Otherwise select sub-stack
+        selected = { type: 'tableau', col: c, cardIndex: i };
+        return;
+      }
+
+      curY += col[i].faceUp ? 22 : 14;
+    }
+  }
+
+  // Bottom action bar
+  // Auto Move button (x: 18 to 170, y: 580 to 625)
+  if (p.x >= 18 && p.x <= 170 && p.y >= 580 && p.y <= 625) {
+    autoFoundation();
+    return;
+  }
+  // Restart button (x: 190 to 342, y: 580 to 625)
+  if (p.x >= 190 && p.x <= 342 && p.y >= 580 && p.y <= 625) {
+    restart();
+    return;
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (e.key === ' ' || e.key === 'd' || e.key === 'D') tryAction({ type: 'draw' });
+  else if (e.key === 'a' || e.key === 'A') autoFoundation();
+  else if (e.key === 'r' || e.key === 'R') restart();
+});
+
+function drawCard(x, y, card, isSelected = false) {
+  if (!card) return;
+
+  if (!card.faceUp) {
+    // Face-down card
+    ctx.fillStyle = '#1e3a8a';
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 1;
+    rrect(x, y, CARD_W, CARD_H, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#60a5fa';
+    rrect(x + 4, y + 4, CARD_W - 8, CARD_H - 8, 3);
+    ctx.stroke();
+    return;
+  }
+
+  // Face-up card
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = isSelected ? '#38bdf8' : '#94a3b8';
+  ctx.lineWidth = isSelected ? 2.5 : 1;
+  rrect(x, y, CARD_W, CARD_H, 5);
+  ctx.fill();
+  ctx.stroke();
+
+  const isRed = getColor(card.suit) === 'red';
+  ctx.fillStyle = isRed ? '#dc2626' : '#0f172a';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(RANK_NAMES[card.value], x + 4, y + 14);
+
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.fillText(SUIT_ICONS[card.suit], x + 4, y + 27);
+
+  // Center large suit icon
+  ctx.font = '16px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(SUIT_ICONS[card.suit], x + CARD_W / 2 + 6, y + CARD_H / 2 + 10);
+}
+
+function draw() {
+  ctx.fillStyle = '#064e3b';
+  ctx.fillRect(0, 0, W, H);
+
+  // Top Status Bar
+  ctx.fillStyle = '#022c22';
+  rrect(14, 10, W - 28, 44, 8);
+  ctx.fill();
+
+  ctx.fillStyle = '#a7f3d0';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('FOUNDATIONS', 24, 25);
+  ctx.textAlign = 'center';
+  ctx.fillText('MOVES', W / 2, 25);
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE', W - 24, 25);
+
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.fillStyle = '#facc15';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${state.cardsInFoundation} / 52`, 24, 44);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.stepCount, W / 2, 44);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'right';
+  ctx.fillText(score(state), W - 24, 44);
+
+  // Draw Stock Pile
+  if (state.stock.length > 0) {
+    drawCard(14, TOP_Y, { faceUp: false });
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.stock.length, 14 + CARD_W / 2, TOP_Y + CARD_H / 2 + 4);
+  } else {
+    // Empty stock slot (recycle outline)
+    ctx.fillStyle = '#047857';
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 1;
+    rrect(14, TOP_Y, CARD_W, CARD_H, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#a7f3d0';
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('↺', 14 + CARD_W / 2, TOP_Y + CARD_H / 2 + 5);
+  }
+
+  // Draw Waste Pile
+  if (state.waste.length > 0) {
+    const topWaste = state.waste[state.waste.length - 1];
+    const isSel = selected && selected.type === 'waste';
+    drawCard(64, TOP_Y, topWaste, isSel);
+  } else {
+    ctx.fillStyle = '#047857';
+    rrect(64, TOP_Y, CARD_W, CARD_H, 5);
+    ctx.fill();
+  }
+
+  // Draw 4 Foundation Slots
+  for (let s = 0; s < 4; s++) {
+    const suit = SUITS[s];
+    const fx = 148 + s * 48;
+    const topVal = state.foundations[suit];
+
+    if (topVal > 0) {
+      drawCard(fx, TOP_Y, { suit, value: topVal, faceUp: true });
+    } else {
+      ctx.fillStyle = '#047857';
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 1;
+      rrect(fx, TOP_Y, CARD_W, CARD_H, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = getColor(suit) === 'red' ? '#f87171' : '#cbd5e1';
+      ctx.font = '16px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(SUIT_ICONS[suit], fx + CARD_W / 2, TOP_Y + CARD_H / 2 + 6);
+    }
+  }
+
+  // Draw 7 Tableau Columns
+  for (let c = 0; c < 7; c++) {
+    const colX = 14 + c * 48;
+    const col = state.tableau[c];
+
+    if (col.length === 0) {
+      // Empty column placeholder
+      ctx.fillStyle = '#047857';
+      ctx.strokeStyle = '#059669';
+      ctx.lineWidth = 1;
+      rrect(colX, TABLEAU_Y, CARD_W, CARD_H, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#6ee7b7';
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('K', colX + CARD_W / 2, TABLEAU_Y + CARD_H / 2 + 4);
+    } else {
+      let curY = TABLEAU_Y;
+      for (let i = 0; i < col.length; i++) {
+        const isSel = selected && selected.type === 'tableau' && selected.col === c && i >= selected.cardIndex;
+        drawCard(colX, curY, col[i], isSel);
+        curY += col[i].faceUp ? 22 : 14;
+      }
+    }
+  }
+
+  // Bottom Buttons: Auto Move & Restart
+  ctx.fillStyle = '#0284c7';
+  rrect(18, 580, 150, 44, 8);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('AUTO FOUNDATION', 93, 607);
+
+  ctx.fillStyle = '#047857';
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 1;
+  rrect(190, 580, 152, 44, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('NEW GAME', 266, 607);
+
+  // Victory / Game Over Overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(2, 44, 34, 0.94)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = state.won ? '#facc15' : '#ef4444';
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.won ? 'SOLITAIRE VICTORY!' : 'NO MORE MOVES', W / 2, H / 2 - 50);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText(`Foundations: ${state.cardsInFoundation} / 52 cards`, W / 2, H / 2 - 15);
+    ctx.fillText(`Final Moves: ${state.stepCount}`, W / 2, H / 2 + 10);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 55);
+
+    ctx.fillStyle = '#a7f3d0';
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to play again', W / 2, H / 2 + 105);
+  }
+}
+
+function frame(now) {
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

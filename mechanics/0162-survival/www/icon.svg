@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#090e17"/>
+  <!-- Mountain Silhouette -->
+  <polygon points="16,112 48,52 80,112" fill="#1e293b"/>
+  <polygon points="48,52 64,82 48,88 36,74" fill="#e0f2fe"/>
+  <polygon points="56,112 88,40 120,112" fill="#334155"/>
+  <polygon points="88,40 102,68 88,74 76,60" fill="#f0f9ff"/>
+  <!-- Fire Base & Hearth -->
+  <line x1="42" y1="106" x2="86" y2="106" stroke="#78350f" stroke-width="8" stroke-linecap="round"/>
+  <line x1="48" y1="102" x2="80" y2="102" stroke="#92400e" stroke-width="6" stroke-linecap="round"/>
+  <!-- Glowing Flames -->
+  <path d="M64 68 Q76 84 76 96 Q76 106 64 106 Q52 106 52 96 Q52 84 64 68 Z" fill="#f97316"/>
+  <path d="M64 78 Q70 88 70 96 Q70 102 64 102 Q58 102 58 96 Q58 88 64 78 Z" fill="#facc15"/>
+  <!-- Snowflake / Spark -->
+  <circle cx="34" cy="34" r="3" fill="#38bdf8"/>
+  <circle cx="94" cy="28" r="2.5" fill="#38bdf8"/>
+  <circle cx="24" cy="54" r="2" fill="#7dd3fc"/>
+</svg>

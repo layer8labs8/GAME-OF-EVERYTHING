@@ -11,7 +11,7 @@
 
 </div>
 
-> **Early and private.** Two mechanics are playable today. Everything else is a registry entry waiting to be written. This README says what exists and what is planned, and tries not to blur the two.
+> **Early and private.** 37 mechanics are playable today across Action, Puzzle, Shooter, Platformer, Cards & Board, Strategy, RPG, Roguelike, Adventure, Simulation, Survival, Racing, Idle, and Rhythm families (35 with full bot interfaces and automated multi-seed simulation checks). Everything else is a registry entry waiting to be written. This README says what exists and what is planned, and tries not to blur the two.
 
 ## Why
 
@@ -24,16 +24,16 @@ Most hit mobile games are a small set of mechanics wearing different art. If eve
 ## Progress
 
 <!-- STATUS:START -->
-**Playable: 2 / 179** `░░░░░░░░░░░░░░░░░░░░░░░░`
+**Playable: 44 / 179** `██████░░░░░░░░░░░░░░░░░░`
 
-Logic with tests or better: 3 / 179 · Bot interface: 0 / 179 · Data levels: 1
+Logic with tests or better: 44 / 179 · Bot interface: 42 / 179 · Data levels: 3
 
 | Stage | Mechanics |
 |---|---|
-| idea | 176 |
+| idea | 135 |
 | spec | 0 |
-| logic | 1 |
-| playable | 2 |
+| logic | 0 |
+| playable | 44 |
 | polished | 0 |
 | shipped | 0 |
 
@@ -44,16 +44,16 @@ Full table: [registry/STATUS.md](registry/STATUS.md)
 
 ```mermaid
 flowchart LR
-  R[registry/mechanics.json] --> W[Writer: NVIDIA-hosted models]
-  W --> C[Checker: node tests, registry check]
-  C -- one failing test --> W
+  R[registry/mechanics.json] --> W[Writer: hand or NVIDIA-hosted models]
+  W --> C[Checker: unit tests, registry, levels, bot contract, playable UI]
+  C -- one failing check --> W
   C -- passes --> P[Playable module: www/index.html]
   P --> K[APK: GitHub Actions + Capacitor]
   P --> A[Art and audio]
-  P --> B[Bots - planned]
+  P --> B[Bots: 20-seed contract runner]
 ```
 
-The writer-checker loop and the bots are **planned**; today the two mechanics were written by hand with tests. See [docs/PIPELINE.md](docs/PIPELINE.md).
+Every `bot: true` mechanic implements a deterministic pure-JSON state machine verified across 20 random-bot seeds (`npm run bots:check`), and every `playable` mechanic is smoke-tested in a sandboxed canvas/PWA harness (`npm run playable:check`). An automated writer-checker prototype lives in `tools/writer/loop.py`. See [docs/PIPELINE.md](docs/PIPELINE.md).
 
 ## Quick start
 
@@ -61,7 +61,7 @@ Requires Node 22 or newer.
 
 ```bash
 npm run setup     # enable the pre-commit secret check
-npm run verify    # tests + registry check + status check + secret scan
+npm run verify    # tests + registry + levels + bots + playable + status + secret scan
 ```
 
 Play a mechanic in the browser:

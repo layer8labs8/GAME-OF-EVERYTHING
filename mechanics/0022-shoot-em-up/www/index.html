@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Star Vanguard</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { ARENA_W, ARENA_H, PLAYER_Y, createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0022-best') || 0; } catch (e) {}
+
+let state = createState(Date.now());
+let targetX = state.player.x;
+let particles = [];
+let stars = [];
+for (let i = 0; i < 40; i++) {
+  stars.push({ x: Math.random() * W, y: Math.random() * H, speed: 0.8 + Math.random() * 2, sz: 1 + Math.random() * 1.5 });
+}
+let overAt = 0;
+
+function restart() {
+  state = createState(Date.now());
+  targetX = state.player.x;
+  particles = [];
+  overAt = 0;
+}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+let pointerActive = false;
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  pointerActive = true;
+  targetX = Math.max(16, Math.min(W - 16, p.x));
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointerActive || isOver(state)) return;
+  const p = toLogical(e);
+  targetX = Math.max(16, Math.min(W - 16, p.x));
+});
+
+window.addEventListener('pointerup', () => { pointerActive = false; });
+window.addEventListener('pointercancel', () => { pointerActive = false; });
+
+const keys = {};
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  keys[e.key] = true;
+  if (e.key === 'r') restart();
+});
+addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+let tickAcc = 0;
+let fireTimer = 0;
+
+function updateSim(dt) {
+  tickAcc += dt;
+  const STEP_TIME = 1 / 40;
+
+  while (tickAcc >= STEP_TIME && !isOver(state)) {
+    tickAcc -= STEP_TIME;
+
+    let chosenAct = 'stay';
+    const px = state.player.x;
+
+    if (keys['ArrowLeft'] || keys['a']) {
+      chosenAct = 'left';
+    } else if (keys['ArrowRight'] || keys['d']) {
+      chosenAct = 'right';
+    } else if (Math.abs(targetX - px) > 4) {
+      chosenAct = targetX < px ? 'left' : 'right';
+    }
+
+    fireTimer += 1;
+    if ((keys[' '] || keys['w'] || keys['ArrowUp'] || pointerActive || fireTimer >= 6) && state.player.fireCooldown <= 0) {
+      chosenAct = 'fire';
+      fireTimer = 0;
+    }
+
+    const prevEnemies = state.enemies.length;
+    const res = step(state, chosenAct);
+
+    if (state.enemies.length < prevEnemies) {
+      // Spawn burst
+      for (let k = 0; k < 8; k++) {
+        const a = Math.random() * Math.PI * 2;
+        particles.push({
+          x: px,
+          y: 200,
+          vx: Math.cos(a) * (2 + Math.random() * 3),
+          vy: Math.sin(a) * (2 + Math.random() * 3),
+          life: 0.4,
+          col: '#38bdf8'
+        });
+      }
+    }
+
+    if (res.done) {
+      overAt = performance.now();
+      const sc = score(state);
+      if (sc > best) {
+        best = sc;
+        try { localStorage.setItem('goe-0022-best', best); } catch (e) {}
+      }
+    }
+  }
+
+  // Visual particles & stars
+  for (const s of stars) {
+    s.y += s.speed;
+    if (s.y > H) s.y = 0;
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function drawPlayer(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Thruster glow
+  ctx.fillStyle = '#f59e0b';
+  ctx.beginPath();
+  ctx.moveTo(-5, 12);
+  ctx.lineTo(0, 18 + Math.random() * 6);
+  ctx.lineTo(5, 12);
+  ctx.closePath();
+  ctx.fill();
+
+  // Ship body
+  ctx.fillStyle = '#38bdf8';
+  ctx.strokeStyle = '#0284c7';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, -14);
+  ctx.lineTo(14, 10);
+  ctx.lineTo(6, 6);
+  ctx.lineTo(0, 8);
+  ctx.lineTo(-6, 6);
+  ctx.lineTo(-14, 10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Cockpit
+  ctx.fillStyle = '#e0f2fe';
+  ctx.beginPath();
+  ctx.arc(0, -2, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawEnemy(e) {
+  ctx.save();
+  ctx.translate(e.x, e.y);
+
+  const col = e.type === 2 ? '#f43f5e' : '#a855f7';
+  const border = e.type === 2 ? '#be123c' : '#7e22ce';
+
+  ctx.fillStyle = col;
+  ctx.strokeStyle = border;
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+  ctx.moveTo(0, 10);
+  ctx.lineTo(12, -8);
+  ctx.lineTo(4, -4);
+  ctx.lineTo(0, -8);
+  ctx.lineTo(-4, -4);
+  ctx.lineTo(-12, -8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Core
+  ctx.fillStyle = '#fef08a';
+  ctx.beginPath();
+  ctx.arc(0, 0, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function draw() {
+  ctx.fillStyle = '#0b1020';
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  ctx.fillStyle = '#ffffff';
+  for (const s of stars) {
+    ctx.globalAlpha = 0.3 + (s.speed / 3) * 0.5;
+    ctx.fillRect(s.x, s.y, s.sz, s.sz);
+  }
+  ctx.globalAlpha = 1;
+
+  // Bullets
+  ctx.fillStyle = '#38bdf8';
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 8;
+  for (const b of state.bullets) {
+    ctx.fillRect(b.x - 2, b.y - 6, 4, 12);
+  }
+  ctx.shadowBlur = 0;
+
+  // Enemies
+  for (const e of state.enemies) {
+    drawEnemy(e);
+  }
+
+  // Player
+  if (state.shields > 0) {
+    drawPlayer(state.player.x, PLAYER_Y);
+  }
+
+  // Particles
+  for (const p of particles) {
+    ctx.fillStyle = p.col;
+    ctx.globalAlpha = Math.max(0, p.life * 2);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // HUD
+  ctx.fillStyle = '#8a93a8';
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 24, 38);
+  ctx.textAlign = 'center';
+  ctx.fillText('WAVE', W / 2, 38);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 24, 38);
+
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 28px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(score(state), 24, 72);
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${state.wave} / 10`, W / 2, 72);
+  ctx.fillStyle = '#a855f7';
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 24, 70);
+
+  // Shields & Multiplier
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = i < state.shields ? '#38bdf8' : '#1e293b';
+    ctx.beginPath();
+    ctx.arc(28 + i * 22, 98, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (state.multiplier > 1 && !isOver(state)) {
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${state.multiplier}x MULTIPLIER`, W - 24, 102);
+  }
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.85)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.won ? '#4ade80' : '#f43f5e';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.won ? 'Sector Cleared!' : 'Hull Destroyed', W / 2, H / 2 - 32);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 8);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to sortie again', W / 2, H / 2 + 50);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  updateSim(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
