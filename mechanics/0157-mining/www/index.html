@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Subterranean Core - Mining</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0c0a09;
+      color: #fafaf9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 14px;
+      background: #1c1917;
+      border-radius: 8px;
+      border: 1px solid #292524;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #f97316;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      background: #1c1917;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #292524;
+      font-size: 0.72rem;
+    }
+    .hud-box {
+      background: #0c0a09;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #292524;
+    }
+    .hud-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    .text-orange { color: #f97316; }
+    .text-emerald { color: #10b981; }
+    .text-amber { color: #f59e0b; }
+    .text-cyan { color: #38bdf8; }
+    .text-rose { color: #f43f5e; }
+
+    #canvas-container {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      background: #000000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #292524;
+      aspect-ratio: 16 / 10;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .status-banner {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      padding: 6px 12px;
+      background: #1c1917;
+      border-left: 4px solid #ea580c;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .hopper-bar {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      background: #1c1917;
+      border: 1px solid #292524;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .controls-grid {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    button {
+      background: #1c1917;
+      border: 1px solid #ea580c;
+      color: #fafaf9;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+    button:hover:not(:disabled) {
+      background: #c2410c;
+      border-color: #f97316;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      opacity: 0.35;
+      border-color: #44403c;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #ea580c;
+      border-color: #f97316;
+    }
+    button.btn-success {
+      background: #059669;
+      border-color: #10b981;
+    }
+    button.btn-amber {
+      background: #d97706;
+      border-color: #f59e0b;
+    }
+    button.btn-cyan {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    .btn-sub {
+      font-size: 0.62rem;
+      font-weight: normal;
+      color: #a8a29e;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>⛏️ Subterranean Core</h1>
+    <div style="font-size: 0.72rem; color: #a8a29e;">
+      Depth: <span id="hdr-depth" class="text-orange">0</span>m | Shift: <span id="hdr-turn" class="text-cyan">0</span>/120
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div style="color: #a8a29e;">Fuel</div>
+      <div id="hud-fuel" class="hud-val text-amber">80u</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a8a29e;">Drill Bit</div>
+      <div id="hud-dur" class="hud-val text-cyan">100%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a8a29e;">Shaft Safety</div>
+      <div id="hud-shaft" class="hud-val text-emerald">100%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a8a29e;">Cash Balance</div>
+      <div id="hud-cash" class="hud-val text-emerald">$250</div>
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="520" height="325"></canvas>
+  </div>
+
+  <div id="status-banner" class="status-banner">
+    Mining rig assembled at shaft collar. Ready to drill downward into the crust.
+  </div>
+
+  <div class="hopper-bar">
+    <div>
+      Hopper: <span id="hopper-weight" style="font-weight: bold; color: #f97316;">0</span> / <span id="hopper-cap">6</span>t
+    </div>
+    <div id="cargo-details" style="color: #d6d3d1; font-size: 0.68rem;">
+      Coal: 0 | Iron: 0 | Gold: 0 | 💎 Diamonds: 0
+    </div>
+  </div>
+
+  <div id="controls" class="controls-grid">
+    <!-- Buttons injected by JS -->
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Date.now() % 1000000));
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function renderScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Strata cross-section
+      // Top 50px = Surface
+      ctx.fillStyle = '#1e293b'; // Night sky
+      ctx.fillRect(0, 0, 520, 50);
+      ctx.fillStyle = '#15803d'; // Green grass surface line
+      ctx.fillRect(0, 48, 520, 4);
+
+      // Layer 1: Shallow Clay (50m, y=52 to 110)
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(0, 52, 520, 60);
+
+      // Layer 2: Sedimentary Bedrock (150m, y=112 to 180)
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, 112, 520, 70);
+
+      // Layer 3: Volcanic Basalt (300m, y=182 to 260)
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(0, 182, 520, 80);
+
+      // Layer 4: Lithospheric Core (350m+, y=262 to 325)
+      ctx.fillStyle = '#581c87';
+      ctx.fillRect(0, 262, 520, 65);
+
+      // Strata text labels on right side
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '9px monospace';
+      ctx.fillText('0m Surface', 440, 45);
+      ctx.fillText('50m Silt/Clay', 440, 90);
+      ctx.fillText('150m Bedrock', 440, 150);
+      ctx.fillText('300m Basalt', 440, 220);
+      ctx.fillText('350m+ Core', 440, 300);
+
+      // Central Borehole Shaft
+      ctx.fillStyle = '#0c0a09';
+      ctx.fillRect(230, 20, 60, 305);
+      // Shaft timber guides
+      ctx.strokeStyle = '#a8a29e';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(230, 20, 60, 305);
+
+      // Shaft structural timber supports
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 3;
+      for (let y = 60; y < 320; y += 35) {
+        ctx.beginPath();
+        ctx.moveTo(230, y); ctx.lineTo(290, y);
+        ctx.stroke();
+      }
+
+      // Drill rig position
+      // Map depth (0 to 380m) to y-coordinate (35px to 280px)
+      const clampedDepth = Math.min(380, state.depth);
+      const rigY = 35 + (clampedDepth / 380) * 240;
+
+      // Heavy rotary drill rig
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(238, rigY, 44, 25); // Main rig chassis
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(238, rigY, 44, 25);
+
+      // Drill bit head
+      ctx.fillStyle = state.drillTier >= 3 ? '#38bdf8' : '#71717a';
+      ctx.beginPath();
+      ctx.moveTo(244, rigY + 25);
+      ctx.lineTo(276, rigY + 25);
+      ctx.lineTo(260, rigY + 45);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Headframe Derrick at surface
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(230, 48); ctx.lineTo(245, 10); ctx.lineTo(275, 10); ctx.lineTo(290, 48);
+      ctx.stroke();
+      // Cable line
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(260, 10); ctx.lineTo(260, rigY);
+      ctx.stroke();
+
+      // Ore glimmers in strata
+      ctx.fillStyle = '#fbbf24'; // Gold flecks
+      ctx.fillRect(120, 210, 4, 4);
+      ctx.fillRect(360, 230, 5, 5);
+      ctx.fillStyle = '#38bdf8'; // Diamond glimmers
+      ctx.fillRect(140, 290, 6, 6);
+      ctx.fillRect(380, 280, 5, 5);
+    }
+
+    function updateUI() {
+      document.getElementById('hdr-depth').textContent = state.depth;
+      document.getElementById('hdr-turn').textContent = state.turns;
+
+      document.getElementById('hud-fuel').textContent = state.fuel + 'u';
+      document.getElementById('hud-dur').textContent = state.drillDurability + '%';
+
+      const sh = document.getElementById('hud-shaft');
+      sh.textContent = state.shaftIntegrity + '%';
+      sh.className = 'hud-val ' + (state.shaftIntegrity > 50 ? 'text-emerald' : 'text-rose');
+
+      document.getElementById('hud-cash').textContent = '$' + state.cash;
+      document.getElementById('status-banner').textContent = state.gameMessage;
+
+      const w = cargoWeight(state);
+      document.getElementById('hopper-weight').textContent = w;
+      document.getElementById('hopper-cap').textContent = state.cargoCapacity;
+      document.getElementById('cargo-details').textContent = 
+        `Coal: ${state.cargo.coal} | Iron: ${state.cargo.iron} | Gold: ${state.cargo.gold} | 💎 Diamonds: ${state.cargo.diamonds}`;
+
+      const legal = legalActions(state);
+      let ctrlHtml = '';
+
+      if (isOver(state)) {
+        ctrlHtml = `
+          <button class="btn-primary" style="grid-column: span 2; padding: 14px;" onclick="window.resetGame()">
+            🔄 Start New Mining Exploration Expedition
+          </button>
+        `;
+      } else {
+        if (legal.includes('action:drill_downward')) {
+          ctrlHtml += `
+            <button class="btn-primary" onclick="window.doAction('action:drill_downward')">
+              🔻 Drill Downward (+25m)
+              <span class="btn-sub">-10 Fuel, gather strata ore</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:extract_rich_vein')) {
+          ctrlHtml += `
+            <button class="btn-amber" onclick="window.doAction('action:extract_rich_vein')">
+              💥 Extract Rich Vein
+              <span class="btn-sub">-12 Fuel, quarry 2x ore</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:surface_haul_and_sell')) {
+          ctrlHtml += `
+            <button class="btn-success" style="grid-column: span 2;" onclick="window.doAction('action:surface_haul_and_sell')">
+              🛒 Surfacing Haul & Sell Cargo
+              <span class="btn-sub">Ride hoist to surface, convert ore to cash</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:refuel_and_repair')) {
+          ctrlHtml += `
+            <button class="btn-cyan" onclick="window.doAction('action:refuel_and_repair')">
+              ⛽ Refuel & Hone Bit ($60)
+              <span class="btn-sub">+45 Fuel, +40 Durability</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:install_shaft_struts')) {
+          ctrlHtml += `
+            <button onclick="window.doAction('action:install_shaft_struts')">
+              🪵 Install Shaft Struts ($45)
+              <span class="btn-sub">+35 Shaft Structural Safety</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:upgrade_drill_bit')) {
+          ctrlHtml += `
+            <button class="btn-amber" onclick="window.doAction('action:upgrade_drill_bit')">
+              ✨ Upgrade Drill Bit ($200)
+              <span class="btn-sub">Tougher bit, lowers wear</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:expand_cargo_hopper')) {
+          ctrlHtml += `
+            <button onclick="window.doAction('action:expand_cargo_hopper')">
+              📦 Expand Hopper ($120)
+              <span class="btn-sub">+4 Tons ore cart capacity</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:hand_panning_scrape')) {
+          ctrlHtml += `
+            <button onclick="window.doAction('action:hand_panning_scrape')">
+              🖐️ Pan River Gravels
+              <span class="btn-sub">+$30 Cash, +15 Fuel</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:emergency_winch_to_surface')) {
+          ctrlHtml += `
+            <button class="btn-primary" style="grid-column: span 2;" onclick="window.doAction('action:emergency_winch_to_surface')">
+              ⚠️ Emergency Winch to Surface
+              <span class="btn-sub">Ascend stranded rig (costs half cargo)</span>
+            </button>
+          `;
+        }
+      }
+
+      document.getElementById('controls').innerHTML = ctrlHtml;
+      renderScene();
+    }
+
+    window.doAction = function(act) {
+      try {
+        step(state, act);
+        updateUI();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    window.resetGame = function() {
+      state = createState(Math.floor(Date.now() % 1000000));
+      updateUI();
+    };
+
+    updateUI();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

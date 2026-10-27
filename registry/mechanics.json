@@ -1660,9 +1660,11 @@
       "slug": "mining",
       "name": "Mining",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Subterranean Core",
+      "levels": "endless"
     },
     {
       "id": "0158",
