@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Physics Toybox - Particle Sandbox</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #030712;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #1e293b;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4/3;
+      background: #020617;
+      border: 2px solid #1e293b;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+      image-rendering: pixelated;
+      cursor: crosshair;
+    }
+    .milestones-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .ms-card {
+      background: #0b1329;
+      border: 1px solid #1e293b;
+      padding: 4px 6px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 0.65rem;
+    }
+    .ms-active {
+      border-color: #38bdf8;
+      background: #072a4a;
+      color: #7dd3fc;
+      font-weight: bold;
+    }
+    .log-box {
+      background: #090e17;
+      border: 1px solid #1e293b;
+      border-left: 4px solid #38bdf8;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .btn {
+      background: #111827;
+      border: 1px solid #374151;
+      color: #e5e7eb;
+      padding: 8px 6px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .btn:hover {
+      background: #1f2937;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .btn-sand { border-color: #d97706; color: #fde68a; }
+    .btn-water { border-color: #0284c7; color: #7dd3fc; }
+    .btn-fire { border-color: #dc2626; color: #fca5a5; }
+    .btn-plant { border-color: #16a34a; color: #86efac; }
+    .btn-dynamite { border-color: #e11d48; color: #fda4af; }
+    .btn-gold {
+      background: #78350f;
+      border-color: #d97706;
+      color: #fde68a;
+    }
+    .btn-gold:hover {
+      background: #b45309;
+      border-color: #f59e0b;
+    }
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🧪 Physics Toybox</h1>
+    <div>
+      <span id="turn-badge" class="badge">STEP 0 / 120</span>
+      <span id="score-badge" class="badge" style="background:#0369a1; color:#e0f2fe;">0 PTS</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+
+    <div class="milestones-bar">
+      <div id="ms-oasis" class="ms-card">🌿 Verdant Oasis<br><span id="ms-oasis-val">0 / 8</span></div>
+      <div id="ms-kiln" class="ms-card">🔮 Silica Kiln<br><span id="ms-kiln-val">0 / 4</span></div>
+      <div id="ms-demo" class="ms-card">💥 Demolition<br><span id="ms-demo-val">0 / 2</span></div>
+      <div id="ms-arc" class="ms-card">⚡ Arc Shock<br><span id="ms-arc-val">0 / 5</span></div>
+    </div>
+
+    <div id="game-log" class="log-box">
+      Creative Physics Toybox active. Drop elements to trigger reactions and fulfill research milestones.
+    </div>
+
+    <div id="actions-panel" class="actions-grid">
+      <!-- Injected dynamically -->
+    </div>
+
+    <div class="footer-bar">
+      <div id="stats-summary" style="font-size:0.7rem; color:#94a3b8;">Particles Active: 0</div>
+      <button id="bot-toggle-btn" class="btn" style="padding: 4px 10px; font-size: 0.68rem;" onclick="window.toggleBot()">BOT: OFF</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now ? Date.now() : 12345);
+    let botRunning = false;
+    let botInterval = null;
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'drop') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, t);
+          osc.frequency.exponentialRampToValueAtTime(150, t + 0.08);
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+          osc.start(t);
+          osc.stop(t + 0.1);
+        } else if (type === 'boom') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(100, t);
+          osc.frequency.exponentialRampToValueAtTime(25, t + 0.3);
+          gain.gain.setValueAtTime(0.5, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+          osc.start(t);
+          osc.stop(t + 0.35);
+        } else if (type === 'zap') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(700, t);
+          osc.frequency.exponentialRampToValueAtTime(120, t + 0.15);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+          osc.start(t);
+          osc.stop(t + 0.18);
+        }
+      } catch (e) {}
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const ELEMENT_COLORS = {
+      empty: '#030712',
+      sand: '#f59e0b',
+      water: '#0ea5e9',
+      plant: '#22c55e',
+      fire: '#ef4444',
+      stone: '#64748b',
+      acid: '#a3e635',
+      dynamite: '#f43f5e',
+      glass: '#a5f3fc',
+      spark: '#fef08a'
+    };
+
+    function render() {
+      // Status badges
+      document.getElementById('turn-badge').textContent = 'STEP ' + state.turns + ' / ' + state.maxTurns;
+      document.getElementById('score-badge').textContent = score(state) + ' PTS';
+      document.getElementById('game-log').textContent = state.gameMessage;
+
+      // Milestones UI
+      const oEl = document.getElementById('ms-oasis');
+      oEl.className = 'ms-card' + (state.milestones.verdantOasis ? ' ms-active' : '');
+      document.getElementById('ms-oasis-val').textContent = state.plantsGrown + ' / 8 ' + (state.milestones.verdantOasis ? '✓' : '');
+
+      const kEl = document.getElementById('ms-kiln');
+      kEl.className = 'ms-card' + (state.milestones.silicaKiln ? ' ms-active' : '');
+      document.getElementById('ms-kiln-val').textContent = state.glassCreated + ' / 4 ' + (state.milestones.silicaKiln ? '✓' : '');
+
+      const dEl = document.getElementById('ms-demo');
+      dEl.className = 'ms-card' + (state.milestones.kineticDemolition ? ' ms-active' : '');
+      document.getElementById('ms-demo-val').textContent = state.explosionsDetonated + ' / 2 ' + (state.milestones.kineticDemolition ? '✓' : '');
+
+      const aEl = document.getElementById('ms-arc');
+      aEl.className = 'ms-card' + (state.milestones.arcConduction ? ' ms-active' : '');
+      document.getElementById('ms-arc-val').textContent = state.electricalArcs + ' / 5 ' + (state.milestones.arcConduction ? '✓' : '');
+
+      // Canvas Rendering
+      const w = canvas.width;
+      const h = canvas.height;
+      const cellW = w / COLS;
+      const cellH = h / ROWS;
+
+      let particleCount = 0;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const el = state.grid[r][c];
+          if (el !== 'empty') particleCount++;
+          ctx.fillStyle = ELEMENT_COLORS[el] || '#030712';
+          ctx.fillRect(c * cellW, r * cellH, cellW - 1, cellH - 1);
+
+          // Subtle particle texture
+          if (el === 'glass') {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.fillRect(c * cellW + 4, r * cellH + 4, 8, 8);
+          } else if (el === 'spark') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(c * cellW + cellW / 3, r * cellH + cellH / 3, cellW / 3, cellH / 3);
+          }
+        }
+      }
+
+      document.getElementById('stats-summary').textContent = 'Placed: ' + state.elementsPlaced + ' | Canvas Active: ' + particleCount;
+
+      // Target columns markers at the top
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+      for (const tc of TARGET_COLS) {
+        ctx.fillRect(tc * cellW, 0, cellW, 6);
+      }
+
+      // Game Over Overlay
+      if (isOver(state)) {
+        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.88)' : 'rgba(69, 10, 10, 0.9)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(state.victory ? 'ALCHEMICAL MASTERWORK COMPLETE!' : 'SIMULATION EXHAUSTED', w / 2, h / 2 - 20);
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Final Sandbox Evaluation: ' + score(state), w / 2, h / 2 + 15);
+      }
+
+      updateActions();
+    }
+
+    function updateActions() {
+      const panel = document.getElementById('actions-panel');
+      if (isOver(state)) {
+        panel.innerHTML = '<button class="btn btn-gold" onclick="window.restartGame()">NEW EXPERIMENT SESSION</button>';
+        return;
+      }
+
+      const actions = legalActions(state);
+      let html = '';
+
+      for (const act of actions) {
+        let cls = 'btn';
+        let label = act;
+        let sub = '';
+
+        if (act === 'action:step_simulation') {
+          cls += ' btn-water';
+          label = '⏩ Step Physics';
+          sub = 'Evaluate Gravity & Flow';
+        } else if (act === 'action:trigger_lightning_strike') {
+          cls += ' btn-gold';
+          label = '⚡ Lightning Strike';
+          sub = 'High-Voltage Discharge';
+        } else if (act === 'action:clear_sandbox') {
+          label = '🧹 Clear Canvas';
+          sub = 'Wipe Elements';
+        } else if (act === 'action:finalize_masterwork') {
+          cls += ' btn-gold';
+          label = '🏆 Finalize Masterwork!';
+          sub = 'Victory Exhibition';
+        } else if (act.startsWith('action:place_element:')) {
+          const parts = act.split(':');
+          const el = parts[2];
+          const col = parts[3];
+          if (el === 'sand') { cls += ' btn-sand'; label = '⏳ Sand (Col ' + col + ')'; sub = 'Melts into Glass'; }
+          else if (el === 'water') { cls += ' btn-water'; label = '💧 Water (Col ' + col + ')'; sub = 'Irrigates Plants'; }
+          else if (el === 'fire') { cls += ' btn-fire'; label = '🔥 Fire (Col ' + col + ')'; sub = 'Burns & Explodes'; }
+          else if (el === 'plant') { cls += ' btn-plant'; label = '🌿 Plant (Col ' + col + ')'; sub = 'Vegetation'; }
+          else if (el === 'dynamite') { cls += ' btn-dynamite'; label = '🧨 Dynamite (Col ' + col + ')'; sub = 'Explosive'; }
+          else if (el === 'acid') { label = '🧪 Acid (Col ' + col + ')'; sub = 'Corrosive'; }
+          else { label = el.toUpperCase() + ' (Col ' + col + ')'; }
+        }
+
+        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
+      }
+
+      panel.innerHTML = html;
+    }
+
+    window.triggerAction = function(act) {
+      if (isOver(state)) return;
+      if (act.includes('lightning')) playSfx('zap');
+      else if (act.includes('dynamite') || act.includes('explode')) playSfx('boom');
+      else if (act.includes('place')) playSfx('drop');
+
+      step(state, act);
+      render();
+    };
+
+    window.restartGame = function() {
+      state = createState(Date.now ? Date.now() : 12345);
+      render();
+    };
+
+    window.toggleBot = function() {
+      botRunning = !botRunning;
+      document.getElementById('bot-toggle-btn').textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
+      document.getElementById('bot-toggle-btn').style.background = botRunning ? '#0284c7' : '#111827';
+
+      if (botRunning) {
+        botInterval = setInterval(() => {
+          if (isOver(state)) {
+            state = createState(Date.now ? Date.now() : 9999);
+            render();
+            return;
+          }
+          const acts = legalActions(state);
+          if (acts.length > 0) {
+            let choice = acts[0];
+            if (acts.includes('action:finalize_masterwork')) choice = 'action:finalize_masterwork';
+            else if (acts.includes('action:trigger_lightning_strike') && state.electricalArcs < 5) choice = 'action:trigger_lightning_strike';
+            else if (!state.milestones.silicaKiln && acts.find(a => a.startsWith('action:place_element:sand:'))) {
+              choice = acts.find(a => a.startsWith('action:place_element:sand:'));
+            } else if (!state.milestones.verdantOasis && acts.find(a => a.startsWith('action:place_element:plant:'))) {
+              choice = acts.find(a => a.startsWith('action:place_element:plant:'));
+            } else if (!state.milestones.kineticDemolition && acts.find(a => a.startsWith('action:place_element:dynamite:'))) {
+              choice = acts.find(a => a.startsWith('action:place_element:dynamite:'));
+            } else if (acts.includes('action:step_simulation')) {
+              choice = 'action:step_simulation';
+            }
+            window.triggerAction(choice);
+          }
+        }, 300);
+      } else {
+        clearInterval(botInterval);
+      }
+    };
+
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

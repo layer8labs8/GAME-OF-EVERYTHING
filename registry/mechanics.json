@@ -1748,9 +1748,11 @@
       "slug": "sandbox",
       "name": "Sandbox",
       "family": "Survival",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Physics Toybox",
+      "levels": "endless"
     },
     {
       "id": "0166",
