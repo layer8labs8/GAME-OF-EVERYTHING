@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="100" fill="#0d1117"/>
+  <circle cx="256" cy="256" r="200" fill="#161b22" stroke="#2ea043" stroke-width="12"/>
+  <!-- Anvil, Hero Silhouette & Destiny Spark -->
+  <!-- Hero Silhouette -->
+  <circle cx="256" cy="180" r="45" fill="#f0883e"/>
+  <path d="M166 350 C166 260 346 260 346 350 Z" fill="#2ea043" stroke="#3fb950" stroke-width="6"/>
+  <!-- Attribute Orbs -->
+  <circle cx="160" cy="140" r="16" fill="#da3633"/> <!-- STR Red -->
+  <circle cx="352" cy="140" r="16" fill="#238636"/> <!-- DEX Green -->
+  <circle cx="120" cy="260" r="16" fill="#1f6feb"/> <!-- INT Blue -->
+  <circle cx="392" cy="260" r="16" fill="#d29922"/> <!-- CON Yellow -->
+  <!-- Star Crest -->
+  <polygon points="256,90 266,115 292,115 271,130 279,155 256,140 233,155 241,130 220,115 246,115" fill="#ffffff"/>
+</svg>

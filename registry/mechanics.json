@@ -1253,9 +1253,11 @@
    "slug": "character-customization",
    "name": "Character Customization",
    "family": "RPG",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Avatar of Destiny",
+   "levels": "endless"
   },
   {
    "id": "0121",

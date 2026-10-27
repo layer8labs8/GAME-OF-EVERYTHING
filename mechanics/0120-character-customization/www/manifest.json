@@ -1,0 +1,12 @@
+{
+  "name": "Avatar of Destiny: Character Customization",
+  "short_name": "AvatarDestiny",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#2ea043",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

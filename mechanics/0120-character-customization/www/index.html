@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Avatar of Destiny - Character Customization</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2ea043">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #3fb950;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #8b949e;
+    }
+    .stats span {
+      color: #58a6ff;
+      margin-left: 2px;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 16 / 9;
+      background: #090d13;
+      border: 2px solid #30363d;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      touch-action: none;
+    }
+    .alloc-grid {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .stat-pill {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 6px 4px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .stat-name {
+      font-size: 0.72rem;
+      font-weight: bold;
+      color: #8b949e;
+    }
+    .stat-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #f0f6fc;
+    }
+    .btn-plus {
+      background: #238636;
+      border: 1px solid #2ea043;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-plus:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .selector-bar {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 6px;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .btn-tag {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 6px 8px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .action-grid {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    button.btn {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 10px 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.btn:active {
+      background: #30363d;
+    }
+    button.btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #238636;
+      border-color: #2ea043;
+      color: #fff;
+    }
+    button.btn-spell {
+      background: #1f6feb;
+      border-color: #388bfd;
+      color: #fff;
+    }
+    button.btn-dodge {
+      background: #8957e5;
+      border-color: #a371f7;
+      color: #fff;
+    }
+    #log-panel {
+      width: 100%;
+      max-width: 500px;
+      height: 60px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #8b949e;
+    }
+    #log-panel p {
+      margin-bottom: 2px;
+    }
+    #log-panel p:first-child {
+      color: #3fb950;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🧬 Avatar of Destiny</h1>
+    <div class="stats">
+      Trial: <span id="val-trial">1/4</span> | Points: <span id="val-pts" style="color: #f0883e;">8</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="stage" width="500" height="260"></canvas>
+
+    <div class="alloc-grid">
+      <div class="stat-pill">
+        <span class="stat-name">STR</span>
+        <span id="val-str" class="stat-val">5</span>
+        <button id="btn-add-str" class="btn-plus">+1</button>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-name">DEX</span>
+        <span id="val-dex" class="stat-val">5</span>
+        <button id="btn-add-dex" class="btn-plus">+1</button>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-name">INT</span>
+        <span id="val-int" class="stat-val">5</span>
+        <button id="btn-add-int" class="btn-plus">+1</button>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-name">CON</span>
+        <span id="val-con" class="stat-val">5</span>
+        <button id="btn-add-con" class="btn-plus">+1</button>
+      </div>
+    </div>
+
+    <div id="selector-bar" class="selector-bar"></div>
+
+    <div class="action-grid">
+      <button id="btn-attack" class="btn btn-primary">Attack</button>
+      <button id="btn-spell" class="btn btn-spell">Spell (15 MP)</button>
+      <button id="btn-dodge" class="btn btn-dodge">Dodge</button>
+      <button id="btn-potion" class="btn">Potion</button>
+    </div>
+
+    <div id="log-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now());
+      const canvas = document.getElementById('stage');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      const valTrial = document.getElementById('val-trial');
+      const valPts = document.getElementById('val-pts');
+      const valStr = document.getElementById('val-str');
+      const valDex = document.getElementById('val-dex');
+      const valInt = document.getElementById('val-int');
+      const valCon = document.getElementById('val-con');
+      const selectorBar = document.getElementById('selector-bar');
+      const logPanel = document.getElementById('log-panel');
+
+      const btnAddStr = document.getElementById('btn-add-str');
+      const btnAddDex = document.getElementById('btn-add-dex');
+      const btnAddInt = document.getElementById('btn-add-int');
+      const btnAddCon = document.getElementById('btn-add-con');
+
+      const btnAttack = document.getElementById('btn-attack');
+      const btnSpell = document.getElementById('btn-spell');
+      const btnDodge = document.getElementById('btn-dodge');
+      const btnPotion = document.getElementById('btn-potion');
+
+      function updateUI() {
+        if (valTrial) valTrial.textContent = state.trial + '/' + state.maxTrials;
+        if (valPts) valPts.textContent = state.hero.statPoints;
+
+        if (valStr) valStr.textContent = state.hero.str;
+        if (valDex) valDex.textContent = state.hero.dex;
+        if (valInt) valInt.textContent = state.hero.int;
+        if (valCon) valCon.textContent = state.hero.con;
+
+        if (logPanel && state.combatLog) {
+          logPanel.innerHTML = state.combatLog.slice(-5).reverse().map(function(line) {
+            return '<p>' + line + '</p>';
+          }).join('');
+        }
+
+        const legal = legalActions(state);
+
+        if (btnAddStr) btnAddStr.disabled = state.done || !legal.includes('allocate:str');
+        if (btnAddDex) btnAddDex.disabled = state.done || !legal.includes('allocate:dex');
+        if (btnAddInt) btnAddInt.disabled = state.done || !legal.includes('allocate:int');
+        if (btnAddCon) btnAddCon.disabled = state.done || !legal.includes('allocate:con');
+
+        if (btnAttack) btnAttack.disabled = state.done || !legal.includes('attack');
+        if (btnSpell) btnSpell.disabled = state.done || !legal.includes('spell');
+        if (btnDodge) btnDodge.disabled = state.done || !legal.includes('dodge');
+        if (btnPotion) {
+          btnPotion.disabled = state.done || !legal.includes('potion');
+          btnPotion.textContent = 'Potion (' + state.hero.potions + ')';
+        }
+
+        // Render Traits & Weapons in selector bar
+        if (selectorBar) {
+          const traits = ['ironborn', 'shadowblade', 'spellweaver', 'guardian'];
+          const weapons = ['greatsword', 'daggers', 'staff'];
+
+          let html = '<span style="font-size:0.75rem; color:#8b949e; align-self:center;">Trait:</span>';
+          for (let i = 0; i < traits.length; i++) {
+            const isSel = state.hero.trait === traits[i];
+            const col = isSel ? '#3fb950' : '#8b949e';
+            html += '<button class="btn-tag" data-trait="' + traits[i] + '" style="border-color:' + col + ';">' + traits[i].toUpperCase() + '</button>';
+          }
+
+          html += '<span style="font-size:0.75rem; color:#8b949e; align-self:center; margin-left:8px;">Weapon:</span>';
+          for (let j = 0; j < weapons.length; j++) {
+            const isSelW = state.hero.weapon === weapons[j];
+            const colW = isSelW ? '#58a6ff' : '#8b949e';
+            html += '<button class="btn-tag" data-weapon="' + weapons[j] + '" style="border-color:' + colW + ';">' + weapons[j].toUpperCase() + '</button>';
+          }
+
+          selectorBar.innerHTML = html;
+
+          const tags = selectorBar.querySelectorAll ? selectorBar.querySelectorAll('.btn-tag') : [];
+          for (let t = 0; t < tags.length; t++) {
+            tags[t].onclick = function() {
+              const tr = this.getAttribute('data-trait');
+              const wp = this.getAttribute('data-weapon');
+              if (tr && legal.includes('choose_trait:' + tr)) {
+                step(state, 'choose_trait:' + tr);
+                updateUI();
+              } else if (wp && legal.includes('choose_weapon:' + wp)) {
+                step(state, 'choose_weapon:' + wp);
+                updateUI();
+              }
+            };
+          }
+        }
+
+        render();
+      }
+
+      function render() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 500, 260);
+
+        // Crucible chamber backdrop
+        const grad = ctx.createLinearGradient(0, 0, 0, 260);
+        grad.addColorStop(0, '#16241a');
+        grad.addColorStop(1, '#090d13');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 500, 260);
+
+        // Arena ring
+        ctx.fillStyle = '#18241b';
+        ctx.beginPath();
+        ctx.ellipse(250, 195, 210, 55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#233827';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Hero on Left
+        const hx = 140, hy = 160;
+        ctx.beginPath();
+        ctx.arc(hx, hy, 28, 0, Math.PI * 2);
+        ctx.fillStyle = '#238636';
+        ctx.fill();
+        ctx.strokeStyle = state.hero.dodgePrepared ? '#58a6ff' : '#3fb950';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = '22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const hIcon = state.hero.weapon === 'greatsword' ? '🗡️' : (state.hero.weapon === 'daggers' ? '⚡' : '🔮');
+        ctx.fillText(hIcon, hx, hy - 2);
+
+        // Hero Name & Bars
+        ctx.fillStyle = '#3fb950';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(state.hero.trait.toUpperCase() + ' (' + state.hero.weapon.toUpperCase() + ')', hx, hy - 38);
+        drawBar(hx - 35, hy + 35, 70, 5, state.hero.hp, state.hero.maxHp, '#3fb950');
+        drawBar(hx - 35, hy + 42, 70, 4, state.hero.mp, state.hero.maxMp, '#58a6ff');
+
+        // Enemy on Right
+        const ex = 360, ey = 160;
+        ctx.beginPath();
+        ctx.arc(ex, ey, 32, 0, Math.PI * 2);
+        ctx.fillStyle = state.trial === 4 ? '#da3633' : '#a371f7';
+        ctx.fill();
+        ctx.strokeStyle = '#f85149';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = '24px sans-serif';
+        const eIcon = state.trial === 4 ? '🪞' : (state.trial === 1 ? '🗿' : (state.trial === 2 ? '👤' : '🧙'));
+        ctx.fillText(eIcon, ex, ey - 2);
+
+        ctx.fillStyle = '#f85149';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(state.enemy.name, ex, ey - 40);
+        drawBar(ex - 40, ey + 38, 80, 5, state.enemy.hp, state.enemy.maxHp, '#da3633');
+
+        // Overlay Game Over
+        if (state.done) {
+          ctx.fillStyle = 'rgba(9, 13, 22, 0.85)';
+          ctx.fillRect(0, 0, 500, 260);
+          ctx.fillStyle = state.victory ? '#3fb950' : '#f85149';
+          ctx.font = 'bold 28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.victory ? 'TRUE AVATAR ASCENDED!' : 'TRIAL FAILED', 250, 120);
+          ctx.fillStyle = '#c9d1d9';
+          ctx.font = '15px sans-serif';
+          ctx.fillText('Final Score: ' + state.score, 250, 160);
+        }
+      }
+
+      function drawBar(x, y, w, h, val, max, color) {
+        ctx.fillStyle = '#21262d';
+        ctx.fillRect(x, y, w, h);
+        const fillW = Math.max(0, Math.min(w, (val / max) * w));
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, fillW, h);
+      }
+
+      if (btnAddStr) btnAddStr.onclick = function() { step(state, 'allocate:str'); updateUI(); };
+      if (btnAddDex) btnAddDex.onclick = function() { step(state, 'allocate:dex'); updateUI(); };
+      if (btnAddInt) btnAddInt.onclick = function() { step(state, 'allocate:int'); updateUI(); };
+      if (btnAddCon) btnAddCon.onclick = function() { step(state, 'allocate:con'); updateUI(); };
+
+      if (btnAttack) btnAttack.onclick = function() { step(state, 'attack'); updateUI(); };
+      if (btnSpell) btnSpell.onclick = function() { step(state, 'spell'); updateUI(); };
+      if (btnDodge) btnDodge.onclick = function() { step(state, 'dodge'); updateUI(); };
+      if (btnPotion) btnPotion.onclick = function() { step(state, 'potion'); updateUI(); };
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
