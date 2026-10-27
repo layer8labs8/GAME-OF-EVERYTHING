@@ -291,8 +291,9 @@
       "slug": "on-rails-shooter",
       "name": "On-Rails Shooter",
       "family": "Shooter",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "endless",
       "source": "steam-tag"
     },
     {
