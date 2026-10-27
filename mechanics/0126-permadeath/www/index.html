@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Iron Soul - Permadeath</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e11d48">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0c0a09;
+      color: #f5f5f4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #1c1917;
+      border-radius: 8px;
+      border: 1px solid #7f1d1d;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #f43f5e;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 440px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #1c1917;
+      border: 1px solid #44403c;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .hud-label {
+      color: #a8a29e;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.85rem;
+    }
+    .val-hp { color: #f43f5e; }
+    .val-supplies { color: #38bdf8; }
+    .val-gold { color: #facc15; }
+    .val-score { color: #c084fc; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1 / 1;
+      background: #030202;
+      border: 2px solid #7f1d1d;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(225, 29, 72, 0.2);
+      touch-action: none;
+    }
+    .mode-switch {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      display: flex;
+      gap: 4px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: #1c1917;
+      border: 1px solid #44403c;
+      color: #a8a29e;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+    }
+    .mode-btn.active {
+      background: #991b1b;
+      border-color: #f43f5e;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(225, 29, 72, 0.4);
+    }
+
+    .control-panel {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dpad-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+    .pad-btn {
+      background: #292524;
+      border: 1px solid #57534e;
+      color: #f43f5e;
+      padding: 10px 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    .pad-btn:active {
+      background: #44403c;
+      transform: scale(0.96);
+    }
+    .quick-actions {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: #1c1917;
+      border: 1px solid #44403c;
+      color: #fca5a5;
+      font-size: 0.75rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .action-btn:active {
+      background: #292524;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      background: #090807;
+      border: 1px solid #292524;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 0.7rem;
+      min-height: 48px;
+      max-height: 52px;
+      overflow-y: hidden;
+      color: #a8a29e;
+    }
+    .log-box p {
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .log-box p:last-child {
+      color: #f43f5e;
+      font-weight: bold;
+    }
+
+    /* Modal / Tombstone */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(12, 10, 9, 0.95);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      border-radius: 8px;
+      z-index: 50;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .tombstone-card {
+      background: #1c1917;
+      border: 2px solid #7f1d1d;
+      border-radius: 12px;
+      padding: 18px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+    }
+    .tombstone-header {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #f43f5e;
+      margin-bottom: 4px;
+    }
+    .tombstone-epitaph {
+      font-family: Georgia, serif;
+      font-style: italic;
+      color: #d6d3d1;
+      font-size: 0.85rem;
+      margin: 10px 0;
+      line-height: 1.4;
+      padding: 8px;
+      background: #0c0a09;
+      border-radius: 6px;
+      border: 1px solid #44403c;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #b91c1c, #e11d48);
+      border: none;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>☠️</span> IRON SOUL</h1>
+    <span style="font-size: 0.75rem; color: #f43f5e; font-weight: bold;" id="depth-badge">DEPTH 1 / 4</span>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Health</div>
+      <div class="hud-val val-hp" id="val-hp">50 / 50</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Elixirs / Kits</div>
+      <div class="hud-val val-supplies" id="val-supplies">2 / 3</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Gold</div>
+      <div class="hud-val val-gold" id="val-gold">0</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Score</div>
+      <div class="hud-val val-score" id="val-score">0</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="crucible-canvas" width="400" height="400"></canvas>
+
+    <!-- Memorial Tombstone Modal -->
+    <div class="modal-overlay" id="memorial-modal">
+      <div class="tombstone-card">
+        <div class="tombstone-header" id="memorial-title">ANCESTRAL EPITAPH</div>
+        <div class="tombstone-epitaph" id="memorial-desc"></div>
+        <div style="font-size: 1rem; color: #facc15; font-weight: bold; margin-bottom: 8px;" id="memorial-score">Score: 0</div>
+        <button class="btn-primary" id="btn-restart">FORGE NEW SOUL</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mode-switch">
+    <button class="mode-btn active" id="btn-mode-move">MOVE / BUMP (1)</button>
+    <button class="mode-btn" id="btn-mode-disarm">DISARM TRAP (2)</button>
+  </div>
+
+  <div class="control-panel">
+    <div class="dpad-container">
+      <div></div>
+      <button class="pad-btn" id="btn-up">▲</button>
+      <div></div>
+      <button class="pad-btn" id="btn-left">◀</button>
+      <button class="pad-btn" id="btn-wait" style="font-size: 0.65rem; color: #a8a29e;">REST</button>
+      <button class="pad-btn" id="btn-right">▶</button>
+      <div></div>
+      <button class="pad-btn" id="btn-down">▼</button>
+      <div></div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="action-btn" id="btn-quaff">QUAFF (Q)</button>
+      <button class="action-btn" id="btn-descend">DELVE (&gt;)</button>
+      <button class="action-btn" id="btn-retire" style="color: #34d399;">RETIRE (R)</button>
+      <button class="action-btn" id="btn-bot" style="border-color: #b91c1c; color: #f43f5e;">AI STEP</button>
+    </div>
+  </div>
+
+  <div class="log-box" id="log-box">
+    <p>Permadeath is active. Death permanently deletes this soul.</p>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Math.random() * 1000000));
+    let currentMode = 'move'; // 'move', 'disarm'
+    const canvas = document.getElementById('crucible-canvas');
+    const ctx = canvas.getContext('2d');
+    const TILE_SIZE = 40; // 10 x 40 = 400
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('btn-mode-move').className = 'mode-btn' + (mode === 'move' ? ' active' : '');
+      document.getElementById('btn-mode-disarm').className = 'mode-btn' + (mode === 'disarm' ? ' active' : '');
+    }
+
+    function executeAction(act) {
+      if (isOver(state)) return;
+      const legals = legalActions(state);
+      if (!legals.includes(act)) return;
+
+      step(state, act);
+      render();
+    }
+
+    function handleDirection(dir) {
+      if (currentMode === 'move') {
+        executeAction('move:' + dir);
+      } else {
+        executeAction('disarm:' + dir);
+      }
+    }
+
+    function render() {
+      const p = state.player;
+
+      // HUD
+      const DEPTH_NAMES = [
+        '',
+        'DEPTH 1: CATACOMBS',
+        'DEPTH 2: MAGMA FISSURE',
+        'DEPTH 3: ABYSSAL VOID',
+        'DEPTH 4: CRUCIBLE OF FATE'
+      ];
+      document.getElementById('depth-badge').textContent = DEPTH_NAMES[state.depth] || ('DEPTH ' + state.depth);
+      document.getElementById('val-hp').textContent = p.hp + ' / ' + p.maxHp;
+      document.getElementById('val-supplies').textContent = p.elixirs + ' 🧪 / ' + p.toolkits + ' 🛠️';
+      document.getElementById('val-gold').textContent = p.gold + ' G';
+      document.getElementById('val-score').textContent = state.score;
+
+      // Combat Log
+      const logBox = document.getElementById('log-box');
+      const recent = (state.combatLog || []).slice(-3);
+      logBox.innerHTML = recent.map(line => '<p>' + line + '</p>').join('');
+
+      // Canvas
+      ctx.fillStyle = '#050404';
+      ctx.fillRect(0, 0, 400, 400);
+
+      // Render dungeon tiles
+      for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 10; x++) {
+          const rx = x * TILE_SIZE;
+          const ry = y * TILE_SIZE;
+          const char = state.map[y][x];
+
+          if (char === '#') {
+            ctx.fillStyle = '#1c1917';
+            ctx.fillRect(rx + 1, ry + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+            ctx.strokeStyle = '#44403c';
+            ctx.strokeRect(rx + 1, ry + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+          } else {
+            ctx.fillStyle = '#0f0c0a';
+            ctx.fillRect(rx, ry, TILE_SIZE, TILE_SIZE);
+
+            if (char === 'T') {
+              // Active lethal trap
+              ctx.fillStyle = '#f43f5e';
+              ctx.font = 'bold 20px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('▲', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 't') {
+              // Neutralized trap
+              ctx.fillStyle = '#57534e';
+              ctx.font = 'bold 16px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('△', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === '>') {
+              // Stairs
+              ctx.fillStyle = '#facc15';
+              ctx.font = 'bold 22px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('>', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'G') {
+              // Gold chest
+              ctx.fillStyle = '#fbbf24';
+              ctx.font = 'bold 18px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('💰', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'S') {
+              // Eternal Sigil
+              ctx.fillStyle = '#e11d48';
+              ctx.font = 'bold 24px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('★', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            }
+          }
+        }
+      }
+
+      // Enemies
+      for (const e of state.enemies) {
+        if (e.hp <= 0) continue;
+        const ex = e.x * TILE_SIZE;
+        const ey = e.y * TILE_SIZE;
+
+        ctx.save();
+        if (e.type === 'harvester') {
+          ctx.fillStyle = '#991b1b';
+          ctx.strokeStyle = '#f43f5e';
+        } else if (e.type === 'hound') {
+          ctx.fillStyle = '#ea580c';
+          ctx.strokeStyle = '#f97316';
+        } else if (e.type === 'phantom') {
+          ctx.fillStyle = '#7c3aed';
+          ctx.strokeStyle = '#a78bfa';
+        } else {
+          ctx.fillStyle = '#71717a';
+          ctx.strokeStyle = '#a1a1aa';
+        }
+
+        ctx.lineWidth = 2;
+        ctx.fillRect(ex + 8, ey + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+        ctx.strokeRect(ex + 8, ey + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+
+        // HP bar
+        const hpPct = Math.max(0, e.hp / e.maxHp);
+        ctx.fillStyle = '#292524';
+        ctx.fillRect(ex + 8, ey + 3, TILE_SIZE - 16, 3);
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(ex + 8, ey + 3, (TILE_SIZE - 16) * hpPct, 3);
+        ctx.restore();
+      }
+
+      // Player Hero
+      const px = p.x * TILE_SIZE;
+      const py = p.y * TILE_SIZE;
+      ctx.save();
+      ctx.fillStyle = '#f43f5e';
+      ctx.strokeStyle = '#fecdd3';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(px + 7, py + 7, TILE_SIZE - 14, TILE_SIZE - 14, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Shield crest
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Tombstone Modal
+      const modal = document.getElementById('memorial-modal');
+      if (isOver(state)) {
+        modal.className = 'modal-overlay active';
+        const title = document.getElementById('memorial-title');
+        const desc = document.getElementById('memorial-desc');
+        const sc = document.getElementById('memorial-score');
+        sc.textContent = 'Final Score: ' + state.score;
+
+        if (state.victory) {
+          if (state.retired) {
+            title.textContent = 'HONORED RETIREMENT';
+            title.style.color = '#34d399';
+            desc.textContent = 'Wise Wayfinder, you extracted safely to the Hall of Ancestors! Your legacy lives on in song and glory.';
+          } else {
+            title.textContent = 'CRUCIBLE CONQUERED!';
+            title.style.color = '#facc15';
+            desc.textContent = 'The Grim Harvester is vanquished! You claimed the Eternal Sigil and achieved immortality!';
+          }
+        } else {
+          title.textContent = 'PERMADEATH CLAIMED YOU';
+          title.style.color = '#f43f5e';
+          desc.textContent = 'Here lies a fallen champion. Cause of death: ' + (state.causeOfDeath || 'Mortal wounds in the Crucible') + '. This soul is deleted forever.';
+        }
+      } else {
+        modal.className = 'modal-overlay';
+      }
+    }
+
+    // Button event listeners
+    document.getElementById('btn-mode-move').onclick = () => setMode('move');
+    document.getElementById('btn-mode-disarm').onclick = () => setMode('disarm');
+
+    document.getElementById('btn-up').onclick = () => handleDirection('up');
+    document.getElementById('btn-down').onclick = () => handleDirection('down');
+    document.getElementById('btn-left').onclick = () => handleDirection('left');
+    document.getElementById('btn-right').onclick = () => handleDirection('right');
+    document.getElementById('btn-wait').onclick = () => executeAction('wait');
+
+    document.getElementById('btn-quaff').onclick = () => executeAction('quaff');
+    document.getElementById('btn-descend').onclick = () => executeAction('descend');
+    document.getElementById('btn-retire').onclick = () => executeAction('retire');
+
+    document.getElementById('btn-bot').onclick = () => {
+      const legals = legalActions(state);
+      if (legals.length > 0) {
+        // Safe priority: quaff if low HP > retire if at stairs with gold > descend > move
+        const quaffAct = state.player.hp <= 20 ? legals.find(a => a === 'quaff') : null;
+        const retireAct = state.depth >= 2 ? legals.find(a => a === 'retire') : null;
+        const descendAct = legals.find(a => a === 'descend');
+        const act = quaffAct || retireAct || descendAct || legals.find(a => a.startsWith('move:')) || legals[0];
+        executeAction(act);
+      }
+    };
+
+    document.getElementById('btn-restart').onclick = () => {
+      state = createState(Math.floor(Math.random() * 1000000));
+      render();
+    };
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      if (isOver(state)) return;
+      const key = e.key.toLowerCase();
+
+      if (key === '1') { setMode('move'); return; }
+      if (key === '2') { setMode('disarm'); return; }
+
+      if (e.shiftKey) {
+        if (key === 'arrowup' || key === 'w') { executeAction('disarm:up'); e.preventDefault(); return; }
+        if (key === 'arrowdown' || key === 's') { executeAction('disarm:down'); e.preventDefault(); return; }
+        if (key === 'arrowleft' || key === 'a') { executeAction('disarm:left'); e.preventDefault(); return; }
+        if (key === 'arrowright' || key === 'd') { executeAction('disarm:right'); e.preventDefault(); return; }
+      }
+
+      if (key === 'arrowup' || key === 'w') { handleDirection('up'); e.preventDefault(); }
+      else if (key === 'arrowdown' || key === 's') { handleDirection('down'); e.preventDefault(); }
+      else if (key === 'arrowleft' || key === 'a') { handleDirection('left'); e.preventDefault(); }
+      else if (key === 'arrowright' || key === 'd') { handleDirection('right'); e.preventDefault(); }
+      else if (key === 'q') { executeAction('quaff'); }
+      else if (key === '>' || key === '.') { executeAction('descend'); }
+      else if (key === 'r') { executeAction('retire'); }
+      else if (key === ' ' || key === 'z') { executeAction('wait'); e.preventDefault(); }
+    });
+
+    render();
+  </script>
+</body>
+</html>

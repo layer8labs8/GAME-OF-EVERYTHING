@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="128" fill="#0d1117"/>
+  <rect x="56" y="56" width="400" height="400" rx="40" fill="#1c1917" stroke="#e11d48" stroke-width="12"/>
+  <!-- Iron Shield outline -->
+  <path d="M256,90 L390,140 L390,280 C390,370 256,430 256,430 C256,430 122,370 122,280 L122,140 Z" fill="#292524" stroke="#78716c" stroke-width="8"/>
+  <!-- Skull of Permadeath -->
+  <circle cx="256" cy="230" r="60" fill="#f43f5e"/>
+  <rect x="226" y="270" width="60" height="35" rx="6" fill="#f43f5e"/>
+  <!-- Eye sockets -->
+  <circle cx="236" cy="235" r="14" fill="#0c0a09"/>
+  <circle cx="276" cy="235" r="14" fill="#0c0a09"/>
+  <polygon points="256,252 248,266 264,266" fill="#0c0a09"/>
+  <!-- Teeth slits -->
+  <line x1="240" y1="280" x2="240" y2="300" stroke="#0c0a09" stroke-width="4"/>
+  <line x1="256" y1="280" x2="256" y2="300" stroke="#0c0a09" stroke-width="4"/>
+  <line x1="272" y1="280" x2="272" y2="300" stroke="#0c0a09" stroke-width="4"/>
+</svg>

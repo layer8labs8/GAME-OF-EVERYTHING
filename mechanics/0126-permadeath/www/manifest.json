@@ -1,0 +1,12 @@
+{
+  "name": "Iron Soul: Permadeath",
+  "short_name": "IronSoul",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#e11d48",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

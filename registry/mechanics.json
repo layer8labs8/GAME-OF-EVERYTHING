@@ -1319,9 +1319,11 @@
    "slug": "permadeath",
    "name": "Permadeath",
    "family": "Roguelike",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Iron Soul",
+   "levels": "endless"
   },
   {
    "id": "0127",
