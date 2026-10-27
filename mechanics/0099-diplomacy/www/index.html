@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Balance of Power: Diplomacy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #0b0f17;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #151d2c;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .season-val { color: #facc15; }
+    .france-val { color: #38bdf8; }
+    .sc-val { color: #ca8a04; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #0f172a;
+      border: 2px solid #1e293b;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+    }
+    #actions-panel {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    button {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover:not(:disabled) {
+      background: #334155;
+      border-color: #64748b;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    button.primary {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #dbeafe;
+    }
+    button.treaty {
+      background: #713f12;
+      border-color: #eab308;
+      color: #fef08a;
+    }
+    button.resolve {
+      background: #064e3b;
+      border-color: #10b981;
+      color: #d1fae5;
+    }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #090e17;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      height: 56px;
+      overflow-y: auto;
+    }
+    #banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #38bdf8;
+      padding: 16px 24px;
+      border-radius: 12px;
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+    #banner h2 { font-size: 20px; margin-bottom: 6px; }
+    #banner p { font-size: 12px; color: #cbd5e1; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge season-val">📅 <span id="val-season">Spring 1901</span></div>
+    <div class="badge france-val">🔵 FRANCE: <span id="val-france">2 Units</span></div>
+    <div class="badge sc-val">👑 SCs: <span id="val-sc">2/5</span></div>
+    <button id="btn-reset" style="padding: 4px 8px; font-size: 11px;">Reset</button>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="c" width="480" height="480"></canvas>
+    <div id="banner">
+      <h2 id="banner-title">CONTINENTAL HEGEMONY</h2>
+      <p id="banner-sub">European powers recognize French sovereignty.</p>
+      <button id="btn-restart" class="primary" style="margin: 0 auto;">New Treaty</button>
+    </div>
+  </div>
+
+  <div id="actions-panel">
+    <div class="action-group">
+      <button id="btn-sel-army">Army Paris</button>
+      <button id="btn-sel-fleet">Fleet Brest</button>
+      <button id="btn-act-hold" class="primary">🛡️ Order Hold</button>
+      <button id="btn-act-belgium">⚔️ Move Belgium</button>
+      <button id="btn-act-burgundy">🏃 Move Burgundy</button>
+      <button id="btn-act-channel">⚓ Move Channel</button>
+    </div>
+
+    <div class="action-group">
+      <button id="btn-act-support" class="primary">🤝 Support Attack</button>
+      <button id="btn-treaty-britain" class="treaty">📜 Pact: Britain</button>
+      <button id="btn-treaty-prussia" class="treaty">📜 Pact: Prussia</button>
+      <button id="btn-act-resolve" class="resolve">⚖️ Resolve Season Orders</button>
+    </div>
+  </div>
+
+  <div id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      const valSeason = document.getElementById('val-season');
+      const valFrance = document.getElementById('val-france');
+      const valSc = document.getElementById('val-sc');
+      const logBox = document.getElementById('log-box');
+      const banner = document.getElementById('banner');
+      const bannerTitle = document.getElementById('banner-title');
+      const bannerSub = document.getElementById('banner-sub');
+      const btnReset = document.getElementById('btn-reset');
+      const btnRestart = document.getElementById('btn-restart');
+
+      const btnSelArmy = document.getElementById('btn-sel-army');
+      const btnSelFleet = document.getElementById('btn-sel-fleet');
+      const btnActHold = document.getElementById('btn-act-hold');
+      const btnActBelgium = document.getElementById('btn-act-belgium');
+      const btnActBurgundy = document.getElementById('btn-act-burgundy');
+      const btnActChannel = document.getElementById('btn-act-channel');
+      const btnActSupport = document.getElementById('btn-act-support');
+      const btnPactBritain = document.getElementById('btn-treaty-britain');
+      const btnPactPrussia = document.getElementById('btn-treaty-prussia');
+      const btnResolve = document.getElementById('btn-act-resolve');
+
+      let state = createState(Date.now() & 0xffff);
+      let selectedUnitId = 'u_f_army';
+
+      // Sound FX Web Audio
+      function playSfx(type) {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctxA = new AudioContext();
+          const osc = ctxA.createOscillator();
+          const gain = ctxA.createGain();
+          osc.connect(gain);
+          gain.connect(ctxA.destination);
+
+          if (type === 'resolve') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, ctxA.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(880, ctxA.currentTime + 0.25);
+            gain.gain.setValueAtTime(0.3, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.25);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.25);
+          } else if (type === 'treaty') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(320, ctxA.currentTime);
+            osc.frequency.setValueAtTime(480, ctxA.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.25);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.25);
+          } else if (type === 'order') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(520, ctxA.currentTime);
+            gain.gain.setValueAtTime(0.15, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.08);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.08);
+          }
+        } catch(e) {}
+      }
+
+      function formatSeason(idx) {
+        const year = 1901 + Math.floor(idx / 2);
+        const s = (idx % 2 === 0) ? 'Spring' : 'Fall';
+        return s + ' ' + year;
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        let frenchScs = 0;
+        if (state.supplyCenters) {
+          for (const k in state.supplyCenters) {
+            if (state.supplyCenters[k] === 'france') frenchScs += 1;
+          }
+        }
+
+        const frenchUnits = state.units ? state.units.filter(u => u.power === 'france') : [];
+
+        if (valSeason) valSeason.textContent = formatSeason(state.seasonIndex);
+        if (valFrance) valFrance.textContent = frenchUnits.length + ' Units';
+        if (valSc) valSc.textContent = frenchScs + '/5 SCs';
+
+        if (logBox && state.history) {
+          logBox.innerHTML = state.history.slice(-5).map(h => '<div>&gt; ' + h + '</div>').join('');
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        if (banner) {
+          if (state.done) {
+            banner.style.display = 'block';
+            if (state.winner === 'france') {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'CONTINENTAL DOMINANCE';
+                bannerTitle.style.color = '#38bdf8';
+              }
+              if (bannerSub) bannerSub.textContent = 'French diplomacy and military dominance prevailing! (Score: ' + score(state) + ')';
+            } else {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'DIPLOMATIC DEFEAT';
+                bannerTitle.style.color = '#ef4444';
+              }
+              if (bannerSub) bannerSub.textContent = 'Coalition balance of power prevailed over France.';
+            }
+          } else {
+            banner.style.display = 'none';
+          }
+        }
+
+        // Unit selector labels
+        const uArmy = state.units ? state.units.find(u => u.id === 'u_f_army') : null;
+        const uFleet = state.units ? state.units.find(u => u.id === 'u_f_fleet') : null;
+
+        if (btnSelArmy && uArmy) {
+          btnSelArmy.textContent = 'Army (' + uArmy.prov.toUpperCase() + ') [' + (uArmy.order.type.toUpperCase()) + ']';
+          btnSelArmy.style.borderColor = selectedUnitId === 'u_f_army' ? '#38bdf8' : '#334155';
+        }
+        if (btnSelFleet && uFleet) {
+          btnSelFleet.textContent = 'Fleet (' + uFleet.prov.toUpperCase() + ') [' + (uFleet.order.type.toUpperCase()) + ']';
+          btnSelFleet.style.borderColor = selectedUnitId === 'u_f_fleet' ? '#38bdf8' : '#334155';
+        }
+
+        const legals = legalActions(state);
+        if (btnActBelgium) {
+          btnActBelgium.disabled = !legals.includes('order_move:' + selectedUnitId + ':belgium');
+        }
+        if (btnActBurgundy) {
+          btnActBurgundy.disabled = !legals.includes('order_move:' + selectedUnitId + ':burgundy');
+        }
+        if (btnActChannel) {
+          btnActChannel.disabled = !legals.includes('order_move:' + selectedUnitId + ':channel');
+        }
+
+        // Support order
+        const supAct = legals.find(a => a.startsWith('order_support_move:' + selectedUnitId + ':'));
+        if (btnActSupport) {
+          btnActSupport.disabled = !supAct;
+        }
+
+        // Treaties
+        if (btnPactBritain) {
+          btnPactBritain.disabled = state.pacts ? state.pacts.britain : false;
+          if (state.pacts && state.pacts.britain) btnPactBritain.textContent = '📜 Pact: Britain (Signed)';
+          else btnPactBritain.textContent = '📜 Pact: Britain';
+        }
+        if (btnPactPrussia) {
+          btnPactPrussia.disabled = state.pacts ? state.pacts.prussia : false;
+          if (state.pacts && state.pacts.prussia) btnPactPrussia.textContent = '📜 Pact: Prussia (Signed)';
+          else btnPactPrussia.textContent = '📜 Pact: Prussia';
+        }
+
+        if (btnResolve) {
+          btnResolve.disabled = state.done;
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.fillStyle = '#0b0f17';
+        ctx.fillRect(0, 0, 480, 480);
+
+        // Draw Map Connections
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        for (const p1 in PROVINCES) {
+          const prov1 = PROVINCES[p1];
+          prov1.adj.forEach(p2 => {
+            const prov2 = PROVINCES[p2];
+            if (prov2) {
+              ctx.beginPath();
+              ctx.moveTo(prov1.x, prov1.y);
+              ctx.lineTo(prov2.x, prov2.y);
+              ctx.stroke();
+            }
+          });
+        }
+
+        // Draw Provinces
+        for (const pid in PROVINCES) {
+          const p = PROVINCES[pid];
+          const owner = state.supplyCenters ? state.supplyCenters[pid] : p.owner;
+
+          let bg = '#1e293b';
+          let border = '#334155';
+
+          if (owner === 'france') { bg = '#1e3a8a'; border = '#38bdf8'; }
+          else if (owner === 'britain') { bg = '#881337'; border = '#f43f5e'; }
+          else if (owner === 'prussia') { bg = '#14532d'; border = '#22c55e'; }
+          else if (p.type === 'sea') { bg = '#0c4a6e'; border = '#0284c7'; }
+          else if (p.sc) { bg = '#713f12'; border = '#eab308'; }
+
+          ctx.fillStyle = bg;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.sc ? 30 : 25, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = border;
+          ctx.lineWidth = p.sc ? 3 : 1.5;
+          ctx.stroke();
+
+          // Province Name
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(p.name, p.x, p.y - 6);
+
+          // Supply Center Star
+          if (p.sc) {
+            ctx.fillStyle = '#facc15';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.fillText('★ SC', p.x, p.y + 8);
+          }
+        }
+
+        // Draw Units
+        if (state.units) {
+          state.units.forEach(u => {
+            const p = PROVINCES[u.prov];
+            if (!p) return;
+
+            const isSel = (u.id === selectedUnitId);
+            const uy = p.y + (p.sc ? 14 : 10);
+
+            // Unit Box
+            ctx.fillStyle = u.power === 'france' ? '#2563eb' : (u.power === 'britain' ? '#dc2626' : '#16a34a');
+            ctx.fillRect(p.x - 16, uy - 6, 32, 16);
+            ctx.strokeStyle = isSel ? '#ffffff' : '#000000';
+            ctx.lineWidth = isSel ? 2 : 1;
+            ctx.strokeRect(p.x - 16, uy - 6, 32, 16);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(u.type === 'army' ? 'A' : 'F', p.x, uy + 5);
+
+            // Draw Order Target Arrow if moving
+            if (u.order && u.order.type === 'move') {
+              const destP = PROVINCES[u.order.target];
+              if (destP) {
+                ctx.strokeStyle = '#facc15';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 3]);
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(destP.x, destP.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+              }
+            }
+          });
+        }
+      }
+
+      function executeAction(act) {
+        if (!act) return;
+        try {
+          if (act.includes('resolve_season')) playSfx('resolve');
+          else if (act.includes('pact:')) playSfx('treaty');
+          else playSfx('order');
+
+          step(state, act);
+          updateUI();
+          draw();
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      if (btnSelArmy) btnSelArmy.onclick = function() { selectedUnitId = 'u_f_army'; updateUI(); draw(); };
+      if (btnSelFleet) btnSelFleet.onclick = function() { selectedUnitId = 'u_f_fleet'; updateUI(); draw(); };
+
+      if (btnActHold) {
+        btnActHold.onclick = function() {
+          executeAction('order_hold:' + selectedUnitId);
+        };
+      }
+
+      if (btnActBelgium) {
+        btnActBelgium.onclick = function() {
+          executeAction('order_move:' + selectedUnitId + ':belgium');
+        };
+      }
+
+      if (btnActBurgundy) {
+        btnActBurgundy.onclick = function() {
+          executeAction('order_move:' + selectedUnitId + ':burgundy');
+        };
+      }
+
+      if (btnActChannel) {
+        btnActChannel.onclick = function() {
+          executeAction('order_move:' + selectedUnitId + ':channel');
+        };
+      }
+
+      if (btnActSupport) {
+        btnActSupport.onclick = function() {
+          const legals = legalActions(state);
+          const act = legals.find(a => a.startsWith('order_support_move:' + selectedUnitId + ':'));
+          executeAction(act);
+        };
+      }
+
+      if (btnPactBritain) {
+        btnPactBritain.onclick = function() {
+          executeAction('pact:britain');
+        };
+      }
+
+      if (btnPactPrussia) {
+        btnPactPrussia.onclick = function() {
+          executeAction('pact:prussia');
+        };
+      }
+
+      if (btnResolve) {
+        btnResolve.onclick = function() {
+          executeAction('resolve_season');
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedUnitId = 'u_f_army';
+          updateUI();
+          draw();
+        };
+      }
+
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedUnitId = 'u_f_army';
+          updateUI();
+          draw();
+        };
+      }
+
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>

@@ -1021,9 +1021,11 @@
    "id": "0099",
    "slug": "diplomacy",
    "name": "Diplomacy",
+   "title": "Balance of Power",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {

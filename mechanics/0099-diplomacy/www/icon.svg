@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="sealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dc2626" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)" stroke="#ca8a04" stroke-width="8"/>
+  <!-- Diplomatic Wax Seal -->
+  <circle cx="256" cy="256" r="150" fill="url(#sealGrad)" stroke="#f59e0b" stroke-width="6"/>
+  <circle cx="256" cy="256" r="130" fill="none" stroke="#fef08a" stroke-width="3" stroke-dasharray="10, 6" opacity="0.6"/>
+  <!-- Quill & Dagger Cross -->
+  <!-- Quill -->
+  <path d="M 180 340 C 220 300 240 250 320 160 C 330 180 320 220 290 260 L 260 290 Z" fill="url(#goldGrad)" opacity="0.9"/>
+  <!-- Dagger -->
+  <line x1="330" y1="340" x2="180" y2="170" stroke="#f1f5f9" stroke-width="12" stroke-linecap="round"/>
+  <line x1="285" y1="290" x2="335" y2="245" stroke="#f59e0b" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="335" cy="345" r="14" fill="#f59e0b"/>
+</svg>
