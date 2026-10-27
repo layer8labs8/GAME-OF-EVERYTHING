@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="blade" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="50%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#475569" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+    <linearGradient id="magicGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="100" fill="url(#bg)" stroke="#3730a3" stroke-width="8" />
+
+  <!-- Heraldic Shield Behind Sword -->
+  <path d="M 256,70 C 370,70 410,120 410,240 C 410,360 256,430 256,430 C 256,430 102,360 102,240 C 102,120 142,70 256,70 Z" fill="#1e1b4b" stroke="url(#gold)" stroke-width="6" opacity="0.85" />
+  <path d="M 256,90 C 350,90 385,135 385,235 C 385,335 256,400 256,400 C 256,400 127,335 127,235 C 127,135 162,90 256,90 Z" fill="none" stroke="#6366f1" stroke-width="2" opacity="0.6" />
+
+  <!-- Radiant Arcane Spell Runes in Background -->
+  <circle cx="256" cy="240" r="100" fill="none" stroke="url(#magicGlow)" stroke-width="3" stroke-dasharray="12 8" opacity="0.7" />
+
+  <!-- Legendary Runic Broadsword (Vertical) -->
+  <g filter="url(#glow)">
+    <!-- Pointed Blade -->
+    <path d="M 256,95 L 268,140 L 266,320 L 256,330 L 246,320 L 244,140 Z" fill="url(#blade)" stroke="#e2e8f0" stroke-width="2" />
+    <!-- Center fuller groove with cyan glow -->
+    <line x1="256" y1="130" x2="256" y2="310" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Ornate Crossguard -->
+    <path d="M 190,320 Q 256,340 322,320 L 328,336 Q 256,356 184,336 Z" fill="url(#gold)" stroke="#854d0e" stroke-width="2" />
+    <!-- Crossguard Gem -->
+    <circle cx="256" cy="336" r="7" fill="#ef4444" stroke="#fde047" stroke-width="2" />
+
+    <!-- Leather Wrapped Hilt -->
+    <rect x="250" y="340" width="12" height="46" rx="2" fill="#78350f" stroke="#451a03" stroke-width="2" />
+    <!-- Hilt wrap rings -->
+    <line x1="250" y1="352" x2="262" y2="352" stroke="#d97706" stroke-width="2" />
+    <line x1="250" y1="364" x2="262" y2="364" stroke="#d97706" stroke-width="2" />
+    <line x1="250" y1="376" x2="262" y2="376" stroke="#d97706" stroke-width="2" />
+
+    <!-- Pommel -->
+    <circle cx="256" cy="396" r="12" fill="url(#gold)" stroke="#854d0e" stroke-width="2" />
+  </g>
+
+  <!-- Sparkling Mana / Level-Up Stars -->
+  <polygon points="180,160 185,175 200,180 185,185 180,200 175,185 160,180 175,175" fill="#fde047" />
+  <polygon points="330,160 335,175 350,180 335,185 330,200 325,185 310,180 325,175" fill="#fde047" />
+  <polygon points="256,50 260,60 270,64 260,68 256,78 252,68 242,64 252,60" fill="#38bdf8" />
+</svg>

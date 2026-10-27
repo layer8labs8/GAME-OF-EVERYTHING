@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hero's Quest: Classic RPG</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #151c2e;
+      border: 1px solid #283553;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      color: #fde047;
+      text-transform: uppercase;
+    }
+    .hud-stat {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      background: #060913;
+      border: 1px solid #1f2b45;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+    .controls-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-section {
+      background: #151c2e;
+      border: 1px solid #283553;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f1f5f9;
+      padding: 6px 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 48px;
+    }
+    .btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #38bdf8;
+    }
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .btn-fire {
+      background: #451a1a;
+      border-color: #7f1d1d;
+      color: #fecaca;
+    }
+    .btn-fire:hover:not(:disabled) {
+      background: #7f1d1d;
+      border-color: #ef4444;
+    }
+    .btn-heal {
+      background: #064e3b;
+      border-color: #047857;
+      color: #d1fae5;
+    }
+    .btn-travel {
+      background: #1d4ed8;
+      border-color: #3b82f6;
+      color: #eff6ff;
+      font-weight: 700;
+    }
+    .btn-travel:hover:not(:disabled) {
+      background: #2563eb;
+    }
+    .btn-stat {
+      background: #854d0e;
+      border-color: #eab308;
+      color: #fef08a;
+    }
+    .log-feed {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      max-height: 52px;
+      overflow-y: auto;
+      line-height: 1.3;
+      padding: 4px;
+      background: #080c16;
+      border-radius: 4px;
+      border: 1px solid #1a243a;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Hero's Quest</h1>
+    <div class="hud-stat" id="hud-stats">Zone 1 / 5 • Level 1 • 30g</div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="view" width="560" height="360"></canvas>
+
+    <div class="controls-panel">
+      <!-- Attribute Point Allocation Panel (visible when statPoints > 0) -->
+      <div id="panel-levelup" class="panel-section" style="display: none; border-color: #eab308; background: #261f0c;">
+        <div class="section-title">
+          <span style="color: #fde047;">LEVEL UP: Distribute Stat Points</span>
+          <span id="points-avail" style="color: #facc15;">2 Points Available</span>
+        </div>
+        <div class="button-grid">
+          <button id="btn-stat-str" class="btn btn-stat">+3 Strength<br><small>+10 Max HP</small></button>
+          <button id="btn-stat-agi" class="btn btn-stat">+3 Agility<br><small>+Crit Chance</small></button>
+          <button id="btn-stat-int" class="btn btn-stat">+3 Intellect<br><small>+10 Max MP</small></button>
+        </div>
+      </div>
+
+      <!-- Camp / Wandering Merchant Phase -->
+      <div id="panel-camp" class="panel-section" style="display: none; border-color: #3b82f6;">
+        <div class="section-title">
+          <span>Campfire Rest & Merchant</span>
+          <span id="camp-gold-info" style="color: #facc15;">Gold: 30g</span>
+        </div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-buy-weapon" class="btn">Upgrade Weapon<br><small>50g • +8 Atk</small></button>
+          <button id="btn-buy-armor" class="btn">Upgrade Armor<br><small>45g • +6 Def</small></button>
+          <button id="btn-buy-hp-pot" class="btn">Restock HP Pot<br><small>20g</small></button>
+        </div>
+        <button id="btn-travel-next" class="btn btn-travel" style="width: 100%;">Travel to Next Adventure Zone</button>
+      </div>
+
+      <!-- Combat Actions -->
+      <div id="panel-combat" class="panel-section">
+        <div class="section-title">
+          <span>Combat Commands</span>
+          <span id="combat-enemy-info" style="color: #f87171;">Target: Dire Wolf</span>
+        </div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-attack" class="btn">Weapon Slash<br><small>Physical Strike</small></button>
+          <button id="btn-fireball" class="btn btn-fire">Fireball<br><small>12 MP • Magic</small></button>
+          <button id="btn-heal" class="btn btn-heal">Holy Heal<br><small>10 MP</small></button>
+          <button id="btn-defend" class="btn">Parry / Focus<br><small>Half Dmg • +6 MP</small></button>
+          <button id="btn-pot-hp" class="btn">HP Potion<br><small id="lbl-hp-pot">2 Left</small></button>
+          <button id="btn-pot-mp" class="btn">MP Draught<br><small id="lbl-mp-pot">1 Left</small></button>
+        </div>
+      </div>
+
+      <!-- Chronicle Log -->
+      <div class="panel-section">
+        <div class="section-title">Quest Chronicle</div>
+        <div id="log-feed" class="log-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now() & 0xffff);
+    const canvas = document.getElementById('view');
+    const ctx = canvas.getContext('2d');
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(freq = 300, type = 'sine', duration = 0.12) {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state !== 'closed') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        }
+      } catch (e) {}
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        step(state, action);
+        if (action === 'attack') playSfx(180, 'sawtooth', 0.15);
+        else if (action === 'cast_fireball') playSfx(110, 'square', 0.25);
+        else if (action === 'cast_heal') playSfx(580, 'sine', 0.2);
+        else if (action.startsWith('stat_boost')) playSfx(660, 'triangle', 0.25);
+        else playSfx(380, 'sine', 0.08);
+
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn('Action error:', err);
+      }
+    }
+
+    // Attach static listeners
+    document.getElementById('btn-attack').onclick = () => doAction('attack');
+    document.getElementById('btn-fireball').onclick = () => doAction('cast_fireball');
+    document.getElementById('btn-heal').onclick = () => doAction('cast_heal');
+    document.getElementById('btn-defend').onclick = () => doAction('defend');
+    document.getElementById('btn-pot-hp').onclick = () => doAction('use_potion:hp');
+    document.getElementById('btn-pot-mp').onclick = () => doAction('use_potion:mp');
+
+    document.getElementById('btn-stat-str').onclick = () => doAction('stat_boost:str');
+    document.getElementById('btn-stat-agi').onclick = () => doAction('stat_boost:agi');
+    document.getElementById('btn-stat-int').onclick = () => doAction('stat_boost:int');
+
+    document.getElementById('btn-travel-next').onclick = () => doAction('travel_next_zone');
+    document.getElementById('btn-buy-weapon').onclick = () => doAction('buy_upgrade:weapon');
+    document.getElementById('btn-buy-armor').onclick = () => doAction('buy_upgrade:armor');
+    document.getElementById('btn-buy-hp-pot').onclick = () => doAction('buy_potion:hp');
+
+    function updateUI() {
+      const legals = legalActions(state);
+      const h = state.hero;
+      const zone = ZONES[state.zoneIndex];
+
+      // HUD Stats
+      const hud = document.getElementById('hud-stats');
+      if (hud) {
+        hud.textContent = `${zone.name} (Zone ${state.zoneIndex + 1}/5) • Lv ${h.level} • ${h.gold}g`;
+      }
+
+      // Panel Visibility toggles
+      const pLevel = document.getElementById('panel-levelup');
+      const pCamp = document.getElementById('panel-camp');
+      const pCombat = document.getElementById('panel-combat');
+
+      if (h.statPoints > 0) {
+        if (pLevel) pLevel.style.display = 'block';
+        if (pCamp) pCamp.style.display = 'none';
+        if (pCombat) pCombat.style.display = 'none';
+
+        const ptInfo = document.getElementById('points-avail');
+        if (ptInfo) ptInfo.textContent = `${h.statPoints} Point(s) Available`;
+      } else if (state.statePhase === 'camp') {
+        if (pLevel) pLevel.style.display = 'none';
+        if (pCamp) pCamp.style.display = 'block';
+        if (pCombat) pCombat.style.display = 'none';
+
+        const campGold = document.getElementById('camp-gold-info');
+        if (campGold) campGold.textContent = `Gold: ${h.gold}g`;
+
+        const bWep = document.getElementById('btn-buy-weapon');
+        const bArm = document.getElementById('btn-buy-armor');
+        const bHp = document.getElementById('btn-buy-hp-pot');
+        if (bWep) bWep.disabled = !legals.includes('buy_upgrade:weapon');
+        if (bArm) bArm.disabled = !legals.includes('buy_upgrade:armor');
+        if (bHp) bHp.disabled = !legals.includes('buy_potion:hp');
+      } else {
+        if (pLevel) pLevel.style.display = 'none';
+        if (pCamp) pCamp.style.display = 'none';
+        if (pCombat) pCombat.style.display = 'block';
+
+        const enemyInfo = document.getElementById('combat-enemy-info');
+        if (enemyInfo && state.enemy) {
+          enemyInfo.textContent = `Target: ${state.enemy.name} (${state.enemy.hp}/${state.enemy.maxHp} HP)`;
+        }
+
+        const bAtk = document.getElementById('btn-attack');
+        const bFire = document.getElementById('btn-fireball');
+        const bHeal = document.getElementById('btn-heal');
+        const bDef = document.getElementById('btn-defend');
+        const bPotHp = document.getElementById('btn-pot-hp');
+        const bPotMp = document.getElementById('btn-pot-mp');
+
+        if (bAtk) bAtk.disabled = !legals.includes('attack');
+        if (bFire) bFire.disabled = !legals.includes('cast_fireball');
+        if (bHeal) bHeal.disabled = !legals.includes('cast_heal');
+        if (bDef) bDef.disabled = !legals.includes('defend');
+        if (bPotHp) bPotHp.disabled = !legals.includes('use_potion:hp');
+        if (bPotMp) bPotMp.disabled = !legals.includes('use_potion:mp');
+
+        const lblHp = document.getElementById('lbl-hp-pot');
+        const lblMp = document.getElementById('lbl-mp-pot');
+        if (lblHp) lblHp.textContent = `${h.potionsHp} Left`;
+        if (lblMp) lblMp.textContent = `${h.potionsMp} Left`;
+      }
+
+      // History log
+      const logFeed = document.getElementById('log-feed');
+      if (logFeed && state.history.length > 0) {
+        logFeed.innerHTML = state.history.slice(-4).reverse().join('<br>');
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const h = state.hero;
+      const e = state.enemy;
+      const zone = ZONES[state.zoneIndex];
+
+      // Dynamic Zone Environment Backdrop
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      if (state.zoneIndex === 0) {
+        bgGrad.addColorStop(0, '#064e3b'); bgGrad.addColorStop(1, '#022c22'); // Green Woods
+      } else if (state.zoneIndex === 1) {
+        bgGrad.addColorStop(0, '#312e81'); bgGrad.addColorStop(1, '#0f172a'); // Catacombs
+      } else if (state.zoneIndex === 2) {
+        bgGrad.addColorStop(0, '#78350f'); bgGrad.addColorStop(1, '#1c1917'); // Mountains
+      } else if (state.zoneIndex === 3) {
+        bgGrad.addColorStop(0, '#581c87'); bgGrad.addColorStop(1, '#09090b'); // Shadow Citadel
+      } else {
+        bgGrad.addColorStop(0, '#7f1d1d'); bgGrad.addColorStop(1, '#180303'); // Throne of Chaos
+      }
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Arena Ground platform
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 250, canvas.width, 110);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 250, canvas.width, 110);
+
+      // Top Zone Banner
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(`${zone.name} — Zone ${state.zoneIndex + 1} of 5`, 24, 30);
+
+      // Left: Hero Card & Sprite
+      renderHeroCard(24, 45, h);
+
+      // Right: Monster Card & Sprite
+      if (e) {
+        renderMonsterCard(340, 45, e);
+      }
+
+      // Middle: VS or Campfire
+      if (state.statePhase === 'camp') {
+        drawCampfire(280, 220);
+        ctx.fillStyle = '#fde047';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Campfire Rest', 280, 160);
+        ctx.textAlign = 'left';
+      }
+
+      // Game Over Screen Overlay
+      if (state.done) {
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.textAlign = 'center';
+        if (state.winner === 'player') {
+          ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('THE REALM IS SAVED!', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Abyssal Dragon Vanquished! Final Quest Score: ${score(state)}`, 280, 195);
+        } else {
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('HERO HAS FALLEN', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Slain in ${zone.name}. Final Score: ${score(state)}`, 280, 195);
+        }
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function renderHeroCard(x, y, h) {
+      // Hero Card Container
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(x, y, 190, 180);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, 190, 180);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(`${h.name} (Lv ${h.level})`, x + 10, y + 20);
+
+      // HP Bar
+      const hpPct = Math.max(0, h.hp / h.maxHp);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(x + 10, y + 28, 170, 10);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(x + 10, y + 28, Math.floor(170 * hpPct), 10);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '9px sans-serif';
+      ctx.fillText(`HP: ${h.hp} / ${h.maxHp}`, x + 12, y + 36);
+
+      // MP Bar
+      const mpPct = Math.max(0, h.mp / h.maxMp);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(x + 10, y + 42, 170, 8);
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(x + 10, y + 42, Math.floor(170 * mpPct), 8);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '8px sans-serif';
+      ctx.fillText(`MP: ${h.mp} / ${h.maxMp}`, x + 12, y + 49);
+
+      // Hero Attributes
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(`STR: ${h.str} • AGI: ${h.agi} • INT: ${h.int}`, x + 10, y + 68);
+
+      const wep = h.weaponTier === 1 ? 'Iron Sword' : (h.weaponTier === 2 ? 'Steel Longsword' : 'Runic Blade');
+      const arm = h.armorTier === 1 ? 'Leather Armor' : (h.armorTier === 2 ? 'Chainmail' : 'Full Plate');
+      ctx.fillText(`Weapon: ${wep}`, x + 10, y + 84);
+      ctx.fillText(`Armor: ${arm}`, x + 10, y + 98);
+
+      // Hero Battle Sprite on platform
+      drawHeroSprite(x + 95, 230, h);
+    }
+
+    function renderMonsterCard(x, y, e) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(x, y, 190, 180);
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, 190, 180);
+
+      ctx.fillStyle = '#f87171';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(e.name, x + 10, y + 20);
+
+      // Monster HP Bar
+      const hpPct = Math.max(0, e.hp / e.maxHp);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(x + 10, y + 28, 170, 10);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(x + 10, y + 28, Math.floor(170 * hpPct), 10);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '9px sans-serif';
+      ctx.fillText(`HP: ${e.hp} / ${e.maxHp}`, x + 12, y + 36);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(`Attack Power: ${e.atk} • Armor: ${e.def}`, x + 10, y + 54);
+      ctx.fillText(`Reward: ${e.xp} XP • ${e.gold} Gold`, x + 10, y + 70);
+
+      // Monster Battle Sprite
+      drawMonsterSprite(x + 95, 230, e.name);
+    }
+
+    function drawHeroSprite(cx, cy, h) {
+      ctx.save();
+      // Hero Cloak
+      ctx.fillStyle = '#1e3a8a';
+      ctx.fillRect(cx - 16, cy - 30, 32, 40);
+
+      // Armor chest
+      ctx.fillStyle = h.armorTier >= 2 ? '#94a3b8' : '#78350f';
+      ctx.fillRect(cx - 12, cy - 26, 24, 26);
+
+      // Helmet / Head
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(cx, cy - 34, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sword
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx + 14, cy - 10);
+      ctx.lineTo(cx + 26, cy - 36);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawMonsterSprite(cx, cy, name) {
+      ctx.save();
+      if (name.includes('Wolf')) {
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(cx - 24, cy - 16, 48, 24);
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(cx - 16, cy - 8, 3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (name.includes('Skeleton')) {
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(cx - 10, cy - 28, 20, 34);
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 36, 12, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (name.includes('Troll')) {
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(cx - 20, cy - 36, 40, 44);
+      } else if (name.includes('Knight')) {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(cx - 16, cy - 36, 32, 44);
+        ctx.strokeStyle = '#dc2626';
+        ctx.strokeRect(cx - 16, cy - 36, 32, 44);
+      } else {
+        // Abyssal Dragon
+        ctx.fillStyle = '#7f1d1d';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 50);
+        ctx.lineTo(cx + 40, cy);
+        ctx.lineTo(cx + 15, cy + 10);
+        ctx.lineTo(cx - 15, cy + 10);
+        ctx.lineTo(cx - 40, cy);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(cx - 10, cy - 20, 4, 0, Math.PI * 2);
+        ctx.arc(cx + 10, cy - 20, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawCampfire(cx, cy) {
+      ctx.save();
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(cx, cy - 4, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Initialize
+    updateUI();
+    render();
+
+    // Register service worker if supported
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

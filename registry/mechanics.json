@@ -1131,9 +1131,11 @@
    "id": "0109",
    "slug": "rpg",
    "name": "RPG",
+   "title": "Hero's Quest",
    "family": "RPG",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {
