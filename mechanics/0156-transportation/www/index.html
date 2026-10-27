@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Transit Flow - Transportation</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b0f19;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 14px;
+      background: #1e293b;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #60a5fa;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      background: #111827;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      font-size: 0.72rem;
+    }
+    .hud-box {
+      background: #1e293b;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+    .hud-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    .text-green { color: #10b981; }
+    .text-blue { color: #38bdf8; }
+    .text-amber { color: #f59e0b; }
+    .text-rose { color: #f43f5e; }
+    .text-purple { color: #c084fc; }
+
+    #canvas-container {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      background: #020617;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #1e293b;
+      aspect-ratio: 16 / 10;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .status-banner {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      padding: 6px 12px;
+      background: #1e293b;
+      border-left: 4px solid #2563eb;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .contracts-panel {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+    .section-title {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .contract-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .contract-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+    }
+
+    .controls-grid {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    button {
+      background: #1e293b;
+      border: 1px solid #3b82f6;
+      color: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+    button:hover:not(:disabled) {
+      background: #2563eb;
+      border-color: #60a5fa;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      opacity: 0.35;
+      border-color: #475569;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    button.btn-success {
+      background: #059669;
+      border-color: #10b981;
+    }
+    button.btn-warn {
+      background: #d97706;
+      border-color: #f59e0b;
+    }
+    .btn-sub {
+      font-size: 0.62rem;
+      font-weight: normal;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🚆 Transit Flow</h1>
+    <div style="font-size: 0.72rem; color: #94a3b8;">
+      Turn: <span id="hdr-turn" class="text-blue">0</span>/120 | Rep: <span id="hdr-rep" class="text-green">75%</span>
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Capital</div>
+      <div id="hud-cap" class="hud-val text-green">$500</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Congestion</div>
+      <div id="hud-cong" class="hud-val text-amber">15%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Fuel</div>
+      <div id="hud-fuel" class="hud-val text-blue">70u</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Fleet Cap</div>
+      <div id="hud-fleet" class="hud-val text-purple">8t</div>
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="520" height="325"></canvas>
+  </div>
+
+  <div id="status-banner" class="status-banner">
+    Regional transit network initialized. Connect corridors and haul freight!
+  </div>
+
+  <div class="contracts-panel">
+    <div class="section-title">
+      <span>Pending Freight Delivery Contracts</span>
+      <span id="contracts-count">2 Active</span>
+    </div>
+    <div id="contract-list" class="contract-list">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+
+  <div id="controls" class="controls-grid">
+    <!-- Controls injected by JS -->
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Date.now() % 1000000));
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const HUB_NODES = {
+      'Valley': { x: 100, y: 70, label: 'Valley (Farms)', color: '#10b981' },
+      'Industrial': { x: 420, y: 70, label: 'Industrial (Steel)', color: '#f59e0b' },
+      'Metro': { x: 260, y: 160, label: 'Metro Center', color: '#38bdf8' },
+      'Harbor': { x: 100, y: 250, label: 'Harbor Port', color: '#0284c7' },
+      'Airport': { x: 420, y: 250, label: 'Airport Depot', color: '#a855f7' }
+    };
+
+    function renderScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Terrain backdrop
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 520, 325);
+
+      // Coastal water near harbor
+      ctx.fillStyle = '#082f49';
+      ctx.beginPath();
+      ctx.moveTo(0, 200);
+      ctx.bezierCurveTo(80, 220, 80, 290, 160, 325);
+      ctx.lineTo(0, 325);
+      ctx.closePath();
+      ctx.fill();
+
+      // Render all possible connections as faint gray lines
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 4;
+      for (const pair of POSSIBLE_CORRIDORS) {
+        const [a, b] = pair.split('-');
+        const nA = HUB_NODES[a];
+        const nB = HUB_NODES[b];
+        ctx.beginPath();
+        ctx.moveTo(nA.x, nA.y);
+        ctx.lineTo(nB.x, nB.y);
+        ctx.stroke();
+      }
+
+      // Render paved highways (Gold solid ribbons)
+      for (const pair of state.connections.road) {
+        const [a, b] = pair.split('-');
+        const nA = HUB_NODES[a];
+        const nB = HUB_NODES[b];
+        ctx.strokeStyle = '#d97706';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(nA.x, nA.y);
+        ctx.lineTo(nB.x, nB.y);
+        ctx.stroke();
+      }
+
+      // Render heavy rail corridors (Cyan double/striped rails)
+      for (const pair of state.connections.rail) {
+        const [a, b] = pair.split('-');
+        const nA = HUB_NODES[a];
+        const nB = HUB_NODES[b];
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(nA.x, nA.y);
+        ctx.lineTo(nB.x, nB.y);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#e0f2fe';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.moveTo(nA.x, nA.y);
+        ctx.lineTo(nB.x, nB.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Render Hub Nodes
+      for (const [key, node] of Object.entries(HUB_NODES)) {
+        // Outer glow
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 24, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Node Circle
+        ctx.fillStyle = node.color;
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Label
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(node.label, node.x, node.y + (node.y > 160 ? 26 : -18));
+      }
+
+      // Congestion indicator overlay at top
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(10, 10, 150, 24);
+      ctx.strokeStyle = '#334155';
+      ctx.strokeRect(10, 10, 150, 24);
+      ctx.fillStyle = state.congestion > 60 ? '#f43f5e' : '#10b981';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`TRAFFIC FLOW: ${100 - state.congestion}%`, 18, 26);
+    }
+
+    function updateUI() {
+      document.getElementById('hdr-turn').textContent = state.turns;
+      document.getElementById('hdr-rep').textContent = state.reputation + '%';
+      document.getElementById('hud-cap').textContent = '$' + state.capital;
+
+      const cong = document.getElementById('hud-cong');
+      cong.textContent = state.congestion + '%';
+      cong.className = 'hud-val ' + (state.congestion > 50 ? 'text-rose' : 'text-amber');
+
+      document.getElementById('hud-fuel').textContent = state.fuel + 'u';
+      document.getElementById('hud-fleet').textContent = `${state.fleet.trains}T / ${state.fleet.trucks}V (${state.fleet.capacity}t)`;
+      document.getElementById('status-banner').textContent = state.gameMessage;
+
+      // Render contracts
+      document.getElementById('contracts-count').textContent = state.contracts.length + ' Active';
+      let cHtml = '';
+      if (state.contracts.length === 0) {
+        cHtml = '<div style="color: #64748b; font-size: 0.72rem; padding: 4px;">No active freight orders. Dispatching local routes!</div>';
+      } else {
+        for (const c of state.contracts) {
+          const connected = isConnected(state, c.from, c.to);
+          cHtml += `
+            <div class="contract-card">
+              <div>
+                <div style="font-weight: bold; color: #f8fafc;">${c.cargo}</div>
+                <div style="color: #94a3b8; font-size: 0.65rem;">
+                  Route: <span style="color:#38bdf8">${c.from} ➔ ${c.to}</span> | 
+                  Connected: <span style="color:${connected ? '#10b981' : '#f43f5e'}">${connected ? 'YES' : 'NO LINE'}</span> | 
+                  Expires: <span style="color:${c.deadlineTurns <= 4 ? '#f43f5e' : '#f59e0b'}">${c.deadlineTurns}t</span>
+                </div>
+              </div>
+              <div style="font-weight: bold; color: #10b981;">+$${c.reward}</div>
+            </div>
+          `;
+        }
+      }
+      document.getElementById('contract-list').innerHTML = cHtml;
+
+      // Controls
+      const legal = legalActions(state);
+      let ctrlHtml = '';
+
+      if (isOver(state)) {
+        ctrlHtml = `
+          <button class="btn-primary" style="grid-column: span 2; padding: 14px;" onclick="window.resetGame()">
+            🔄 Start New Regional Transit Charter
+          </button>
+        `;
+      } else {
+        // Routine dispatch
+        ctrlHtml += `
+          <button class="btn-primary" onclick="window.doAction('action:routine_dispatch')">
+            🚚 Local Dispatch Run
+            <span class="btn-sub">+$45 Revenue, -5 Fuel</span>
+          </button>
+          <button ${legal.includes('action:refuel_fleet') ? '' : 'disabled'} onclick="window.doAction('action:refuel_fleet')">
+            ⛽ Bulk Refuel ($50)
+            <span class="btn-sub">+45 Fuel Units</span>
+          </button>
+          <button ${legal.includes('action:optimize_traffic_signals') ? '' : 'disabled'} onclick="window.doAction('action:optimize_traffic_signals')">
+            🚦 Optimize Signals ($40)
+            <span class="btn-sub">-25% Network Congestion</span>
+          </button>
+          <button ${legal.includes('action:purchase_cargo_truck') ? '' : 'disabled'} onclick="window.doAction('action:purchase_cargo_truck')">
+            🚛 Buy Delivery Truck ($75)
+            <span class="btn-sub">+2 Tons Fleet Capacity</span>
+          </button>
+          <button style="grid-column: span 2;" ${legal.includes('action:purchase_freight_train') ? '' : 'disabled'} onclick="window.doAction('action:purchase_freight_train')">
+            🚂 Purchase Heavy Freight Locomotive ($150)
+            <span class="btn-sub">+4 Tons Fleet Capacity</span>
+          </button>
+        `;
+
+        // Construction options
+        for (const act of legal) {
+          if (act.startsWith('action:build_rail:')) {
+            const pair = act.split(':')[2];
+            ctrlHtml += `
+              <button class="btn-primary" onclick="window.doAction('${act}')">
+                🛤️ Lay Rail: ${pair} ($120)
+                <span class="btn-sub">Open heavy train corridor</span>
+              </button>
+            `;
+          } else if (act.startsWith('action:pave_road:')) {
+            const pair = act.split(':')[2];
+            ctrlHtml += `
+              <button class="btn-warn" onclick="window.doAction('${act}')">
+                🛣️ Pave Highway: ${pair} ($80)
+                <span class="btn-sub">Open road freight route</span>
+              </button>
+            `;
+          }
+        }
+
+        // Deliver contracts
+        for (const c of state.contracts) {
+          const act = 'action:fulfill_contract:' + c.id;
+          if (legal.includes(act)) {
+            ctrlHtml += `
+              <button class="btn-success" style="grid-column: span 2;" onclick="window.doAction('${act}')">
+                ✅ Haul Freight: ${c.cargo} (${c.from} ➔ ${c.to})
+                <span class="btn-sub">Collect $${c.reward} + 8% Reputation</span>
+              </button>
+            `;
+          }
+        }
+      }
+
+      document.getElementById('controls').innerHTML = ctrlHtml;
+      renderScene();
+    }
+
+    window.doAction = function(act) {
+      try {
+        step(state, act);
+        updateUI();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    window.resetGame = function() {
+      state = createState(Math.floor(Date.now() % 1000000));
+      updateUI();
+    };
+
+    updateUI();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

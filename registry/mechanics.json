@@ -1649,9 +1649,11 @@
       "slug": "transportation",
       "name": "Transportation",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Transit Flow",
+      "levels": "endless"
     },
     {
       "id": "0157",
