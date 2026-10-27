@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Tabletop Skirmish</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel-border: #30363d;
+      --text: #f0f6fc;
+      --text-muted: #8b949e;
+      --player-blue: #38bdf8;
+      --enemy-red: #f43f5e;
+      --shrine-gold: #fbbf24;
+      --cover-green: #22c55e;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 540px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--player-blue);
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      background: #21262d;
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #30363d;
+      border-color: var(--player-blue);
+    }
+    .btn-end {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    .btn-end:hover {
+      background: #0369a1;
+    }
+    main {
+      width: 100%;
+      max-width: 540px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 14px;
+      gap: 10px;
+    }
+    .stats-dashboard {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+      font-size: 0.85rem;
+    }
+    .vp-score {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .vp-player { color: var(--player-blue); }
+    .vp-enemy { color: var(--enemy-red); }
+    .ap-pips {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .pip {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #30363d;
+      border: 1px solid #484f58;
+    }
+    .pip.active {
+      background: var(--player-blue);
+      box-shadow: 0 0 8px var(--player-blue);
+      border-color: #7dd3fc;
+    }
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid var(--panel-border);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+    .unit-card {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 48px;
+    }
+    .unit-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .unit-name {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .unit-stats {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .log-feed {
+      width: 100%;
+      background: #090d13;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      height: 44px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icon.svg" alt="Tabletop Skirmish Logo">
+      <h1>Tabletop Skirmish</h1>
+    </div>
+    <div class="controls">
+      <button class="btn-end" id="btn-end-turn">End Turn</button>
+      <button id="btn-restart">New Game</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats-dashboard">
+      <div class="vp-score vp-player">Solar Guard: <span id="player-vp">0</span> / 25 VP</div>
+      <div class="ap-pips">
+        <span style="font-size: 0.8rem; color: var(--text-muted); margin-right: 4px;">AP:</span>
+        <div class="pip active" id="pip-1"></div>
+        <div class="pip active" id="pip-2"></div>
+        <div class="pip active" id="pip-3"></div>
+      </div>
+      <div class="vp-score vp-enemy">Void Legion: <span id="enemy-vp">0</span> / 25 VP</div>
+    </div>
+
+    <div class="board-container">
+      <canvas id="tabletopCanvas" width="700" height="700"></canvas>
+    </div>
+
+    <div class="unit-card" id="selected-unit-card">
+      <div class="unit-info">
+        <span style="font-size: 1.5rem;" id="card-icon">🛡️</span>
+        <div>
+          <div class="unit-name" id="card-name">Select a Unit</div>
+          <div class="unit-stats" id="card-stats">Tap any Solar Guard miniature to order movement or attacks</div>
+        </div>
+      </div>
+      <button id="btn-claim-shrine" style="display: none; background: #d97706; border-color: #fbbf24;">Claim Shrine (1 AP)</button>
+    </div>
+
+    <div class="log-feed" id="log-feed">
+      <div>Deploying miniature squads... Claim shrines to earn Victory Points!</div>
+    </div>
+  </main>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('tabletopCanvas');
+      const ctx = canvas.getContext('2d');
+      const playerVpEl = document.getElementById('player-vp');
+      const enemyVpEl = document.getElementById('enemy-vp');
+      const logFeedEl = document.getElementById('log-feed');
+      const btnEndTurn = document.getElementById('btn-end-turn');
+      const btnRestart = document.getElementById('btn-restart');
+      const btnClaim = document.getElementById('btn-claim-shrine');
+      const cardName = document.getElementById('card-name');
+      const cardStats = document.getElementById('card-stats');
+      const cardIcon = document.getElementById('card-icon');
+      const pips = [document.getElementById('pip-1'), document.getElementById('pip-2'), document.getElementById('pip-3')];
+
+      const UNIT_ICONS = {
+        p_paladin: '🛡️', p_mage: '🔮', p_ranger: '🏹',
+        e_knight: '⚔️', e_necro: '💀', e_archer: '🎯'
+      };
+
+      let state = null;
+      let selectedUnitId = null;
+
+      function initGame() {
+        const seed = Math.floor(Date.now() % 1000000) || 12345;
+        state = tabletopLogic.createState(seed);
+        selectedUnitId = null;
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        playerVpEl.textContent = state.playerVp;
+        enemyVpEl.textContent = state.aiVp;
+
+        for (let i = 0; i < 3; i++) {
+          if (pips[i] && pips[i].classList) {
+            pips[i].classList.toggle('active', i < state.ap);
+          }
+        }
+
+        if (state.combatLog.length > 0) {
+          const recent = state.combatLog.slice(-2);
+          logFeedEl.innerHTML = recent.map(msg => `<div>${msg}</div>`).reverse().join('');
+        }
+
+        if (selectedUnitId && state.units[selectedUnitId]) {
+          const u = state.units[selectedUnitId];
+          cardName.textContent = u.name;
+          cardIcon.textContent = UNIT_ICONS[u.id] || '♟️';
+          cardStats.textContent = `HP: ${u.hp}/${u.maxHp} | ATK: ${u.atk} (d6) | Range: ${u.range} | Move: ${u.move}`;
+
+          const shrineKey = `${u.r},${u.c}`;
+          if (state.shrines[shrineKey] && state.shrines[shrineKey].owner !== 'p' && state.ap > 0) {
+            btnClaim.style.display = 'block';
+          } else {
+            btnClaim.style.display = 'none';
+          }
+        } else {
+          cardName.textContent = 'Select a Unit';
+          cardIcon.textContent = '♟️';
+          cardStats.textContent = 'Tap any Solar Guard miniature to order movement or attacks';
+          btnClaim.style.display = 'none';
+        }
+
+        if (state.gameOver) {
+          if (state.winner === 'p') {
+            btnEndTurn.textContent = '🏆 Victory!';
+            btnEndTurn.style.background = '#15803d';
+          } else {
+            btnEndTurn.textContent = '💀 Defeat!';
+            btnEndTurn.style.background = '#be123c';
+          }
+        } else {
+          btnEndTurn.textContent = `End Turn (R${state.round})`;
+          btnEndTurn.style.background = '#0284c7';
+        }
+      }
+
+      function render() {
+        const size = canvas.width;
+        const cell = size / 7;
+
+        ctx.clearRect(0, 0, size, size);
+
+        // 1. Draw Terrain Grid
+        for (let r = 0; r < 7; r++) {
+          for (let c = 0; c < 7; c++) {
+            const t = state.grid[r][c];
+            // Base tile
+            ctx.fillStyle = (r + c) % 2 === 0 ? '#1b222c' : '#141a22';
+            ctx.fillRect(c * cell, r * cell, cell, cell);
+
+            if (t === 1) {
+              // Forest (Cover)
+              ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
+              ctx.fillRect(c * cell, r * cell, cell, cell);
+              ctx.fillStyle = '#22c55e';
+              ctx.font = '22px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('🌲', c * cell + cell / 2, r * cell + cell / 2);
+            } else if (t === 2) {
+              // Obsidian Rock (Obstacle)
+              ctx.fillStyle = '#374151';
+              ctx.fillRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8);
+              ctx.fillStyle = '#9ca3af';
+              ctx.font = '22px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('🪨', c * cell + cell / 2, r * cell + cell / 2);
+            } else if (t === 3) {
+              // Relic Shrine
+              const key = `${r},${c}`;
+              const shrine = state.shrines[key];
+              let shrineColor = '#64748b';
+              if (shrine?.owner === 'p') shrineColor = 'var(--player-blue)';
+              if (shrine?.owner === 'e') shrineColor = 'var(--enemy-red)';
+
+              ctx.strokeStyle = shrineColor;
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+              ctx.arc(c * cell + cell / 2, r * cell + cell / 2, cell * 0.38, 0, Math.PI * 2);
+              ctx.stroke();
+
+              ctx.fillStyle = shrineColor;
+              ctx.font = '22px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('⚡', c * cell + cell / 2, r * cell + cell / 2);
+            }
+
+            // Subtle grid line
+            ctx.strokeStyle = '#212a36';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(c * cell, r * cell, cell, cell);
+          }
+        }
+
+        // 2. Action highlights if player unit selected
+        if (selectedUnitId && state.units[selectedUnitId] && state.units[selectedUnitId].alive && state.ap > 0) {
+          const u = state.units[selectedUnitId];
+          const legal = tabletopLogic.legalActions(state);
+
+          // Highlights for legal moves
+          for (let i = 0; i < legal.length; i++) {
+            const act = legal[i];
+            if (act.startsWith(`move:${u.id}:`)) {
+              const [tr, tc] = act.split(':')[2].split(',').map(Number);
+              ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+              ctx.beginPath();
+              ctx.arc(tc * cell + cell / 2, tr * cell + cell / 2, cell * 0.22, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (act.startsWith(`attack:${u.id}:`)) {
+              const targetId = act.split(':')[2];
+              const target = state.units[targetId];
+              ctx.strokeStyle = 'rgba(244, 63, 94, 0.85)';
+              ctx.lineWidth = 4;
+              ctx.beginPath();
+              ctx.arc(target.c * cell + cell / 2, target.r * cell + cell / 2, cell * 0.42, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
+        }
+
+        // 3. Draw Units
+        for (const key in state.units) {
+          const u = state.units[key];
+          if (!u.alive) continue;
+
+          const cx = u.c * cell + cell / 2;
+          const cy = u.r * cell + cell / 2;
+
+          // Miniature circular base
+          ctx.beginPath();
+          ctx.arc(cx, cy, cell * 0.36, 0, Math.PI * 2);
+          ctx.fillStyle = u.team === 'p' ? '#0369a1' : '#881337';
+          ctx.fill();
+
+          ctx.lineWidth = u.id === selectedUnitId ? 4 : 2;
+          ctx.strokeStyle = u.team === 'p' ? '#38bdf8' : '#f43f5e';
+          ctx.stroke();
+
+          // Icon
+          ctx.font = '24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(UNIT_ICONS[u.id] || '♟️', cx, cy - 2);
+
+          // Health bar
+          const barW = cell * 0.65;
+          const barH = 5;
+          const barX = cx - barW / 2;
+          const barY = cy + cell * 0.32;
+
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(barX, barY, barW, barH);
+
+          const hpRatio = Math.max(0, u.hp / u.maxHp);
+          ctx.fillStyle = u.team === 'p' ? '#38bdf8' : '#f43f5e';
+          ctx.fillRect(barX, barY, barW * hpRatio, barH);
+        }
+      }
+
+      function handleTap(clientX, clientY) {
+        if (!state || state.gameOver) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const scale = canvas.width / rect.width;
+        const x = (clientX - rect.left) * scale;
+        const y = (clientY - rect.top) * scale;
+
+        const cell = canvas.width / 7;
+        const c = Math.floor(x / cell);
+        const r = Math.floor(y / cell);
+
+        if (r < 0 || r >= 7 || c < 0 || c >= 7) return;
+
+        const legal = tabletopLogic.legalActions(state);
+
+        // If unit selected, check if tapped square is an attack or move
+        if (selectedUnitId && state.units[selectedUnitId]) {
+          const u = state.units[selectedUnitId];
+
+          // Check attack
+          const enemyOnSquare = Object.values(state.units).find(e => e.team === 'e' && e.alive && e.r === r && e.c === c);
+          if (enemyOnSquare) {
+            const attackAct = `attack:${u.id}:${enemyOnSquare.id}`;
+            if (legal.includes(attackAct)) {
+              try {
+                tabletopLogic.step(state, attackAct);
+                updateUI();
+                render();
+                return;
+              } catch (err) {
+                console.error(err);
+              }
+            }
+          }
+
+          // Check move
+          const moveAct = `move:${u.id}:${r},${c}`;
+          if (legal.includes(moveAct)) {
+            try {
+              tabletopLogic.step(state, moveAct);
+              updateUI();
+              render();
+              return;
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        }
+
+        // Check if tapped a player unit to select
+        const playerOnSquare = Object.values(state.units).find(p => p.team === 'p' && p.alive && p.r === r && p.c === c);
+        if (playerOnSquare) {
+          selectedUnitId = playerOnSquare.id;
+        } else {
+          selectedUnitId = null;
+        }
+
+        updateUI();
+        render();
+      }
+
+      canvas.addEventListener('click', (e) => {
+        handleTap(e.clientX, e.clientY);
+      });
+
+      btnClaim.addEventListener('click', () => {
+        if (!selectedUnitId) return;
+        const act = `claim:${selectedUnitId}`;
+        const legal = tabletopLogic.legalActions(state);
+        if (legal.includes(act)) {
+          tabletopLogic.step(state, act);
+          updateUI();
+          render();
+        }
+      });
+
+      btnEndTurn.addEventListener('click', () => {
+        if (state.gameOver) {
+          initGame();
+          return;
+        }
+        tabletopLogic.step(state, 'end_turn');
+        updateUI();
+        render();
+      });
+
+      btnRestart.addEventListener('click', () => {
+        initGame();
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>
