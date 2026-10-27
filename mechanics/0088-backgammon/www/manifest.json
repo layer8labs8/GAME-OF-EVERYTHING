@@ -1,0 +1,12 @@
+{
+  "name": "Classic Backgammon",
+  "short_name": "Backgammon",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#292524",
+  "theme_color": "#292524",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Classic Backgammon</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #1c1510;
+      --board: #2b1d14;
+      --point-dark: #78350f;
+      --point-light: #d97706;
+      --panel: #291c13;
+      --panel-border: #4a3424;
+      --text: #fafaf9;
+      --text-muted: #a8a29e;
+      --gold: #f59e0b;
+      --white-checker: #ffffff;
+      --black-checker: #18181b;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #140d09;
+      border-bottom: 2px solid var(--panel-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--gold);
+    }
+    main {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+    .match-status-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+    }
+    .dice-badge {
+      font-weight: 800;
+      color: var(--gold);
+      background: #140d09;
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+    }
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 4 / 3;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid var(--gold);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+    .actions-panel {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      flex: 1;
+      background: #3d2a1c;
+      border: 1px solid var(--gold);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #523926;
+    }
+    .btn-pass {
+      background: #78350f;
+    }
+    .btn-pass:hover {
+      background: #92400e;
+    }
+    .log-feed {
+      width: 100%;
+      background: #140d09;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      height: 38px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icon.svg" alt="Backgammon Logo">
+      <h1>Classic Backgammon</h1>
+    </div>
+    <button id="btn-restart" style="flex: 0; padding: 4px 10px; font-size: 0.78rem;">New Game</button>
+  </header>
+
+  <main>
+    <div class="match-status-bar">
+      <div>White: <b id="white-off-text">0</b>/15 off</div>
+      <div class="dice-badge" id="dice-display">Dice: [ - ]</div>
+      <div>Black: <b id="black-off-text">0</b>/15 off</div>
+    </div>
+
+    <div class="board-container">
+      <canvas id="backgammonCanvas" width="600" height="450"></canvas>
+    </div>
+
+    <div class="actions-panel">
+      <button class="btn-pass" id="btn-pass-action">Pass Dice</button>
+    </div>
+
+    <div class="log-feed" id="log-feed">
+      <div>Tap a White checker to move using available dice. Move all 15 home to bear off!</div>
+    </div>
+  </main>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('backgammonCanvas');
+      const ctx = canvas.getContext('2d');
+      const whiteOffText = document.getElementById('white-off-text');
+      const blackOffText = document.getElementById('black-off-text');
+      const diceDisplay = document.getElementById('dice-display');
+      const logFeed = document.getElementById('log-feed');
+      const btnPass = document.getElementById('btn-pass-action');
+      const btnRestart = document.getElementById('btn-restart');
+
+      let state = null;
+      let selectedPt = null; // number or 'bar'
+
+      function initGame() {
+        const seed = Math.floor(Date.now() % 1000000) || 12345;
+        state = backgammonLogic.createState(seed);
+        selectedPt = null;
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        whiteOffText.textContent = state.whiteOff;
+        blackOffText.textContent = state.blackOff;
+        diceDisplay.textContent = state.currentDice.length > 0 ? `🎲 [ ${state.currentDice.join(', ')} ]` : '🎲 No Dice';
+
+        if (state.log.length > 0) {
+          const recent = state.log.slice(-2);
+          logFeed.innerHTML = recent.map(msg => `<div>${msg}</div>`).reverse().join('');
+        }
+
+        const legal = backgammonLogic.legalActions(state);
+        if (state.gameOver) {
+          btnPass.textContent = state.winner === 'w' ? '🏆 Victory! Play Again' : '💀 Defeat! Play Again';
+          btnPass.style.background = state.winner === 'w' ? '#16a34a' : '#dc2626';
+          btnPass.onclick = () => initGame();
+        } else if (legal.includes('pass_dice')) {
+          btnPass.textContent = 'No Legal Moves (Pass Dice)';
+          btnPass.style.display = 'block';
+          btnPass.style.background = '#78350f';
+          btnPass.onclick = () => {
+            backgammonLogic.step(state, 'pass_dice');
+            selectedPt = null;
+            updateUI();
+            render();
+          };
+        } else {
+          btnPass.textContent = selectedPt ? `Cancel Selection (Pt ${selectedPt})` : 'Select a Checker';
+          btnPass.style.background = '#3d2a1c';
+          btnPass.onclick = () => {
+            selectedPt = null;
+            updateUI();
+            render();
+          };
+        }
+      }
+
+      function render() {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // 1. Wood Board Bed
+        ctx.fillStyle = '#2b1d14';
+        ctx.fillRect(0, 0, w, h);
+
+        // Center Bar
+        const barX = w / 2 - 16;
+        const barW = 32;
+        ctx.fillStyle = '#170e08';
+        ctx.fillRect(barX, 0, barW, h);
+
+        // Points geometry
+        const ptW = (w - barW - 40) / 12;
+        const ptH = h * 0.42;
+
+        // Top points: 13 to 24 (left to right: 13-18 on left, 19-24 on right)
+        // Bottom points: 12 down to 1 (left to right: 12-7 on left, 6-1 on right)
+        for (let col = 0; col < 12; col++) {
+          const isLeft = col < 6;
+          const px = 20 + col * ptW + (isLeft ? 0 : barW);
+
+          // Top point
+          const topPt = 13 + col;
+          const isTopDark = topPt % 2 === 0;
+          ctx.beginPath();
+          ctx.moveTo(px, 0);
+          ctx.lineTo(px + ptW, 0);
+          ctx.lineTo(px + ptW / 2, ptH);
+          ctx.closePath();
+          ctx.fillStyle = isTopDark ? '#78350f' : '#d97706';
+          ctx.fill();
+
+          // Bottom point
+          const botPt = 12 - col;
+          const isBotDark = botPt % 2 === 1;
+          ctx.beginPath();
+          ctx.moveTo(px, h);
+          ctx.lineTo(px + ptW, h);
+          ctx.lineTo(px + ptW / 2, h - ptH);
+          ctx.closePath();
+          ctx.fillStyle = isBotDark ? '#78350f' : '#d97706';
+          ctx.fill();
+
+          // Point labels
+          ctx.fillStyle = '#a8a29e';
+          ctx.font = '700 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(topPt, px + ptW / 2, 12);
+          ctx.fillText(botPt, px + ptW / 2, h - 4);
+        }
+
+        // 2. Highlight destinations if checker selected
+        if (state) {
+          const legal = backgammonLogic.legalActions(state);
+
+          if (selectedPt === 'bar') {
+            for (let i = 0; i < legal.length; i++) {
+              const act = legal[i];
+              if (act.startsWith('enter:')) {
+                const die = parseInt(act.split(':')[1], 10);
+                const targetPt = 25 - die;
+                highlightPoint(targetPt, ptW, ptH, barW, w, h);
+              }
+            }
+          } else if (selectedPt !== null) {
+            for (let i = 0; i < legal.length; i++) {
+              const act = legal[i];
+              if (act.startsWith(`move:${selectedPt}:`)) {
+                const die = parseInt(act.split(':')[2], 10);
+                const targetPt = selectedPt - die;
+                highlightPoint(targetPt, ptW, ptH, barW, w, h);
+              } else if (act.startsWith(`bear_off:${selectedPt}:`)) {
+                // Highlight Bear Off zone
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.4)';
+                ctx.fillRect(w - 20, h / 2 - 40, 20, 80);
+              }
+            }
+          }
+        }
+
+        // 3. Draw Checkers on Points
+        for (let pt = 1; pt <= 24; pt++) {
+          const cell = state.board[pt];
+          if (!cell || cell.count === 0) continue;
+
+          const isTop = pt >= 13;
+          const col = isTop ? pt - 13 : 12 - pt;
+          const isLeft = col < 6;
+          const px = 20 + col * ptW + (isLeft ? 0 : barW) + ptW / 2;
+
+          const rad = Math.min(ptW * 0.44, 14);
+          const maxStack = Math.min(cell.count, 5);
+
+          for (let s = 0; s < maxStack; s++) {
+            const py = isTop ? 22 + s * (rad * 2 + 2) : h - 22 - s * (rad * 2 + 2);
+            drawChecker(px, py, rad, cell.color, pt === selectedPt);
+          }
+
+          if (cell.count > 5) {
+            const labelY = isTop ? 22 + 4 * (rad * 2 + 2) : h - 22 - 4 * (rad * 2 + 2);
+            ctx.fillStyle = cell.color === 'w' ? '#000000' : '#ffffff';
+            ctx.font = '700 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(cell.count, px, labelY);
+          }
+        }
+
+        // 4. Draw Checkers on Bar
+        const barCenterX = w / 2;
+        if (state.whiteBar > 0) {
+          drawChecker(barCenterX, h / 2 + 30, 14, 'w', selectedPt === 'bar');
+          if (state.whiteBar > 1) {
+            ctx.fillStyle = '#000000';
+            ctx.font = '700 11px sans-serif';
+            ctx.fillText(state.whiteBar, barCenterX, h / 2 + 30);
+          }
+        }
+        if (state.blackBar > 0) {
+          drawChecker(barCenterX, h / 2 - 30, 14, 'b', false);
+          if (state.blackBar > 1) {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '700 11px sans-serif';
+            ctx.fillText(state.blackBar, barCenterX, h / 2 - 30);
+          }
+        }
+      }
+
+      function highlightPoint(targetPt, ptW, ptH, barW, w, h) {
+        if (targetPt < 1 || targetPt > 24) return;
+        const isTop = targetPt >= 13;
+        const col = isTop ? targetPt - 13 : 12 - targetPt;
+        const isLeft = col < 6;
+        const px = 20 + col * ptW + (isLeft ? 0 : barW) + ptW / 2;
+        const py = isTop ? ptH * 0.75 : h - ptH * 0.75;
+
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.7)';
+        ctx.beginPath();
+        ctx.arc(px, py, 12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawChecker(x, y, rad, color, isSelected) {
+        ctx.beginPath();
+        ctx.arc(x, y, rad, 0, Math.PI * 2);
+        ctx.fillStyle = color === 'w' ? '#fafaf9' : '#18181b';
+        ctx.fill();
+        ctx.lineWidth = isSelected ? 3 : 1.5;
+        ctx.strokeStyle = isSelected ? '#f59e0b' : color === 'w' ? '#d6d3d1' : '#71717a';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(x, y, rad * 0.6, 0, Math.PI * 2);
+        ctx.strokeStyle = color === 'w' ? '#e7e5e4' : '#3f3f46';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Tap Interaction
+      canvas.addEventListener('click', (e) => {
+        if (!state || state.gameOver) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        const w = canvas.width;
+        const h = canvas.height;
+        const barW = 32;
+        const ptW = (w - barW - 40) / 12;
+
+        const legal = backgammonLogic.legalActions(state);
+
+        // 1. Check if Bar tapped
+        if (Math.abs(x - w / 2) <= 18) {
+          if (state.whiteBar > 0) {
+            selectedPt = 'bar';
+            updateUI();
+            render();
+            return;
+          }
+        }
+
+        // 2. Identify tapped point
+        let tappedPt = null;
+        for (let col = 0; col < 12; col++) {
+          const isLeft = col < 6;
+          const px = 20 + col * ptW + (isLeft ? 0 : barW);
+          if (x >= px && x <= px + ptW) {
+            if (y < h / 2) {
+              tappedPt = 13 + col;
+            } else {
+              tappedPt = 12 - col;
+            }
+            break;
+          }
+        }
+
+        // 3. If a checker is already selected, try to move to tapped point
+        if (selectedPt !== null && tappedPt !== null) {
+          if (selectedPt === 'bar') {
+            const targetDie = 25 - tappedPt;
+            const act = `enter:${targetDie}`;
+            if (legal.includes(act)) {
+              backgammonLogic.step(state, act);
+              selectedPt = null;
+              updateUI();
+              render();
+              return;
+            }
+          } else {
+            const targetDie = selectedPt - tappedPt;
+            const act = `move:${selectedPt}:${targetDie}`;
+            if (legal.includes(act)) {
+              backgammonLogic.step(state, act);
+              selectedPt = null;
+              updateUI();
+              render();
+              return;
+            }
+          }
+        }
+
+        // 4. Try Bearing off if tapped on the right border
+        if (selectedPt !== null && selectedPt !== 'bar' && x > w - 40) {
+          const bearActs = legal.filter(a => a.startsWith(`bear_off:${selectedPt}:`));
+          if (bearActs.length > 0) {
+            backgammonLogic.step(state, bearActs[0]);
+            selectedPt = null;
+            updateUI();
+            render();
+            return;
+          }
+        }
+
+        // 5. Select White checker at tapped point
+        if (tappedPt !== null && state.board[tappedPt].color === 'w' && state.board[tappedPt].count > 0 && state.whiteBar === 0) {
+          selectedPt = tappedPt;
+        } else if (state.whiteBar === 0) {
+          selectedPt = null;
+        }
+
+        updateUI();
+        render();
+      });
+
+      btnRestart.onclick = () => initGame();
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3d2c1d"/>
+      <stop offset="100%" stop-color="#1c130c"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="100" fill="url(#bg)"/>
+  <rect x="28" y="28" width="456" height="456" rx="84" fill="none" stroke="#d97706" stroke-width="6" opacity="0.4"/>
+  <!-- Backgammon Points -->
+  <polygon points="120,440 160,260 200,440" fill="#b45309"/>
+  <polygon points="200,440 240,260 280,440" fill="#d97706"/>
+  <polygon points="280,440 320,260 360,440" fill="#b45309"/>
+  <!-- Checkers -->
+  <g filter="url(#shadow)">
+    <!-- White Checker -->
+    <circle cx="240" cy="380" r="32" fill="#fafaf9" stroke="#d6d3d1" stroke-width="4"/>
+    <circle cx="240" cy="380" r="20" fill="none" stroke="#d6d3d1" stroke-width="2"/>
+    <!-- Black Checker -->
+    <circle cx="240" cy="324" r="32" fill="#18181b" stroke="#71717a" stroke-width="4"/>
+    <circle cx="240" cy="324" r="20" fill="none" stroke="#71717a" stroke-width="2"/>
+    <!-- Die -->
+    <rect x="290" y="140" width="70" height="70" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="3"/>
+    <circle cx="325" cy="175" r="7" fill="#dc2626"/>
+  </g>
+</svg>

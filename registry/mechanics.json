@@ -910,8 +910,9 @@
    "slug": "backgammon",
    "name": "Backgammon",
    "family": "Cards & Board",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "classic"
   },
   {
