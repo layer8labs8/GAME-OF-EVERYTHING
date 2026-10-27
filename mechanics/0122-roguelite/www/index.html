@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nether Ascendance - Roguelite</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#da3633">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #f85149;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #8b949e;
+    }
+    .stats span {
+      color: #bc8cff;
+      margin-left: 2px;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 16 / 9;
+      background: #090d13;
+      border: 2px solid #30363d;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      touch-action: none;
+    }
+    .info-bar {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    .info-pill {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .upgrade-grid {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .upgrade-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 6px 4px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .up-name {
+      font-size: 0.72rem;
+      font-weight: bold;
+      color: #8b949e;
+    }
+    .up-rank {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #f0f6fc;
+    }
+    .action-grid {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    button.btn {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 10px 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.btn:active {
+      background: #30363d;
+    }
+    button.btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #da3633;
+      border-color: #f85149;
+      color: #fff;
+    }
+    button.btn-start {
+      background: #238636;
+      border-color: #2ea043;
+      color: #fff;
+      grid-column: span 4;
+      font-size: 0.95rem;
+      padding: 12px;
+    }
+    button.btn-special {
+      background: #8957e5;
+      border-color: #a371f7;
+      color: #fff;
+    }
+    button.btn-next {
+      background: #388bfd;
+      border-color: #58a6ff;
+      color: #fff;
+    }
+    #boon-panel {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 6px;
+      display: flex;
+      gap: 6px;
+    }
+    #log-panel {
+      width: 100%;
+      max-width: 500px;
+      height: 60px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #8b949e;
+    }
+    #log-panel p {
+      margin-bottom: 2px;
+    }
+    #log-panel p:first-child {
+      color: #f85149;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔥 Nether Ascendance</h1>
+    <div class="stats">
+      Essence: <span id="val-essence">30</span> | Score: <span id="val-score" style="color: #f0883e;">0</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <div class="info-bar">
+      <div class="info-pill">Status: <span id="val-loc" style="color: #58a6ff;">Sanctuary</span></div>
+      <div class="info-pill">Defiance: <span id="val-defiance" style="color: #f0883e;">0</span></div>
+      <div class="info-pill">HP: <span id="val-hp" style="color: #3fb950;">80/80</span></div>
+      <div class="info-pill">Stamina: <span id="val-stamina" style="color: #58a6ff;">40/40</span></div>
+    </div>
+
+    <canvas id="view" width="500" height="260"></canvas>
+
+    <div id="sanctuary-ui" style="width: 100%; max-width: 500px;">
+      <div class="upgrade-grid">
+        <div class="upgrade-card">
+          <span class="up-name">Vitality</span>
+          <span id="rank-vit" class="up-rank">0/5</span>
+          <button id="btn-up-vit" class="btn" style="padding: 2px 6px; font-size: 0.72rem; margin-top: 2px;">25 💎</button>
+        </div>
+        <div class="upgrade-card">
+          <span class="up-name">Strength</span>
+          <span id="rank-str" class="up-rank">0/5</span>
+          <button id="btn-up-str" class="btn" style="padding: 2px 6px; font-size: 0.72rem; margin-top: 2px;">30 💎</button>
+        </div>
+        <div class="upgrade-card">
+          <span class="up-name">Defiance</span>
+          <span id="rank-def" class="up-rank">0/2</span>
+          <button id="btn-up-def" class="btn" style="padding: 2px 6px; font-size: 0.72rem; margin-top: 2px;">50 💎</button>
+        </div>
+        <div class="upgrade-card">
+          <span class="up-name">Harvest</span>
+          <span id="rank-har" class="up-rank">0/3</span>
+          <button id="btn-up-har" class="btn" style="padding: 2px 6px; font-size: 0.72rem; margin-top: 2px;">20 💎</button>
+        </div>
+      </div>
+      <button id="btn-start" class="btn btn-start" style="margin-top: 6px;">⚔️ EMBARK ON ESCAPE ATTEMPT</button>
+    </div>
+
+    <div id="run-ui" style="width: 100%; max-width: 500px; display: none;">
+      <div id="boon-panel" style="display: none;">
+        <button id="btn-boon-flame" class="btn btn-primary" style="flex: 1;">🔥 Flame Boon</button>
+        <button id="btn-boon-lightning" class="btn btn-special" style="flex: 1;">⚡ Lightning</button>
+        <button id="btn-boon-frost" class="btn btn-next" style="flex: 1;">❄️ Frost Boon</button>
+      </div>
+
+      <div class="action-grid">
+        <button id="btn-attack" class="btn btn-primary">Strike</button>
+        <button id="btn-special" class="btn btn-special">Nova (12 SP)</button>
+        <button id="btn-dash" class="btn">Dash</button>
+        <button id="btn-next" class="btn btn-next">Next Gate</button>
+      </div>
+    </div>
+
+    <div id="log-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now());
+      const canvas = document.getElementById('view');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      const valEssence = document.getElementById('val-essence');
+      const valScore = document.getElementById('val-score');
+      const valLoc = document.getElementById('val-loc');
+      const valDefiance = document.getElementById('val-defiance');
+      const valHp = document.getElementById('val-hp');
+      const valStamina = document.getElementById('val-stamina');
+      const logPanel = document.getElementById('log-panel');
+
+      const sanctuaryUi = document.getElementById('sanctuary-ui');
+      const runUi = document.getElementById('run-ui');
+      const boonPanel = document.getElementById('boon-panel');
+
+      const rankVit = document.getElementById('rank-vit');
+      const rankStr = document.getElementById('rank-str');
+      const rankDef = document.getElementById('rank-def');
+      const rankHar = document.getElementById('rank-har');
+
+      const btnUpVit = document.getElementById('btn-up-vit');
+      const btnUpStr = document.getElementById('btn-up-str');
+      const btnUpDef = document.getElementById('btn-up-def');
+      const btnUpHar = document.getElementById('btn-up-har');
+      const btnStart = document.getElementById('btn-start');
+
+      const btnAttack = document.getElementById('btn-attack');
+      const btnSpecial = document.getElementById('btn-special');
+      const btnDash = document.getElementById('btn-dash');
+      const btnNext = document.getElementById('btn-next');
+
+      const btnBoonFlame = document.getElementById('btn-boon-flame');
+      const btnBoonLight = document.getElementById('btn-boon-lightning');
+      const btnBoonFrost = document.getElementById('btn-boon-frost');
+
+      function updateUI() {
+        if (valEssence) valEssence.textContent = state.essence;
+        if (valScore) valScore.textContent = state.score;
+        if (valLoc) valLoc.textContent = state.location === 'sanctuary' ? 'Sanctuary' : ('Chamber ' + state.chamber + '/4');
+        if (valDefiance) valDefiance.textContent = state.hero.defianceCharges;
+        if (valHp) valHp.textContent = state.hero.hp + '/' + state.hero.maxHp;
+        if (valStamina) valStamina.textContent = state.hero.stamina + '/' + state.hero.maxStamina;
+
+        if (rankVit) rankVit.textContent = state.upgrades.vitality + '/5';
+        if (rankStr) rankStr.textContent = state.upgrades.strength + '/5';
+        if (rankDef) rankDef.textContent = state.upgrades.defiance + '/2';
+        if (rankHar) rankHar.textContent = state.upgrades.harvest + '/3';
+
+        if (logPanel && state.combatLog) {
+          logPanel.innerHTML = state.combatLog.slice(-5).reverse().map(function(line) {
+            return '<p>' + line + '</p>';
+          }).join('');
+        }
+
+        const legal = legalActions(state);
+
+        if (state.location === 'sanctuary') {
+          if (sanctuaryUi) sanctuaryUi.style.display = 'block';
+          if (runUi) runUi.style.display = 'none';
+
+          if (btnUpVit) btnUpVit.disabled = state.done || !legal.includes('upgrade:vitality');
+          if (btnUpStr) btnUpStr.disabled = state.done || !legal.includes('upgrade:strength');
+          if (btnUpDef) btnUpDef.disabled = state.done || !legal.includes('upgrade:defiance');
+          if (btnUpHar) btnUpHar.disabled = state.done || !legal.includes('upgrade:harvest');
+          if (btnStart) btnStart.disabled = state.done || !legal.includes('start_run');
+        } else {
+          if (sanctuaryUi) sanctuaryUi.style.display = 'none';
+          if (runUi) runUi.style.display = 'block';
+
+          if (boonPanel) boonPanel.style.display = state.boonPending ? 'flex' : 'none';
+
+          if (btnAttack) btnAttack.disabled = state.done || !legal.includes('attack');
+          if (btnSpecial) btnSpecial.disabled = state.done || !legal.includes('special');
+          if (btnDash) btnDash.disabled = state.done || !legal.includes('dash');
+          if (btnNext) btnNext.disabled = state.done || !legal.includes('next_chamber');
+        }
+
+        render();
+      }
+
+      function render() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 500, 260);
+
+        if (state.location === 'sanctuary') {
+          // Sanctuary View: Mirror of Night & Stygian Pool
+          const grad = ctx.createLinearGradient(0, 0, 0, 260);
+          grad.addColorStop(0, '#1c1024');
+          grad.addColorStop(1, '#090d13');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 500, 260);
+
+          // Stygian Pool
+          ctx.fillStyle = '#2d1538';
+          ctx.beginPath();
+          ctx.ellipse(250, 190, 180, 50, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#5a2d70';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Mirror of Night Arch
+          ctx.strokeStyle = '#8957e5';
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.arc(250, 130, 70, Math.PI, 0);
+          ctx.stroke();
+
+          ctx.font = '36px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🪞', 250, 140);
+          ctx.fillStyle = '#bc8cff';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.fillText('MIRROR OF NIGHT', 250, 70);
+        } else {
+          // Run View: Underworld Lava Chamber
+          const grad = ctx.createLinearGradient(0, 0, 0, 260);
+          grad.addColorStop(0, '#241010');
+          grad.addColorStop(1, '#090d13');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 500, 260);
+
+          // Arena platform
+          ctx.fillStyle = '#211818';
+          ctx.beginPath();
+          ctx.ellipse(250, 195, 210, 55, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#5c1d1d';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Hero on Left
+          const hx = 140, hy = 160;
+          ctx.beginPath();
+          ctx.arc(hx, hy, 28, 0, Math.PI * 2);
+          ctx.fillStyle = '#da3633';
+          ctx.fill();
+          ctx.strokeStyle = state.hero.dodging ? '#58a6ff' : '#f85149';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.font = '22px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🗡️', hx, hy - 2);
+
+          drawBar(hx - 35, hy + 35, 70, 5, state.hero.hp, state.hero.maxHp, '#3fb950');
+          drawBar(hx - 35, hy + 42, 70, 4, state.hero.stamina, state.hero.maxStamina, '#58a6ff');
+
+          // Monster on Right
+          const mx = 360, my = 160;
+          if (state.monster && state.monster.hp > 0) {
+            ctx.beginPath();
+            ctx.arc(mx, my, 32, 0, Math.PI * 2);
+            ctx.fillStyle = state.chamber === 4 ? '#b8234e' : '#48202b';
+            ctx.fill();
+            ctx.strokeStyle = '#f85149';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.font = '24px sans-serif';
+            const mIcon = state.chamber === 4 ? '👿' : (state.chamber === 1 ? '🧟' : (state.chamber === 2 ? '🛡️' : '🐉'));
+            ctx.fillText(mIcon, mx, my - 2);
+
+            ctx.fillStyle = '#f85149';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText(state.monster.name, mx, my - 40);
+            drawBar(mx - 40, my + 38, 80, 5, state.monster.hp, state.monster.maxHp, '#da3633');
+          } else {
+            ctx.font = '36px sans-serif';
+            ctx.fillText('🚪', mx, my);
+            ctx.fillStyle = '#3fb950';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('GATE UNSEALED', mx, my + 30);
+          }
+        }
+
+        // Overlay Game Over
+        if (state.done) {
+          ctx.fillStyle = 'rgba(9, 13, 22, 0.88)';
+          ctx.fillRect(0, 0, 500, 260);
+          ctx.fillStyle = state.victory ? '#3fb950' : '#f85149';
+          ctx.font = 'bold 28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.victory ? 'ESCAPED THE UNDERWORLD!' : 'PURGATORY CONSUMED YOU', 250, 120);
+          ctx.fillStyle = '#c9d1d9';
+          ctx.font = '15px sans-serif';
+          ctx.fillText('Final Score: ' + state.score, 250, 160);
+        }
+      }
+
+      function drawBar(x, y, w, h, val, max, color) {
+        ctx.fillStyle = '#21262d';
+        ctx.fillRect(x, y, w, h);
+        const fillW = Math.max(0, Math.min(w, (val / max) * w));
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, fillW, h);
+      }
+
+      if (btnUpVit) btnUpVit.onclick = function() { step(state, 'upgrade:vitality'); updateUI(); };
+      if (btnUpStr) btnUpStr.onclick = function() { step(state, 'upgrade:strength'); updateUI(); };
+      if (btnUpDef) btnUpDef.onclick = function() { step(state, 'upgrade:defiance'); updateUI(); };
+      if (btnUpHar) btnUpHar.onclick = function() { step(state, 'upgrade:harvest'); updateUI(); };
+      if (btnStart) btnStart.onclick = function() { step(state, 'start_run'); updateUI(); };
+
+      if (btnAttack) btnAttack.onclick = function() { step(state, 'attack'); updateUI(); };
+      if (btnSpecial) btnSpecial.onclick = function() { step(state, 'special'); updateUI(); };
+      if (btnDash) btnDash.onclick = function() { step(state, 'dash'); updateUI(); };
+      if (btnNext) btnNext.onclick = function() { step(state, 'next_chamber'); updateUI(); };
+
+      if (btnBoonFlame) btnBoonFlame.onclick = function() { step(state, 'choose_boon:flame'); updateUI(); };
+      if (btnBoonLight) btnBoonLight.onclick = function() { step(state, 'choose_boon:lightning'); updateUI(); };
+      if (btnBoonFrost) btnBoonFrost.onclick = function() { step(state, 'choose_boon:frost'); updateUI(); };
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>

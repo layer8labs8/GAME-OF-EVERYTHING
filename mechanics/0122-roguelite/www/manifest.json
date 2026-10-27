@@ -1,0 +1,12 @@
+{
+  "name": "Nether Ascendance: Roguelite",
+  "short_name": "NetherAscendance",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#da3633",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1275,9 +1275,11 @@
    "slug": "roguelite",
    "name": "Roguelite",
    "family": "Roguelike",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Nether Ascendance",
+   "levels": "endless"
   },
   {
    "id": "0123",
