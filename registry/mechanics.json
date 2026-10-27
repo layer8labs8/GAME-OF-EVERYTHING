@@ -1440,9 +1440,11 @@
    "slug": "dating-sim",
    "name": "Dating Sim",
    "family": "Adventure",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Starcross Academy",
+   "levels": "endless"
   },
   {
    "id": "0138",

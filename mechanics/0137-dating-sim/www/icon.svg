@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#831843"/>
+      <stop offset="50%" stop-color="#be185d"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <linearGradient id="heart" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fbcfe8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
+  <!-- Starlight halo ring -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#fdf2f8" stroke-width="6" stroke-dasharray="16 12" opacity="0.6"/>
+  <!-- Two overlapping hearts -->
+  <path d="M 220 160 C 170 110 90 150 90 220 C 90 290 210 380 220 390 C 230 380 350 290 350 220 C 350 150 270 110 220 160 Z" fill="url(#heart)" opacity="0.95"/>
+  <path d="M 310 190 C 275 150 215 180 215 235 C 215 290 300 360 310 370 C 320 360 405 290 405 235 C 405 180 345 150 310 190 Z" fill="#fda4af" opacity="0.85"/>
+  <!-- Sparkling Stars -->
+  <polygon points="256,70 264,88 282,96 264,104 256,122 248,104 230,96 248,88" fill="#fef08a"/>
+  <polygon points="120,290 125,302 138,307 125,312 120,324 115,312 102,307 115,302" fill="#fef08a"/>
+  <polygon points="390,120 395,132 408,137 395,142 390,154 385,142 372,137 385,132" fill="#fef08a"/>
+</svg>

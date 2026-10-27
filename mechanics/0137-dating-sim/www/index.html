@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Starcross Academy - Dating Sim</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ec4899">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #18181b;
+      color: #fdf2f8;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #831843;
+      border-radius: 8px;
+      border: 1px solid #f472b6;
+    }
+    h1 {
+      font-size: 1rem;
+      color: #fbcfe8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+      font-size: 0.72rem;
+    }
+    .hud-box {
+      background: #27272a;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+    }
+    .hud-label {
+      color: #f472b6;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.78rem;
+    }
+    .val-day { color: #fde047; }
+    .val-intellect { color: #38bdf8; }
+    .val-athletics { color: #4ade80; }
+    .val-charm { color: #f472b6; }
+    .val-stress { color: #f87171; }
+    .val-allowance { color: #fbbf24; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 7;
+      background: #09090b;
+      border: 2px solid #ec4899;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(236, 72, 153, 0.25);
+      touch-action: none;
+    }
+
+    .dialogue-box {
+      width: 100%;
+      max-width: 460px;
+      background: #27272a;
+      border: 1px solid #ec4899;
+      border-radius: 8px;
+      margin-top: 6px;
+      padding: 8px 12px;
+      height: 95px;
+      overflow-y: auto;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: #fdf2f8;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+    .dlg-line { margin-bottom: 4px; }
+    .dlg-alert { color: #f472b6; font-weight: bold; }
+    .dlg-triumph { color: #4ade80; font-weight: bold; }
+    .dlg-stress { color: #f87171; }
+
+    .actions-grid {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+    }
+    .btn-act {
+      background: #3f3f46;
+      color: #fdf2f8;
+      border: 1px solid #71717a;
+      border-radius: 6px;
+      padding: 8px 6px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .btn-act:hover {
+      background: #52525b;
+      border-color: #a1a1aa;
+    }
+    .btn-act:active {
+      transform: scale(0.97);
+    }
+    .btn-study {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #f0f9ff;
+    }
+    .btn-study:hover { background: #0284c7; }
+    .btn-train {
+      background: #15803d;
+      border-color: #4ade80;
+      color: #f0fdf4;
+    }
+    .btn-train:hover { background: #16a34a; }
+    .btn-art {
+      background: #be185d;
+      border-color: #f472b6;
+      color: #fdf2f8;
+    }
+    .btn-art:hover { background: #db2777; }
+    .btn-talk {
+      background: #581c87;
+      border-color: #c084fc;
+      color: #faf5ff;
+    }
+    .btn-talk:hover { background: #6b21a8; }
+    .btn-confess {
+      background: #9d174d;
+      border-color: #f43f5e;
+      color: #ffe4e6;
+      font-weight: bold;
+      grid-column: span 2;
+      padding: 10px;
+      font-size: 0.82rem;
+    }
+    .btn-confess:hover { background: #be123c; }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(24, 24, 27, 0.94);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      z-index: 10;
+    }
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .win-title { color: #f472b6; text-shadow: 0 0 10px rgba(244, 114, 182, 0.5); }
+    .lose-title { color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>💖 Starcross Academy</h1>
+    <div style="font-size:0.75rem; color:#fbcfe8;" id="turn-counter">Day 1 (Morning)</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Intellect</div>
+      <div class="hud-val val-intellect" id="hud-int">10</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Athletics</div>
+      <div class="hud-val val-athletics" id="hud-ath">10</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Charm</div>
+      <div class="hud-val val-charm" id="hud-cha">10</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Stress/Coins</div>
+      <div class="hud-val" id="hud-st-coin">0% | 35c</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="game-canvas" width="460" height="200"></canvas>
+
+    <div class="dialogue-box" id="dialogue-box">
+      <!-- Monologue & Dialogue -->
+    </div>
+
+    <div class="actions-grid" id="actions-grid">
+      <!-- Buttons -->
+    </div>
+
+    <div id="end-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-title" id="modal-title">AUTUMN FESTIVAL</div>
+      <p id="modal-desc" style="font-size:0.85rem; margin-bottom:12px; color:#cbd5e1;"></p>
+      <button class="btn-act" onclick="window.restartGame()" style="padding:10px 24px; font-size:0.9rem; font-weight:bold;">New Semester</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      function init() {
+        state = createState(Date.now ? Date.now() : 1);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(act) {
+        if (!state || state.done) return;
+        try {
+          step(state, act);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // HUD Updates
+        const intEl = document.getElementById('hud-int');
+        if (intEl) intEl.textContent = state.intellect;
+
+        const athEl = document.getElementById('hud-ath');
+        if (athEl) athEl.textContent = state.athletics;
+
+        const chaEl = document.getElementById('hud-cha');
+        if (chaEl) chaEl.textContent = state.charm;
+
+        const scEl = document.getElementById('hud-st-coin');
+        if (scEl) scEl.textContent = state.stress + '% | ' + state.allowance + 'c';
+
+        const tEl = document.getElementById('turn-counter');
+        if (tEl) {
+          const tod = state.timeOfDay === 0 ? 'Morning' : 'Afternoon';
+          tEl.textContent = 'Day ' + state.day + '/' + state.maxDays + ' (' + tod + ')';
+        }
+
+        // Canvas Rendering
+        if (ctx) {
+          ctx.clearRect(0, 0, 460, 200);
+
+          // Campus Sunset/Morning Backdrop
+          const grad = ctx.createLinearGradient(0, 0, 0, 200);
+          grad.addColorStop(0, '#831843');
+          grad.addColorStop(0.5, '#4c0519');
+          grad.addColorStop(1, '#18181b');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 460, 200);
+
+          // Heroines Character Cards & Heart Meters
+          drawHeroineCard(ctx, 20, 30, 125, 150, 'Aria Vance', state.affection.aria, '#38bdf8', 'Astronomer');
+          drawHeroineCard(ctx, 165, 30, 125, 150, 'Chloe Rivera', state.affection.chloe, '#4ade80', 'Track Star');
+          drawHeroineCard(ctx, 310, 30, 125, 150, 'Serena Laurent', state.affection.serena, '#f472b6', 'Cellist');
+        }
+
+        // Dialogue Rendering
+        const dlgBox = document.getElementById('dialogue-box');
+        if (dlgBox) {
+          let html = '';
+          for (let i = 0; i < state.dialogue.length; i++) {
+            const line = state.dialogue[i];
+            let cls = 'dlg-line';
+            if (line.includes('ROMANTIC TRIUMPH')) cls += ' dlg-triumph';
+            else if (line.includes('Burnout')) cls += ' dlg-stress';
+            else if (line.includes('Affection') || line.includes('Joy')) cls += ' dlg-alert';
+            html += '<div class="' + cls + '">' + escapeHtml(line) + '</div>';
+          }
+          dlgBox.innerHTML = html;
+          dlgBox.scrollTop = dlgBox.scrollHeight;
+        }
+
+        // Action Buttons
+        const actionsEl = document.getElementById('actions-grid');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'activity:study') cls += ' btn-study';
+            else if (act === 'activity:train') cls += ' btn-train';
+            else if (act === 'activity:art') cls += ' btn-art';
+            else if (act.startsWith('talk:')) cls += ' btn-talk';
+            else if (act.startsWith('confess:')) cls += ' btn-confess';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'TRUE LOVE EMBRACED';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Your confession under the Starlight Clock Tower was warmly accepted! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'FESTIVAL AFTERMATH';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'The festival fireworks faded with cherished memories and bittersweet reflection. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function drawHeroineCard(ctx, x, y, w, h, name, affection, color, role) {
+        ctx.fillStyle = 'rgba(24, 24, 27, 0.7)';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y, w, h);
+
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillStyle = color;
+        ctx.fillText(name, x + 8, y + 22);
+
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(role, x + 8, y + 38);
+
+        // Portrait silhouette placeholder
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        ctx.arc(x + w / 2, y + 75, 24, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Heart Progress Bar
+        const barW = w - 16;
+        const ratio = Math.min(1, affection / 100);
+        ctx.fillStyle = '#3f3f46';
+        ctx.fillRect(x + 8, y + 115, barW, 14);
+        ctx.fillStyle = color;
+        ctx.fillRect(x + 8, y + 115, Math.floor(barW * ratio), 14);
+        ctx.strokeStyle = '#71717a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 8, y + 115, barW, 14);
+
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('♥ ' + affection + ' / 100', x + 12, y + 126);
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'activity:study') return '📚 Library Study';
+        if (act === 'activity:train') return '🏃 Track Training';
+        if (act === 'activity:art') return '🎨 Art & Eloquence';
+        if (act === 'activity:rest') return '🍵 Rest & Relax';
+        if (act === 'talk:aria') return '💬 Chat with Aria';
+        if (act === 'talk:chloe') return '💬 Chat with Chloe';
+        if (act === 'talk:serena') return '💬 Chat with Serena';
+        if (act === 'date:aria') return '🔭 Planetarium Date (20c)';
+        if (act === 'date:chloe') return '🥤 Seaside Date (20c)';
+        if (act === 'date:serena') return '🎻 Rooftop Date (20c)';
+        if (act === 'gift:aria') return '🎁 Star Atlas Gift (25c)';
+        if (act === 'gift:chloe') return '🎁 Running Gear Gift (25c)';
+        if (act === 'gift:serena') return '🎁 Sheet Music Gift (25c)';
+        if (act === 'confess:aria') return '💌 Confess Love to Aria';
+        if (act === 'confess:chloe') return '💌 Confess Love to Chloe';
+        if (act === 'confess:serena') return '💌 Confess Love to Serena';
+        if (act === 'confess:solo') return '🎆 Enjoy Festival Solo';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
