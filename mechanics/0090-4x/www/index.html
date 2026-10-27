@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Galactic 4X: Stellar Dominion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #030712;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .min-val { color: #f97316; }
+    .nrg-val { color: #eab308; }
+    .sci-val { color: #38bdf8; }
+    .tech-val { color: #a855f7; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #0f172a 0%, #030712 100%);
+      border: 2px solid #1e293b;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+    }
+    #controls {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #selection-bar {
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 20px;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #1d4ed8;
+      color: #fff;
+      border: none;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #2563eb; }
+    button:disabled { background: #1e293b; color: #64748b; cursor: not-allowed; }
+    #btn-explore { background: #0284c7; }
+    #btn-explore:hover:not(:disabled) { background: #0369a1; }
+    #btn-colonize { background: #059669; }
+    #btn-colonize:hover:not(:disabled) { background: #047857; }
+    #btn-build-fleet { background: #b45309; }
+    #btn-build-fleet:hover:not(:disabled) { background: #92400e; }
+    #btn-research { background: #7c3aed; }
+    #btn-research:hover:not(:disabled) { background: #6d28d9; }
+    #btn-end-turn { background: #e11d48; }
+    #btn-end-turn:hover:not(:disabled) { background: #be123c; }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+      background: #090d16;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+    }
+    #game-over-banner {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .victory-bg { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
+    .defeat-bg { background: #4c0519; color: #fda4af; border: 1px solid #f43f5e; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="stat-badge">T: <span id="ui-turn" style="color:#f3f4f6;">1/30</span></div>
+    <div class="stat-badge">M: <span id="ui-min" class="min-val">25</span></div>
+    <div class="stat-badge">E: <span id="ui-nrg" class="nrg-val">25</span></div>
+    <div class="stat-badge">S: <span id="ui-sci" class="sci-val">5</span></div>
+    <div class="stat-badge">Tech: <span id="ui-tech" class="tech-val">L1</span></div>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="480" height="480"></canvas>
+  </div>
+
+  <div id="controls">
+    <div id="selection-bar">
+      <span id="selected-name">Select a star system</span>
+      <span id="selected-info"></span>
+    </div>
+    <div class="action-row">
+      <button id="btn-explore" style="display:none;">eXplore (5E)</button>
+      <button id="btn-colonize" style="display:none;">eXpand (15M, 10E)</button>
+      <button id="btn-build-fleet" style="display:none;">Build Ship (10M, 5E)</button>
+      <button id="btn-research">Research (20S)</button>
+      <button id="btn-target-0" style="display:none;"></button>
+      <button id="btn-target-1" style="display:none;"></button>
+      <button id="btn-target-2" style="display:none;"></button>
+      <button id="btn-target-3" style="display:none;"></button>
+      <button id="btn-end-turn">End Turn</button>
+      <button id="btn-reset" style="background:#475569;">Restart</button>
+    </div>
+  </div>
+
+  <div id="log-box">Galactic exploration initialized. Command your fleet.</div>
+  <div id="game-over-banner"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now() & 0xffff);
+      let selectedId = 0; // Sol selected by default
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+
+      const uiTurn = document.getElementById('ui-turn');
+      const uiMin = document.getElementById('ui-min');
+      const uiNrg = document.getElementById('ui-nrg');
+      const uiSci = document.getElementById('ui-sci');
+      const uiTech = document.getElementById('ui-tech');
+      const selectedName = document.getElementById('selected-name');
+      const selectedInfo = document.getElementById('selected-info');
+      const btnExplore = document.getElementById('btn-explore');
+      const btnColonize = document.getElementById('btn-colonize');
+      const btnBuildFleet = document.getElementById('btn-build-fleet');
+      const btnResearch = document.getElementById('btn-research');
+      const btnEndTurn = document.getElementById('btn-end-turn');
+      const btnReset = document.getElementById('btn-reset');
+      const logBox = document.getElementById('log-box');
+      const gameOverBanner = document.getElementById('game-over-banner');
+
+      const targetButtons = [
+        document.getElementById('btn-target-0'),
+        document.getElementById('btn-target-1'),
+        document.getElementById('btn-target-2'),
+        document.getElementById('btn-target-3')
+      ];
+
+      function updateUI() {
+        if (uiTurn) uiTurn.textContent = state.turn + '/' + state.maxTurns;
+        if (uiMin) uiMin.textContent = state.minerals;
+        if (uiNrg) uiNrg.textContent = state.energy;
+        if (uiSci) uiSci.textContent = state.science;
+        if (uiTech) uiTech.textContent = 'L' + state.techLevel;
+
+        if (logBox && state.history && state.history.length > 0) {
+          logBox.textContent = state.history[state.history.length - 1];
+        }
+
+        const legals = legalActions(state);
+        const sel = state.systems.find(s => s.id === selectedId);
+
+        if (btnResearch) {
+          btnResearch.disabled = !legals.includes('research') || state.done;
+        }
+
+        if (sel) {
+          if (!sel.exploredByPlayer) {
+            if (selectedName) selectedName.textContent = 'Uncharted System';
+            if (selectedInfo) selectedInfo.textContent = 'Shrouded in Fog-of-War';
+            if (btnExplore) {
+              const canExplore = legals.includes('explore:' + sel.id);
+              btnExplore.style.display = canExplore ? 'inline-block' : 'none';
+              btnExplore.disabled = !canExplore;
+              btnExplore.onclick = function() {
+                try {
+                  step(state, 'explore:' + sel.id);
+                  updateUI();
+                  draw();
+                } catch(e) { console.error(e); }
+              };
+            }
+            if (btnColonize) btnColonize.style.display = 'none';
+            if (btnBuildFleet) btnBuildFleet.style.display = 'none';
+            for (let i = 0; i < targetButtons.length; i++) {
+              if (targetButtons[i]) targetButtons[i].style.display = 'none';
+            }
+          } else {
+            if (btnExplore) btnExplore.style.display = 'none';
+            const ownerTag = sel.owner ? sel.owner.toUpperCase() : 'NEUTRAL';
+            if (selectedName) selectedName.textContent = sel.name + ' (' + ownerTag + ')';
+            if (selectedInfo) selectedInfo.textContent = '+' + sel.yields.m + 'M +' + sel.yields.e + 'E +' + sel.yields.s + 'S • Fleet: ' + sel.playerFleet;
+
+            // Colonize
+            if (btnColonize) {
+              const canCol = legals.includes('colonize:' + sel.id);
+              btnColonize.style.display = (sel.owner === null) ? 'inline-block' : 'none';
+              btnColonize.disabled = !canCol;
+              btnColonize.onclick = function() {
+                try {
+                  step(state, 'colonize:' + sel.id);
+                  updateUI();
+                  draw();
+                } catch(e) { console.error(e); }
+              };
+            }
+
+            // Build Fleet
+            if (btnBuildFleet) {
+              const canBuild = legals.includes('build_fleet:' + sel.id);
+              btnBuildFleet.style.display = (sel.owner === 'player') ? 'inline-block' : 'none';
+              btnBuildFleet.disabled = !canBuild;
+              btnBuildFleet.onclick = function() {
+                try {
+                  step(state, 'build_fleet:' + sel.id);
+                  updateUI();
+                  draw();
+                } catch(e) { console.error(e); }
+              };
+            }
+
+            // Maneuver Fleet
+            for (let i = 0; i < targetButtons.length; i++) {
+              const btn = targetButtons[i];
+              if (!btn) continue;
+              if (sel.playerFleet > 0 && i < sel.neighbors.length && !state.done) {
+                const targetId = sel.neighbors[i];
+                const targetSys = state.systems.find(s => s.id === targetId);
+                if (targetSys.exploredByPlayer) {
+                  btn.style.display = 'inline-block';
+                  btn.textContent = 'Warp to ' + targetSys.name;
+                  btn.onclick = function() {
+                    try {
+                      step(state, 'move_fleet:' + sel.id + ':' + targetId);
+                      updateUI();
+                      draw();
+                    } catch(e) { console.error(e); }
+                  };
+                } else {
+                  btn.style.display = 'none';
+                }
+              } else {
+                btn.style.display = 'none';
+              }
+            }
+          }
+        }
+
+        if (btnEndTurn) btnEndTurn.disabled = state.done;
+
+        if (state.done && gameOverBanner) {
+          gameOverBanner.style.display = 'block';
+          if (state.winner === 'player') {
+            gameOverBanner.className = 'victory-bg';
+            gameOverBanner.textContent = 'VICTORY! ' + (state.result || 'Galactic Dominion Achieved!');
+          } else {
+            gameOverBanner.className = 'defeat-bg';
+            gameOverBanner.textContent = 'DEFEAT! Humanity succumbed to alien subjugation.';
+          }
+        } else if (gameOverBanner) {
+          gameOverBanner.style.display = 'none';
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 480, 480);
+
+        // Hyperlanes
+        ctx.lineWidth = 3;
+        for (let i = 0; i < state.systems.length; i++) {
+          const s1 = state.systems[i];
+          for (let n = 0; n < s1.neighbors.length; n++) {
+            const s2 = state.systems.find(s => s.id === s1.neighbors[n]);
+            if (s1.id < s2.id) {
+              ctx.beginPath();
+              ctx.moveTo(s1.x, s1.y);
+              ctx.lineTo(s2.x, s2.y);
+              if (s1.exploredByPlayer || s2.exploredByPlayer) {
+                ctx.strokeStyle = '#1e3a8a';
+                ctx.setLineDash([4, 4]);
+              } else {
+                ctx.strokeStyle = '#111827';
+                ctx.setLineDash([2, 6]);
+              }
+              ctx.stroke();
+            }
+          }
+        }
+        ctx.setLineDash([]);
+
+        // Star Systems
+        for (let i = 0; i < state.systems.length; i++) {
+          const sys = state.systems[i];
+          const isSelected = sys.id === selectedId;
+
+          if (isSelected) {
+            ctx.beginPath();
+            ctx.arc(sys.x, sys.y, 36, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+            ctx.fill();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(sys.x, sys.y, 26, 0, Math.PI * 2);
+
+          if (!sys.exploredByPlayer) {
+            ctx.fillStyle = '#0f172a';
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('?', sys.x, sys.y);
+            continue;
+          }
+
+          if (sys.owner === 'player') {
+            ctx.fillStyle = '#1e40af';
+            ctx.strokeStyle = '#60a5fa';
+          } else if (sys.owner === 'alien') {
+            ctx.fillStyle = '#991b1b';
+            ctx.strokeStyle = '#f87171';
+          } else {
+            ctx.fillStyle = '#334155';
+            ctx.strokeStyle = '#94a3b8';
+          }
+          ctx.lineWidth = 2.5;
+          ctx.fill();
+          ctx.stroke();
+
+          // System fleet indicator
+          if (sys.playerFleet > 0) {
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🚀' + sys.playerFleet, sys.x, sys.y);
+          } else if (sys.alienFleet > 0) {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('👾' + sys.alienFleet, sys.x, sys.y);
+          } else {
+            // Star core dot
+            ctx.beginPath();
+            ctx.arc(sys.x, sys.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = sys.id === 4 ? '#eab308' : '#f1f5f9';
+            ctx.fill();
+          }
+
+          // System name
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(sys.name, sys.x, sys.y + 24);
+        }
+      }
+
+      if (canvas && canvas.addEventListener) {
+        canvas.addEventListener('click', function(e) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = 480 / rect.width;
+          const scaleY = 480 / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+
+          for (let i = 0; i < state.systems.length; i++) {
+            const sys = state.systems[i];
+            const dist = Math.hypot(mx - sys.x, my - sys.y);
+            if (dist <= 30) {
+              selectedId = sys.id;
+              updateUI();
+              draw();
+              return;
+            }
+          }
+        });
+      }
+
+      if (btnResearch) {
+        btnResearch.onclick = function() {
+          try {
+            step(state, 'research');
+            updateUI();
+            draw();
+          } catch(e) { console.error(e); }
+        };
+      }
+
+      if (btnEndTurn) {
+        btnEndTurn.onclick = function() {
+          try {
+            step(state, 'end_turn');
+            updateUI();
+            draw();
+          } catch(e) { console.error(e); }
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedId = 0;
+          updateUI();
+          draw();
+        };
+      }
+
+      // Initial render
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>
