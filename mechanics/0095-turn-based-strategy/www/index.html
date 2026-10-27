@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Empire & Hexes: Turn-Based Strategy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #18181b;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #27272a;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .gold-val { color: #facc15; }
+    .turn-val { color: #38bdf8; }
+    .cit-val { color: #4ade80; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #0f172a;
+      border: 2px solid #27272a;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+    }
+    #controls {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #selection-bar {
+      font-size: 13px;
+      color: #a1a1aa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 20px;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #1d4ed8; }
+    button:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
+    #btn-attack { background: #dc2626; }
+    #btn-attack:hover:not(:disabled) { background: #b91c1c; }
+    #btn-rush { background: #d97706; }
+    #btn-rush:hover:not(:disabled) { background: #b45309; }
+    #btn-end-turn { background: #059669; }
+    #btn-end-turn:hover:not(:disabled) { background: #047857; }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #a1a1aa;
+      background: #18181b;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #27272a;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+    }
+    #game-over-banner {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .victory-bg { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
+    .defeat-bg { background: #4c0519; color: #fda4af; border: 1px solid #f43f5e; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="stat-badge">Turn: <span id="ui-turn" class="turn-val">1/35</span></div>
+    <div class="stat-badge">Treasury: <span id="ui-gold" class="gold-val">30g</span></div>
+    <div class="stat-badge">Cities: <span id="ui-cities" class="cit-val">1/3</span></div>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="480" height="480"></canvas>
+  </div>
+
+  <div id="controls">
+    <div id="selection-bar">
+      <span id="selected-name">Select a unit or city</span>
+      <span id="selected-info"></span>
+    </div>
+    <div class="action-row">
+      <button id="btn-prod-swordsman" style="display:none;">Build Swordsman</button>
+      <button id="btn-prod-archer" style="display:none;">Build Bowman</button>
+      <button id="btn-prod-knight" style="display:none;">Build Knight</button>
+      <button id="btn-rush" style="display:none;">Rush Unit (50g)</button>
+      <button id="btn-attack" style="display:none;">Attack Target</button>
+      <button id="btn-end-turn">End Turn</button>
+      <button id="btn-reset" style="background:#3f3f46;">Restart</button>
+    </div>
+  </div>
+
+  <div id="log-box">Empire campaign begun. March on enemy citadels and expand dominion.</div>
+  <div id="game-over-banner"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now() & 0xffff);
+      let selectedUnitId = 1; // Start selecting Player Swordsman
+      let selectedCityId = null;
+      let targetEnemyId = null;
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+
+      const uiTurn = document.getElementById('ui-turn');
+      const uiGold = document.getElementById('ui-gold');
+      const uiCities = document.getElementById('ui-cities');
+      const selectedName = document.getElementById('selected-name');
+      const selectedInfo = document.getElementById('selected-info');
+
+      const btnProdSword = document.getElementById('btn-prod-swordsman');
+      const btnProdArcher = document.getElementById('btn-prod-archer');
+      const btnProdKnight = document.getElementById('btn-prod-knight');
+      const btnRush = document.getElementById('btn-rush');
+      const btnAttack = document.getElementById('btn-attack');
+      const btnEndTurn = document.getElementById('btn-end-turn');
+      const btnReset = document.getElementById('btn-reset');
+      const logBox = document.getElementById('log-box');
+      const gameOverBanner = document.getElementById('game-over-banner');
+
+      function updateUI() {
+        if (uiTurn) uiTurn.textContent = state.turn + '/' + state.maxTurns;
+        if (uiGold) uiGold.textContent = state.gold + 'g';
+        const pCities = state.cities.filter(c => c.owner === 'player').length;
+        if (uiCities) uiCities.textContent = pCities + '/3';
+
+        if (logBox && state.history && state.history.length > 0) {
+          logBox.textContent = state.history[state.history.length - 1];
+        }
+
+        const legals = legalActions(state);
+        const selUnit = state.units.find(u => u.id === selectedUnitId);
+        const selCity = state.cities.find(c => c.id === selectedCityId);
+
+        if (selUnit) {
+          if (selectedName) selectedName.textContent = UNIT_SPECS[selUnit.type].name + ' (' + selUnit.team.toUpperCase() + ')';
+          if (selectedInfo) selectedInfo.textContent = 'HP: ' + selUnit.hp + '/' + selUnit.maxHp + ' • MP: ' + selUnit.mp + '/' + selUnit.maxMp;
+
+          // Attack button
+          if (btnAttack) {
+            if (targetEnemyId && selUnit.team === 'player' && selUnit.mp > 0) {
+              const attackStr = 'attack:' + selUnit.id + ':' + targetEnemyId;
+              const canAttack = legals.includes(attackStr);
+              btnAttack.style.display = 'inline-block';
+              btnAttack.disabled = !canAttack || state.done;
+              btnAttack.onclick = function() {
+                try {
+                  step(state, attackStr);
+                  targetEnemyId = null;
+                  updateUI();
+                  draw();
+                } catch(e) { console.error(e); }
+              };
+            } else {
+              btnAttack.style.display = 'none';
+            }
+          }
+        } else if (selCity) {
+          if (selectedName) selectedName.textContent = selCity.name + ' (' + selCity.owner.toUpperCase() + ')';
+          if (selectedInfo) selectedInfo.textContent = 'Prod: +' + selCity.prod + ' • Gold: +' + selCity.gold + ' • Queue: ' + (selCity.queue || 'None');
+          if (btnAttack) btnAttack.style.display = 'none';
+        } else {
+          if (selectedName) selectedName.textContent = 'Select a unit or city';
+          if (selectedInfo) selectedInfo.textContent = '';
+          if (btnAttack) btnAttack.style.display = 'none';
+        }
+
+        // City production controls
+        if (selCity && selCity.owner === 'player') {
+          if (btnProdSword) {
+            btnProdSword.style.display = 'inline-block';
+            btnProdSword.disabled = selCity.queue === 'swordsman' || state.done;
+            btnProdSword.onclick = function() {
+              try { step(state, 'produce:' + selCity.id + ':swordsman'); updateUI(); draw(); } catch(e) { console.error(e); }
+            };
+          }
+          if (btnProdArcher) {
+            btnProdArcher.style.display = 'inline-block';
+            btnProdArcher.disabled = selCity.queue === 'archer' || state.done;
+            btnProdArcher.onclick = function() {
+              try { step(state, 'produce:' + selCity.id + ':archer'); updateUI(); draw(); } catch(e) { console.error(e); }
+            };
+          }
+          if (btnProdKnight) {
+            btnProdKnight.style.display = 'inline-block';
+            btnProdKnight.disabled = selCity.queue === 'knight' || state.done;
+            btnProdKnight.onclick = function() {
+              try { step(state, 'produce:' + selCity.id + ':knight'); updateUI(); draw(); } catch(e) { console.error(e); }
+            };
+          }
+          if (btnRush) {
+            btnRush.style.display = 'inline-block';
+            btnRush.disabled = state.gold < RUSH_GOLD_COST || state.done;
+            btnRush.onclick = function() {
+              try { step(state, 'rush_unit:' + selCity.id + ':' + (selCity.queue || 'swordsman')); updateUI(); draw(); } catch(e) { console.error(e); }
+            };
+          }
+        } else {
+          if (btnProdSword) btnProdSword.style.display = 'none';
+          if (btnProdArcher) btnProdArcher.style.display = 'none';
+          if (btnProdKnight) btnProdKnight.style.display = 'none';
+          if (btnRush) btnRush.style.display = 'none';
+        }
+
+        if (btnEndTurn) btnEndTurn.disabled = state.done;
+
+        if (state.done && gameOverBanner) {
+          gameOverBanner.style.display = 'block';
+          if (state.winner === 'player') {
+            gameOverBanner.className = 'victory-bg';
+            gameOverBanner.textContent = 'VICTORY! Total Imperial Conquest Achieved!';
+          } else {
+            gameOverBanner.className = 'defeat-bg';
+            gameOverBanner.textContent = 'DEFEAT! Your capital has been captured.';
+          }
+        } else if (gameOverBanner) {
+          gameOverBanner.style.display = 'none';
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 480, 480);
+        const cellSize = 480 / GRID_SIZE;
+
+        // Draw Map Tiles
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const x = c * cellSize;
+            const y = r * cellSize;
+
+            if (isMountain(r, c)) {
+              ctx.fillStyle = '#334155';
+            } else if (isHill(r, c)) {
+              ctx.fillStyle = '#854d0e';
+            } else if (isForest(r, c)) {
+              ctx.fillStyle = '#14532d';
+            } else {
+              ctx.fillStyle = '#15803d'; // Plains
+            }
+            ctx.fillRect(x, y, cellSize, cellSize);
+
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, cellSize, cellSize);
+
+            // Terrain icon
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            if (isMountain(r, c)) ctx.fillText('🏔️', x + 4, y + 16);
+            else if (isHill(r, c)) ctx.fillText('⛰️', x + 4, y + 16);
+            else if (isForest(r, c)) ctx.fillText('🌲', x + 4, y + 16);
+          }
+        }
+
+        // Draw Cities
+        for (let i = 0; i < state.cities.length; i++) {
+          const city = state.cities[i];
+          const x = city.c * cellSize;
+          const y = city.r * cellSize;
+
+          ctx.fillStyle = city.owner === 'player' ? 'rgba(37, 99, 235, 0.4)' : (city.owner === 'enemy' ? 'rgba(220, 38, 38, 0.4)' : 'rgba(234, 179, 8, 0.4)');
+          ctx.fillRect(x + 4, y + 4, cellSize - 8, cellSize - 8);
+          ctx.strokeStyle = city.owner === 'player' ? '#60a5fa' : (city.owner === 'enemy' ? '#f87171' : '#facc15');
+          ctx.lineWidth = city.isCapital ? 3 : 2;
+          ctx.strokeRect(x + 4, y + 4, cellSize - 8, cellSize - 8);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText((city.isCapital ? '👑 ' : '') + city.name, x + cellSize / 2, y + cellSize - 8);
+        }
+
+        // Draw Units
+        for (let i = 0; i < state.units.length; i++) {
+          const u = state.units[i];
+          if (u.hp <= 0) continue;
+          const x = u.c * cellSize + cellSize / 2;
+          const y = u.r * cellSize + cellSize / 2;
+
+          const isSelected = selectedUnitId === u.id;
+          const isTargeted = targetEnemyId === u.id;
+
+          if (isSelected) {
+            ctx.beginPath();
+            ctx.arc(x, y, 26, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+
+          if (isTargeted) {
+            ctx.beginPath();
+            ctx.arc(x, y, 26, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, y, 20, 0, Math.PI * 2);
+          ctx.fillStyle = u.team === 'player' ? '#1d4ed8' : '#b91c1c';
+          ctx.fill();
+          ctx.strokeStyle = u.team === 'player' ? '#93c5fd' : '#fca5a5';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Unit Icon
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const icon = u.type === 'archer' ? '🏹' : (u.type === 'knight' ? '🐎' : '⚔️');
+          ctx.fillText(icon, x, y);
+
+          // HP Bar
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(x - 20, y - 28, 40, 5);
+          ctx.fillStyle = u.team === 'player' ? '#38bdf8' : '#f87171';
+          ctx.fillRect(x - 20, y - 28, 40 * (u.hp / u.maxHp), 5);
+
+          // MP Pips
+          if (u.team === 'player' && u.mp > 0) {
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(x + 16, y + 16, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      if (canvas && canvas.addEventListener) {
+        canvas.addEventListener('click', function(e) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = 480 / rect.width;
+          const scaleY = 480 / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+
+          const cellSize = 480 / GRID_SIZE;
+          const c = Math.floor(mx / cellSize);
+          const r = Math.floor(my / cellSize);
+
+          // 1. Clicked an ally unit
+          const clickedAlly = state.units.find(u => u.hp > 0 && u.team === 'player' && u.r === r && u.c === c);
+          if (clickedAlly) {
+            selectedUnitId = clickedAlly.id;
+            selectedCityId = null;
+            targetEnemyId = null;
+            updateUI();
+            draw();
+            return;
+          }
+
+          // 2. Clicked an enemy unit
+          const clickedEnemy = state.units.find(u => u.hp > 0 && u.team === 'enemy' && u.r === r && u.c === c);
+          if (clickedEnemy) {
+            targetEnemyId = clickedEnemy.id;
+            updateUI();
+            draw();
+            return;
+          }
+
+          // 3. Clicked a city
+          const clickedCity = state.cities.find(ct => ct.r === r && ct.c === c);
+          if (clickedCity) {
+            selectedCityId = clickedCity.id;
+            selectedUnitId = null;
+            targetEnemyId = null;
+            updateUI();
+            draw();
+            return;
+          }
+
+          // 4. Move selected friendly unit to clicked tile
+          const selUnit = state.units.find(u => u.id === selectedUnitId);
+          if (selUnit && selUnit.team === 'player' && selUnit.mp > 0) {
+            const moveAct = 'move:' + selUnit.id + ':' + r + ',' + c;
+            const legals = legalActions(state);
+            if (legals.includes(moveAct)) {
+              try {
+                step(state, moveAct);
+                updateUI();
+                draw();
+              } catch(err) { console.error(err); }
+            }
+          }
+        });
+      }
+
+      if (btnEndTurn) {
+        btnEndTurn.onclick = function() {
+          try {
+            step(state, 'end_turn');
+            updateUI();
+            draw();
+          } catch(e) { console.error(e); }
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedUnitId = 1;
+          selectedCityId = null;
+          targetEnemyId = null;
+          updateUI();
+          draw();
+        };
+      }
+
+      // Initial render
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>

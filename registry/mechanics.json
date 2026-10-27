@@ -980,8 +980,9 @@
    "slug": "turn-based-strategy",
    "name": "Turn-Based Strategy",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {
