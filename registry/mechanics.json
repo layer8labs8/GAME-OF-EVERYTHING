@@ -1517,9 +1517,11 @@
       "slug": "colony-sim",
       "name": "Colony Sim",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Aegis Outpost",
+      "levels": "endless"
     },
     {
       "id": "0145",

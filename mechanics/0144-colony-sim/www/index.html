@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aegis Outpost - Colony Sim</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #111827;
+      border-radius: 8px;
+      border: 1px solid #10b981;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #9ca3af;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-pop { color: #38bdf8; }
+    .val-hp { color: #f87171; }
+    .val-mor { color: #facc15; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #090d16;
+      border: 2px solid #10b981;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.72rem;
+      color: #d1d5db;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .res-grid {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .res-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 4px 2px;
+      text-align: center;
+      font-size: 0.65rem;
+    }
+    .res-num {
+      font-weight: bold;
+      font-size: 0.8rem;
+      color: #f9fafb;
+      margin-top: 2px;
+    }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #1f2937;
+      color: #f3f4f6;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #374151;
+      transform: translateY(-1px);
+    }
+    .btn-sol {
+      background: #047857;
+      border-color: #10b981;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 9px 6px;
+    }
+    .btn-sol:hover { background: #059669; }
+    .btn-scavenge {
+      background: #b45309;
+      border-color: #f59e0b;
+    }
+    .btn-scavenge:hover { background: #d97706; }
+    .btn-med {
+      background: #be123c;
+      border-color: #f43f5e;
+    }
+    .btn-med:hover { background: #e11d48; }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #090d16;
+      border: 1px solid #1f2937;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #9ca3af;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(3, 7, 18, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #d1d5db;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #10b981;
+      border: none;
+      color: #030712;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #34d399; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🪐 Aegis Outpost</h1>
+    <div style="font-size: 0.72rem; color: #34d399;" id="header-weather">Calm Sol</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Lunar Sol</div>
+      <div class="hud-val" id="val-day">Sol 1</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Population</div>
+      <div class="hud-val val-pop" id="val-pop">4 / 6</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Health</div>
+      <div class="hud-val val-hp" id="val-hp">90%</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Morale</div>
+      <div class="hud-val val-mor" id="val-mor">80%</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="colony-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">COLONY AUTONOMY ACHIEVED</div>
+      <div class="modal-desc" id="modal-desc">Aegis Outpost established a self-sufficient lunar colony!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Establish New Lunar Outpost</button>
+    </div>
+  </div>
+
+  <div class="section-title">Life Support & Resources</div>
+  <div class="res-grid">
+    <div class="res-card">
+      <div style="color: #fbbf24;">🍞 Food</div>
+      <div class="res-num" id="res-rations">20</div>
+    </div>
+    <div class="res-card">
+      <div style="color: #38bdf8;">💧 Water</div>
+      <div class="res-num" id="res-water">20</div>
+    </div>
+    <div class="res-card">
+      <div style="color: #6ee7b7;">🌬️ O2</div>
+      <div class="res-num" id="res-o2">25</div>
+    </div>
+    <div class="res-card">
+      <div style="color: #facc15;">⚡ Power</div>
+      <div class="res-num" id="res-energy">15</div>
+    </div>
+    <div class="res-card">
+      <div style="color: #9ca3af;">⚙️ Scrap</div>
+      <div class="res-num" id="res-scrap">60</div>
+    </div>
+    <div class="res-card">
+      <div style="color: #f472b6;">🔬 Comp</div>
+      <div class="res-num" id="res-comp">30</div>
+    </div>
+  </div>
+
+  <div class="section-title">Outpost Directives</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Colony Chronicle Log</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('colony-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Alien Sky & Distant Celestial Body
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(380, 50, 24, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#090d16';
+        ctx.beginPath();
+        ctx.arc(388, 46, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stars
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 35; i++) {
+          const sx = (i * 73 + state.turns * 2) % canvas.width;
+          const sy = (i * 37) % 120;
+          ctx.fillRect(sx, sy, 1.2, 1.2);
+        }
+
+        // Craggy Mountains
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(0, 150);
+        ctx.lineTo(80, 110);
+        ctx.lineTo(170, 145);
+        ctx.lineTo(260, 95);
+        ctx.lineTo(360, 140);
+        ctx.lineTo(460, 115);
+        ctx.lineTo(460, 160);
+        ctx.lineTo(0, 160);
+        ctx.fill();
+
+        // Lunar Ground Plinth
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, 160, canvas.width, 70);
+        ctx.strokeStyle = '#374151';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 160);
+        ctx.lineTo(canvas.width, 160);
+        ctx.stroke();
+
+        // Facilities rendering on surface
+        // 1. Quarters (Left)
+        drawModule(ctx, 30, 125, 60, 35, '🏠 Hab x' + state.facilities.quarters, '#38bdf8');
+        // 2. Biodomes
+        drawDome(ctx, 130, 160, state.facilities.biodomes);
+        // 3. Scrubbers
+        drawModule(ctx, 205, 120, 48, 40, '🌬️ O2 x' + state.facilities.scrubbers, '#6ee7b7');
+        // 4. Condensers
+        drawModule(ctx, 275, 120, 48, 40, '💧 H2O x' + state.facilities.condensers, '#38bdf8');
+        // 5. Reactor
+        drawModule(ctx, 345, 110, 52, 50, '⚡ React x' + state.facilities.reactors, '#facc15');
+
+        // Colonists sprites wandering outside
+        for (let i = 0; i < Math.min(8, state.colonists); i++) {
+          const cx = 50 + (i * 45) % 360;
+          const cy = 185 + (i % 2) * 15;
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🧑‍🚀', cx, cy);
+        }
+
+        // Dust Storm / Cold Snap Overlay
+        if (state.event === 'Dust Storm') {
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else if (state.event === 'Cold Snap') {
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Update HUD
+        const wthEl = document.getElementById('header-weather');
+        if (wthEl) {
+          wthEl.textContent = state.event;
+          wthEl.style.color = state.event === 'Calm Sol' ? '#34d399' : (state.event === 'Dust Storm' ? '#f59e0b' : '#38bdf8');
+        }
+
+        const dayEl = document.getElementById('val-day');
+        if (dayEl) dayEl.textContent = 'Sol ' + state.day;
+
+        const popEl = document.getElementById('val-pop');
+        if (popEl) popEl.textContent = state.colonists + ' / ' + state.maxCapacity;
+
+        const hpEl = document.getElementById('val-hp');
+        if (hpEl) hpEl.textContent = state.health + '%';
+
+        const morEl = document.getElementById('val-mor');
+        if (morEl) morEl.textContent = state.morale + '%';
+
+        // Resources
+        const ratEl = document.getElementById('res-rations');
+        if (ratEl) ratEl.textContent = state.resources.rations;
+
+        const watEl = document.getElementById('res-water');
+        if (watEl) watEl.textContent = state.resources.water;
+
+        const o2El = document.getElementById('res-o2');
+        if (o2El) o2El.textContent = state.resources.oxygen;
+
+        const pwrEl = document.getElementById('res-energy');
+        if (pwrEl) pwrEl.textContent = state.resources.energy;
+
+        const scpEl = document.getElementById('res-scrap');
+        if (scpEl) scpEl.textContent = state.resources.scrap;
+
+        const cmpEl = document.getElementById('res-comp');
+        if (cmpEl) cmpEl.textContent = state.resources.components;
+
+        // Render Action Buttons
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:advance_day') cls += ' btn-sol';
+            else if (act === 'action:scavenge_surface') cls += ' btn-scavenge';
+            else if (act === 'action:treat_colonists') cls += ' btn-med';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Render Activity Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'COLONY AUTONOMY ATTAINED!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Aegis Outpost sustained ' + state.colonists + ' colonists through Sol ' + state.day + '! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'COLONY COLLAPSED';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Environmental challenges overwhelmed the colony. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function drawModule(ctx, x, y, w, h, label, color) {
+        ctx.fillStyle = '#1f2937';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '8px monospace';
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x + w / 2, y + h / 2 + 3);
+        ctx.textAlign = 'start';
+      }
+
+      function drawDome(ctx, cx, groundY, count) {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, groundY, 32, Math.PI, 0);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '9px monospace';
+        ctx.fillStyle = '#6ee7b7';
+        ctx.textAlign = 'center';
+        ctx.fillText('🌱 Dome x' + count, cx, groundY - 10);
+        ctx.textAlign = 'start';
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:advance_day') return '☀️ CONCLUDE SOL (Cycle Needs)';
+        if (act === 'action:scavenge_surface') return '🚀 Rover Scavenge (+Scrap)';
+        if (act === 'action:treat_colonists') return '💉 Medical Triage (+HP/Mor)';
+        if (act === 'action:build_biodome') return '🌱 Biodome (30s/15c)';
+        if (act === 'action:build_scrubber') return '🌬️ Scrubber (25s/10c)';
+        if (act === 'action:build_condenser') return '💧 Condenser (25s/10c)';
+        if (act === 'action:build_reactor') return '⚡ Reactor (40s/20c)';
+        if (act === 'action:build_quarters') return '🏠 Quarters (35s/10c)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

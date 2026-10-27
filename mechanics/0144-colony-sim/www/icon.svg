@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="lunar-sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#030712"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#1f2937"/>
+    </linearGradient>
+    <linearGradient id="dome-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#lunar-sky)"/>
+  <!-- Distant Exoplanet in Sky -->
+  <circle cx="380" cy="120" r="50" fill="#f59e0b" opacity="0.8"/>
+  <circle cx="395" cy="110" r="45" fill="#030712" opacity="0.4"/>
+  <!-- Lunar Horizon / Mountains -->
+  <polygon points="0,380 90,320 200,370 340,300 440,360 512,330 512,512 0,512" fill="#374151"/>
+  <!-- Outer Habitat Shield Ring -->
+  <circle cx="256" cy="330" r="140" fill="none" stroke="#6ee7b7" stroke-width="6" stroke-dasharray="12 8" opacity="0.4"/>
+  <!-- Geodesic Biodome -->
+  <path d="M 136 370 A 120 120 0 0 1 376 370 Z" fill="url(#dome-glow)" opacity="0.85"/>
+  <!-- Geodesic Grid Struts -->
+  <path d="M 256 250 L 196 320 M 256 250 L 316 320 M 196 320 L 316 320 M 256 250 L 256 370 M 196 320 L 160 370 M 316 320 L 352 370" stroke="#f0fdf4" stroke-width="4" stroke-linecap="round"/>
+  <!-- Ground Base Plinth -->
+  <rect x="110" y="370" width="292" height="24" rx="4" fill="#4b5563"/>
+</svg>
