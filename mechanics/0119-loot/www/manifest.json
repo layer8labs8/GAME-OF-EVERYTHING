@@ -1,0 +1,12 @@
+{
+  "name": "Vault Hunter: Abyssal Relics",
+  "short_name": "VaultHunter",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#f0883e",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

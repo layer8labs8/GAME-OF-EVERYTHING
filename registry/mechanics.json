@@ -1242,9 +1242,11 @@
    "slug": "loot",
    "name": "Loot",
    "family": "RPG",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Vault Hunter",
+   "levels": "endless"
   },
   {
    "id": "0120",

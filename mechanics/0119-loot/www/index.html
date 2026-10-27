@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vault Hunter: Abyssal Relics</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f0883e">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #f0883e;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #8b949e;
+    }
+    .stats span {
+      color: #58a6ff;
+      margin-left: 2px;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 16 / 9;
+      background: #090d13;
+      border: 2px solid #30363d;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      touch-action: none;
+    }
+    .gear-row {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .gear-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .gear-title {
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    .gear-stats {
+      color: #8b949e;
+    }
+    .action-grid {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    button.btn {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 10px 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.btn:active {
+      background: #30363d;
+    }
+    button.btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #f0883e;
+      border-color: #f6ad55;
+      color: #000;
+    }
+    button.btn-skill {
+      background: #8957e5;
+      border-color: #a371f7;
+      color: #fff;
+    }
+    button.btn-next {
+      background: #238636;
+      border-color: #2ea043;
+      color: #fff;
+    }
+    #inventory-box {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 110px;
+      overflow-y: auto;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 6px;
+    }
+    .inv-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #21262d;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+    }
+    .inv-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .btn-sm {
+      padding: 2px 6px;
+      font-size: 0.72rem;
+      border-radius: 4px;
+      border: 1px solid #30363d;
+      background: #161b22;
+      color: #c9d1d9;
+      cursor: pointer;
+    }
+    #log-panel {
+      width: 100%;
+      max-width: 500px;
+      height: 60px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #8b949e;
+    }
+    #log-panel p {
+      margin-bottom: 2px;
+    }
+    #log-panel p:first-child {
+      color: #f0883e;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💎 Vault Hunter: Relics</h1>
+    <div class="stats">
+      Vault: <span id="val-vault">1/5</span> | Scrap: <span id="val-scrap" style="color: #f0883e;">20</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="vault-view" width="500" height="260"></canvas>
+
+    <div class="gear-row">
+      <div id="card-weapon" class="gear-card">
+        <div class="gear-title" style="color: #8b949e;">Weapon</div>
+        <div class="gear-stats" id="stat-weapon">Atk +12</div>
+        <button id="btn-up-weapon" class="btn-sm" style="margin-top: 4px;">Up (+40 sc)</button>
+      </div>
+      <div id="card-armor" class="gear-card">
+        <div class="gear-title" style="color: #8b949e;">Armor</div>
+        <div class="gear-stats" id="stat-armor">Def +4</div>
+        <button id="btn-up-armor" class="btn-sm" style="margin-top: 4px;">Up (+40 sc)</button>
+      </div>
+      <div id="card-relic" class="gear-card">
+        <div class="gear-title" style="color: #8b949e;">Relic</div>
+        <div class="gear-stats" id="stat-relic">HP +15</div>
+        <button id="btn-up-relic" class="btn-sm" style="margin-top: 4px;">Up (+40 sc)</button>
+      </div>
+    </div>
+
+    <div class="action-grid">
+      <button id="btn-attack" class="btn btn-primary">Attack</button>
+      <button id="btn-skill" class="btn btn-skill">Abyssal Strike</button>
+      <button id="btn-heal" class="btn">Heal</button>
+      <button id="btn-next" class="btn btn-next">Next Vault</button>
+    </div>
+
+    <div id="inventory-box"></div>
+    <div id="log-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now());
+      const canvas = document.getElementById('vault-view');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      const valVault = document.getElementById('val-vault');
+      const valScrap = document.getElementById('val-scrap');
+      const logPanel = document.getElementById('log-panel');
+      const invBox = document.getElementById('inventory-box');
+
+      const statWeapon = document.getElementById('stat-weapon');
+      const statArmor = document.getElementById('stat-armor');
+      const statRelic = document.getElementById('stat-relic');
+
+      const cardWeapon = document.getElementById('card-weapon');
+      const cardArmor = document.getElementById('card-armor');
+      const cardRelic = document.getElementById('card-relic');
+
+      const btnUpWeapon = document.getElementById('btn-up-weapon');
+      const btnUpArmor = document.getElementById('btn-up-armor');
+      const btnUpRelic = document.getElementById('btn-up-relic');
+
+      const btnAttack = document.getElementById('btn-attack');
+      const btnSkill = document.getElementById('btn-skill');
+      const btnHeal = document.getElementById('btn-heal');
+      const btnNext = document.getElementById('btn-next');
+
+      const RARITY_COLORS = {
+        common: '#8b949e',
+        rare: '#58a6ff',
+        epic: '#bc8cff',
+        legendary: '#f0883e'
+      };
+
+      function updateUI() {
+        if (valVault) valVault.textContent = state.vault + '/' + state.maxVaults;
+        if (valScrap) valScrap.textContent = state.hero.scrap;
+
+        const w = state.hero.equipment.weapon;
+        const a = state.hero.equipment.armor;
+        const r = state.hero.equipment.relic;
+
+        if (statWeapon) statWeapon.textContent = w.name + ' (+' + w.level + ') Atk ' + (w.atk + w.level * 4);
+        if (statArmor) statArmor.textContent = a.name + ' (+' + a.level + ') Def ' + (a.def + a.level * 3);
+        if (statRelic) statRelic.textContent = r.name + ' (+' + r.level + ') HP ' + (r.bonusHp + r.level * 15);
+
+        if (cardWeapon) cardWeapon.style.borderColor = RARITY_COLORS[w.rarity] || '#30363d';
+        if (cardArmor) cardArmor.style.borderColor = RARITY_COLORS[a.rarity] || '#30363d';
+        if (cardRelic) cardRelic.style.borderColor = RARITY_COLORS[r.rarity] || '#30363d';
+
+        if (logPanel && state.combatLog) {
+          logPanel.innerHTML = state.combatLog.slice(-5).reverse().map(function(line) {
+            return '<p>' + line + '</p>';
+          }).join('');
+        }
+
+        const legal = legalActions(state);
+
+        if (btnAttack) btnAttack.disabled = state.done || !legal.includes('attack');
+        if (btnSkill) btnSkill.disabled = state.done || !legal.includes('skill');
+        if (btnHeal) {
+          btnHeal.disabled = state.done || !legal.includes('heal');
+          btnHeal.textContent = 'Heal (' + state.hero.potions + ')';
+        }
+        if (btnNext) btnNext.disabled = state.done || !legal.includes('next_vault');
+
+        if (btnUpWeapon) btnUpWeapon.disabled = state.done || !legal.includes('upgrade:weapon');
+        if (btnUpArmor) btnUpArmor.disabled = state.done || !legal.includes('upgrade:armor');
+        if (btnUpRelic) btnUpRelic.disabled = state.done || !legal.includes('upgrade:relic');
+
+        // Render Inventory list
+        if (invBox) {
+          if (state.hero.inventory.length === 0) {
+            invBox.innerHTML = '<div style="color: #6e7681; font-size: 0.75rem; text-align: center; padding: 10px;">Backpack empty. Slay monsters for loot!</div>';
+          } else {
+            invBox.innerHTML = state.hero.inventory.map(function(item, idx) {
+              const col = RARITY_COLORS[item.rarity] || '#8b949e';
+              const val = item.slot === 'weapon' ? ('Atk ' + item.atk) : (item.slot === 'armor' ? ('Def ' + item.def) : ('HP +' + item.bonusHp));
+              return '<div class="inv-row">' +
+                '<span style="color: ' + col + '; font-weight: 600;">[' + item.rarity.toUpperCase() + '] ' + item.name + ' (' + val + ')</span>' +
+                '<div class="inv-actions">' +
+                  '<button class="btn-sm btn-equip" data-idx="' + idx + '">Equip</button>' +
+                  '<button class="btn-sm btn-salvage" data-idx="' + idx + '">Salvage</button>' +
+                '</div>' +
+              '</div>';
+            }).join('');
+
+            const equipBtns = invBox.querySelectorAll ? invBox.querySelectorAll('.btn-equip') : [];
+            for (let e = 0; e < equipBtns.length; e++) {
+              equipBtns[e].onclick = function() {
+                const idx = this.getAttribute('data-idx');
+                if (legal.includes('equip:' + idx)) {
+                  step(state, 'equip:' + idx);
+                  updateUI();
+                }
+              };
+            }
+
+            const salBtns = invBox.querySelectorAll ? invBox.querySelectorAll('.btn-salvage') : [];
+            for (let s = 0; s < salBtns.length; s++) {
+              salBtns[s].onclick = function() {
+                const idx = this.getAttribute('data-idx');
+                if (legal.includes('salvage:' + idx)) {
+                  step(state, 'salvage:' + idx);
+                  updateUI();
+                }
+              };
+            }
+          }
+        }
+
+        render();
+      }
+
+      function render() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 500, 260);
+
+        // Vault backdrop
+        const grad = ctx.createLinearGradient(0, 0, 0, 260);
+        grad.addColorStop(0, '#1a1008');
+        grad.addColorStop(1, '#090d13');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 500, 260);
+
+        // Vault floor platform
+        ctx.fillStyle = '#211812';
+        ctx.beginPath();
+        ctx.ellipse(250, 195, 210, 55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#3d2b1f';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Hero on Left
+        const hx = 140, hy = 160;
+        ctx.beginPath();
+        ctx.arc(hx, hy, 28, 0, Math.PI * 2);
+        ctx.fillStyle = '#f0883e';
+        ctx.fill();
+        ctx.strokeStyle = '#f6ad55';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = '22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🏹', hx, hy - 2);
+
+        // Hero HP & MP bars
+        drawBar(hx - 35, hy + 35, 70, 5, state.hero.hp, state.hero.maxHp, '#3fb950');
+        drawBar(hx - 35, hy + 42, 70, 4, state.hero.mp, state.hero.maxMp, '#58a6ff');
+
+        // Monster on Right
+        const mx = 360, my = 160;
+        if (state.monster.hp > 0) {
+          ctx.beginPath();
+          ctx.arc(mx, my, 32, 0, Math.PI * 2);
+          ctx.fillStyle = state.vault === 5 ? '#da3633' : '#a371f7';
+          ctx.fill();
+          ctx.strokeStyle = '#f85149';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.font = '26px sans-serif';
+          const mIcon = state.vault === 5 ? '👑' : (state.vault === 1 ? '🧌' : (state.vault === 2 ? '🤖' : '👿'));
+          ctx.fillText(mIcon, mx, my - 2);
+
+          ctx.fillStyle = '#f85149';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.fillText(state.monster.name, mx, my - 40);
+          drawBar(mx - 40, my + 38, 80, 5, state.monster.hp, state.monster.maxHp, '#da3633');
+        } else {
+          // Open Treasure Chest
+          ctx.font = '36px sans-serif';
+          ctx.fillText('🎁', mx, my);
+          ctx.fillStyle = '#f0883e';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.fillText('VAULT CLEARED', mx, my + 30);
+        }
+
+        // Overlay Game Over
+        if (state.done) {
+          ctx.fillStyle = 'rgba(9, 13, 22, 0.85)';
+          ctx.fillRect(0, 0, 500, 260);
+          ctx.fillStyle = state.victory ? '#3fb950' : '#f85149';
+          ctx.font = 'bold 28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.victory ? 'VAULT SOVEREIGN SLAIN!' : 'EXTRACTION FAILED', 250, 120);
+          ctx.fillStyle = '#c9d1d9';
+          ctx.font = '15px sans-serif';
+          ctx.fillText('Final Score: ' + state.score, 250, 160);
+        }
+      }
+
+      function drawBar(x, y, w, h, val, max, color) {
+        ctx.fillStyle = '#21262d';
+        ctx.fillRect(x, y, w, h);
+        const fillW = Math.max(0, Math.min(w, (val / max) * w));
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, fillW, h);
+      }
+
+      if (btnAttack) {
+        btnAttack.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('attack')) {
+            step(state, 'attack');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnSkill) {
+        btnSkill.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('skill')) {
+            step(state, 'skill');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnHeal) {
+        btnHeal.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('heal')) {
+            step(state, 'heal');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnNext) {
+        btnNext.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('next_vault')) {
+            step(state, 'next_vault');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnUpWeapon) {
+        btnUpWeapon.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('upgrade:weapon')) {
+            step(state, 'upgrade:weapon');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnUpArmor) {
+        btnUpArmor.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('upgrade:armor')) {
+            step(state, 'upgrade:armor');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnUpRelic) {
+        btnUpRelic.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('upgrade:relic')) {
+            step(state, 'upgrade:relic');
+            updateUI();
+          }
+        };
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
