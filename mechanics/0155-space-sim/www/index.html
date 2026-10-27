@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Void Navigator - Space Sim</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0284c7">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #030712;
+      color: #f0fdf4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 14px;
+      background: #0f172a;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      background: #0b0f19;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      font-size: 0.72rem;
+    }
+    .hud-box {
+      background: #0f172a;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #1e293b;
+    }
+    .hud-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    .text-cyan { color: #38bdf8; }
+    .text-emerald { color: #10b981; }
+    .text-amber { color: #f59e0b; }
+    .text-rose { color: #f43f5e; }
+    .text-indigo { color: #818cf8; }
+
+    #canvas-container {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      background: #000000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #1e293b;
+      aspect-ratio: 16 / 10;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .status-banner {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      padding: 6px 12px;
+      background: #0f172a;
+      border-left: 4px solid #0284c7;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .telemetry-bar {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 3px;
+      margin: 0 10px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #0284c7;
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+
+    .controls-grid {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    button {
+      background: #0f172a;
+      border: 1px solid #0284c7;
+      color: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+    button:hover:not(:disabled) {
+      background: #0369a1;
+      border-color: #38bdf8;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      opacity: 0.35;
+      border-color: #334155;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    button.btn-amber {
+      background: #d97706;
+      border-color: #f59e0b;
+    }
+    button.btn-emerald {
+      background: #059669;
+      border-color: #10b981;
+    }
+    button.btn-purple {
+      background: #7c3aed;
+      border-color: #a855f7;
+      grid-column: span 2;
+    }
+    .btn-sub {
+      font-size: 0.62rem;
+      font-weight: normal;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🚀 Void Navigator</h1>
+    <div style="font-size: 0.72rem; color: #94a3b8;">
+      Turn: <span id="hdr-turn" class="text-cyan">0</span>/120 | Score: <span id="hdr-score" class="text-emerald">0</span>
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Hull</div>
+      <div id="hud-hull" class="hud-val text-emerald">100%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Shields</div>
+      <div id="hud-shields" class="hud-val text-cyan">100%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Fuel</div>
+      <div id="hud-fuel" class="hud-val text-amber">80kg</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Power</div>
+      <div id="hud-power" class="hud-val text-indigo">90%</div>
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="520" height="325"></canvas>
+  </div>
+
+  <div id="status-banner" class="status-banner">
+    Vessel unmoored in Terra Prime orbit. Flight computers online.
+  </div>
+
+  <div class="telemetry-bar">
+    <div id="sector-title" style="font-weight: bold; color: #38bdf8;">Terra Prime Orbit</div>
+    <div class="progress-track">
+      <div id="sector-progress" class="progress-fill"></div>
+    </div>
+    <div style="font-size: 0.7rem; color: #cbd5e1;">
+      Credits: <span id="tele-credits" style="color: #10b981; font-weight: bold;">$300</span> | 
+      Science: <span id="tele-science" style="color: #38bdf8; font-weight: bold;">20</span>
+    </div>
+  </div>
+
+  <div id="controls" class="controls-grid">
+    <!-- Controls injected by JS -->
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Date.now() % 1000000));
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Generate stable star background coordinates
+    const stars = [];
+    for (let i = 0; i < 60; i++) {
+      stars.push({
+        x: (i * 37) % 520,
+        y: (i * 59) % 325,
+        r: (i % 3 === 0) ? 1.5 : 1,
+        color: (i % 5 === 0) ? '#38bdf8' : '#ffffff'
+      });
+    }
+
+    function renderScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Deep space background
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, 520, 325);
+
+      // Render stars
+      for (const s of stars) {
+        ctx.fillStyle = s.color;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const cx = 260;
+      const cy = 160;
+
+      // Sector specific celestial backdrop
+      if (state.sector === 0) {
+        // Terra Prime planet
+        const grad = ctx.createRadialGradient(80, 260, 20, 80, 260, 160);
+        grad.addColorStop(0, '#38bdf8');
+        grad.addColorStop(0.7, '#0284c7');
+        grad.addColorStop(1, '#082f49');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(80, 260, 140, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (state.sector === 1) {
+        // Asteroid belt
+        ctx.fillStyle = '#64748b';
+        const rocks = [[80, 100], [120, 220], [420, 90], [460, 210], [190, 80], [350, 240]];
+        for (const [rx, ry] of rocks) {
+          ctx.beginPath();
+          ctx.arc(rx, ry, 12, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (state.sector === 2) {
+        // Gas Giant Titan with planetary rings
+        ctx.save();
+        ctx.translate(420, 100);
+        ctx.rotate(-0.3);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 14;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 90, 25, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#b45309';
+        ctx.beginPath();
+        ctx.arc(0, 0, 50, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      } else if (state.sector === 3) {
+        // Deep Kuiper void nebula
+        const neb = ctx.createRadialGradient(260, 160, 30, 260, 160, 220);
+        neb.addColorStop(0, 'rgba(124, 58, 237, 0.25)');
+        neb.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = neb;
+        ctx.fillRect(0, 0, 520, 325);
+      } else if (state.sector === 4) {
+        // Galactic Gateway warp ring
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 140, 90, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 110, 70, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Orbital Trajectory Line
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 180, 80, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Spaceship position on orbital track
+      const progressRad = (state.sectorProgress / 100) * (Math.PI * 1.5) - (Math.PI * 0.75);
+      const shipX = cx + Math.cos(progressRad) * 170;
+      const shipY = cy + Math.sin(progressRad) * 75;
+
+      // Deflector shield bubble
+      if (state.shields > 0) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(shipX, shipY, 26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Ship thruster plume (when in transit)
+      if (state.sectorProgress > 0 && !state.docked) {
+        ctx.fillStyle = '#06b6d4';
+        ctx.beginPath();
+        ctx.moveTo(shipX - 18, shipY - 4);
+        ctx.lineTo(shipX - 32, shipY);
+        ctx.lineTo(shipX - 18, shipY + 4);
+        ctx.fill();
+      }
+
+      // Spaceship hull
+      ctx.fillStyle = '#f8fafc';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(shipX + 16, shipY);
+      ctx.lineTo(shipX - 12, shipY - 12);
+      ctx.lineTo(shipX - 6, shipY);
+      ctx.lineTo(shipX - 12, shipY + 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Cockpit light
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.arc(shipX + 4, shipY, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Station indicator (if docked)
+      if (state.docked) {
+        ctx.fillStyle = '#10b981';
+        ctx.font = '10px monospace';
+        ctx.fillText('STATUS: DOCKED AT STATION', shipX - 60, shipY - 32);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('hdr-turn').textContent = state.turns;
+      document.getElementById('hdr-score').textContent = score(state);
+
+      const h = document.getElementById('hud-hull');
+      h.textContent = state.hull + '%';
+      h.className = 'hud-val ' + (state.hull > 50 ? 'text-emerald' : 'text-rose');
+
+      document.getElementById('hud-shields').textContent = state.shields + '%';
+      document.getElementById('hud-fuel').textContent = state.fuel + 'kg';
+      document.getElementById('hud-power').textContent = state.power + '%';
+
+      document.getElementById('sector-title').textContent = (SECTOR_NAMES[state.sector] || 'Sector') + (state.docked ? ' [Docked]' : '');
+      document.getElementById('sector-progress').style.width = state.sectorProgress + '%';
+      document.getElementById('tele-credits').textContent = '$' + state.credits;
+      document.getElementById('tele-science').textContent = state.scienceData;
+      document.getElementById('status-banner').textContent = state.gameMessage;
+
+      const legal = legalActions(state);
+      let ctrlHtml = '';
+
+      if (isOver(state)) {
+        ctrlHtml = `
+          <button class="btn-primary" style="grid-column: span 2; padding: 14px;" onclick="window.resetGame()">
+            🔄 Launch New Exploration Mission
+          </button>
+        `;
+      } else if (state.docked) {
+        ctrlHtml = `
+          <button class="btn-primary" onclick="window.doAction('action:undock_from_station')">
+            🚪 Undock from Station
+            <span class="btn-sub">Return to orbital flight</span>
+          </button>
+          <button ${legal.includes('action:station_refuel') ? '' : 'disabled'} onclick="window.doAction('action:station_refuel')">
+            ⛽ Station Refuel ($100)
+            <span class="btn-sub">+45 Fuel Propellant</span>
+          </button>
+          <button ${legal.includes('action:station_repair') ? '' : 'disabled'} onclick="window.doAction('action:station_repair')">
+            🛠️ Station Hull Repair ($120)
+            <span class="btn-sub">+35 Hull Armor</span>
+          </button>
+          <button ${legal.includes('action:scan_planetary_anomaly') ? '' : 'disabled'} onclick="window.doAction('action:scan_planetary_anomaly')">
+            📡 Deep Sensor Scan
+            <span class="btn-sub">+25 Science, +$65</span>
+          </button>
+        `;
+      } else {
+        // Flight buttons
+        ctrlHtml += `
+          <button class="${legal.includes('action:prograde_burn') ? 'btn-primary' : ''}" ${legal.includes('action:prograde_burn') ? '' : 'disabled'} onclick="window.doAction('action:prograde_burn')">
+            🔥 Prograde Burn
+            <span class="btn-sub">-12 Fuel, +35% Transit</span>
+          </button>
+          <button ${legal.includes('action:solar_charge') ? '' : 'disabled'} onclick="window.doAction('action:solar_charge')">
+            ☀️ Solar Recharge
+            <span class="btn-sub">+35 Capacitor Power</span>
+          </button>
+          <button ${legal.includes('action:recharge_shields') ? '' : 'disabled'} onclick="window.doAction('action:recharge_shields')">
+            🛡️ Shield Generator
+            <span class="btn-sub">+35 Shields, -15 Power</span>
+          </button>
+          <button ${legal.includes('action:scan_planetary_anomaly') ? '' : 'disabled'} onclick="window.doAction('action:scan_planetary_anomaly')">
+            📡 Scan Celestial Anomaly
+            <span class="btn-sub">+25 Science, +$65 Credits</span>
+          </button>
+          <button ${legal.includes('action:deploy_mining_drone') ? 'btn-amber' : ''} ${legal.includes('action:deploy_mining_drone') ? '' : 'disabled'} onclick="window.doAction('action:deploy_mining_drone')">
+            ⛏️ Deploy Mining Drone
+            <span class="btn-sub">+Fuel & Minerals, -12 Power</span>
+          </button>
+          <button ${legal.includes('action:retrograde_burn') ? '' : 'disabled'} onclick="window.doAction('action:retrograde_burn')">
+            🛑 Retrograde Burn
+            <span class="btn-sub">Decelerate trajectory</span>
+          </button>
+        `;
+
+        if (legal.includes('action:dock_with_station')) {
+          ctrlHtml += `
+            <button class="btn-emerald" style="grid-column: span 2;" onclick="window.doAction('action:dock_with_station')">
+              ⚓ Dock with Orbital Station
+              <span class="btn-sub">Access repairs, refueling & trading</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:hyperjump')) {
+          ctrlHtml += `
+            <button class="btn-purple" onclick="window.doAction('action:hyperjump')">
+              🌌 Initiate Hyperspace Jump!
+              <span class="btn-sub">Enter next celestial sector (-20 Fuel)</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:align_with_gateway')) {
+          ctrlHtml += `
+            <button class="btn-purple" onclick="window.doAction('action:align_with_gateway')">
+              ✨ Align with Galactic Gateway!
+              <span class="btn-sub">Activate warp conduit to achieve victory</span>
+            </button>
+          `;
+        }
+      }
+
+      document.getElementById('controls').innerHTML = ctrlHtml;
+      renderScene();
+    }
+
+    window.doAction = function(act) {
+      try {
+        step(state, act);
+        updateUI();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    window.resetGame = function() {
+      state = createState(Math.floor(Date.now() % 1000000));
+      updateUI();
+    };
+
+    updateUI();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

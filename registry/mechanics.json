@@ -1638,9 +1638,11 @@
       "slug": "space-sim",
       "name": "Space Sim",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Void Navigator",
+      "levels": "endless"
     },
     {
       "id": "0156",

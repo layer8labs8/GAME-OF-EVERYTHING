@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="spacebg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#030712" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="planet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="ship" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#94a3b8" />
+    </linearGradient>
+    <linearGradient id="thrust" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#spacebg)" />
+  <!-- Stars -->
+  <circle cx="90" cy="80" r="3" fill="#ffffff" />
+  <circle cx="420" cy="110" r="2.5" fill="#ffffff" />
+  <circle cx="340" cy="60" r="3" fill="#7dd3fc" />
+  <circle cx="110" cy="380" r="2" fill="#ffffff" />
+  <circle cx="440" cy="360" r="3" fill="#ffffff" />
+  <!-- Planet curved horizon -->
+  <circle cx="100" cy="540" r="300" fill="url(#planet)" />
+  <path d="M -50 480 A 320 320 0 0 1 450 380" fill="none" stroke="#38bdf8" stroke-width="6" opacity="0.4" />
+  <!-- Spaceship triangular hull -->
+  <polygon points="256,120 320,280 256,250 192,280" fill="url(#ship)" stroke="#38bdf8" stroke-width="4" />
+  <!-- Cockpit canopy -->
+  <polygon points="256,170 275,220 256,210 237,220" fill="#0284c7" />
+  <!-- Ion Thruster plume -->
+  <polygon points="244,260 268,260 256,330" fill="url(#thrust)" />
+  <!-- Orbit line -->
+  <ellipse cx="256" cy="270" rx="180" ry="60" fill="none" stroke="#0ea5e9" stroke-width="3" stroke-dasharray="10 8" />
+</svg>
