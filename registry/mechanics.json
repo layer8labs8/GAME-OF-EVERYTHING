@@ -1561,9 +1561,11 @@
       "slug": "cooking",
       "name": "Cooking",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Bistro Rush",
+      "levels": "endless"
     },
     {
       "id": "0149",

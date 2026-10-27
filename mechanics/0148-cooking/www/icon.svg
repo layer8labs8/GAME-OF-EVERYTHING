@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="kitchen-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#431407"/>
+      <stop offset="50%" stop-color="#7c2d12"/>
+      <stop offset="100%" stop-color="#1c1917"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#kitchen-bg)"/>
+  <!-- Sizzling Skillet Pan -->
+  <circle cx="230" cy="270" r="110" fill="#292524" stroke="#ea580c" stroke-width="12"/>
+  <rect x="320" y="255" width="130" height="30" rx="8" fill="#1c1917" stroke="#78716c" stroke-width="6" transform="rotate(25 320 255)"/>
+  <!-- Culinary Fire Flames -->
+  <path d="M 230 200 Q 255 130 230 110 Q 280 150 270 210 Q 295 160 300 230 Q 270 260 230 250 Q 180 260 170 210 Q 190 170 210 210 Z" fill="url(#flame)"/>
+  <!-- Tall White Chef Toque Hat -->
+  <path d="M 170 140 C 150 110 180 60 220 75 C 240 50 280 50 300 75 C 340 60 370 110 350 140 Z" fill="#fafaf9" stroke="#e7e5e4" stroke-width="4"/>
+  <rect x="180" y="140" width="160" height="24" rx="4" fill="#f5f5f4"/>
+  <!-- Michelin Gold Stars -->
+  <polygon points="256,380 266,410 298,410 272,428 282,458 256,440 230,458 240,428 214,410 246,410" fill="#facc15"/>
+</svg>

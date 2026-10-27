@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bistro Rush - Cooking Sim</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #1c1917;
+      color: #fafaf9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #431407;
+      border-radius: 8px;
+      border: 1px solid #ea580c;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #fdba74;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #292524;
+      border: 1px solid #44403c;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #a8a29e;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-rev { color: #4ade80; }
+    .val-crit { color: #facc15; }
+    .val-served { color: #38bdf8; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #0c0a09;
+      border: 2px solid #ea580c;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(234, 88, 12, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.72rem;
+      color: #fed7aa;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .station-grid {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .station-card {
+      background: #292524;
+      border: 1px solid #44403c;
+      border-radius: 6px;
+      padding: 4px 2px;
+      text-align: center;
+      font-size: 0.65rem;
+    }
+    .station-num {
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: #fafaf9;
+      margin-top: 2px;
+    }
+
+    .tickets-container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+      overflow-x: auto;
+    }
+    .ticket-badge {
+      background: #441607;
+      border: 1px solid #f97316;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.68rem;
+      display: flex;
+      flex-direction: column;
+      min-width: 130px;
+    }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #292524;
+      color: #fafaf9;
+      border: 1px solid #57534e;
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #44403c;
+      transform: translateY(-1px);
+    }
+    .btn-serve {
+      background: #15803d;
+      border-color: #22c55e;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 8px 6px;
+    }
+    .btn-serve:hover { background: #16a34a; }
+    .btn-plate {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    .btn-advance {
+      background: #c2410c;
+      border-color: #f97316;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 9px 6px;
+    }
+    .btn-advance:hover { background: #ea580c; }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #0c0a09;
+      border: 1px solid #292524;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #a8a29e;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #fdba74;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(28, 25, 23, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #e7e5e4;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #ea580c;
+      border: none;
+      color: #fafaf9;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #4ade80; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🍳 Bistro Rush</h1>
+    <div style="font-size: 0.72rem; color: #fdba74;" id="header-time">18:00 Service</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Service Clock</div>
+      <div class="hud-val" id="val-hour">18:00</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Revenue</div>
+      <div class="hud-val val-rev" id="val-rev">$300</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Critique</div>
+      <div class="hud-val val-crit" id="val-crit">75% ★★★</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Dishes Served</div>
+      <div class="hud-val val-served" id="val-served">0 / 25</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="kitchen-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">THREE MICHELIN STARS</div>
+      <div class="modal-desc" id="modal-desc">Bistro Rush achieved pinnacle culinary prestige!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Begin New Dinner Service</button>
+    </div>
+  </div>
+
+  <div class="section-title">Kitchen Stations & Stock</div>
+  <div class="station-grid">
+    <div class="station-card">
+      <div style="color: #4ade80;">🥗 Prepped Veg</div>
+      <div class="station-num" id="stat-prep">2</div>
+    </div>
+    <div class="station-card">
+      <div style="color: #f97316;">🥩 Sizzled Meat</div>
+      <div class="station-num" id="stat-cooked">2</div>
+    </div>
+    <div class="station-card">
+      <div style="color: #38bdf8;">🍽️ Ready Plates</div>
+      <div class="station-num" id="stat-plates">1</div>
+    </div>
+    <div class="station-card">
+      <div style="color: #facc15;">🧼 Clean Dishes</div>
+      <div class="station-num" id="stat-dishes">4</div>
+    </div>
+  </div>
+
+  <div class="section-title">Expeditor Ticket Rail</div>
+  <div class="tickets-container" id="tickets-container"></div>
+
+  <div class="section-title">Kitchen Directives</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Chef Service Chronicle</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('kitchen-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#0c0a09';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Stainless Steel Kitchen Counters
+        // Cutting Station (Left), Range Stove (Center), Plating Pass (Right)
+        ctx.fillStyle = '#292524';
+        ctx.fillRect(10, 60, 130, 150);
+        ctx.fillRect(160, 60, 140, 150);
+        ctx.fillRect(320, 60, 130, 150);
+
+        ctx.strokeStyle = '#78716c';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, 60, 130, 150);
+        ctx.strokeRect(160, 60, 140, 150);
+        ctx.strokeRect(320, 60, 130, 150);
+
+        // Stainless steel highlights
+        ctx.fillStyle = '#44403c';
+        ctx.fillRect(10, 60, 130, 8);
+        ctx.fillRect(160, 60, 140, 8);
+        ctx.fillRect(320, 60, 130, 8);
+
+        // Station Titles
+        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#a8a29e';
+        ctx.textAlign = 'center';
+        ctx.fillText('CUTTING BOARD', 75, 80);
+        ctx.fillText('SEARING STOVE', 230, 80);
+        ctx.fillText('PLATING PASS', 385, 80);
+
+        // Cutting Board Visual
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath();
+        ctx.roundRect(35, 95, 80, 50, 4);
+        ctx.fill();
+        ctx.font = '20px sans-serif';
+        ctx.fillText('🍅🥬', 75, 126);
+        ctx.font = '9px monospace';
+        ctx.fillStyle = '#4ade80';
+        ctx.fillText('Produce: ' + state.pantry.rawProduce + ' raw', 75, 165);
+        ctx.fillText('Prepped: ' + state.station.preppedProduce, 75, 180);
+
+        // Stove Visual (Burner rings & flame)
+        ctx.fillStyle = '#1c1917';
+        ctx.beginPath();
+        ctx.arc(230, 120, 28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = '22px sans-serif';
+        ctx.fillText('🍳🔥', 230, 128);
+        ctx.font = '9px monospace';
+        ctx.fillStyle = '#fb923c';
+        ctx.fillText('Meat: ' + state.pantry.rawMeat + ' raw', 230, 165);
+        ctx.fillText('Sizzled: ' + state.station.cookedPortions, 230, 180);
+
+        // Plating Counter Visual
+        ctx.fillStyle = '#fafaf9';
+        ctx.beginPath();
+        ctx.arc(385, 120, 24, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#e7e5e4';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = '18px sans-serif';
+        ctx.fillText('🍽️✨', 385, 126);
+        ctx.font = '9px monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('Plated: ' + state.station.platedDishes + ' ready', 385, 165);
+        ctx.fillText('Clean Plates: ' + state.cleanPlates, 385, 180);
+
+        // Ticket Rail at Top
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(0, 0, canvas.width, 45);
+        ctx.strokeStyle = '#57534e';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0, 0, canvas.width, 45);
+
+        // Render ticket pegs
+        for (let i = 0; i < state.orders.length; i++) {
+          const t = state.orders[i];
+          const tx = 30 + i * 140;
+          ctx.fillStyle = '#441607';
+          ctx.strokeStyle = '#ea580c';
+          ctx.beginPath();
+          ctx.roundRect(tx, 6, 130, 32, 4);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.font = 'bold 8px monospace';
+          ctx.fillStyle = '#fed7aa';
+          ctx.textAlign = 'start';
+          ctx.fillText('#' + t.id + ' ' + t.name, tx + 6, 18);
+          ctx.fillStyle = '#4ade80';
+          ctx.fillText('$' + t.payout, tx + 6, 30);
+          ctx.fillStyle = t.patience <= 1 ? '#f87171' : '#facc15';
+          ctx.fillText('⏳ ' + t.patience + ' ticks', tx + 70, 30);
+        }
+        ctx.textAlign = 'start';
+
+        // Update HUD
+        const timeEl = document.getElementById('header-time');
+        if (timeEl) timeEl.textContent = state.serviceHour + ':00 Service';
+
+        const hourEl = document.getElementById('val-hour');
+        if (hourEl) hourEl.textContent = state.serviceHour + ':00';
+
+        const revEl = document.getElementById('val-rev');
+        if (revEl) {
+          revEl.textContent = '$' + state.revenue;
+          revEl.style.color = state.revenue >= 0 ? '#4ade80' : '#f87171';
+        }
+
+        const critEl = document.getElementById('val-crit');
+        if (critEl) critEl.textContent = state.critique + '% ★★★';
+
+        const servedEl = document.getElementById('val-served');
+        if (servedEl) servedEl.textContent = state.dishesServed + ' / 25';
+
+        // Station Counts
+        const prepEl = document.getElementById('stat-prep');
+        if (prepEl) prepEl.textContent = state.station.preppedProduce;
+
+        const cookEl = document.getElementById('stat-cooked');
+        if (cookEl) cookEl.textContent = state.station.cookedPortions;
+
+        const plateEl = document.getElementById('stat-plates');
+        if (plateEl) plateEl.textContent = state.station.platedDishes;
+
+        const dishEl = document.getElementById('stat-dishes');
+        if (dishEl) dishEl.textContent = state.cleanPlates;
+
+        // Tickets Container
+        const ticketsEl = document.getElementById('tickets-container');
+        if (ticketsEl) {
+          let tHtml = '';
+          for (let i = 0; i < state.orders.length; i++) {
+            const t = state.orders[i];
+            tHtml += '<div class="ticket-badge">'
+              + '<span style="font-weight: bold; color: #fed7aa;">' + t.name + '</span>'
+              + '<span style="color: #4ade80;">Payout: $' + t.payout + '</span>'
+              + '<span style="color: ' + (t.patience <= 1 ? '#f87171' : '#facc15') + ';">Patience: ' + t.patience + ' ticks</span>'
+              + '</div>';
+          }
+          if (state.orders.length === 0) {
+            tHtml = '<div style="font-size: 0.72rem; color: #78716c; padding: 4px;">Ticket rail clear! Advance service for new tables.</div>';
+          }
+          ticketsEl.innerHTML = tHtml;
+        }
+
+        // Action Buttons
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:serve_order') cls += ' btn-serve';
+            else if (act === 'action:plate_dish') cls += ' btn-plate';
+            else if (act === 'action:advance_rush') cls += ' btn-advance';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Activity Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'THREE MICHELIN STARS AWARDED!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Bistro Rush served ' + state.dishesServed + ' gourmet meals with $' + state.revenue + ' revenue! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'KITCHEN SHUTDOWN';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Dinner rush collapsed under operational strain. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:prep_produce') return '🥗 Prep Produce (-2 raw)';
+        if (act === 'action:cook_stove') return '🍳 Sizzle Meat (-2 raw)';
+        if (act === 'action:plate_dish') return '🍽️ Plate Gourmet Dish';
+        if (act === 'action:serve_order') return '🛎️ EXPEDITE & SERVE TICKET';
+        if (act === 'action:wash_dishes') return '🧼 Wash Plates (+2 clean)';
+        if (act === 'action:restock_pantry') return '📦 Restock Market Pantry ($50)';
+        if (act === 'action:advance_rush') return '⏰ ADVANCE DINNER RUSH (Time Tick)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
