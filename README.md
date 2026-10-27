@@ -24,16 +24,16 @@ Most hit mobile games are a small set of mechanics wearing different art. If eve
 ## Progress
 
 <!-- STATUS:START -->
-**Playable: 140 / 179** `███████████████████░░░░░`
+**Playable: 141 / 179** `███████████████████░░░░░`
 
-Logic with tests or better: 140 / 179 · Bot interface: 138 / 179 · Data levels: 6
+Logic with tests or better: 141 / 179 · Bot interface: 139 / 179 · Data levels: 6
 
 | Stage | Mechanics |
 |---|---|
-| idea | 39 |
+| idea | 38 |
 | spec | 0 |
 | logic | 0 |
-| playable | 140 |
+| playable | 141 |
 | polished | 0 |
 | shipped | 0 |
 

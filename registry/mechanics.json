@@ -1418,9 +1418,11 @@
    "slug": "investigation",
    "name": "Investigation",
    "family": "Adventure",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Crime Scene Reconstruction",
+   "levels": "endless"
   },
   {
    "id": "0136",
