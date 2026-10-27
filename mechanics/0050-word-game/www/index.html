@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Word Forge</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#eab308">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: #18181b;
+      color: #fef08a;
+      font-family: Georgia, serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #27272a;
+      border: 1px solid #713f12;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .hud-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #facc15;
+    }
+    .hud-stats {
+      display: flex;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .stat-pill {
+      background: #3f3f46;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #52525b;
+      color: #fef9c3;
+    }
+
+    #gameCanvas {
+      background: #1c1917;
+      border: 3px solid #854d0e;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      max-width: 100%;
+      touch-action: none;
+      cursor: pointer;
+    }
+
+    .word-bar {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #27272a;
+      border: 1px solid #854d0e;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      min-height: 48px;
+    }
+    .current-word {
+      color: #fef08a;
+      letter-spacing: 2px;
+    }
+
+    .btn-row {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .ctrl-btn {
+      flex: 1;
+      background: #854d0e;
+      border: 1px solid #ca8a04;
+      color: #fef9c3;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.1s;
+    }
+    .ctrl-btn:hover { background: #a16207; }
+    .ctrl-btn.primary { background: #ca8a04; border-color: #eab308; color: #713f12; }
+    .ctrl-btn.primary:hover { background: #eab308; }
+    .ctrl-btn.danger { background: #7f1d1d; border-color: #b91c1c; }
+
+    .hints-box {
+      width: 100%;
+      max-width: 520px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #a1a1aa;
+    }
+    .hint-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .hint-chip {
+      background: #3f3f46;
+      color: #fef08a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .hint-chip:hover { background: #52525b; }
+
+    #overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(24, 24, 27, 0.92);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hud-title">Word Forge</div>
+    <div class="hud-stats">
+      <span class="stat-pill">Turns: <strong id="turnsEl">20</strong></span>
+      <span class="stat-pill">Words: <strong id="wordsEl">0</strong></span>
+      <span class="stat-pill">Score: <strong id="scoreEl">0/300</strong></span>
+    </div>
+  </header>
+
+  <div style="position: relative; width: 480px; max-width: 100%;">
+    <canvas id="gameCanvas" width="480" height="480"></canvas>
+    <div id="overlay">
+      <h2 id="overlayTitle" style="font-size: 32px; color: #facc15; margin-bottom: 12px;">FORGE MASTER!</h2>
+      <p id="overlayDesc" style="color: #d4d4d8; margin-bottom: 24px;">Target score achieved!</p>
+      <button class="ctrl-btn primary" id="playAgainBtn" style="max-width: 200px; padding: 12px 24px;">Next Grid</button>
+    </div>
+  </div>
+
+  <div class="word-bar">
+    <div class="current-word" id="wordDisplay">TAP LETTERS</div>
+    <div style="font-size: 14px; color: #a1a1aa;" id="wordPtsDisplay">0 pts</div>
+  </div>
+
+  <div class="btn-row">
+    <button class="ctrl-btn primary" id="submitBtn">Forge Word</button>
+    <button class="ctrl-btn" id="clearBtn">Clear</button>
+    <button class="ctrl-btn" id="shuffleBtn">Shuffle Grid</button>
+  </div>
+
+  <div class="hints-box">
+    <div><strong>Discovered Lexicon Words:</strong></div>
+    <div class="hint-chips" id="hintChips"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(1);
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas ? canvas.getContext("2d") : null;
+    const TILE_SIZE = 120; // 4 * 120 = 480
+    let selectedPath = []; // Array of { r, c }
+
+    let audioCtx = null;
+    function playTone(freq, type = 'sine', duration = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function getCurrentSpelledWord() {
+      return selectedPath.map(p => state.grid[p.r][p.c]).join("");
+    }
+
+    function updateUI() {
+      const turnsEl = document.getElementById("turnsEl");
+      if (turnsEl) turnsEl.textContent = state.turnsLeft;
+      const wordsEl = document.getElementById("wordsEl");
+      if (wordsEl) wordsEl.textContent = state.wordsFound;
+      const scoreEl = document.getElementById("scoreEl");
+      if (scoreEl) scoreEl.textContent = `${state.score}/${TARGET_SCORE}`;
+
+      const spelled = getCurrentSpelledWord();
+      const wordDisplay = document.getElementById("wordDisplay");
+      if (wordDisplay) wordDisplay.textContent = spelled || "TAP LETTERS";
+
+      const wordPts = document.getElementById("wordPtsDisplay");
+      if (wordPts) {
+        if (spelled.length >= 3) {
+          let sum = 0;
+          for (let i = 0; i < spelled.length; i++) sum += LETTER_POINTS[spelled[i]] || 1;
+          const pts = sum * Math.max(1, spelled.length - 2);
+          wordPts.textContent = `+${pts} pts`;
+        } else {
+          wordPts.textContent = "0 pts";
+        }
+      }
+
+      // Hints chips
+      const chipsEl = document.getElementById("hintChips");
+      if (chipsEl) {
+        const legal = legalActions(state);
+        const validWords = legal.filter(a => a.startsWith("submit:")).map(a => a.slice(7));
+        let html = "";
+        validWords.slice(0, 15).forEach(w => {
+          html += `<span class="hint-chip" data-word="${w}">${w}</span>`;
+        });
+        chipsEl.innerHTML = html;
+
+        const chips = (typeof chipsEl.querySelectorAll === 'function') ? chipsEl.querySelectorAll(".hint-chip") : [];
+        if (chips && chips.length) {
+          chips.forEach(chip => {
+            if (typeof chip.addEventListener === 'function') {
+              chip.addEventListener("click", () => {
+                const w = (typeof chip.getAttribute === 'function') ? chip.getAttribute("data-word") : null;
+                if (w) {
+                  const act = `submit:${w}`;
+                  doAction(act);
+                  selectedPath = [];
+                }
+              });
+            }
+          });
+        }
+      }
+
+      if (state.done) {
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "flex";
+        const title = document.getElementById("overlayTitle");
+        const desc = document.getElementById("overlayDesc");
+        if (title && desc) {
+          if (state.won) {
+            title.textContent = "FORGE MASTER!";
+            title.style.color = "#facc15";
+            desc.textContent = `Score target reached with ${score(state)} points!`;
+            playTone(659, 'triangle', 0.3);
+          } else {
+            title.textContent = "TIME EXPIRED";
+            title.style.color = "#ef4444";
+            desc.textContent = `Turns exhausted. Scored ${state.score} of ${TARGET_SCORE}.`;
+            playTone(180, 'sawtooth', 0.35);
+          }
+        }
+      }
+    }
+
+    function render() {
+      if (!ctx || !canvas) return;
+      ctx.fillStyle = "#1c1917";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          const px = c * TILE_SIZE + 6;
+          const py = r * TILE_SIZE + 6;
+          const size = TILE_SIZE - 12;
+
+          const isSelected = selectedPath.some(p => p.r === r && p.c === c);
+
+          // Tile base
+          ctx.save();
+          ctx.fillStyle = isSelected ? "#fef08a" : "#fde047";
+          ctx.fillRect(px, py, size, size);
+          ctx.strokeStyle = isSelected ? "#ea580c" : "#ca8a04";
+          ctx.lineWidth = isSelected ? 4 : 2;
+          ctx.strokeRect(px, py, size, size);
+
+          // Letter
+          const letter = state.grid[r][c];
+          ctx.fillStyle = isSelected ? "#9a3412" : "#713f12";
+          ctx.font = "bold 52px Georgia, serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(letter, px + size / 2, py + size / 2 - 4);
+
+          // Subscript points
+          const pts = LETTER_POINTS[letter] || 1;
+          ctx.font = "bold 14px sans-serif";
+          ctx.fillStyle = isSelected ? "#c2410c" : "#854d0e";
+          ctx.textAlign = "right";
+          ctx.fillText(pts, px + size - 8, py + size - 8);
+
+          ctx.restore();
+        }
+      }
+
+      // Draw path connector lines
+      if (selectedPath.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(234, 88, 12, 0.7)";
+        ctx.lineWidth = 6;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        for (let i = 0; i < selectedPath.length; i++) {
+          const p = selectedPath[i];
+          const px = p.c * TILE_SIZE + TILE_SIZE / 2;
+          const py = p.r * TILE_SIZE + TILE_SIZE / 2;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        const res = step(state, action);
+        if (action.startsWith("submit:")) {
+          playTone(523, 'triangle', 0.15);
+        } else {
+          playTone(330, 'sine', 0.08);
+        }
+        selectedPath = [];
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    if (canvas) {
+      canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+        const c = Math.floor(clickX / TILE_SIZE);
+        const r = Math.floor(clickY / TILE_SIZE);
+
+        if (r >= 0 && r < 4 && c >= 0 && c < 4) {
+          // If already selected:
+          const existingIdx = selectedPath.findIndex(p => p.r === r && p.c === c);
+          if (existingIdx !== -1) {
+            // Undo back to this tile
+            selectedPath = selectedPath.slice(0, existingIdx);
+          } else {
+            // Check adjacency to last tile in path
+            if (selectedPath.length === 0) {
+              selectedPath.push({ r, c });
+              playTone(440, 'sine', 0.04);
+            } else {
+              const last = selectedPath[selectedPath.length - 1];
+              const dr = Math.abs(last.r - r);
+              const dc = Math.abs(last.c - c);
+              if (dr <= 1 && dc <= 1) {
+                selectedPath.push({ r, c });
+                playTone(440 + selectedPath.length * 40, 'sine', 0.04);
+              }
+            }
+          }
+          updateUI();
+          render();
+        }
+      });
+    }
+
+    const submitBtn = document.getElementById("submitBtn");
+    if (submitBtn && typeof submitBtn.addEventListener === 'function') {
+      submitBtn.addEventListener("click", () => {
+        const word = getCurrentSpelledWord();
+        const act = `submit:${word}`;
+        const legal = legalActions(state);
+        if (legal.includes(act)) {
+          doAction(act);
+        } else {
+          playTone(200, 'sawtooth', 0.1);
+        }
+      });
+    }
+
+    const clearBtn = document.getElementById("clearBtn");
+    if (clearBtn && typeof clearBtn.addEventListener === 'function') {
+      clearBtn.addEventListener("click", () => {
+        selectedPath = [];
+        updateUI();
+        render();
+      });
+    }
+
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    if (shuffleBtn && typeof shuffleBtn.addEventListener === 'function') {
+      shuffleBtn.addEventListener("click", () => {
+        doAction("shuffle");
+      });
+    }
+
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    if (playAgainBtn && typeof playAgainBtn.addEventListener === 'function') {
+      playAgainBtn.addEventListener("click", () => {
+        state = createState(state.seed + 1);
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "none";
+        selectedPath = [];
+        updateUI();
+        render();
+      });
+    }
+
+    updateUI();
+    render();
+  </script>
+</body>
+</html>
