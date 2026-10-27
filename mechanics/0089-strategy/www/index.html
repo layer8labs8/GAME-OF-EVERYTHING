@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Territory Strategy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #090d16;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #131d31;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+    .gold-val { color: #facc15; }
+    .turn-val { color: #38bdf8; }
+    .score-val { color: #4ade80; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #172554 0%, #0b1120 100%);
+      border: 2px solid #334155;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+    }
+    #controls {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #131d31;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #selection-bar {
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 20px;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #1d4ed8; }
+    button:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+    #btn-end-turn { background: #d97706; }
+    #btn-end-turn:hover:not(:disabled) { background: #b45309; }
+    #btn-recruit { background: #059669; }
+    #btn-recruit:hover:not(:disabled) { background: #047857; }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+      background: #0f172a;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+    }
+    #game-over-banner {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .victory-bg { background: #065f46; color: #a7f3d0; border: 1px solid #10b981; }
+    .defeat-bg { background: #881337; color: #fecdd3; border: 1px solid #f43f5e; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="stat-badge">Turn: <span id="ui-turn" class="turn-val">1/30</span></div>
+    <div class="stat-badge">Gold: <span id="ui-gold" class="gold-val">6</span></div>
+    <div class="stat-badge">Score: <span id="ui-score" class="score-val">0</span></div>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="480" height="480"></canvas>
+  </div>
+
+  <div id="controls">
+    <div id="selection-bar">
+      <span id="selected-name">Select a friendly province</span>
+      <span id="selected-info"></span>
+    </div>
+    <div class="action-row">
+      <button id="btn-recruit" disabled>Recruit (+1 Army, 2g)</button>
+      <button id="btn-target-0" style="display:none;"></button>
+      <button id="btn-target-1" style="display:none;"></button>
+      <button id="btn-target-2" style="display:none;"></button>
+      <button id="btn-target-3" style="display:none;"></button>
+      <button id="btn-end-turn">End Turn</button>
+      <button id="btn-reset" style="background:#475569;">Restart</button>
+    </div>
+  </div>
+
+  <div id="log-box">Territory campaign begun. Select a province to command.</div>
+  <div id="game-over-banner"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now() & 0xffff);
+      let selectedTerrId = 3; // start selecting Ironhold
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+
+      const uiTurn = document.getElementById('ui-turn');
+      const uiGold = document.getElementById('ui-gold');
+      const uiScore = document.getElementById('ui-score');
+      const selectedName = document.getElementById('selected-name');
+      const selectedInfo = document.getElementById('selected-info');
+      const btnRecruit = document.getElementById('btn-recruit');
+      const btnEndTurn = document.getElementById('btn-end-turn');
+      const btnReset = document.getElementById('btn-reset');
+      const logBox = document.getElementById('log-box');
+      const gameOverBanner = document.getElementById('game-over-banner');
+
+      const targetButtons = [
+        document.getElementById('btn-target-0'),
+        document.getElementById('btn-target-1'),
+        document.getElementById('btn-target-2'),
+        document.getElementById('btn-target-3')
+      ];
+
+      function updateUI() {
+        if (uiTurn) uiTurn.textContent = state.turn + '/' + state.maxTurns;
+        if (uiGold) uiGold.textContent = state.gold;
+        if (uiScore) uiScore.textContent = score(state);
+
+        if (logBox && state.history && state.history.length > 0) {
+          logBox.textContent = state.history[state.history.length - 1];
+        }
+
+        const selTerr = state.territories.find(t => t.id === selectedTerrId);
+        if (selTerr) {
+          if (selectedName) selectedName.textContent = selTerr.name + ' (' + selTerr.owner.toUpperCase() + ')';
+          if (selectedInfo) selectedInfo.textContent = selTerr.armies + ' Armies • +' + selTerr.income + 'g/turn';
+
+          const canRecruit = selTerr.owner === 'player' && state.gold >= RECRUIT_COST && !state.done;
+          if (btnRecruit) btnRecruit.disabled = !canRecruit;
+
+          // Target attack / reinforce buttons
+          for (let i = 0; i < targetButtons.length; i++) {
+            const btn = targetButtons[i];
+            if (!btn) continue;
+            if (selTerr.owner === 'player' && selTerr.armies > 1 && i < selTerr.neighbors.length && !state.done) {
+              const targetId = selTerr.neighbors[i];
+              const targetTerr = state.territories.find(t => t.id === targetId);
+              btn.style.display = 'inline-block';
+              const actionLabel = targetTerr.owner === 'player' ? 'Reinforce ' : 'March to ';
+              btn.textContent = actionLabel + targetTerr.name + ' (' + targetTerr.armies + ')';
+              btn.onclick = function() {
+                try {
+                  step(state, 'attack:' + selTerr.id + ':' + targetId);
+                  updateUI();
+                  draw();
+                } catch(e) {
+                  console.error(e);
+                }
+              };
+            } else {
+              btn.style.display = 'none';
+            }
+          }
+        } else {
+          if (selectedName) selectedName.textContent = 'Select a province';
+          if (selectedInfo) selectedInfo.textContent = '';
+          if (btnRecruit) btnRecruit.disabled = true;
+          for (let i = 0; i < targetButtons.length; i++) {
+            if (targetButtons[i]) targetButtons[i].style.display = 'none';
+          }
+        }
+
+        if (btnEndTurn) btnEndTurn.disabled = state.done;
+
+        if (state.done && gameOverBanner) {
+          gameOverBanner.style.display = 'block';
+          if (state.winner === 'player') {
+            gameOverBanner.className = 'victory-bg';
+            gameOverBanner.textContent = 'VICTORY! The realm is united under your banner!';
+          } else {
+            gameOverBanner.className = 'defeat-bg';
+            gameOverBanner.textContent = 'DEFEAT! Enemy forces have conquered the realm.';
+          }
+        } else if (gameOverBanner) {
+          gameOverBanner.style.display = 'none';
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 480, 480);
+
+        // 1. Draw connection roads
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#334155';
+        for (let i = 0; i < state.territories.length; i++) {
+          const t1 = state.territories[i];
+          for (let n = 0; n < t1.neighbors.length; n++) {
+            const t2 = state.territories.find(t => t.id === t1.neighbors[n]);
+            if (t1.id < t2.id) {
+              ctx.beginPath();
+              ctx.moveTo(t1.x, t1.y);
+              ctx.lineTo(t2.x, t2.y);
+              ctx.stroke();
+            }
+          }
+        }
+
+        // Highlight routes from selected friendly territory
+        const selTerr = state.territories.find(t => t.id === selectedTerrId);
+        if (selTerr && selTerr.owner === 'player' && selTerr.armies > 1 && !state.done) {
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.setLineDash([6, 6]);
+          for (let n = 0; n < selTerr.neighbors.length; n++) {
+            const t2 = state.territories.find(t => t.id === selTerr.neighbors[n]);
+            ctx.beginPath();
+            ctx.moveTo(selTerr.x, selTerr.y);
+            ctx.lineTo(t2.x, t2.y);
+            ctx.stroke();
+          }
+          ctx.setLineDash([]);
+        }
+
+        // 2. Draw provinces
+        for (let i = 0; i < state.territories.length; i++) {
+          const t = state.territories[i];
+          const isSelected = t.id === selectedTerrId;
+
+          // Outer selection glow
+          if (isSelected) {
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, 42, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+
+          // Province fortress circle
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, 34, 0, Math.PI * 2);
+
+          if (t.owner === 'player') {
+            ctx.fillStyle = '#1d4ed8'; // Blue
+            ctx.strokeStyle = '#60a5fa';
+          } else if (t.owner === 'enemy') {
+            ctx.fillStyle = '#b91c1c'; // Red
+            ctx.strokeStyle = '#f87171';
+          } else {
+            ctx.fillStyle = '#334155'; // Neutral slate
+            ctx.strokeStyle = '#64748b';
+          }
+          ctx.fill();
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+
+          // Citadel gold crown mark for center node
+          if (t.id === 4) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('👑 CITADEL', t.x, t.y - 20);
+          }
+
+          // Army count
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 18px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(t.armies, t.x, t.y);
+
+          // Territory Name
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(t.name, t.x, t.y + 20);
+        }
+      }
+
+      // Pointer event for territory selection
+      if (canvas && canvas.addEventListener) {
+        canvas.addEventListener('click', function(e) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = 480 / rect.width;
+          const scaleY = 480 / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+
+          for (let i = 0; i < state.territories.length; i++) {
+            const t = state.territories[i];
+            const dist = Math.hypot(mx - t.x, my - t.y);
+            if (dist <= 36) {
+              selectedTerrId = t.id;
+              updateUI();
+              draw();
+              return;
+            }
+          }
+        });
+      }
+
+      if (btnRecruit) {
+        btnRecruit.onclick = function() {
+          try {
+            step(state, 'recruit:' + selectedTerrId);
+            updateUI();
+            draw();
+          } catch(e) {
+            console.error(e);
+          }
+        };
+      }
+
+      if (btnEndTurn) {
+        btnEndTurn.onclick = function() {
+          try {
+            step(state, 'end_turn');
+            updateUI();
+            draw();
+          } catch(e) {
+            console.error(e);
+          }
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedTerrId = 3;
+          updateUI();
+          draw();
+        };
+      }
+
+      // Initial render
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>

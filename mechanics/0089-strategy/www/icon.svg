@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="100" fill="#0f172a"/>
+  <!-- Map hexagonal territory borders -->
+  <polygon points="256,70 390,147 390,301 256,378 122,301 122,147" fill="#1e293b" stroke="#38bdf8" stroke-width="8"/>
+  <polygon points="256,120 350,174 350,282 256,336 162,282 162,174" fill="#0284c7" opacity="0.4"/>
+  <!-- Crown & Crossed Swords Strategy Sigil -->
+  <path d="M190 280 L322 280 L300 230 L256 260 L212 230 Z" fill="#f59e0b" stroke="#d97706" stroke-width="4"/>
+  <circle cx="212" cy="225" r="7" fill="#fbbf24"/>
+  <circle cx="256" cy="255" r="7" fill="#fbbf24"/>
+  <circle cx="300" cy="225" r="7" fill="#fbbf24"/>
+  <!-- Swords -->
+  <line x1="160" y1="360" x2="352" y2="168" stroke="#f1f5f9" stroke-width="12" stroke-linecap="round"/>
+  <line x1="352" y1="360" x2="160" y2="168" stroke="#f1f5f9" stroke-width="12" stroke-linecap="round"/>
+  <!-- Shield center -->
+  <circle cx="256" cy="256" r="32" fill="#0f172a" stroke="#f59e0b" stroke-width="6"/>
+  <path d="M256 238 L272 254 L256 270 L240 254 Z" fill="#38bdf8"/>
+</svg>
