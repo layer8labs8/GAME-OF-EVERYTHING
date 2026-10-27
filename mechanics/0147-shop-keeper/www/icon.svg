@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="shop-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1035"/>
+      <stop offset="50%" stop-color="#2d124d"/>
+      <stop offset="100%" stop-color="#0f051d"/>
+    </linearGradient>
+    <linearGradient id="gold-amber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="50%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#shop-bg)"/>
+  <!-- Striped Store Awning -->
+  <polygon points="70,140 442,140 420,80 92,80" fill="#dc2626"/>
+  <polygon points="120,140 170,140 160,80 120,80" fill="#fef08a"/>
+  <polygon points="220,140 270,140 260,80 220,80" fill="#fef08a"/>
+  <polygon points="320,140 370,140 360,80 320,80" fill="#fef08a"/>
+  <!-- Hanging Signboard -->
+  <rect x="156" y="160" width="200" height="70" rx="8" fill="#451a03" stroke="#f59e0b" stroke-width="4"/>
+  <circle cx="180" cy="195" r="16" fill="url(#gold-amber)"/>
+  <text x="210" y="202" fill="#fef08a" font-family="sans-serif" font-weight="bold" font-size="20">EMPORIUM</text>
+  <!-- Shop Display Pedestal -->
+  <rect x="90" y="360" width="332" height="60" rx="8" fill="#3b0764" stroke="#d97706" stroke-width="4"/>
+  <!-- Potion Bottle -->
+  <path d="M 160 360 L 160 300 Q 175 280 185 280 L 185 260 L 195 260 L 195 280 Q 205 280 220 300 L 220 360 Z" fill="#ec4899" stroke="#f472b6" stroke-width="3"/>
+  <!-- Magic Scroll -->
+  <rect x="240" y="290" width="45" height="70" rx="6" fill="#fef08a" stroke="#ca8a04" stroke-width="3"/>
+  <!-- Enchanted Blade -->
+  <polygon points="330,360 345,260 355,260 370,360 350,340" fill="#38bdf8"/>
+  <rect x="335" y="360" width="30" height="6" fill="#fbbf24"/>
+</svg>

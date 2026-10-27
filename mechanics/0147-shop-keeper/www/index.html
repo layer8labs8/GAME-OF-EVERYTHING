@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Arcane Emporium - Shop Keeper</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#d97706">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #12091f;
+      color: #fef08a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #2a1145;
+      border-radius: 8px;
+      border: 1px solid #d97706;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #fde047;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #200d36;
+      border: 1px solid #4a1d75;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #d8b4fe;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-gold { color: #facc15; }
+    .val-rep { color: #4ade80; }
+    .val-tier { color: #f472b6; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #170724;
+      border: 2px solid #d97706;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(217, 119, 6, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.72rem;
+      color: #fde68a;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stock-grid {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .stock-card {
+      background: #200d36;
+      border: 1px solid #4a1d75;
+      border-radius: 6px;
+      padding: 4px 2px;
+      text-align: center;
+      font-size: 0.68rem;
+    }
+    .stock-num {
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: #ffffff;
+      margin-top: 2px;
+    }
+
+    .cust-banner {
+      width: 100%;
+      max-width: 480px;
+      background: #2a0845;
+      border: 1px solid #c084fc;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #3b0764;
+      color: #fef08a;
+      border: 1px solid #7e22ce;
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #581c87;
+      transform: translateY(-1px);
+    }
+    .btn-sell {
+      background: #15803d;
+      border-color: #22c55e;
+      color: #ffffff;
+    }
+    .btn-sell:hover { background: #16a34a; }
+    .btn-bargain {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
+    }
+    .btn-turn {
+      background: #991b1b;
+      border-color: #ef4444;
+      color: #ffffff;
+    }
+    .btn-close {
+      background: #b45309;
+      border-color: #f59e0b;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 9px 6px;
+      color: #ffffff;
+    }
+    .btn-close:hover { background: #d97706; }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #140722;
+      border: 1px solid #2e1065;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #d8b4fe;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #fde047;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(18, 9, 31, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #e9d5ff;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #f59e0b;
+      border: none;
+      color: #1a0b2e;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #4ade80; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚖️ Arcane Emporium</h1>
+    <div style="font-size: 0.72rem; color: #fde047;" id="header-tier">Quaint Stall</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Market Day</div>
+      <div class="hud-val" id="val-day">Day 1</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Treasury</div>
+      <div class="hud-val val-gold" id="val-gold">$400</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Reputation</div>
+      <div class="hud-val val-rep" id="val-rep">70%</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Stock Capacity</div>
+      <div class="hud-val" id="val-cap">6 / 8</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="shop-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">COMMERCIAL SUPREMACY</div>
+      <div class="modal-desc" id="modal-desc">Arcane Emporium has become the premier Royal Bazaar of the realm!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Open New Merchant Shop</button>
+    </div>
+  </div>
+
+  <div class="section-title">Display Shelves & Stock</div>
+  <div class="stock-grid">
+    <div class="stock-card">
+      <div style="color: #f472b6;">🧪 Potion ($55)</div>
+      <div class="stock-num" id="stock-potions">3</div>
+    </div>
+    <div class="stock-card">
+      <div style="color: #fde047;">📜 Scroll ($110)</div>
+      <div class="stock-num" id="stock-scrolls">2</div>
+    </div>
+    <div class="stock-card">
+      <div style="color: #38bdf8;">⚔️ Blade ($250)</div>
+      <div class="stock-num" id="stock-weapons">1</div>
+    </div>
+    <div class="stock-card">
+      <div style="color: #a78bfa;">🏺 Relic ($600)</div>
+      <div class="stock-num" id="stock-artifacts">0</div>
+    </div>
+  </div>
+
+  <div class="section-title">Active Patron at Counter</div>
+  <div class="cust-banner" id="cust-banner">
+    <div>
+      <div style="font-size: 0.65rem; color: #d8b4fe; margin-bottom: 2px;">CUSTOMER REQUEST</div>
+      <div style="font-weight: bold; color: #ffffff;" id="cust-desc">No customer at counter.</div>
+    </div>
+    <div style="color: #4ade80; font-weight: bold;" id="cust-payout"></div>
+  </div>
+
+  <div class="section-title">Storefront Directives</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Merchant Ledger Log</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('shop-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#170724';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Stone Wall Texture
+        ctx.strokeStyle = '#2d1045';
+        ctx.lineWidth = 1;
+        for (let y = 0; y < 130; y += 20) {
+          ctx.beginPath();
+          ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+
+        // Back Shelves
+        ctx.fillStyle = '#3b1704';
+        ctx.fillRect(40, 30, 380, 10);
+        ctx.fillRect(40, 75, 380, 10);
+
+        // Draw stock icons on shelves
+        // Shelf 1: Potions & Scrolls
+        for (let i = 0; i < Math.min(6, state.stock.potions); i++) {
+          ctx.font = '16px sans-serif';
+          ctx.fillText('🧪', 55 + i * 28, 26);
+        }
+        for (let i = 0; i < Math.min(6, state.stock.scrolls); i++) {
+          ctx.font = '16px sans-serif';
+          ctx.fillText('📜', 240 + i * 28, 26);
+        }
+        // Shelf 2: Weapons & Artifacts
+        for (let i = 0; i < Math.min(5, state.stock.weapons); i++) {
+          ctx.font = '16px sans-serif';
+          ctx.fillText('⚔️', 65 + i * 35, 71);
+        }
+        for (let i = 0; i < Math.min(5, state.stock.artifacts); i++) {
+          ctx.font = '16px sans-serif';
+          ctx.fillText('🏺', 260 + i * 35, 71);
+        }
+
+        // Wooden Shop Counter
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(0, 140, canvas.width, 90);
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(0, 140, canvas.width, 90);
+
+        // Polished Countertop edge
+        ctx.fillStyle = '#92400e';
+        ctx.fillRect(0, 136, canvas.width, 8);
+
+        // Shopkeeper Avatar (Behind Counter, Right)
+        ctx.font = '28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🧙‍♂️', 370, 130);
+        ctx.font = '9px monospace';
+        ctx.fillStyle = '#fde047';
+        ctx.fillText('SHOPKEEPER', 370, 148);
+
+        // Patron Avatar (In Front of Counter, Left)
+        if (state.customerQueue.length > 0) {
+          const cust = state.customerQueue[0];
+          ctx.font = '32px sans-serif';
+          ctx.fillText('🧝‍♀️', 110, 132);
+          ctx.font = 'bold 10px monospace';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(cust.name, 110, 150);
+
+          // Customer Speech Bubble
+          const itemData = ITEMS[cust.wants];
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.roundRect(140, 85, 130, 32, 6);
+          ctx.fill();
+          ctx.font = '9px sans-serif';
+          ctx.fillStyle = '#1e1035';
+          ctx.fillText('Seeking ' + itemData.name + '!', 205, 105);
+        } else {
+          ctx.font = '11px monospace';
+          ctx.fillStyle = '#9ca3af';
+          ctx.fillText('Counter Empty - Conclude day for new patrons', 180, 120);
+        }
+        ctx.textAlign = 'start';
+
+        // Update HUD
+        const tierEl = document.getElementById('header-tier');
+        if (tierEl) tierEl.textContent = SHOP_TIERS[state.shopTier];
+
+        const dayEl = document.getElementById('val-day');
+        if (dayEl) dayEl.textContent = 'Day ' + state.day;
+
+        const goldEl = document.getElementById('val-gold');
+        if (goldEl) {
+          goldEl.textContent = '$' + state.gold;
+          goldEl.style.color = state.gold >= 0 ? '#facc15' : '#f87171';
+        }
+
+        const repEl = document.getElementById('val-rep');
+        if (repEl) repEl.textContent = state.reputation + '%';
+
+        const totalStock = state.stock.potions + state.stock.scrolls + state.stock.weapons + state.stock.artifacts;
+        const capEl = document.getElementById('val-cap');
+        if (capEl) capEl.textContent = totalStock + ' / ' + (state.shelves * 2);
+
+        // Stock counts
+        const potEl = document.getElementById('stock-potions');
+        if (potEl) potEl.textContent = state.stock.potions;
+
+        const scrEl = document.getElementById('stock-scrolls');
+        if (scrEl) scrEl.textContent = state.stock.scrolls;
+
+        const wepEl = document.getElementById('stock-weapons');
+        if (wepEl) wepEl.textContent = state.stock.weapons;
+
+        const artEl = document.getElementById('stock-artifacts');
+        if (artEl) artEl.textContent = state.stock.artifacts;
+
+        // Patron Card
+        const descEl = document.getElementById('cust-desc');
+        const payoutEl = document.getElementById('cust-payout');
+        if (state.customerQueue.length > 0) {
+          const cust = state.customerQueue[0];
+          const itemData = ITEMS[cust.wants];
+          const hasStock = state.stock[cust.wants] > 0;
+          if (descEl) descEl.innerHTML = cust.name + ' desires <strong>' + itemData.name + '</strong> ' + (hasStock ? '✓ In Stock' : '⚠️ OUT OF STOCK');
+          if (payoutEl) payoutEl.textContent = '+$' + itemData.price + ' Gold';
+        } else {
+          if (descEl) descEl.textContent = 'Counter is clear. Close shop to welcome tomorrow\'s patrons.';
+          if (payoutEl) payoutEl.textContent = '';
+        }
+
+        // Action Buttons
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:sell_item') cls += ' btn-sell';
+            else if (act === 'action:bargain_sale') cls += ' btn-bargain';
+            else if (act === 'action:turn_away_customer') cls += ' btn-turn';
+            else if (act === 'action:close_shop_for_day') cls += ' btn-close';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Activity Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'COMMERCIAL SUPREMACY!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Arcane Emporium became a Royal Bazaar with $' + state.gold + ' gold! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'BUSINESS CLOSURE';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Commercial operations could not be sustained. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:sell_item') return '💰 Sell Item (Retail Price)';
+        if (act === 'action:bargain_sale') return '🤝 Bargain Discount (+Rep)';
+        if (act === 'action:turn_away_customer') return '🚪 Turn Away Patron (-Rep)';
+        if (act === 'action:order_potions') return '📦 Potion ($25)';
+        if (act === 'action:order_scrolls') return '📦 Scroll ($50)';
+        if (act === 'action:order_weapons') return '📦 Blade ($120)';
+        if (act === 'action:order_artifacts') return '📦 Relic ($280)';
+        if (act === 'action:expand_shelves') return '🪵 Shelves ($250)';
+        if (act === 'action:renovate_shop') return '✨ Renovate Shop ($400)';
+        if (act === 'action:close_shop_for_day') return '🌙 CLOSE STORE (Taxes & Next Day)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "Arcane Emporium: Shop Keeper",
+  "short_name": "ArcaneEmporium",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#1a0b2e",
+  "theme_color": "#d97706",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
