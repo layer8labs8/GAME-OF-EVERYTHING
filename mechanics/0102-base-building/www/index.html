@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Outpost Constructor: Base Building</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #090d16;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      margin-bottom: 8px;
+      font-size: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .min-val { color: #f59e0b; }
+    .pow-val { color: #38bdf8; }
+    .col-val { color: #4ade80; }
+    .threat-val { color: #f87171; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #070a12;
+      border: 2px solid #1e293b;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+      cursor: pointer;
+    }
+    #actions-panel {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    button {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover:not(:disabled) {
+      background: #334155;
+      border-color: #64748b;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    button.module-btn {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #dbeafe;
+    }
+    button.danger {
+      background: #881337;
+      border-color: #e11d48;
+      color: #ffe4e6;
+    }
+    button.success {
+      background: #064e3b;
+      border-color: #10b981;
+      color: #d1fae5;
+    }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #070a12;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      height: 56px;
+      overflow-y: auto;
+    }
+    #banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #38bdf8;
+      padding: 16px 24px;
+      border-radius: 12px;
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+    #banner h2 { font-size: 20px; margin-bottom: 6px; }
+    #banner p { font-size: 12px; color: #cbd5e1; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge min-val">🪙 <span id="val-min">60</span>m</div>
+    <div class="badge pow-val">⚡ <span id="val-pow">20/0 kW</span></div>
+    <div class="badge col-val">👨‍🚀 <span id="val-col">10/10</span></div>
+    <div class="badge threat-val">⚠️ WAVE: <span id="val-wave">T-4</span></div>
+    <button id="btn-reset" style="padding: 4px 8px; font-size: 11px;">Reset</button>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="c" width="480" height="480"></canvas>
+    <div id="banner">
+      <h2 id="banner-title">OUTPOST ESTABLISHED</h2>
+      <p id="banner-sub">Deep space communication link active.</p>
+      <button id="btn-restart" class="module-btn" style="margin: 0 auto;">Build Outpost</button>
+    </div>
+  </div>
+
+  <div id="actions-panel">
+    <div class="panel-title">Construction Blueprints</div>
+    <div class="action-group">
+      <button id="btn-sel-solar" class="module-btn">☀️ Solar (20m)</button>
+      <button id="btn-sel-drill" class="module-btn">⛏️ Drill (25m)</button>
+      <button id="btn-sel-biodome" class="module-btn">🌱 Dome (30m)</button>
+      <button id="btn-sel-turret" class="module-btn">🔫 Turret (35m)</button>
+      <button id="btn-sel-reactor" class="module-btn">⚛️ Reactor (50m)</button>
+      <button id="btn-sel-conduit" class="module-btn">🔌 Conduit (5m)</button>
+      <button id="btn-sel-uplink" class="module-btn">📡 Uplink (80m)</button>
+    </div>
+
+    <div class="action-group" style="margin-top: 4px;">
+      <button id="btn-act-repair" class="success">🔧 Repair (10m)</button>
+      <button id="btn-act-upgrade" class="module-btn">⭐ Upgrade Tier 2</button>
+      <button id="btn-act-wait" class="danger">⏩ Advance Cycle</button>
+    </div>
+  </div>
+
+  <div id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      const valMin = document.getElementById('val-min');
+      const valPow = document.getElementById('val-pow');
+      const valCol = document.getElementById('val-col');
+      const valWave = document.getElementById('val-wave');
+      const logBox = document.getElementById('log-box');
+      const banner = document.getElementById('banner');
+      const bannerTitle = document.getElementById('banner-title');
+      const bannerSub = document.getElementById('banner-sub');
+      const btnReset = document.getElementById('btn-reset');
+      const btnRestart = document.getElementById('btn-restart');
+
+      const btnSolar = document.getElementById('btn-sel-solar');
+      const btnDrill = document.getElementById('btn-sel-drill');
+      const btnBiodome = document.getElementById('btn-sel-biodome');
+      const btnTurret = document.getElementById('btn-sel-turret');
+      const btnReactor = document.getElementById('btn-sel-reactor');
+      const btnConduit = document.getElementById('btn-sel-conduit');
+      const btnUplink = document.getElementById('btn-sel-uplink');
+
+      const btnRepair = document.getElementById('btn-act-repair');
+      const btnUpgrade = document.getElementById('btn-act-upgrade');
+      const btnWait = document.getElementById('btn-act-wait');
+
+      let state = createState(Date.now() & 0xffff);
+      let selectedType = 'solar';
+      let selectedTile = { r: 1, c: 2 };
+
+      // Web Audio sound synthesizer
+      function playSfx(type) {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctxA = new AudioContext();
+          const osc = ctxA.createOscillator();
+          const gain = ctxA.createGain();
+          osc.connect(gain);
+          gain.connect(ctxA.destination);
+
+          if (type === 'build') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(260, ctxA.currentTime);
+            osc.frequency.setValueAtTime(520, ctxA.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.2);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.2);
+          } else if (type === 'laser') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(800, ctxA.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, ctxA.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.3, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.15);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.15);
+          } else if (type === 'alarm') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(440, ctxA.currentTime);
+            osc.frequency.setValueAtTime(330, ctxA.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.25, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.3);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.3);
+          }
+        } catch(e) {}
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        if (valMin) valMin.textContent = state.minerals;
+        if (valPow) {
+          valPow.textContent = state.powerGen + '/' + state.powerDraw + ' kW ' + (state.brownout ? '⚠️ BROWNOUT' : '');
+          valPow.style.color = state.brownout ? '#ef4444' : '#38bdf8';
+        }
+        if (valCol) valCol.textContent = state.colonists;
+
+        const nextWaveIn = 5 - (state.turn % 5);
+        if (valWave) valWave.textContent = 'T-' + (nextWaveIn === 0 ? 5 : nextWaveIn);
+
+        if (logBox && state.history) {
+          logBox.innerHTML = state.history.slice(-5).map(h => '<div>&gt; ' + h + '</div>').join('');
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        if (banner) {
+          if (state.done) {
+            banner.style.display = 'block';
+            if (state.winner === 'player') {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'MISSION ACCOMPLISHED';
+                bannerTitle.style.color = '#38bdf8';
+              }
+              if (bannerSub) bannerSub.textContent = 'Outpost orbital communication confirmed! (Score: ' + score(state) + ')';
+            } else {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'OUTPOST COMPROMISED';
+                bannerTitle.style.color = '#ef4444';
+              }
+              if (bannerSub) bannerSub.textContent = state.result === 'command_destroyed' ? 'Central Command Core destroyed!' : 'Atmospheric systems failed!';
+            }
+          } else {
+            banner.style.display = 'none';
+          }
+        }
+
+        // Blueprint buttons
+        const blueprints = [
+          { btn: btnSolar, type: 'solar', cost: BUILDING_COSTS.solar },
+          { btn: btnDrill, type: 'drill', cost: BUILDING_COSTS.drill },
+          { btn: btnBiodome, type: 'biodome', cost: BUILDING_COSTS.biodome },
+          { btn: btnTurret, type: 'turret', cost: BUILDING_COSTS.turret },
+          { btn: btnReactor, type: 'reactor', cost: BUILDING_COSTS.reactor },
+          { btn: btnConduit, type: 'conduit', cost: BUILDING_COSTS.conduit },
+          { btn: btnUplink, type: 'uplink', cost: BUILDING_COSTS.uplink }
+        ];
+
+        blueprints.forEach(b => {
+          if (b.btn) {
+            b.btn.disabled = state.minerals < b.cost;
+            b.btn.style.borderColor = selectedType === b.type ? '#38bdf8' : '#334155';
+          }
+        });
+
+        // Selected tile actions (repair / upgrade)
+        const cell = (selectedTile && state.grid) ? state.grid[selectedTile.r][selectedTile.c] : null;
+        const b = cell ? cell.building : null;
+
+        const legals = legalActions(state);
+        if (btnRepair) {
+          btnRepair.disabled = !(b && b.hp < b.maxHp && legals.includes(`repair:${selectedTile.r},${selectedTile.c}`));
+        }
+        if (btnUpgrade) {
+          btnUpgrade.disabled = !(b && b.tier === 1 && legals.includes(`upgrade:${selectedTile.r},${selectedTile.c}`));
+        }
+        if (btnWait) {
+          btnWait.disabled = state.done;
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.fillStyle = '#070a12';
+        ctx.fillRect(0, 0, 480, 480);
+
+        const tileSize = 84;
+        const startX = 30;
+        const startY = 30;
+
+        // Draw Sector Grid
+        if (state.grid) {
+          for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+              const cell = state.grid[r][c];
+              const x = startX + c * tileSize;
+              const y = startY + r * tileSize;
+
+              const isSel = (selectedTile && selectedTile.r === r && selectedTile.c === c);
+
+              let bg = '#0f172a';
+              let border = isSel ? '#38bdf8' : '#1e293b';
+
+              if (cell.deposit === 'mineral_vein') bg = '#1c1917';
+              else if (cell.deposit === 'geothermal_vent') bg = '#2e1065';
+
+              ctx.fillStyle = bg;
+              ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+              ctx.strokeStyle = border;
+              ctx.lineWidth = isSel ? 2 : 1;
+              ctx.strokeRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+
+              // Deposit Icon
+              ctx.font = '10px monospace';
+              ctx.textAlign = 'center';
+              if (cell.deposit === 'mineral_vein') {
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillText('💎 MIN', x + tileSize / 2, y + 16);
+              } else if (cell.deposit === 'geothermal_vent') {
+                ctx.fillStyle = '#a855f7';
+                ctx.fillText('♨️ VENT', x + tileSize / 2, y + 16);
+              }
+
+              // Draw Module
+              const b = cell.building;
+              if (b) {
+                // Connection power glow
+                if (b.connected) {
+                  ctx.strokeStyle = state.brownout ? '#ef4444' : '#facc15';
+                  ctx.lineWidth = 2;
+                  ctx.setLineDash([4, 2]);
+                  ctx.strokeRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
+                  ctx.setLineDash([]);
+                }
+
+                let icon = '📦';
+                let name = b.type.toUpperCase();
+
+                if (b.type === 'command') { icon = '🏛️'; name = 'CORE'; }
+                else if (b.type === 'solar') { icon = '☀️'; name = 'SOLAR'; }
+                else if (b.type === 'drill') { icon = '⛏️'; name = 'DRILL'; }
+                else if (b.type === 'biodome') { icon = '🌱'; name = 'DOME'; }
+                else if (b.type === 'turret') { icon = '🔫'; name = 'TURRET'; }
+                else if (b.type === 'reactor') { icon = '⚛️'; name = 'REACT'; }
+                else if (b.type === 'conduit') { icon = '🔌'; name = 'LINE'; }
+                else if (b.type === 'uplink') { icon = '📡'; name = 'UPLINK'; }
+
+                ctx.font = '22px sans-serif';
+                ctx.fillText(icon, x + tileSize / 2, y + 45);
+
+                // Tier / Name
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillText(name + (b.tier > 1 ? ' T2' : ''), x + tileSize / 2, y + 60);
+
+                // Health bar
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(x + 10, y + 68, tileSize - 20, 5);
+                ctx.fillStyle = b.hp < 40 ? '#ef4444' : '#22c55e';
+                ctx.fillRect(x + 10, y + 68, ((tileSize - 20) * b.hp) / b.maxHp, 5);
+              }
+            }
+          }
+        }
+      }
+
+      function executeAction(act) {
+        if (!act) return;
+        try {
+          if (act.includes('build:')) playSfx('build');
+          else if (act.includes('wait') && (state.turn % 5 === 0)) playSfx('alarm');
+          else playSfx('build');
+
+          step(state, act);
+          updateUI();
+          draw();
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      // Blueprint selections
+      if (btnSolar) btnSolar.onclick = function() { selectedType = 'solar'; updateUI(); };
+      if (btnDrill) btnDrill.onclick = function() { selectedType = 'drill'; updateUI(); };
+      if (btnBiodome) btnBiodome.onclick = function() { selectedType = 'biodome'; updateUI(); };
+      if (btnTurret) btnTurret.onclick = function() { selectedType = 'turret'; updateUI(); };
+      if (btnReactor) btnReactor.onclick = function() { selectedType = 'reactor'; updateUI(); };
+      if (btnConduit) btnConduit.onclick = function() { selectedType = 'conduit'; updateUI(); };
+      if (btnUplink) btnUplink.onclick = function() { selectedType = 'uplink'; updateUI(); };
+
+      // Canvas click to build or select tile
+      if (canvas) {
+        canvas.addEventListener('click', function(e) {
+          if (state.done) return;
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+
+          const tileSize = 84;
+          const startX = 30;
+          const startY = 30;
+
+          const c = Math.floor((mx - startX) / tileSize);
+          const r = Math.floor((my - startY) / tileSize);
+
+          if (r < 0 || r >= 5 || c < 0 || c >= 5) return;
+
+          selectedTile = { r, c };
+
+          const cell = state.grid[r][c];
+          if (!cell.building) {
+            // Attempt build selected module
+            const legals = legalActions(state);
+            const buildAct = `build:${selectedType}:${r},${c}`;
+            if (legals.includes(buildAct)) {
+              executeAction(buildAct);
+              return;
+            }
+          }
+
+          updateUI();
+          draw();
+        });
+      }
+
+      if (btnRepair) {
+        btnRepair.onclick = function() {
+          if (!selectedTile) return;
+          executeAction(`repair:${selectedTile.r},${selectedTile.c}`);
+        };
+      }
+
+      if (btnUpgrade) {
+        btnUpgrade.onclick = function() {
+          if (!selectedTile) return;
+          executeAction(`upgrade:${selectedTile.r},${selectedTile.c}`);
+        };
+      }
+
+      if (btnWait) {
+        btnWait.onclick = function() {
+          executeAction('wait');
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedTile = { r: 1, c: 2 };
+          updateUI();
+          draw();
+        };
+      }
+
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedTile = { r: 1, c: 2 };
+          updateUI();
+          draw();
+        };
+      }
+
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>

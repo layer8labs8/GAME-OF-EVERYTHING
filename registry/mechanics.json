@@ -1054,9 +1054,11 @@
    "id": "0102",
    "slug": "base-building",
    "name": "Base Building",
+   "title": "Outpost Constructor",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {
