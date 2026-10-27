@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ocean Trawler - Fishing</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0284c7">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #021a2c;
+      color: #f0fdfa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 14px;
+      background: #082f49;
+      border-radius: 8px;
+      border: 1px solid #0369a1;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      background: #031e33;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #0369a1;
+      font-size: 0.72rem;
+    }
+    .hud-box {
+      background: #082f49;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #0284c7;
+    }
+    .hud-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    .text-cyan { color: #38bdf8; }
+    .text-emerald { color: #10b981; }
+    .text-amber { color: #f59e0b; }
+    .text-rose { color: #f43f5e; }
+    .text-gold { color: #fbbf24; }
+
+    #canvas-container {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      background: #000000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #0369a1;
+      aspect-ratio: 16 / 10;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .status-banner {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      padding: 6px 12px;
+      background: #082f49;
+      border-left: 4px solid #0284c7;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .livewell-bar {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      background: #031e33;
+      border: 1px solid #0369a1;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .controls-grid {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    button {
+      background: #082f49;
+      border: 1px solid #0284c7;
+      color: #f0fdfa;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+    button:hover:not(:disabled) {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      opacity: 0.35;
+      border-color: #1e3a5f;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    button.btn-success {
+      background: #059669;
+      border-color: #10b981;
+    }
+    button.btn-amber {
+      background: #d97706;
+      border-color: #f59e0b;
+    }
+    button.btn-cyan {
+      background: #0891b2;
+      border-color: #06b6d4;
+    }
+    .btn-sub {
+      font-size: 0.62rem;
+      font-weight: normal;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🐟 Ocean Trawler</h1>
+    <div style="font-size: 0.72rem; color: #94a3b8;">
+      Zone: <span id="hdr-zone" class="text-cyan">Port Estuary</span> | Day: <span id="hdr-turn" class="text-emerald">0</span>/120
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Seaworthiness</div>
+      <div id="hud-hull" class="hud-val text-emerald">100%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Marine Diesel</div>
+      <div id="hud-fuel" class="hud-val text-amber">80u</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Bait Pots</div>
+      <div id="hud-bait" class="hud-val text-cyan">6</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #94a3b8;">Market Funds</div>
+      <div id="hud-money" class="hud-val text-emerald">$240</div>
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="520" height="325"></canvas>
+  </div>
+
+  <div id="status-banner" class="status-banner">
+    Trawler moored at Port Haven. Rig lines and chart a course for the fishing grounds.
+  </div>
+
+  <div class="livewell-bar">
+    <div>
+      Livewell Hold: <span id="hold-count" style="font-weight: bold; color: #38bdf8;">0</span> / <span id="hold-cap">6</span> crates
+    </div>
+    <div id="hold-breakdown" style="color: #cbd5e1; font-size: 0.68rem;">
+      Mackerel: 0 | Snapper: 0 | Tuna: 0 | 🏆 Coelacanth: 0
+    </div>
+  </div>
+
+  <div id="controls" class="controls-grid">
+    <!-- Buttons injected by JS -->
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Date.now() % 1000000));
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function renderScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Sky
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 110);
+      skyGrad.addColorStop(0, '#0c4a6e');
+      skyGrad.addColorStop(1, '#38bdf8');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, 520, 110);
+
+      // Sun
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(420, 40, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sea water depths based on currentZone
+      const waterGrad = ctx.createLinearGradient(0, 110, 0, 325);
+      if (state.currentZone === 0) {
+        waterGrad.addColorStop(0, '#0284c7');
+        waterGrad.addColorStop(1, '#0369a1');
+      } else if (state.currentZone === 1) {
+        waterGrad.addColorStop(0, '#0369a1');
+        waterGrad.addColorStop(1, '#0c4a6e');
+      } else if (state.currentZone === 2) {
+        waterGrad.addColorStop(0, '#075985');
+        waterGrad.addColorStop(1, '#082f49');
+      } else {
+        waterGrad.addColorStop(0, '#082f49');
+        waterGrad.addColorStop(1, '#020617');
+      }
+      ctx.fillStyle = waterGrad;
+      ctx.fillRect(0, 110, 520, 215);
+
+      // Rolling surface waves
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.beginPath();
+      ctx.moveTo(0, 110);
+      for (let x = 0; x <= 520; x += 40) {
+        ctx.quadraticCurveTo(x + 20, 104, x + 40, 110);
+      }
+      ctx.lineTo(520, 115);
+      ctx.lineTo(0, 115);
+      ctx.fill();
+
+      // Trawler Boat
+      const bx = 180;
+      const by = 85;
+
+      // Boat hull
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.moveTo(bx - 50, by + 25);
+      ctx.lineTo(bx + 70, by + 25);
+      ctx.quadraticCurveTo(bx + 100, by + 25, bx + 115, by);
+      ctx.lineTo(bx - 60, by);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Wheelhouse cabin
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(bx - 20, by - 25, 45, 25);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(bx - 12, by - 20, 28, 10); // Window
+
+      // Mast and antenna
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(bx + 5, by - 25);
+      ctx.lineTo(bx + 5, by - 50);
+      ctx.stroke();
+
+      // Fishing line into water
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bx + 115, by);
+      ctx.lineTo(bx + 130, by + 120);
+      ctx.stroke();
+
+      // Sonar beam cone (if active)
+      if (state.sonarBonusActive) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+        ctx.beginPath();
+        ctx.moveTo(bx + 30, by + 25);
+        ctx.lineTo(bx - 60, by + 200);
+        ctx.lineTo(bx + 140, by + 200);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Swimming fish silhouettes
+      ctx.fillStyle = '#38bdf8';
+      const fishPositions = [
+        [320, 160], [380, 200], [290, 240], [140, 260], [420, 280]
+      ];
+      for (const [fx, fy] of fishPositions) {
+        ctx.beginPath();
+        ctx.ellipse(fx, fy, 12, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(fx - 12, fy);
+        ctx.lineTo(fx - 18, fy - 6);
+        ctx.lineTo(fx - 18, fy + 6);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Legendary Coelacanth indicator in zone 3
+      if (state.currentZone === 3) {
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '10px monospace';
+        ctx.fillText('ABYSSAL TRENCH: LEGENDARY COELACANTH DETECTED', 110, 310);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('hdr-zone').textContent = ZONE_NAMES[state.currentZone] || 'Ocean';
+      document.getElementById('hdr-turn').textContent = state.turns;
+
+      const h = document.getElementById('hud-hull');
+      h.textContent = state.hull + '%';
+      h.className = 'hud-val ' + (state.hull > 50 ? 'text-emerald' : 'text-rose');
+
+      document.getElementById('hud-fuel').textContent = state.fuel + 'u';
+      document.getElementById('hud-bait').textContent = state.bait;
+      document.getElementById('hud-money').textContent = '$' + state.money;
+      document.getElementById('status-banner').textContent = state.gameMessage;
+
+      const currentCount = totalFish(state);
+      document.getElementById('hold-count').textContent = currentCount;
+      document.getElementById('hold-cap').textContent = state.cargoCapacity;
+      document.getElementById('hold-breakdown').textContent = 
+        `Mackerel: ${state.cargo.mackerel} | Snapper: ${state.cargo.snapper} | Tuna: ${state.cargo.tuna} | 🏆 Coelacanth: ${state.cargo.coelacanth}`;
+
+      const legal = legalActions(state);
+      let ctrlHtml = '';
+
+      if (isOver(state)) {
+        ctrlHtml = `
+          <button class="btn-primary" style="grid-column: span 2; padding: 14px;" onclick="window.resetGame()">
+            🔄 Launch New Commercial Trawling Career
+          </button>
+        `;
+      } else {
+        if (legal.includes('action:cast_fishing_line')) {
+          ctrlHtml += `
+            <button class="btn-primary" onclick="window.doAction('action:cast_fishing_line')">
+              🎣 Cast Baited Line
+              <span class="btn-sub">-1 Bait, -4 Fuel, hook zone fish</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:deploy_trawl_net')) {
+          ctrlHtml += `
+            <button class="btn-cyan" onclick="window.doAction('action:deploy_trawl_net')">
+              🕸️ Deploy Trawl Net
+              <span class="btn-sub">-14 Fuel, scoop 2 fish</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:ping_sonar_scanner')) {
+          ctrlHtml += `
+            <button class="btn-amber" onclick="window.doAction('action:ping_sonar_scanner')">
+              📡 Ping Echo Sonar
+              <span class="btn-sub">-15 Battery, guarantee trophy strike</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:dock_and_auction_catch')) {
+          ctrlHtml += `
+            <button class="btn-success" style="grid-column: span 2;" onclick="window.doAction('action:dock_and_auction_catch')">
+              💰 Dock & Auction Catch
+              <span class="btn-sub">Sell all haul at Port Haven market</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:refuel_and_repair')) {
+          ctrlHtml += `
+            <button onclick="window.doAction('action:refuel_and_repair')">
+              ⛽ Refuel & Caulk Hull ($60)
+              <span class="btn-sub">+45 Fuel, +35 Seaworthiness</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:restock_bait_pots')) {
+          ctrlHtml += `
+            <button onclick="window.doAction('action:restock_bait_pots')">
+              🦑 Restock Bait ($35)
+              <span class="btn-sub">+4 Squid & Chum Pots</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:install_flash_freezer')) {
+          ctrlHtml += `
+            <button class="btn-cyan" onclick="window.doAction('action:install_flash_freezer')">
+              ❄️ Cryo-Freezer ($180)
+              <span class="btn-sub">+25% Fish Market Value</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:expand_livewell_capacity')) {
+          ctrlHtml += `
+            <button onclick="window.doAction('action:expand_livewell_capacity')">
+              📦 Expand Livewell ($120)
+              <span class="btn-sub">+4 Crates hold capacity</span>
+            </button>
+          `;
+        }
+
+        // Navigation buttons
+        for (const act of legal) {
+          if (act.startsWith('action:sail_to_zone:')) {
+            const z = parseInt(act.split(':')[2], 10);
+            ctrlHtml += `
+              <button class="btn-primary" onclick="window.doAction('${act}')">
+                🧭 Steer to ${ZONE_NAMES[z]}
+                <span class="btn-sub">-10 Fuel</span>
+              </button>
+            `;
+          }
+        }
+
+        if (legal.includes('action:handline_dock_fishing')) {
+          ctrlHtml += `
+            <button onclick="window.doAction('action:handline_dock_fishing')">
+              🐟 Handline Pier Fish
+              <span class="btn-sub">+$25 Cash, +10 Fuel</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:coast_guard_tow')) {
+          ctrlHtml += `
+            <button class="btn-primary" style="grid-column: span 2;" onclick="window.doAction('action:coast_guard_tow')">
+              🚨 Call Coast Guard Cutter
+              <span class="btn-sub">Tow stranded vessel to port</span>
+            </button>
+          `;
+        }
+      }
+
+      document.getElementById('controls').innerHTML = ctrlHtml;
+      renderScene();
+    }
+
+    window.doAction = function(act) {
+      try {
+        step(state, act);
+        updateUI();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    window.resetGame = function() {
+      state = createState(Math.floor(Date.now() % 1000000));
+      updateUI();
+    };
+
+    updateUI();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

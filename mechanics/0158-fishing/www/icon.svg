@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="seabg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#082f49" />
+      <stop offset="100%" stop-color="#021a2c" />
+    </linearGradient>
+    <linearGradient id="hull" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="fish" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#seabg)" />
+  <!-- Waves -->
+  <path d="M 40 360 Q 120 320 200 360 T 360 360 T 500 360 L 500 480 L 40 480 Z" fill="#0369a1" opacity="0.6" />
+  <path d="M 20 390 Q 100 350 180 390 T 340 390 T 500 390 L 500 480 L 20 480 Z" fill="#0284c7" opacity="0.8" />
+  <!-- Commercial Trawler boat hull -->
+  <path d="M 120 350 L 370 350 C 420 350 440 300 450 270 L 110 270 Z" fill="url(#hull)" stroke="#7dd3fc" stroke-width="6" />
+  <!-- Wheelhouse cabin -->
+  <rect x="150" y="200" width="100" height="70" fill="#f8fafc" stroke="#334155" stroke-width="4" />
+  <rect x="170" y="215" width="60" height="25" fill="#38bdf8" />
+  <!-- Radar mast & gantry -->
+  <line x1="200" y1="200" x2="200" y2="140" stroke="#f8fafc" stroke-width="6" />
+  <line x1="180" y1="160" x2="220" y2="160" stroke="#f8fafc" stroke-width="4" />
+  <ellipse cx="200" cy="140" rx="20" ry="6" fill="#f59e0b" />
+  <!-- Big Fish leaping from sea -->
+  <path d="M 360 210 Q 420 180 430 130 Q 380 150 360 210 Z" fill="url(#fish)" stroke="#67e8f9" stroke-width="3" />
+  <!-- Fish tail fin -->
+  <polygon points="430,130 460,110 445,145" fill="url(#fish)" />
+  <circle cx="375" cy="190" r="3" fill="#ffffff" />
+</svg>

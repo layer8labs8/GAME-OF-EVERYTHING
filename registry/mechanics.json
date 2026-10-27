@@ -1671,9 +1671,11 @@
       "slug": "fishing",
       "name": "Fishing",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Ocean Trawler",
+      "levels": "endless"
     },
     {
       "id": "0159",
