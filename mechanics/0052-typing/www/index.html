@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cipher Cascade</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#06b6d4">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: #030712;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .hud-stats {
+      display: flex;
+      gap: 10px;
+    }
+    .stat-pill {
+      background: #1f2937;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #374151;
+    }
+    .stat-pill.cyan { color: #38bdf8; border-color: #0284c7; }
+    .stat-pill.green { color: #34d399; }
+    .stat-pill.red { color: #f87171; }
+    .stat-pill.yellow { color: #fbbf24; }
+
+    #gameCanvas {
+      background: #020617;
+      border: 2px solid #0e7490;
+      border-radius: 8px;
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.2);
+      max-width: 100%;
+      touch-action: none;
+    }
+
+    .keyboard-panel {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .kb-row {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+    }
+    .kb-key {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #e5e7eb;
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: bold;
+      min-width: 28px;
+      height: 38px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.05s;
+    }
+    .kb-key:hover { background: #374151; }
+    .kb-key:active { background: #0891b2; color: #ffffff; }
+    .kb-key.action-key {
+      flex: 1.5;
+      font-size: 12px;
+      background: #1e293b;
+    }
+    .kb-key.emp-key {
+      background: #7c2d12;
+      border-color: #ea580c;
+      color: #ffedd5;
+      flex: 2;
+    }
+    .kb-key.emp-key:hover { background: #9a3412; }
+
+    #overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(3, 7, 18, 0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+    .overlay-btn {
+      background: #0891b2;
+      border: none;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    .overlay-btn:hover { background: #06b6d4; }
+  </style>
+</head>
+<body>
+  <header>
+    <div><strong style="color: #06b6d4;">CIPHER CASCADE</strong></div>
+    <div class="hud-stats">
+      <span class="stat-pill red">Shield: <strong id="hpEl">5</strong></span>
+      <span class="stat-pill yellow">EMP: <strong id="empEl">2</strong></span>
+      <span class="stat-pill green">Defeated: <strong id="wordsEl">0/15</strong></span>
+      <span class="stat-pill cyan">Score: <strong id="scoreEl">0</strong></span>
+    </div>
+  </header>
+
+  <div style="position: relative; width: 600px; max-width: 100%;">
+    <canvas id="gameCanvas" width="600" height="480"></canvas>
+    <div id="overlay">
+      <h2 id="overlayTitle" style="font-size: 32px; color: #34d399; margin-bottom: 12px;">FIREWALL DEFENDED!</h2>
+      <p id="overlayDesc" style="color: #94a3b8;">Threat wave eliminated successfully.</p>
+      <button class="overlay-btn" id="playAgainBtn">Next Sector</button>
+    </div>
+  </div>
+
+  <div class="keyboard-panel">
+    <div class="kb-row" id="row1"></div>
+    <div class="kb-row" id="row2"></div>
+    <div class="kb-row" id="row3"></div>
+    <div class="kb-row">
+      <button class="kb-key emp-key" id="empBtn">⚡ EMP BURST (Enter)</button>
+      <button class="kb-key action-key" id="waitBtn">WAIT (Space)</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(1);
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas ? canvas.getContext("2d") : null;
+    let autoTimer = null;
+
+    let audioCtx = null;
+    function playTone(freq, type = 'sine', duration = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function buildKeyboard() {
+      const rows = [
+        ["Q","W","E","R","T","Y","U","I","O","P"],
+        ["A","S","D","F","G","H","J","K","L"],
+        ["Z","X","C","V","B","N","M"]
+      ];
+      rows.forEach((row, i) => {
+        const el = document.getElementById("row" + (i + 1));
+        if (el) {
+          let html = "";
+          row.forEach(char => {
+            html += `<button class="kb-key" data-key="${char}">${char}</button>`;
+          });
+          el.innerHTML = html;
+        }
+      });
+
+      const kbPanel = document.querySelector(".keyboard-panel");
+      if (kbPanel && typeof kbPanel.addEventListener === 'function') {
+        kbPanel.addEventListener("click", (e) => {
+          const target = e.target;
+          if (target && typeof target.getAttribute === 'function') {
+            const key = target.getAttribute("data-key");
+            if (key) handleInput(key);
+          }
+        });
+      }
+    }
+
+    function updateUI() {
+      const hpEl = document.getElementById("hpEl");
+      if (hpEl) hpEl.textContent = state.hp;
+      const empEl = document.getElementById("empEl");
+      if (empEl) empEl.textContent = state.empCharges;
+      const wordsEl = document.getElementById("wordsEl");
+      if (wordsEl) wordsEl.textContent = `${state.wordsDestroyed}/${TOTAL_WORDS}`;
+      const scoreEl = document.getElementById("scoreEl");
+      if (scoreEl) scoreEl.textContent = score(state);
+
+      if (state.done) {
+        if (autoTimer) clearInterval(autoTimer);
+        autoTimer = null;
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "flex";
+        const title = document.getElementById("overlayTitle");
+        const desc = document.getElementById("overlayDesc");
+        if (title && desc) {
+          if (state.won) {
+            title.textContent = "FIREWALL DEFENDED!";
+            title.style.color = "#34d399";
+            desc.textContent = `All ${TOTAL_WORDS} threats purged! Final Score: ${score(state)}`;
+            playTone(659, 'triangle', 0.3);
+          } else {
+            title.textContent = "FIREWALL BREACHED!";
+            title.style.color = "#f87171";
+            desc.textContent = `Integrity collapsed. Server compromised.`;
+            playTone(165, 'sawtooth', 0.4);
+          }
+        }
+      }
+    }
+
+    function render() {
+      if (!ctx || !canvas) return;
+      ctx.fillStyle = "#020617";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const laneW = canvas.width / 4;
+
+      // Draw 4 Cyber Lanes
+      for (let i = 0; i < 4; i++) {
+        ctx.strokeStyle = "#0f172a";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(i * laneW, 0, laneW, canvas.height - 40);
+
+        // Subtle matrix stream dots
+        ctx.fillStyle = "rgba(6, 182, 212, 0.08)";
+        for (let j = 0; j < 8; j++) {
+          ctx.fillRect(i * laneW + laneW / 2 - 1, j * 50 + ((state.turn * 8) % 50), 2, 8);
+        }
+      }
+
+      // Draw Firewall baseline
+      const fy = canvas.height - 40;
+      ctx.fillStyle = "rgba(6, 182, 212, 0.15)";
+      ctx.fillRect(0, fy, canvas.width, 40);
+      ctx.strokeStyle = "#06b6d4";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, fy);
+      ctx.lineTo(canvas.width, fy);
+      ctx.stroke();
+
+      // Laser Turret at bottom center
+      const tx = canvas.width / 2;
+      const ty = canvas.height - 15;
+      ctx.fillStyle = "#0284c7";
+      ctx.beginPath();
+      ctx.arc(tx, ty, 18, Math.PI, 0);
+      ctx.fill();
+
+      // Find locked target if any
+      let lockedTarget = null;
+      if (state.currentTargetId !== null) {
+        lockedTarget = state.ciphers.find(c => c.id === state.currentTargetId);
+      }
+
+      // Draw Laser Beam to locked target
+      if (lockedTarget) {
+        const targetX = lockedTarget.lane * laneW + laneW / 2;
+        const targetY = (lockedTarget.y / 100) * (canvas.height - 60) + 20;
+
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty - 12);
+        ctx.lineTo(targetX, targetY);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Draw Descending Ciphers
+      state.ciphers.forEach(c => {
+        const cx = c.lane * laneW + laneW / 2;
+        const cy = (c.y / 100) * (canvas.height - 60) + 20;
+        const isLocked = (state.currentTargetId === c.id);
+
+        ctx.save();
+        ctx.font = "bold 15px monospace";
+        ctx.textAlign = "center";
+
+        const textW = ctx.measureText(c.word).width;
+        const boxW = textW + 20;
+        const boxH = 28;
+
+        // Cipher card background
+        ctx.fillStyle = isLocked ? "#083344" : "#111827";
+        ctx.fillRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH);
+        ctx.strokeStyle = isLocked ? "#06b6d4" : "#374151";
+        ctx.lineWidth = isLocked ? 2 : 1;
+        ctx.strokeRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH);
+
+        // Draw Typed characters in bright cyan, remainder in light grey
+        let startX = cx - textW / 2;
+        for (let i = 0; i < c.word.length; i++) {
+          const ch = c.word[i];
+          const chW = ctx.measureText(ch).width;
+          if (i < c.typed.length) {
+            ctx.fillStyle = "#38bdf8";
+          } else {
+            ctx.fillStyle = isLocked ? "#ffffff" : "#9ca3af";
+          }
+          ctx.fillText(ch, startX + chW / 2, cy + 5);
+          startX += chW;
+        }
+
+        ctx.restore();
+      });
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        const res = step(state, action);
+        if (action.startsWith("type:")) {
+          playTone(587, 'sine', 0.06);
+        } else if (action === "emp_burst") {
+          playTone(330, 'triangle', 0.2);
+        }
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    function handleInput(char) {
+      const act = `type:${char.toUpperCase()}`;
+      const legal = legalActions(state);
+      if (legal.includes(act)) {
+        doAction(act);
+      }
+    }
+
+    const empBtn = document.getElementById("empBtn");
+    if (empBtn && typeof empBtn.addEventListener === 'function') {
+      empBtn.addEventListener("click", () => {
+        const legal = legalActions(state);
+        if (legal.includes("emp_burst")) doAction("emp_burst");
+      });
+    }
+
+    const waitBtn = document.getElementById("waitBtn");
+    if (waitBtn && typeof waitBtn.addEventListener === 'function') {
+      waitBtn.addEventListener("click", () => doAction("wait"));
+    }
+
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    if (playAgainBtn && typeof playAgainBtn.addEventListener === 'function') {
+      playAgainBtn.addEventListener("click", () => {
+        state = createState(state.seed + 1);
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "none";
+        updateUI();
+        render();
+        startAutoTick();
+      });
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const legal = legalActions(state);
+        if (legal.includes("emp_burst")) doAction("emp_burst");
+      } else if (e.code === "Space") {
+        e.preventDefault();
+        doAction("wait");
+      } else if (/^[a-zA-Z]$/.test(e.key)) {
+        handleInput(e.key);
+      }
+    });
+
+    function startAutoTick() {
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = setInterval(() => {
+        if (!state.done) {
+          doAction("wait");
+        }
+      }, 700);
+    }
+
+    buildKeyboard();
+    updateUI();
+    render();
+    startAutoTick();
+  </script>
+</body>
+</html>
