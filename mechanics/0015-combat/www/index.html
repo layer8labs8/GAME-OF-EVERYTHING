@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Brawler Strike - Underground Combat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#120a06">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #0d0704;
+      color: #ffedd5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #f97316;
+      text-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fed7aa;
+    }
+    .hud span { color: #ffffff; }
+    canvas {
+      background: #1c0e08;
+      border: 2px solid #54220b;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      display: block;
+    }
+    .bars-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .bar-track {
+      flex: 1;
+      height: 9px;
+      background: #2a1107;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid #431407;
+    }
+    .bar-fill-hp { width: 100%; height: 100%; background: linear-gradient(90deg, #ef4444, #f87171); transition: width 0.1s; }
+    .bar-fill-sta { width: 100%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); transition: width 0.1s; }
+    .stance-badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .stance-high { background: #7c2d12; color: #fed7aa; border: 1px solid #ea580c; }
+    .stance-low { background: #1e3a8a; color: #bfdbfe; border: 1px solid #3b82f6; }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      margin-top: 8px;
+      gap: 6px;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+    button {
+      background: #2a1308;
+      border: 1px solid #7c2d12;
+      color: #ffedd5;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 8px;
+      min-height: 40px;
+      flex: 1;
+      transition: all 0.05s;
+    }
+    button:active { background: #54220b; transform: scale(0.96); }
+    .btn-strike { background: linear-gradient(135deg, #7c2d12, #c2410c); border-color: #f97316; }
+    .btn-counter { background: linear-gradient(135deg, #831843, #be185d); border-color: #f43f5e; }
+    .btn-util { background: #1c1917; border-color: #44403c; }
+    #game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(13, 7, 4, 0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #game-overlay h2 { font-size: 2rem; color: #f97316; }
+  </style>
+</head>
+<body>
+  <div id="game-container" style="position: relative;">
+    <header>
+      <h1>BRAWLER STRIKE</h1>
+      <div class="hud">
+        <div>RING: <span id="val-ring">1</span>/3</div>
+        <div>COMBO: <span id="val-combo">0</span>x</div>
+        <div>SCORE: <span id="val-score">0</span></div>
+      </div>
+    </header>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <div class="bars-container">
+      <div class="bar-row">
+        <span style="width: 50px; color: #f87171;">HEALTH</span>
+        <div class="bar-track"><div id="bar-hp" class="bar-fill-hp"></div></div>
+        <div id="badge-stance" class="stance-badge stance-high">HIGH</div>
+      </div>
+      <div class="bar-row">
+        <span style="width: 50px; color: #34d399;">STAMINA</span>
+        <div class="bar-track"><div id="bar-sta" class="bar-fill-sta"></div></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="action-row">
+        <button id="btn-jab" class="btn-strike">JAB [J]</button>
+        <button id="btn-skill" class="btn-strike">HEAVY KICK [K]</button>
+        <button id="btn-throw" class="btn-strike">THROW [L]</button>
+      </div>
+      <div class="action-row">
+        <button id="btn-parry" class="btn-counter">COUNTER PARRY [U]</button>
+        <button id="btn-stance" class="btn-util">STANCE [S]</button>
+        <button id="btn-dodge" class="btn-util">DODGE [A]</button>
+        <button id="btn-breathe" class="btn-util">BREATHE [R]</button>
+      </div>
+    </div>
+
+    <div id="game-overlay">
+      <h2 id="overlay-title">CHAMPION VICTORY</h2>
+      <p id="overlay-sub" style="font-size: 1.1rem; color: #fed7aa;">Iron Fang has been dethroned!</p>
+      <button id="btn-restart" class="btn-strike" style="padding: 10px 24px; font-size: 1rem; max-width: 200px;">ENTER RING AGAIN</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const elRing = document.getElementById('val-ring');
+      const elCombo = document.getElementById('val-combo');
+      const elScore = document.getElementById('val-score');
+      const barHp = document.getElementById('bar-hp');
+      const barSta = document.getElementById('bar-sta');
+      const badgeStance = document.getElementById('badge-stance');
+      const btnSkill = document.getElementById('btn-skill');
+      const overlay = document.getElementById('game-overlay');
+      const overlayTitle = document.getElementById('overlay-title');
+      const overlaySub = document.getElementById('overlay-sub');
+
+      let state = BrawlerStrike.createState(Date.now() % 100000);
+      let fxList = [];
+
+      function triggerAction(act) {
+        if (BrawlerStrike.isOver(state)) return;
+        const legals = BrawlerStrike.legalActions(state);
+        if (!legals.includes(act)) return;
+
+        const p = state.player;
+        if (act === 'jab') {
+          fxList.push({ type: 'hit', x: p.x + 40, y: 220, r: 18, color: '#f97316', life: 8 });
+        } else if (act === 'heavy_kick') {
+          fxList.push({ type: 'hit', x: p.x + 55, y: 205, r: 30, color: '#ef4444', life: 12 });
+        } else if (act === 'sweep') {
+          fxList.push({ type: 'sweep', x: p.x + 45, y: 260, r: 35, color: '#38bdf8', life: 10 });
+        } else if (act === 'grab_throw') {
+          fxList.push({ type: 'slam', x: p.x + 70, y: 245, r: 40, color: '#eab308', life: 14 });
+        } else if (act === 'counter_parry') {
+          fxList.push({ type: 'guard', x: p.x + 20, y: 215, r: 28, color: '#ec4899', life: 10 });
+        }
+
+        BrawlerStrike.step(state, act);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (elRing) elRing.textContent = state.ring;
+        if (elCombo) elCombo.textContent = state.player.combo;
+        if (elScore) elScore.textContent = state.scoreVal;
+
+        const p = state.player;
+        if (barHp) barHp.style.width = (p.hp / p.maxHp * 100) + '%';
+        if (barSta) barSta.style.width = (p.stamina / p.maxStamina * 100) + '%';
+
+        if (badgeStance && badgeStance.classList) {
+          if (p.stance === 'high') {
+            badgeStance.textContent = 'HIGH';
+            badgeStance.className = 'stance-badge stance-high';
+            if (btnSkill) btnSkill.textContent = 'HEAVY KICK [K]';
+          } else {
+            badgeStance.textContent = 'LOW';
+            badgeStance.className = 'stance-badge stance-low';
+            if (btnSkill) btnSkill.textContent = 'SWEEP [K]';
+          }
+        }
+
+        if (BrawlerStrike.isOver(state)) {
+          if (overlay) {
+            overlay.style.display = 'flex';
+            if (state.won) {
+              if (overlayTitle) { overlayTitle.textContent = 'UNDISPUTED CHAMPION'; overlayTitle.style.color = '#f97316'; }
+              if (overlaySub) overlaySub.textContent = `All 3 Rings Conquered! Score: ${state.scoreVal}`;
+            } else {
+              if (overlayTitle) { overlayTitle.textContent = 'KNOCKED OUT'; overlayTitle.style.color = '#ef4444'; }
+              if (overlaySub) overlaySub.textContent = `Fell in Ring ${state.ring}. Score: ${state.scoreVal}`;
+            }
+          }
+        } else {
+          if (overlay) overlay.style.display = 'none';
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 400, 400);
+
+        // Underground Ring Mat
+        ctx.fillStyle = '#261208';
+        ctx.fillRect(20, 100, 360, 240);
+
+        // Ring ropes
+        ctx.strokeStyle = '#c2410c';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(20, 140); ctx.lineTo(380, 140);
+        ctx.moveTo(20, 180); ctx.lineTo(380, 180);
+        ctx.stroke();
+
+        // Corner posts
+        ctx.fillStyle = '#7c2d12';
+        ctx.fillRect(15, 90, 10, 260);
+        ctx.fillRect(375, 90, 10, 260);
+
+        // Canvas Floor shadow line
+        ctx.strokeStyle = '#170903';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(20, 310); ctx.lineTo(380, 310);
+        ctx.stroke();
+
+        // FX Rendering
+        const nextFx = [];
+        for (const fx of fxList) {
+          ctx.save();
+          if (fx.type === 'hit') {
+            ctx.fillStyle = fx.color;
+            ctx.beginPath();
+            ctx.arc(fx.x, fx.y, fx.r * (1 - fx.life / 15), 0, Math.PI * 2);
+            ctx.fill();
+          } else if (fx.type === 'sweep') {
+            ctx.strokeStyle = fx.color;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI);
+            ctx.stroke();
+          } else if (fx.type === 'slam') {
+            ctx.strokeStyle = fx.color;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(fx.x, fx.y, fx.r * (1 - fx.life / 16), 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (fx.type === 'guard') {
+            ctx.strokeStyle = fx.color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(fx.x, fx.y, fx.r, -Math.PI * 0.4, Math.PI * 0.4);
+            ctx.stroke();
+          }
+          ctx.restore();
+          fx.life--;
+          if (fx.life > 0) nextFx.push(fx);
+        }
+        fxList = nextFx;
+
+        // Render Opponents
+        for (const e of state.enemies) {
+          ctx.save();
+          const ey = e.stunned > 0 ? 255 : 220; // Knocked down posture if stunned
+
+          if (e.type === 'champion') {
+            // Pit Champion
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(e.x, ey - 25, 18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(e.x - 18, ey - 7, 36, 45);
+
+            // Spiked knuckles & Belt
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(e.x - 20, ey + 15, 40, 6);
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(e.x - 24, ey + 5, 8, 8);
+
+            // Champion HP bar
+            ctx.fillStyle = '#450a0a';
+            ctx.fillRect(e.x - 25, ey - 50, 50, 5);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(e.x - 25, ey - 50, (e.hp / e.maxHp) * 50, 5);
+          } else if (e.type === 'kickboxer') {
+            ctx.fillStyle = '#2563eb';
+            ctx.beginPath();
+            ctx.arc(e.x, ey - 22, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(e.x - 12, ey - 8, 24, 40);
+
+            // Kickboxer HP bar
+            ctx.fillStyle = '#172554';
+            ctx.fillRect(e.x - 18, ey - 42, 36, 4);
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(e.x - 18, ey - 42, (e.hp / e.maxHp) * 36, 4);
+          } else {
+            // Street Brawler
+            ctx.fillStyle = '#991b1b';
+            ctx.beginPath();
+            ctx.arc(e.x, ey - 20, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(e.x - 10, ey - 8, 20, 36);
+
+            // HP bar
+            ctx.fillStyle = '#450a0a';
+            ctx.fillRect(e.x - 14, ey - 38, 28, 4);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(e.x - 14, ey - 38, (e.hp / e.maxHp) * 28, 4);
+          }
+
+          if (e.stunned > 0) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('💫 STUN', e.x - 18, ey - 45);
+          }
+          ctx.restore();
+        }
+
+        // Render Player Fighter
+        const p = state.player;
+        ctx.save();
+        const py = p.stance === 'low' ? 235 : 220;
+
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(p.x, py - 22, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fdba74';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = p.stance === 'high' ? '#ea580c' : '#1e3a8a';
+        ctx.fillRect(p.x - 12, py - 8, 24, 38);
+
+        // Martial hand wraps
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(p.x + 8, py - 5, 8, 8);
+        ctx.fillRect(p.x + 12, py + 8, 8, 8);
+
+        ctx.restore();
+
+        if (fxList.length > 0) {
+          requestAnimationFrame(render);
+        }
+      }
+
+      // Button listeners
+      const btnJab = document.getElementById('btn-jab');
+      const btnThrow = document.getElementById('btn-throw');
+      const btnParry = document.getElementById('btn-parry');
+      const btnStance = document.getElementById('btn-stance');
+      const btnDodge = document.getElementById('btn-dodge');
+      const btnBreathe = document.getElementById('btn-breathe');
+      const btnRestart = document.getElementById('btn-restart');
+
+      if (btnJab) btnJab.addEventListener('click', () => triggerAction('jab'));
+      if (btnSkill) {
+        btnSkill.addEventListener('click', () => {
+          if (state.player.stance === 'high') triggerAction('heavy_kick');
+          else triggerAction('sweep');
+        });
+      }
+      if (btnThrow) btnThrow.addEventListener('click', () => triggerAction('grab_throw'));
+      if (btnParry) btnParry.addEventListener('click', () => triggerAction('counter_parry'));
+      if (btnStance) btnStance.addEventListener('click', () => triggerAction('shift_stance'));
+      if (btnDodge) btnDodge.addEventListener('click', () => triggerAction('dodge'));
+      if (btnBreathe) btnBreathe.addEventListener('click', () => triggerAction('breathe'));
+
+      if (btnRestart) {
+        btnRestart.addEventListener('click', () => {
+          state = BrawlerStrike.createState(Date.now() % 100000);
+          fxList = [];
+          updateUI();
+          render();
+        });
+      }
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'j') triggerAction('jab');
+        else if (k === 'k') {
+          if (state.player.stance === 'high') triggerAction('heavy_kick');
+          else triggerAction('sweep');
+        } else if (k === 'l') triggerAction('grab_throw');
+        else if (k === 'u') triggerAction('counter_parry');
+        else if (k === 's') triggerAction('shift_stance');
+        else if (k === 'a') triggerAction('dodge');
+        else if (k === 'r') triggerAction('breathe');
+      });
+
+      // PWA registration
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>

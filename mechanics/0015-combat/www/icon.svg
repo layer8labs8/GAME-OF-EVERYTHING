@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="100" fill="#140a05" />
+  <circle cx="256" cy="256" r="210" fill="#261005" stroke="#f97316" stroke-width="8"/>
+  <!-- Clenched Martial Fist -->
+  <path d="M180 320 L180 230 Q180 210 200 210 Q220 210 220 230 L220 320 Z" fill="#fb923c" />
+  <path d="M220 320 L220 180 Q220 160 240 160 Q260 160 260 180 L260 320 Z" fill="#f97316" />
+  <path d="M260 320 L260 195 Q260 175 280 175 Q300 175 300 195 L300 320 Z" fill="#ea580c" />
+  <path d="M300 320 L300 225 Q300 205 320 205 Q340 205 340 225 L340 320 Z" fill="#c2410c" />
+  <!-- Thumb wrap -->
+  <path d="M150 260 Q180 260 210 290 Q220 310 200 330 Q160 330 150 290 Z" fill="#f97316" stroke="#9a3412" stroke-width="4"/>
+  <!-- Impact sparks -->
+  <polygon points="260,110 270,135 295,120 280,145 305,150 280,165 290,190 265,175 255,200 245,175 220,190 230,165 205,150 230,145 215,120 240,135" fill="#fef08a" />
+</svg>
