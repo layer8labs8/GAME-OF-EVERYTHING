@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="100" fill="#09090b"/>
+  <!-- Tactical Grid -->
+  <line x1="128" y1="90" x2="128" y2="422" stroke="#27272a" stroke-width="4"/>
+  <line x1="256" y1="90" x2="256" y2="422" stroke="#27272a" stroke-width="4"/>
+  <line x1="384" y1="90" x2="384" y2="422" stroke="#27272a" stroke-width="4"/>
+  <line x1="90" y1="128" x2="422" y2="128" stroke="#27272a" stroke-width="4"/>
+  <line x1="90" y1="256" x2="422" y2="256" stroke="#27272a" stroke-width="4"/>
+  <line x1="90" y1="384" x2="422" y2="384" stroke="#27272a" stroke-width="4"/>
+  <!-- Vanguard Shield Crest -->
+  <polygon points="256,120 370,160 370,290 256,390 142,290 142,160" fill="#1e3a8a" stroke="#38bdf8" stroke-width="6"/>
+  <!-- X Tactical Sigil -->
+  <line x1="200" y1="200" x2="312" y2="312" stroke="#facc15" stroke-width="14" stroke-linecap="round"/>
+  <line x1="312" y1="200" x2="200" y2="312" stroke="#facc15" stroke-width="14" stroke-linecap="round"/>
+  <!-- Overwatch Eye Reticle -->
+  <circle cx="256" cy="256" r="28" fill="#09090b" stroke="#38bdf8" stroke-width="4"/>
+  <circle cx="256" cy="256" r="10" fill="#ef4444"/>
+</svg>

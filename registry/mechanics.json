@@ -990,8 +990,9 @@
    "slug": "turn-based-tactics",
    "name": "Turn-Based Tactics",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {

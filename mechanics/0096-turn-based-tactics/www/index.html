@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>X-Vanguard: Turn-Based Tactics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #18181b;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #27272a;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .rnd-val { color: #facc15; }
+    .sq-val { color: #38bdf8; }
+    .en-val { color: #f87171; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #0f172a;
+      border: 2px solid #27272a;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+    }
+    #controls {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #selection-bar {
+      font-size: 13px;
+      color: #a1a1aa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 20px;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #1d4ed8; }
+    button:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
+    #btn-shoot { background: #dc2626; }
+    #btn-shoot:hover:not(:disabled) { background: #b91c1c; }
+    #btn-overwatch { background: #7c3aed; }
+    #btn-overwatch:hover:not(:disabled) { background: #6d28d9; }
+    #btn-grenade { background: #d97706; }
+    #btn-grenade:hover:not(:disabled) { background: #b45309; }
+    #btn-medkit { background: #059669; }
+    #btn-medkit:hover:not(:disabled) { background: #047857; }
+    #btn-end-turn { background: #0284c7; }
+    #btn-end-turn:hover:not(:disabled) { background: #0369a1; }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #a1a1aa;
+      background: #18181b;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #27272a;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+    }
+    #game-over-banner {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .victory-bg { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
+    .defeat-bg { background: #4c0519; color: #fda4af; border: 1px solid #f43f5e; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="stat-badge">Round: <span id="ui-round" class="rnd-val">1/20</span></div>
+    <div class="stat-badge">Operatives: <span id="ui-squad" class="sq-val">3/3</span></div>
+    <div class="stat-badge">Hostiles: <span id="ui-enemies" class="en-val">3</span></div>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="480" height="480"></canvas>
+  </div>
+
+  <div id="controls">
+    <div id="selection-bar">
+      <span id="selected-name">Select an operative or enemy</span>
+      <span id="selected-info"></span>
+    </div>
+    <div class="action-row">
+      <button id="btn-sel-assault">Striker (Assault)</button>
+      <button id="btn-sel-sniper">Ghost (Sniper)</button>
+      <button id="btn-sel-support">Doc (Support)</button>
+      <button id="btn-shoot" style="display:none;">Fire Shot 🎯</button>
+      <button id="btn-overwatch">Overwatch 👁️</button>
+      <button id="btn-grenade" style="display:none;">Frag Grenade 💥</button>
+      <button id="btn-medkit" style="display:none;">Medkit 💊</button>
+      <button id="btn-end-turn">End Turn</button>
+      <button id="btn-reset" style="background:#3f3f46;">Restart</button>
+    </div>
+  </div>
+
+  <div id="log-box">Vanguard deployed into the hot zone. Take cover and eliminate alien hostiles.</div>
+  <div id="game-over-banner"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now() & 0xffff);
+      let selectedSquadId = 'assault';
+      let targetEnemyId = null;
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+
+      const uiRound = document.getElementById('ui-round');
+      const uiSquad = document.getElementById('ui-squad');
+      const uiEnemies = document.getElementById('ui-enemies');
+      const selectedName = document.getElementById('selected-name');
+      const selectedInfo = document.getElementById('selected-info');
+
+      const btnSelAssault = document.getElementById('btn-sel-assault');
+      const btnSelSniper = document.getElementById('btn-sel-sniper');
+      const btnSelSupport = document.getElementById('btn-sel-support');
+      const btnShoot = document.getElementById('btn-shoot');
+      const btnOverwatch = document.getElementById('btn-overwatch');
+      const btnGrenade = document.getElementById('btn-grenade');
+      const btnMedkit = document.getElementById('btn-medkit');
+      const btnEndTurn = document.getElementById('btn-end-turn');
+      const btnReset = document.getElementById('btn-reset');
+      const logBox = document.getElementById('log-box');
+      const gameOverBanner = document.getElementById('game-over-banner');
+
+      function updateUI() {
+        if (uiRound) uiRound.textContent = state.round + '/' + state.maxRounds;
+        const aliveSq = state.squad.filter(u => u.hp > 0).length;
+        const aliveEn = state.enemies.filter(e => e.hp > 0).length;
+        if (uiSquad) uiSquad.textContent = aliveSq + '/3';
+        if (uiEnemies) uiEnemies.textContent = aliveEn;
+
+        if (logBox && state.history && state.history.length > 0) {
+          logBox.textContent = state.history[state.history.length - 1];
+        }
+
+        const legals = legalActions(state);
+        const selUnit = state.squad.find(u => u.id === selectedSquadId);
+
+        if (selUnit) {
+          if (selectedName) selectedName.textContent = selUnit.name + (selUnit.hp > 0 ? '' : ' (KIA)');
+          if (selectedInfo) selectedInfo.textContent = 'HP: ' + selUnit.hp + '/' + selUnit.maxHp + ' • AP: ' + selUnit.ap + '/2 • Rng: ' + selUnit.range;
+
+          // Overwatch button
+          if (btnOverwatch) {
+            btnOverwatch.disabled = !legals.includes('overwatch:' + selUnit.id) || state.done;
+            btnOverwatch.onclick = function() {
+              try {
+                step(state, 'overwatch:' + selUnit.id);
+                updateUI();
+                draw();
+              } catch(e) { console.error(e); }
+            };
+          }
+
+          // Shoot button
+          if (btnShoot) {
+            if (targetEnemyId && selUnit.hp > 0 && selUnit.ap > 0) {
+              const shootStr = 'shoot:' + selUnit.id + ':' + targetEnemyId;
+              const canShoot = legals.includes(shootStr);
+              btnShoot.style.display = 'inline-block';
+              btnShoot.disabled = !canShoot || state.done;
+              btnShoot.textContent = 'Fire on ' + targetEnemyId;
+              btnShoot.onclick = function() {
+                try {
+                  step(state, shootStr);
+                  targetEnemyId = null;
+                  updateUI();
+                  draw();
+                } catch(e) { console.error(e); }
+              };
+            } else {
+              btnShoot.style.display = 'none';
+            }
+          }
+
+          // Frag grenade button (Assault)
+          if (btnGrenade) {
+            if (selUnit.id === 'assault' && targetEnemyId && selUnit.grenades > 0) {
+              const targetEnemy = state.enemies.find(e => e.id === targetEnemyId);
+              if (targetEnemy) {
+                const grenadeStr = 'frag_grenade:assault:' + targetEnemy.r + ',' + targetEnemy.c;
+                const canGrenade = legals.includes(grenadeStr);
+                btnGrenade.style.display = 'inline-block';
+                btnGrenade.disabled = !canGrenade || state.done;
+                btnGrenade.onclick = function() {
+                  try {
+                    step(state, grenadeStr);
+                    targetEnemyId = null;
+                    updateUI();
+                    draw();
+                  } catch(e) { console.error(e); }
+                };
+              } else {
+                btnGrenade.style.display = 'none';
+              }
+            } else {
+              btnGrenade.style.display = 'none';
+            }
+          }
+
+          // Medkit button (Support)
+          if (btnMedkit) {
+            if (selUnit.id === 'support' && selUnit.medkits > 0) {
+              const woundedAlly = state.squad.find(u => u.hp > 0 && u.hp < u.maxHp && legals.includes('field_medkit:support:' + u.id));
+              if (woundedAlly) {
+                btnMedkit.style.display = 'inline-block';
+                btnMedkit.textContent = 'Medkit ' + woundedAlly.name;
+                btnMedkit.disabled = state.done;
+                btnMedkit.onclick = function() {
+                  try {
+                    step(state, 'field_medkit:support:' + woundedAlly.id);
+                    updateUI();
+                    draw();
+                  } catch(e) { console.error(e); }
+                };
+              } else {
+                btnMedkit.style.display = 'none';
+              }
+            } else {
+              btnMedkit.style.display = 'none';
+            }
+          }
+        }
+
+        if (btnEndTurn) btnEndTurn.disabled = state.done;
+
+        if (state.done && gameOverBanner) {
+          gameOverBanner.style.display = 'block';
+          if (state.winner === 'player') {
+            gameOverBanner.className = 'victory-bg';
+            gameOverBanner.textContent = 'TACTICAL VICTORY! All alien hostiles neutralized.';
+          } else {
+            gameOverBanner.className = 'defeat-bg';
+            gameOverBanner.textContent = 'MISSION FAILURE! Entire Vanguard squad neutralized.';
+          }
+        } else if (gameOverBanner) {
+          gameOverBanner.style.display = 'none';
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 480, 480);
+        const cellSize = 480 / GRID_SIZE;
+
+        // Grid floor
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const x = c * cellSize;
+            const y = r * cellSize;
+            ctx.fillStyle = (r + c) % 2 === 0 ? '#18212f' : '#141c28';
+            ctx.fillRect(x, y, cellSize, cellSize);
+
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, cellSize, cellSize);
+          }
+        }
+
+        // Full Cover Walls
+        FULL_COVER_WALLS.forEach(function(w) {
+          const x = w.c * cellSize;
+          const y = w.r * cellSize;
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('FULL', x + cellSize / 2, y + cellSize / 2 - 3);
+          ctx.fillText('WALL', x + cellSize / 2, y + cellSize / 2 + 9);
+        });
+
+        // Half Cover Barricades
+        HALF_COVER_BARRICADES.forEach(function(b) {
+          const x = b.c * cellSize;
+          const y = b.r * cellSize;
+          ctx.fillStyle = 'rgba(234, 179, 8, 0.25)';
+          ctx.fillRect(x + 4, y + 4, cellSize - 8, cellSize - 8);
+          ctx.strokeStyle = '#eab308';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + 4, y + 4, cellSize - 8, cellSize - 8);
+          ctx.fillStyle = '#fef08a';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('HALF', x + cellSize / 2, y + cellSize / 2 - 3);
+          ctx.fillText('COVER', x + cellSize / 2, y + cellSize / 2 + 9);
+        });
+
+        // Draw Alien Enemies
+        for (let i = 0; i < state.enemies.length; i++) {
+          const e = state.enemies[i];
+          if (e.hp <= 0) continue;
+          const x = e.c * cellSize + cellSize / 2;
+          const y = e.r * cellSize + cellSize / 2;
+          const isTargeted = targetEnemyId === e.id;
+
+          if (isTargeted) {
+            ctx.beginPath();
+            ctx.arc(x, y, 25, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, y, 18, 0, Math.PI * 2);
+          ctx.fillStyle = e.id === 'mech' ? '#7f1d1d' : '#991b1b';
+          ctx.fill();
+          ctx.strokeStyle = '#f87171';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(e.id === 'mech' ? '🤖' : '👽', x, y);
+
+          // Enemy HP bar
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(x - 18, y - 24, 36, 4);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(x - 18, y - 24, 36 * (e.hp / e.maxHp), 4);
+        }
+
+        // Draw Vanguard Squad
+        for (let i = 0; i < state.squad.length; i++) {
+          const u = state.squad[i];
+          if (u.hp <= 0) continue;
+          const x = u.c * cellSize + cellSize / 2;
+          const y = u.r * cellSize + cellSize / 2;
+          const isSelected = selectedSquadId === u.id;
+
+          if (isSelected) {
+            ctx.beginPath();
+            ctx.arc(x, y, 25, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, y, 18, 0, Math.PI * 2);
+          ctx.fillStyle = '#1d4ed8';
+          ctx.fill();
+          ctx.strokeStyle = '#60a5fa';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const icon = u.id === 'assault' ? '💥' : (u.id === 'sniper' ? '🎯' : '💊');
+          ctx.fillText(icon, x, y);
+
+          // Overwatch Eye
+          if (u.overwatch) {
+            ctx.fillStyle = '#facc15';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('👁️', x + 14, y - 12);
+          }
+
+          // HP bar
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(x - 18, y - 24, 36, 4);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(x - 18, y - 24, 36 * (u.hp / u.maxHp), 4);
+
+          // AP Pips
+          for (let p = 0; p < u.ap; p++) {
+            ctx.fillStyle = '#4ade80';
+            ctx.beginPath();
+            ctx.arc(x - 6 + p * 12, y + 24, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      // Map Click Handling
+      if (canvas && canvas.addEventListener) {
+        canvas.addEventListener('click', function(e) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = 480 / rect.width;
+          const scaleY = 480 / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+
+          const cellSize = 480 / GRID_SIZE;
+          const c = Math.floor(mx / cellSize);
+          const r = Math.floor(my / cellSize);
+
+          // 1. Check if clicked an operative
+          const clickedAlly = state.squad.find(u => u.hp > 0 && u.r === r && u.c === c);
+          if (clickedAlly) {
+            selectedSquadId = clickedAlly.id;
+            targetEnemyId = null;
+            updateUI();
+            draw();
+            return;
+          }
+
+          // 2. Check if clicked an enemy
+          const clickedEnemy = state.enemies.find(en => en.hp > 0 && en.r === r && en.c === c);
+          if (clickedEnemy) {
+            targetEnemyId = clickedEnemy.id;
+            updateUI();
+            draw();
+            return;
+          }
+
+          // 3. Move selected operative to clicked tile
+          const selUnit = state.squad.find(u => u.id === selectedSquadId);
+          if (selUnit && selUnit.hp > 0 && selUnit.ap > 0) {
+            const moveStr = 'move:' + selUnit.id + ':' + r + ',' + c;
+            const legals = legalActions(state);
+            if (legals.includes(moveStr)) {
+              try {
+                step(state, moveStr);
+                updateUI();
+                draw();
+              } catch(err) { console.error(err); }
+            }
+          }
+        });
+      }
+
+      if (btnSelAssault) btnSelAssault.onclick = function() { selectedSquadId = 'assault'; updateUI(); draw(); };
+      if (btnSelSniper) btnSelSniper.onclick = function() { selectedSquadId = 'sniper'; updateUI(); draw(); };
+      if (btnSelSupport) btnSelSupport.onclick = function() { selectedSquadId = 'support'; updateUI(); draw(); };
+
+      if (btnEndTurn) {
+        btnEndTurn.onclick = function() {
+          try {
+            step(state, 'end_turn');
+            updateUI();
+            draw();
+          } catch(e) { console.error(e); }
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedSquadId = 'assault';
+          targetEnemyId = null;
+          updateUI();
+          draw();
+        };
+      }
+
+      // Initial render
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>
