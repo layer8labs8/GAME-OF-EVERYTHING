@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Realm Builder - Deckbuilding Strategy</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #18181b;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-amber { color: #f59e0b; }
+    .badge-emerald { color: #10b981; }
+    .badge-cyan { color: #38bdf8; }
+    .badge-purple { color: #c084fc; }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      background: #18181b;
+      border: 3px solid #3f3f46;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: block;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #fbbf24;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn {
+      background: #27272a;
+      color: #f4f4f5;
+      border: 1px solid #52525b;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      background: #3f3f46;
+      border-color: #71717a;
+    }
+    .btn:active {
+      transform: translateY(2px);
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      border-color: #fbbf24;
+      color: #fff;
+    }
+    .btn-cyan {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .footer {
+      font-size: 11px;
+      color: #71717a;
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div>Turn: <span class="badge-amber" id="hud-turn">1 / 25</span></div>
+      <div>Act: <span class="badge-cyan" id="hud-actions">1</span> | Buy: <span class="badge-emerald" id="hud-buys">1</span> | Coin: <span class="badge-amber" id="hud-coins">0</span></div>
+      <div>VP: <span class="badge-purple" id="hud-vp">3</span> / 32</div>
+    </div>
+
+    <canvas id="game-canvas" width="600" height="600"></canvas>
+
+    <div class="message-bar" id="message-bar">Play action and treasure cards, then purchase supply cards.</div>
+
+    <div class="action-row">
+      <button class="btn btn-gold" id="btn-play-treasures">Play All Treasures</button>
+      <button class="btn btn-cyan" id="btn-end-turn">End Turn</button>
+      <button class="btn" id="btn-restart">Restart Realm</button>
+    </div>
+
+    <div class="footer">
+      Click hand cards to play &bull; Click market piles to buy &bull; Click End Turn to draw fresh hand
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('game-canvas');
+      if (!canvas || typeof canvas.getContext !== 'function') return;
+      const ctx = canvas.getContext('2d');
+
+      let currentSeed = Math.floor(Math.random() * 100000) + 1;
+      let state = createState(currentSeed);
+
+      function updateHUD() {
+        const hudTurn = document.getElementById('hud-turn');
+        const hudActions = document.getElementById('hud-actions');
+        const hudBuys = document.getElementById('hud-buys');
+        const hudCoins = document.getElementById('hud-coins');
+        const hudVP = document.getElementById('hud-vp');
+        const msgBar = document.getElementById('message-bar');
+
+        if (hudTurn) hudTurn.textContent = state.turn + ' / ' + state.maxTurns;
+        if (hudActions) hudActions.textContent = state.actions;
+        if (hudBuys) hudBuys.textContent = state.buys;
+        if (hudCoins) hudCoins.textContent = state.coins;
+        if (hudVP) hudVP.textContent = state.totalVP;
+        if (msgBar) msgBar.textContent = state.message;
+      }
+
+      function getSupplyPiles() {
+        // Returns coordinates and pile data for market grid
+        const piles = [];
+        const supplyOrder = [
+          // Row 1: Treasures
+          { name: 'Copper', r: 0, c: 0 },
+          { name: 'Silver', r: 0, c: 1 },
+          { name: 'Gold', r: 0, c: 2 },
+          { name: 'Estate', r: 0, c: 3 },
+          // Row 2: Victory & Actions
+          { name: 'Duchy', r: 1, c: 0 },
+          { name: 'Province', r: 1, c: 1 },
+          { name: 'Village', r: 1, c: 2 },
+          { name: 'Smithy', r: 1, c: 3 },
+          // Row 3: Kingdom Actions
+          { name: 'Market', r: 2, c: 0 },
+          { name: 'Workshop', r: 2, c: 1 },
+          { name: 'Festival', r: 2, c: 2 },
+          { name: 'Laboratory', r: 2, c: 3 }
+        ];
+
+        const startX = 25;
+        const startY = 25;
+        const w = 126;
+        const h = 74;
+        const gapX = 14;
+        const gapY = 10;
+
+        for (const item of supplyOrder) {
+          const x = startX + item.c * (w + gapX);
+          const y = startY + item.r * (h + gapY);
+          const pile = state.supply[item.name];
+          piles.push({
+            name: item.name,
+            x, y, w, h,
+            pile
+          });
+        }
+        return piles;
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        // 1. SUPPLY MARKET (Upper canvas)
+        const marketPiles = getSupplyPiles();
+        const legals = legalActions(state);
+
+        marketPiles.forEach(p => {
+          const canBuy = legals.includes('buy:' + p.name);
+          const tmpl = CARD_TEMPLATES[p.name];
+
+          ctx.save();
+          // Pile background
+          let bgColor = '#27272a';
+          let strokeColor = '#3f3f46';
+          if (tmpl.type === 'treasure') {
+            bgColor = '#451a03';
+            strokeColor = '#d97706';
+          } else if (tmpl.type === 'victory') {
+            bgColor = '#064e3b';
+            strokeColor = '#059669';
+          } else if (tmpl.type === 'action') {
+            bgColor = '#1e1b4b';
+            strokeColor = '#6366f1';
+          }
+
+          if (canBuy) {
+            ctx.shadowColor = '#fbbf24';
+            ctx.shadowBlur = 10;
+            strokeColor = '#fbbf24';
+          }
+
+          ctx.fillStyle = bgColor;
+          ctx.beginPath();
+          ctx.roundRect(p.x, p.y, p.w, p.h, 6);
+          ctx.fill();
+
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = canBuy ? 2.5 : 1;
+          ctx.stroke();
+
+          // Card Name & Cost
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(p.name, p.x + 8, p.y + 6);
+
+          // Cost circle badge
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.arc(p.x + p.w - 14, p.y + 14, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#78350f';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(tmpl.cost.toString(), p.x + p.w - 14, p.y + 14);
+
+          // Remaining count
+          ctx.fillStyle = p.pile.count > 0 ? '#a1a1aa' : '#ef4444';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('Left: ' + p.pile.count, p.x + 8, p.y + 24);
+
+          // Effect description snippet
+          ctx.fillStyle = '#e4e4e7';
+          ctx.font = '9px sans-serif';
+          let desc = '';
+          if (tmpl.type === 'treasure') desc = '+' + tmpl.coins + ' Coin';
+          else if (tmpl.type === 'victory') desc = '+' + tmpl.vp + ' VP';
+          else if (p.name === 'Village') desc = '+1 Card, +2 Act';
+          else if (p.name === 'Smithy') desc = '+3 Cards';
+          else if (p.name === 'Market') desc = '+1C, +1A, +1B, +1$';
+          else if (p.name === 'Workshop') desc = 'Gain card <= 4$';
+          else if (p.name === 'Festival') desc = '+2 Act, +1 Buy, +2$';
+          else if (p.name === 'Laboratory') desc = '+2 Cards, +1 Act';
+          ctx.fillText(desc, p.x + 8, p.y + 44);
+
+          ctx.restore();
+        });
+
+        // 2. MIDDLE ZONE: Played Cards & Deck Stats
+        ctx.strokeStyle = '#27272a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(25, 295);
+        ctx.lineTo(575, 295);
+        ctx.stroke();
+
+        ctx.fillStyle = '#71717a';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('DECK: ' + state.deck.length + ' cards | DISCARD: ' + state.discard.length + ' cards | PROVINCES: ' + state.provincesOwned + ' / 4', 30, 312);
+
+        // Played Cards in current turn
+        ctx.fillText('PLAYED THIS TURN (' + state.playedCards.length + '):', 30, 335);
+        const playedCount = Math.min(state.playedCards.length, 7);
+        for (let i = 0; i < playedCount; i++) {
+          const card = state.playedCards[i];
+          const px = 30 + i * 76;
+          const py = 345;
+          ctx.fillStyle = '#27272a';
+          ctx.fillRect(px, py, 70, 40);
+          ctx.strokeStyle = '#52525b';
+          ctx.strokeRect(px, py, 70, 40);
+          ctx.fillStyle = '#e4e4e7';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(card.name, px + 35, py + 22);
+        }
+
+        // 3. HAND CARDS (Bottom area)
+        ctx.strokeStyle = '#27272a';
+        ctx.beginPath();
+        ctx.moveTo(25, 410);
+        ctx.lineTo(575, 410);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('YOUR HAND (' + state.hand.length + ' cards):', 30, 428);
+
+        const hCount = state.hand.length;
+        const cardW = 82;
+        const cardH = 115;
+        const spacing = Math.min(cardW * 0.9, (550 - cardW) / Math.max(hCount - 1, 1));
+        const startX = (600 - ((hCount - 1) * spacing + cardW)) / 2;
+
+        state.hand.forEach((card, idx) => {
+          const x = startX + idx * spacing;
+          const isPlayable = legals.includes('play:' + card.id);
+          const y = isPlayable ? 440 : 460;
+
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,0,0,0.5)';
+          ctx.shadowBlur = isPlayable ? 10 : 4;
+          ctx.shadowOffsetY = 3;
+
+          let cardBg = '#27272a';
+          let borderCol = '#52525b';
+          if (card.type === 'treasure') {
+            cardBg = '#451a03';
+            borderCol = '#d97706';
+          } else if (card.type === 'victory') {
+            cardBg = '#064e3b';
+            borderCol = '#059669';
+          } else if (card.type === 'action') {
+            cardBg = '#1e1b4b';
+            borderCol = '#6366f1';
+          }
+
+          if (isPlayable) borderCol = '#fbbf24';
+
+          ctx.fillStyle = cardBg;
+          ctx.beginPath();
+          ctx.roundRect(x, y, cardW, cardH, 8);
+          ctx.fill();
+
+          ctx.strokeStyle = borderCol;
+          ctx.lineWidth = isPlayable ? 2.5 : 1.5;
+          ctx.stroke();
+          ctx.shadowColor = 'transparent';
+
+          // Card Name
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(card.name, x + cardW / 2, y + 20);
+
+          // Card Type
+          ctx.fillStyle = '#a1a1aa';
+          ctx.font = '9px sans-serif';
+          ctx.fillText(card.type.toUpperCase(), x + cardW / 2, y + 36);
+
+          // Card Value / Effect
+          ctx.fillStyle = '#fef08a';
+          ctx.font = 'bold 16px sans-serif';
+          let val = '';
+          if (card.type === 'treasure') val = '+' + card.coins + '¢';
+          else if (card.type === 'victory') val = '+' + card.vp + ' VP';
+          else if (card.name === 'Village') val = '+2 Act';
+          else if (card.name === 'Smithy') val = '+3 Card';
+          else if (card.name === 'Festival') val = '+2¢ +2A';
+          else if (card.name === 'Market') val = '+1 All';
+          else if (card.name === 'Workshop') val = 'Craft';
+          else if (card.name === 'Laboratory') val = '+2C +1A';
+          ctx.fillText(val, x + cardW / 2, y + 68);
+
+          ctx.restore();
+        });
+
+        // 4. GAME OVER OVERLAY
+        if (state.done) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(24, 24, 27, 0.92)';
+          ctx.fillRect(0, 0, 600, 600);
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#10b981';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('KINGDOM ASCENDANT!', 300, 260);
+            ctx.fillStyle = '#f4f4f5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText(`Built a glorious realm of ${state.totalVP} Victory Points!`, 300, 305);
+          } else {
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('REALM DEADLINE REACHED', 300, 260);
+            ctx.fillStyle = '#f4f4f5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText(`Fell short of 32 VP (Final: ${state.totalVP} VP).`, 300, 305);
+          }
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.fillText('Final Score: ' + score(state), 300, 355);
+          ctx.restore();
+        }
+      }
+
+      function handleCanvasClick(evt) {
+        if (state.done) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = (evt.clientX - rect.left) * scaleX;
+        const cy = (evt.clientY - rect.top) * scaleY;
+
+        // 1. Check Market Piles Click
+        const marketPiles = getSupplyPiles();
+        for (const p of marketPiles) {
+          if (cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + p.h) {
+            const act = 'buy:' + p.name;
+            if (legalActions(state).includes(act)) {
+              step(state, act);
+              updateHUD();
+              render();
+            } else {
+              state.message = 'Cannot buy ' + p.name + ' (Requires ' + CARD_TEMPLATES[p.name].cost + ' coins & buys remaining)';
+              updateHUD();
+            }
+            return;
+          }
+        }
+
+        // 2. Check Hand Cards Click
+        const hCount = state.hand.length;
+        const cardW = 82;
+        const cardH = 115;
+        const spacing = Math.min(cardW * 0.9, (550 - cardW) / Math.max(hCount - 1, 1));
+        const startX = (600 - ((hCount - 1) * spacing + cardW)) / 2;
+        const legals = legalActions(state);
+
+        for (let idx = hCount - 1; idx >= 0; idx--) {
+          const card = state.hand[idx];
+          const x = startX + idx * spacing;
+          const isPlayable = legals.includes('play:' + card.id);
+          const y = isPlayable ? 440 : 460;
+
+          if (cx >= x && cx <= x + cardW && cy >= y && cy <= y + cardH) {
+            const act = 'play:' + card.id;
+            if (legals.includes(act)) {
+              step(state, act);
+              updateHUD();
+              render();
+            }
+            break;
+          }
+        }
+      }
+
+      canvas.addEventListener('click', handleCanvasClick);
+      canvas.addEventListener('touchstart', function(e) {
+        if (e.touches && e.touches.length > 0) {
+          handleCanvasClick(e.touches[0]);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      const btnPlayTreasures = document.getElementById('btn-play-treasures');
+      if (btnPlayTreasures && btnPlayTreasures.addEventListener) {
+        btnPlayTreasures.addEventListener('click', function() {
+          if (state.done) return;
+          let playedAny = false;
+          // Play all treasures in hand
+          const treasures = state.hand.filter(c => c.type === 'treasure');
+          for (const t of treasures) {
+            const act = 'play:' + t.id;
+            if (legalActions(state).includes(act)) {
+              step(state, act);
+              playedAny = true;
+            }
+          }
+          if (playedAny) {
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnEndTurn = document.getElementById('btn-end-turn');
+      if (btnEndTurn && btnEndTurn.addEventListener) {
+        btnEndTurn.addEventListener('click', function() {
+          if (!state.done && legalActions(state).includes('endTurn')) {
+            step(state, 'endTurn');
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnRestart = document.getElementById('btn-restart');
+      if (btnRestart && btnRestart.addEventListener) {
+        btnRestart.addEventListener('click', function() {
+          currentSeed = Math.floor(Math.random() * 100000) + 1;
+          state = createState(currentSeed);
+          updateHUD();
+          render();
+        });
+      }
+
+      updateHUD();
+      render();
+    })();
+  </script>
+</body>
+</html>
