@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Continental Hegemony: Grand Strategy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #111827;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1f2937;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .gold-val { color: #facc15; }
+    .mp-val { color: #f87171; }
+    .inf-val { color: #38bdf8; }
+    .stab-val { color: #4ade80; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #1f2937 0%, #111827 100%);
+      border: 2px solid #374151;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+    }
+    #controls {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #selection-bar {
+      font-size: 13px;
+      color: #9ca3af;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 20px;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #1d4ed8; }
+    button:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+    #btn-levy { background: #059669; }
+    #btn-levy:hover:not(:disabled) { background: #047857; }
+    #btn-reform { background: #d97706; }
+    #btn-reform:hover:not(:disabled) { background: #b45309; }
+    #btn-diplomacy { background: #7c3aed; }
+    #btn-diplomacy:hover:not(:disabled) { background: #6d28d9; }
+    #btn-war { background: #dc2626; }
+    #btn-war:hover:not(:disabled) { background: #b91c1c; }
+    #btn-end-turn { background: #e11d48; }
+    #btn-end-turn:hover:not(:disabled) { background: #be123c; }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #9ca3af;
+      background: #111827;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #374151;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+    }
+    #game-over-banner {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .victory-bg { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
+    .defeat-bg { background: #4c0519; color: #fda4af; border: 1px solid #f43f5e; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="stat-badge">Year: <span id="ui-year" style="color:#f3f4f6;">1400</span></div>
+    <div class="stat-badge">Gold: <span id="ui-gold" class="gold-val">80</span></div>
+    <div class="stat-badge">Manpower: <span id="ui-mp" class="mp-val">60</span></div>
+    <div class="stat-badge">Stability: <span id="ui-stab" class="stab-val">80%</span></div>
+    <div class="stat-badge">Influence: <span id="ui-inf" class="inf-val">35</span></div>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="480" height="480"></canvas>
+  </div>
+
+  <div id="controls">
+    <div id="selection-bar">
+      <span id="selected-name">Select a province</span>
+      <span id="selected-info"></span>
+    </div>
+    <div class="action-row">
+      <button id="btn-levy">Muster Levy (20g, 15mp)</button>
+      <button id="btn-reform">Enact Reform (30g)</button>
+      <button id="btn-diplomacy" style="display:none;"></button>
+      <button id="btn-war" style="display:none;"></button>
+      <button id="btn-target-0" style="display:none;"></button>
+      <button id="btn-target-1" style="display:none;"></button>
+      <button id="btn-target-2" style="display:none;"></button>
+      <button id="btn-target-3" style="display:none;"></button>
+      <button id="btn-end-turn">End Year</button>
+      <button id="btn-reset" style="background:#4b5563;">Restart</button>
+    </div>
+  </div>
+
+  <div id="log-box">Era begins in 1400. Forge alliances, secure borders, and claim continental hegemony.</div>
+  <div id="game-over-banner"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now() & 0xffff);
+      let selectedId = 0; // Valoria City
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+
+      const uiYear = document.getElementById('ui-year');
+      const uiGold = document.getElementById('ui-gold');
+      const uiMp = document.getElementById('ui-mp');
+      const uiStab = document.getElementById('ui-stab');
+      const uiInf = document.getElementById('ui-inf');
+      const selectedName = document.getElementById('selected-name');
+      const selectedInfo = document.getElementById('selected-info');
+      const btnLevy = document.getElementById('btn-levy');
+      const btnReform = document.getElementById('btn-reform');
+      const btnDiplomacy = document.getElementById('btn-diplomacy');
+      const btnWar = document.getElementById('btn-war');
+      const btnEndTurn = document.getElementById('btn-end-turn');
+      const btnReset = document.getElementById('btn-reset');
+      const logBox = document.getElementById('log-box');
+      const gameOverBanner = document.getElementById('game-over-banner');
+
+      const targetButtons = [
+        document.getElementById('btn-target-0'),
+        document.getElementById('btn-target-1'),
+        document.getElementById('btn-target-2'),
+        document.getElementById('btn-target-3')
+      ];
+
+      function formatNation(nation) {
+        if (nation === 'valoria') return 'Valoria (You)';
+        if (nation === 'solaris') return 'Solaris';
+        if (nation === 'iron_duchy') return 'Iron Duchy';
+        if (nation === 'shadowfang') return 'Shadowfang';
+        return nation;
+      }
+
+      function updateUI() {
+        if (uiYear) uiYear.textContent = state.year + ' (' + state.turn + '/' + state.maxTurns + ')';
+        if (uiGold) uiGold.textContent = state.gold;
+        if (uiMp) uiMp.textContent = state.manpower;
+        if (uiStab) uiStab.textContent = state.stability + '%';
+        if (uiInf) uiInf.textContent = state.influence;
+
+        if (logBox && state.history && state.history.length > 0) {
+          logBox.textContent = state.history[state.history.length - 1];
+        }
+
+        const legals = legalActions(state);
+        const sel = state.provinces.find(p => p.id === selectedId);
+
+        if (btnReform) {
+          btnReform.disabled = !legals.includes('enact_reform') || state.done;
+        }
+
+        if (sel) {
+          if (selectedName) selectedName.textContent = sel.name + (sel.isCapital ? ' 👑' : '') + ' • ' + formatNation(sel.nation);
+          if (selectedInfo) selectedInfo.textContent = 'Garrison: ' + sel.garrison + ' • Dev: ' + sel.dev;
+
+          if (btnLevy) {
+            const canLevy = legals.includes('recruit_levy:' + sel.id);
+            btnLevy.style.display = (sel.nation === 'valoria') ? 'inline-block' : 'none';
+            btnLevy.disabled = !canLevy || state.done;
+            btnLevy.onclick = function() {
+              try {
+                step(state, 'recruit_levy:' + sel.id);
+                updateUI();
+                draw();
+              } catch(e) { console.error(e); }
+            };
+          }
+
+          // Diplomacy with foreign province nation
+          if (sel.nation !== 'valoria') {
+            const nation = sel.nation;
+            const status = state.diplomacy[nation] || 'peace';
+            const warScore = state.warScore[nation] || 0;
+
+            if (btnDiplomacy) {
+              if (status === 'peace') {
+                btnDiplomacy.style.display = 'inline-block';
+                btnDiplomacy.textContent = 'Alliance with ' + formatNation(nation) + ' (25 inf)';
+                btnDiplomacy.disabled = !legals.includes('diplomacy_alliance:' + nation) || state.done;
+                btnDiplomacy.onclick = function() {
+                  try {
+                    step(state, 'diplomacy_alliance:' + nation);
+                    updateUI();
+                    draw();
+                  } catch(e) { console.error(e); }
+                };
+              } else if (status === 'at_war' && warScore >= 30) {
+                btnDiplomacy.style.display = 'inline-block';
+                btnDiplomacy.textContent = 'Dictate Peace (+50g)';
+                btnDiplomacy.disabled = !legals.includes('sue_peace:' + nation) || state.done;
+                btnDiplomacy.onclick = function() {
+                  try {
+                    step(state, 'sue_peace:' + nation);
+                    updateUI();
+                    draw();
+                  } catch(e) { console.error(e); }
+                };
+              } else {
+                btnDiplomacy.style.display = 'none';
+              }
+            }
+
+            if (btnWar) {
+              if (status !== 'at_war') {
+                btnWar.style.display = 'inline-block';
+                btnWar.textContent = 'Declare War (15 inf)';
+                btnWar.disabled = !legals.includes('declare_war:' + nation) || state.done;
+                btnWar.onclick = function() {
+                  try {
+                    step(state, 'declare_war:' + nation);
+                    updateUI();
+                    draw();
+                  } catch(e) { console.error(e); }
+                };
+              } else {
+                btnWar.style.display = 'none';
+              }
+            }
+          } else {
+            if (btnDiplomacy) btnDiplomacy.style.display = 'none';
+            if (btnWar) btnWar.style.display = 'none';
+          }
+
+          // Military campaign / march buttons
+          for (let i = 0; i < targetButtons.length; i++) {
+            const btn = targetButtons[i];
+            if (!btn) continue;
+            if (sel.nation === 'valoria' && sel.garrison > 1 && i < sel.neighbors.length && !state.done) {
+              const targetId = sel.neighbors[i];
+              const targetP = state.provinces.find(p => p.id === targetId);
+              const actionStr = 'march_campaign:' + sel.id + ':' + targetId;
+              if (legals.includes(actionStr)) {
+                btn.style.display = 'inline-block';
+                const isFriendly = targetP.nation === 'valoria';
+                btn.textContent = (isFriendly ? 'Reinforce ' : 'Siege ') + targetP.name + ' (' + targetP.garrison + ')';
+                btn.onclick = function() {
+                  try {
+                    step(state, actionStr);
+                    updateUI();
+                    draw();
+                  } catch(e) { console.error(e); }
+                };
+              } else {
+                btn.style.display = 'none';
+              }
+            } else {
+              btn.style.display = 'none';
+            }
+          }
+        }
+
+        if (btnEndTurn) btnEndTurn.disabled = state.done;
+
+        if (state.done && gameOverBanner) {
+          gameOverBanner.style.display = 'block';
+          if (state.winner === 'player') {
+            gameOverBanner.className = 'victory-bg';
+            gameOverBanner.textContent = 'VICTORY! ' + (state.result || 'Continental Hegemony Claimed!');
+          } else {
+            gameOverBanner.className = 'defeat-bg';
+            gameOverBanner.textContent = 'DEFEAT! Valoria has fallen to rival dynasties.';
+          }
+        } else if (gameOverBanner) {
+          gameOverBanner.style.display = 'none';
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 480, 480);
+
+        // Province borders / connections
+        ctx.lineWidth = 3;
+        for (let i = 0; i < state.provinces.length; i++) {
+          const p1 = state.provinces[i];
+          for (let n = 0; n < p1.neighbors.length; n++) {
+            const p2 = state.provinces.find(p => p.id === p1.neighbors[n]);
+            if (p1.id < p2.id) {
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = '#374151';
+              ctx.stroke();
+            }
+          }
+        }
+
+        // Draw provinces
+        for (let i = 0; i < state.provinces.length; i++) {
+          const p = state.provinces[i];
+          const isSelected = p.id === selectedId;
+
+          if (isSelected) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 34, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+            ctx.fill();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 25, 0, Math.PI * 2);
+
+          if (p.nation === 'valoria') {
+            ctx.fillStyle = '#1d4ed8'; // Royal Blue
+            ctx.strokeStyle = '#60a5fa';
+          } else if (p.nation === 'solaris') {
+            ctx.fillStyle = '#b45309'; // Amber Gold
+            ctx.strokeStyle = '#fcd34d';
+          } else if (p.nation === 'iron_duchy') {
+            ctx.fillStyle = '#374151'; // Slate Steel
+            ctx.strokeStyle = '#9ca3af';
+          } else if (p.nation === 'shadowfang') {
+            ctx.fillStyle = '#991b1b'; // Crimson
+            ctx.strokeStyle = '#f87171';
+          } else {
+            ctx.fillStyle = '#4b5563';
+            ctx.strokeStyle = '#6b7280';
+          }
+
+          ctx.lineWidth = p.isCapital ? 4 : 2;
+          ctx.fill();
+          ctx.stroke();
+
+          // Capital Crown
+          if (p.isCapital) {
+            ctx.fillStyle = '#facc15';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('👑', p.x, p.y - 12);
+          }
+
+          // Garrison count
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(p.garrison, p.x, p.y + (p.isCapital ? 4 : 0));
+
+          // Province name
+          ctx.fillStyle = '#e5e7eb';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(p.name, p.x, p.y + 24);
+        }
+      }
+
+      if (canvas && canvas.addEventListener) {
+        canvas.addEventListener('click', function(e) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = 480 / rect.width;
+          const scaleY = 480 / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+
+          for (let i = 0; i < state.provinces.length; i++) {
+            const p = state.provinces[i];
+            const dist = Math.hypot(mx - p.x, my - p.y);
+            if (dist <= 28) {
+              selectedId = p.id;
+              updateUI();
+              draw();
+              return;
+            }
+          }
+        });
+      }
+
+      if (btnReform) {
+        btnReform.onclick = function() {
+          try {
+            step(state, 'enact_reform');
+            updateUI();
+            draw();
+          } catch(e) { console.error(e); }
+        };
+      }
+
+      if (btnEndTurn) {
+        btnEndTurn.onclick = function() {
+          try {
+            step(state, 'end_turn');
+            updateUI();
+            draw();
+          } catch(e) { console.error(e); }
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedId = 0;
+          updateUI();
+          draw();
+        };
+      }
+
+      // Initial render
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>

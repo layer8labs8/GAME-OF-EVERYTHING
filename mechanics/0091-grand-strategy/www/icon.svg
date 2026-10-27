@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="100" fill="#18181b"/>
+  <!-- Parchment Map & Borders -->
+  <polygon points="120,100 392,80 430,380 90,410" fill="#27272a" stroke="#71717a" stroke-width="6"/>
+  <!-- Imperial Eagle / Lion Crest -->
+  <path d="M256,150 C290,190 340,190 350,230 C330,240 310,230 290,260 C280,280 290,320 256,350 C222,320 232,280 222,260 C202,230 182,240 162,230 C172,190 222,190 256,150 Z" fill="#eab308" opacity="0.8"/>
+  <!-- Grand Imperial Crown -->
+  <path d="M196,170 L316,170 L300,120 L256,145 L212,120 Z" fill="#facc15" stroke="#ca8a04" stroke-width="4"/>
+  <circle cx="212" cy="115" r="6" fill="#fef08a"/>
+  <circle cx="256" cy="140" r="6" fill="#fef08a"/>
+  <circle cx="300" cy="115" r="6" fill="#fef08a"/>
+  <!-- Banner Ribbons -->
+  <rect x="220" y="360" width="72" height="18" rx="4" fill="#3b82f6"/>
+  <rect x="236" y="384" width="40" height="12" rx="2" fill="#ef4444"/>
+</svg>

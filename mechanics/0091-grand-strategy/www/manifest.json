@@ -1,0 +1,12 @@
+{
+  "name": "Continental Hegemony: Grand Strategy",
+  "short_name": "Grand Strategy",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#18181b",
+  "theme_color": "#18181b",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
