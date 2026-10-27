@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rogue Armory - Looter Shooter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0f14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #080a0e;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #f59e0b;
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .hud span { color: #ffffff; }
+    canvas {
+      background: #11141d;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      display: block;
+    }
+    .status-panel {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #151924;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-top: 6px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .bar-track {
+      width: 60px;
+      height: 7px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 3px;
+    }
+    .hp-fill { width: 100%; height: 100%; background: #22c55e; }
+    .shield-fill { width: 100%; height: 100%; background: #06b6d4; }
+    .rarity-badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .rarity-common { background: #334155; color: #cbd5e1; }
+    .rarity-rare { background: #1e40af; color: #93c5fd; }
+    .rarity-epic { background: #6b21a8; color: #e9d5ff; }
+    .rarity-legendary { background: #854d0e; color: #fef08a; box-shadow: 0 0 8px #f59e0b; }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 8px;
+      gap: 8px;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 40px);
+      grid-template-rows: repeat(3, 40px);
+      gap: 4px;
+    }
+    .action-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    button {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.05s;
+    }
+    button:active { background: #334155; transform: scale(0.96); }
+    .btn-action { padding: 8px 10px; min-height: 38px; }
+    .btn-fire { background: linear-gradient(135deg, #b45309, #f59e0b); border-color: #fef08a; color: #000000; font-weight: 800; }
+    .btn-loot { background: linear-gradient(135deg, #6b21a8, #9333ea); border-color: #c084fc; }
+    .btn-loot.ready { animation: lootGlow 1s infinite alternate; }
+    @keyframes lootGlow {
+      from { box-shadow: 0 0 4px #c084fc; }
+      to { box-shadow: 0 0 14px #e9d5ff; }
+    }
+    #game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(8, 10, 14, 0.92);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #game-overlay h2 { font-size: 2rem; color: #f59e0b; }
+  </style>
+</head>
+<body>
+  <div id="game-container" style="position: relative;">
+    <header>
+      <h1>ROGUE ARMORY</h1>
+      <div class="hud">
+        <div>ROOM: <span id="val-room">1</span>/4</div>
+        <div>SCORE: <span id="val-score">0</span></div>
+      </div>
+    </header>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <div class="status-panel">
+      <div>HP: <div class="bar-track"><div id="bar-hp" class="hp-fill"></div></div></div>
+      <div>SHD: <div class="bar-track"><div id="bar-shd" class="shield-fill"></div></div></div>
+      <div>
+        <span id="badge-rarity" class="rarity-badge rarity-common">COMMON</span>
+        <span id="val-ammo" style="color:#f59e0b; margin-left:4px;">10/10</span>
+      </div>
+      <div>MED: <span id="val-med" style="color: #22c55e;">1</span></div>
+    </div>
+
+    <div class="controls">
+      <div class="dpad">
+        <div></div>
+        <button id="btn-up">▲</button>
+        <div></div>
+        <button id="btn-left">◀</button>
+        <button id="btn-reload" style="font-size:0.65rem;">RELOAD</button>
+        <button id="btn-right">▶</button>
+        <div></div>
+        <button id="btn-down">▼</button>
+        <div></div>
+      </div>
+
+      <div class="action-panel">
+        <div class="action-row">
+          <button id="btn-fire" class="btn-action btn-fire" style="flex:1;">FIRE [SPC]</button>
+          <button id="btn-medkit" class="btn-action" style="flex:1;">MEDKIT [H]</button>
+        </div>
+        <div class="action-row">
+          <button id="btn-loot" class="btn-action btn-loot" style="flex:1;">EQUIP LOOT [E]</button>
+          <button id="btn-extract" class="btn-action" style="flex:1;">EXTRACT [X]</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="game-overlay">
+      <h2 id="overlay-title">EXTRACTION SUCCESSFUL</h2>
+      <p id="overlay-sub" style="font-size: 1.1rem; color: #fde68a;">Vault spoils secured!</p>
+      <button id="btn-restart" class="btn-action btn-fire" style="padding: 10px 24px; font-size: 1rem;">DEPLOY AGAIN</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const elRoom = document.getElementById('val-room');
+      const elScore = document.getElementById('val-score');
+      const barHp = document.getElementById('bar-hp');
+      const barShd = document.getElementById('bar-shd');
+      const badgeRarity = document.getElementById('badge-rarity');
+      const elAmmo = document.getElementById('val-ammo');
+      const elMed = document.getElementById('val-med');
+      const btnLoot = document.getElementById('btn-loot');
+      const btnExtract = document.getElementById('btn-extract');
+      const overlay = document.getElementById('game-overlay');
+      const overlayTitle = document.getElementById('overlay-title');
+      const overlaySub = document.getElementById('overlay-sub');
+      const btnRestart = document.getElementById('btn-restart');
+
+      let state = RogueArmory.createState(Date.now() % 100000);
+      let fxShots = [];
+
+      function triggerAction(act) {
+        if (RogueArmory.isOver(state)) return;
+        const legals = RogueArmory.legalActions(state);
+        if (!legals.includes(act)) return;
+
+        const p = state.player;
+        if (act === 'fire') {
+          fxShots.push({
+            x1: p.x,
+            y1: p.y,
+            x2: p.x + p.facingX * p.weapon.range,
+            y2: p.y + p.facingY * p.weapon.range,
+            rarity: p.weapon.rarity,
+            life: 6
+          });
+        }
+
+        RogueArmory.step(state, act);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (elRoom) elRoom.textContent = state.room;
+        if (elScore) elScore.textContent = state.scoreVal;
+
+        const p = state.player;
+        if (barHp) barHp.style.width = (p.hp / p.maxHp * 100) + '%';
+        if (barShd) barShd.style.width = (p.shields / p.maxShields * 100) + '%';
+        if (elAmmo) elAmmo.textContent = `${p.ammo}/${p.weapon.clip}`;
+        if (elMed) elMed.textContent = p.medkits;
+
+        if (badgeRarity && badgeRarity.classList) {
+          badgeRarity.textContent = p.weapon.name.toUpperCase();
+          badgeRarity.className = `rarity-badge rarity-${p.weapon.rarity}`;
+        }
+
+        const legals = RogueArmory.legalActions(state);
+        if (btnLoot && btnLoot.classList) {
+          if (legals.includes('equip_loot')) btnLoot.classList.add('ready');
+          else btnLoot.classList.remove('ready');
+        }
+
+        if (RogueArmory.isOver(state)) {
+          if (overlay) {
+            overlay.style.display = 'flex';
+            if (state.won) {
+              if (overlayTitle) { overlayTitle.textContent = 'EXTRACTION SUCCESS'; overlayTitle.style.color = '#f59e0b'; }
+              if (overlaySub) overlaySub.textContent = `Escaped with ${p.weapon.name} (${p.weapon.rarity})! Score: ${state.scoreVal}`;
+            } else {
+              if (overlayTitle) { overlayTitle.textContent = 'OPERATIVE KIA'; overlayTitle.style.color = '#ef4444'; }
+              if (overlaySub) overlaySub.textContent = `Fell in Room ${state.room}. Score: ${state.scoreVal}`;
+            }
+          }
+        } else {
+          if (overlay) overlay.style.display = 'none';
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 400, 400);
+
+        // Vault Chamber Floor grid
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let i = 40; i < 400; i += 40) {
+          ctx.beginPath(); ctx.moveTo(i, 30); ctx.lineTo(i, 370); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(30, i); ctx.lineTo(370, i); ctx.stroke();
+        }
+
+        // Room Exit Doorway on the right
+        if (state.enemies.length === 0 && state.room < 4) {
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(366, 170, 8, 60);
+          ctx.strokeStyle = '#86efac';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(366, 170, 8, 60);
+        }
+
+        // Room 4 Extraction Console
+        if (state.room === 4) {
+          ctx.save();
+          ctx.fillStyle = state.enemies.length === 0 ? '#10b981' : '#334155';
+          ctx.fillRect(185, 185, 30, 30);
+          ctx.strokeStyle = state.enemies.length === 0 ? '#34d399' : '#64748b';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(185, 185, 30, 30);
+
+          if (state.enemies.length === 0) {
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+            ctx.beginPath();
+            ctx.arc(200, 200, 40, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // Weapon Loot Drop
+        if (state.lootDrop && !state.lootDrop.collected) {
+          const ld = state.lootDrop;
+          ctx.save();
+          const col = ld.weapon.rarity === 'legendary' ? '#f59e0b' : ld.weapon.rarity === 'epic' ? '#a855f7' : '#38bdf8';
+
+          // Beacon beam
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(ld.x, ld.y);
+          ctx.lineTo(ld.x, ld.y - 25);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Crate box
+          ctx.fillStyle = col;
+          ctx.fillRect(ld.x - 10, ld.y - 8, 20, 16);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(ld.x - 10, ld.y - 8, 20, 16);
+          ctx.restore();
+        }
+
+        // Projectile FX
+        const nextShots = [];
+        for (const s of fxShots) {
+          ctx.save();
+          const col = s.rarity === 'legendary' ? '#facc15' : s.rarity === 'epic' ? '#c084fc' : s.rarity === 'rare' ? '#60a5fa' : '#94a3b8';
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(s.x1, s.y1);
+          ctx.lineTo(s.x2, s.y2);
+          ctx.stroke();
+          ctx.restore();
+          s.life--;
+          if (s.life > 0) nextShots.push(s);
+        }
+        fxShots = nextShots;
+
+        // Enemies
+        for (const e of state.enemies) {
+          ctx.save();
+          if (e.type === 'warlord') {
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Boss HP Bar
+            ctx.fillStyle = '#450a0a';
+            ctx.fillRect(e.x - 25, e.y - 28, 50, 5);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(e.x - 25, e.y - 28, (e.hp / e.maxHp) * 50, 5);
+          } else if (e.type === 'sentry') {
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(e.x - 12, e.y - 12, 24, 24);
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillStyle = '#b91c1c';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // Operative (Player)
+        const p = state.player;
+        ctx.save();
+        ctx.fillStyle = '#0ea5e9';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Kinetic Shield Aura
+        if (p.shields > 0) {
+          ctx.strokeStyle = '#06b6d4';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 17, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Weapon barrel
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + p.facingX * 18, p.y + p.facingY * 18);
+        ctx.stroke();
+
+        ctx.restore();
+
+        if (fxShots.length > 0) {
+          requestAnimationFrame(render);
+        }
+      }
+
+      // Button listeners
+      const btnUp = document.getElementById('btn-up');
+      const btnDown = document.getElementById('btn-down');
+      const btnLeft = document.getElementById('btn-left');
+      const btnRight = document.getElementById('btn-right');
+      const btnFire = document.getElementById('btn-fire');
+      const btnReload = document.getElementById('btn-reload');
+      const btnLootBtn = document.getElementById('btn-loot');
+      const btnMedkit = document.getElementById('btn-medkit');
+      const btnExtractBtn = document.getElementById('btn-extract');
+
+      if (btnUp) btnUp.addEventListener('click', () => triggerAction('move_n'));
+      if (btnDown) btnDown.addEventListener('click', () => triggerAction('move_s'));
+      if (btnLeft) btnLeft.addEventListener('click', () => triggerAction('move_w'));
+      if (btnRight) btnRight.addEventListener('click', () => triggerAction('move_e'));
+      if (btnFire) btnFire.addEventListener('click', () => triggerAction('fire'));
+      if (btnReload) btnReload.addEventListener('click', () => triggerAction('reload'));
+      if (btnLootBtn) btnLootBtn.addEventListener('click', () => triggerAction('equip_loot'));
+      if (btnMedkit) btnMedkit.addEventListener('click', () => triggerAction('use_medkit'));
+      if (btnExtractBtn) btnExtractBtn.addEventListener('click', () => triggerAction('extract'));
+
+      if (btnRestart) {
+        btnRestart.addEventListener('click', () => {
+          state = RogueArmory.createState(Date.now() % 100000);
+          updateUI();
+          render();
+        });
+      }
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'arrowup' || k === 'w') triggerAction('move_n');
+        else if (k === 'arrowdown' || k === 's') triggerAction('move_s');
+        else if (k === 'arrowleft' || k === 'a') triggerAction('move_w');
+        else if (k === 'arrowright' || k === 'd') triggerAction('move_e');
+        else if (k === ' ' || k === 'j') triggerAction('fire');
+        else if (k === 'r') triggerAction('reload');
+        else if (k === 'e') triggerAction('equip_loot');
+        else if (k === 'h') triggerAction('use_medkit');
+        else if (k === 'x') triggerAction('extract');
+      });
+
+      // PWA registration
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>
