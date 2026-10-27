@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Classic Dominoes</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #1c1917;
+      --table: #292524;
+      --panel: #292524;
+      --panel-border: #44403c;
+      --text: #fafaf9;
+      --text-muted: #a8a29e;
+      --gold: #f59e0b;
+      --tile-bg: #fafaf9;
+      --tile-border: #d6d3d1;
+      --pip: #1c1917;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #141210;
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--gold);
+    }
+    main {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+    .game-status-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+    }
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 4 / 3;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--panel-border);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+    .controls-panel {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+    button {
+      background: #44403c;
+      border: 1px solid var(--gold);
+      color: var(--text);
+      padding: 10px 4px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #57534e;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: #57534e;
+    }
+    .btn-draw {
+      background: #b45309;
+      border-color: #f59e0b;
+    }
+    .btn-draw:hover {
+      background: #d97706;
+    }
+    .log-feed {
+      width: 100%;
+      background: #141210;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      height: 38px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icon.svg" alt="Dominoes Logo">
+      <h1>Classic Dominoes</h1>
+    </div>
+    <button id="btn-restart" style="flex: 0; padding: 4px 10px; font-size: 0.78rem;">New Game</button>
+  </header>
+
+  <main>
+    <div class="game-status-bar">
+      <div>AI Hand: <b id="ai-count">7</b> tiles</div>
+      <div>Boneyard: <b style="color: var(--gold);" id="boneyard-count">14</b></div>
+      <div>Score: <b style="color: var(--gold);" id="score-text">0</b></div>
+    </div>
+
+    <div class="board-container">
+      <canvas id="dominoCanvas" width="600" height="450"></canvas>
+    </div>
+
+    <div class="controls-panel">
+      <button id="btn-play-left">Play on Left</button>
+      <button id="btn-play-right">Play on Right</button>
+      <button class="btn-draw" id="btn-action">Draw / Pass</button>
+    </div>
+
+    <div class="log-feed" id="log-feed">
+      <div>Match matching pip ends to shed your domino tiles!</div>
+    </div>
+  </main>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('dominoCanvas');
+      const ctx = canvas.getContext('2d');
+      const aiCountEl = document.getElementById('ai-count');
+      const boneyardCountEl = document.getElementById('boneyard-count');
+      const scoreTextEl = document.getElementById('score-text');
+      const logFeedEl = document.getElementById('log-feed');
+
+      const btnLeft = document.getElementById('btn-play-left');
+      const btnRight = document.getElementById('btn-play-right');
+      const btnAction = document.getElementById('btn-action');
+      const btnRestart = document.getElementById('btn-restart');
+
+      let state = null;
+      let selectedTileIdx = null;
+
+      function initGame() {
+        const seed = Math.floor(Date.now() % 1000000) || 12345;
+        state = dominoesLogic.createState(seed);
+        selectedTileIdx = null;
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        aiCountEl.textContent = state.aiHand.length;
+        boneyardCountEl.textContent = state.boneyard.length;
+        scoreTextEl.textContent = `${state.playerScore} - ${state.aiScore}`;
+
+        if (state.log.length > 0) {
+          const recent = state.log.slice(-2);
+          logFeedEl.innerHTML = recent.map(msg => `<div>${msg}</div>`).reverse().join('');
+        }
+
+        const legal = dominoesLogic.legalActions(state);
+
+        if (state.gameOver) {
+          btnLeft.disabled = true;
+          btnRight.disabled = true;
+          btnAction.textContent = state.winner === 'player' ? '🏆 Victory!' : 'Play Again';
+          btnAction.disabled = false;
+          btnAction.onclick = () => initGame();
+          return;
+        }
+
+        // Configure Left / Right Play Buttons
+        if (selectedTileIdx !== null && selectedTileIdx < state.playerHand.length) {
+          const canLeft = legal.includes(`play:${selectedTileIdx}:left`);
+          const canRight = legal.includes(`play:${selectedTileIdx}:right`);
+
+          btnLeft.disabled = !canLeft;
+          btnRight.disabled = !canRight;
+
+          btnLeft.onclick = () => {
+            dominoesLogic.step(state, `play:${selectedTileIdx}:left`);
+            selectedTileIdx = null;
+            updateUI();
+            render();
+          };
+
+          btnRight.onclick = () => {
+            dominoesLogic.step(state, `play:${selectedTileIdx}:right`);
+            selectedTileIdx = null;
+            updateUI();
+            render();
+          };
+        } else {
+          btnLeft.disabled = true;
+          btnRight.disabled = true;
+        }
+
+        // Configure Draw / Pass Action Button
+        if (legal.includes('draw')) {
+          btnAction.textContent = `Draw (${state.boneyard.length})`;
+          btnAction.disabled = false;
+          btnAction.onclick = () => {
+            dominoesLogic.step(state, 'draw');
+            updateUI();
+            render();
+          };
+        } else if (legal.includes('pass')) {
+          btnAction.textContent = 'Pass Turn';
+          btnAction.disabled = false;
+          btnAction.onclick = () => {
+            dominoesLogic.step(state, 'pass');
+            updateUI();
+            render();
+          };
+        } else {
+          btnAction.textContent = 'Select Tile';
+          btnAction.disabled = true;
+        }
+      }
+
+      function render() {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // 1. Table Felt
+        ctx.fillStyle = '#292524';
+        ctx.fillRect(0, 0, w, h);
+
+        // Chain Line separator
+        ctx.strokeStyle = '#44403c';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(8, 8, w - 16, h * 0.62);
+
+        // Chain zone title
+        ctx.fillStyle = '#78716c';
+        ctx.font = '700 11px sans-serif';
+        ctx.fillText('DOMINO CHAIN TABLE', 20, 24);
+
+        if (!state) return;
+
+        // 2. Draw Chain
+        if (state.chain.length === 0) {
+          ctx.fillStyle = '#a8a29e';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Chain is empty. Play any tile to open the game!', w / 2, h * 0.32);
+        } else {
+          // Render snake chain
+          const tileW = 44;
+          const tileH = 24;
+          const maxVisible = 9;
+          const visibleChain = state.chain.length > maxVisible ? state.chain.slice(-maxVisible) : state.chain;
+          const startX = Math.max(20, (w - visibleChain.length * (tileW + 6)) / 2);
+          const chainY = h * 0.32;
+
+          for (let i = 0; i < visibleChain.length; i++) {
+            const tile = visibleChain[i];
+            const tx = startX + i * (tileW + 6);
+            drawTileHorizontal(tx, chainY - tileH / 2, tileW, tileH, tile[0], tile[1]);
+          }
+
+          // Open ends badges
+          ctx.fillStyle = '#f59e0b';
+          ctx.font = '700 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`[${state.leftEnd}] Left End`, startX + 22, chainY - 26);
+          ctx.fillText(`Right End [${state.rightEnd}]`, startX + (visibleChain.length - 1) * (tileW + 6) + 22, chainY - 26);
+        }
+
+        // 3. Draw Player Hand Tray (Bottom Area)
+        const trayY = h * 0.66;
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(8, trayY, w - 16, h * 0.32);
+        ctx.strokeStyle = '#57534e';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(8, trayY, w - 16, h * 0.32);
+
+        ctx.fillStyle = '#a8a29e';
+        ctx.font = '700 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('YOUR HAND (Tap tile to select):', 20, trayY + 18);
+
+        const hand = state.playerHand;
+        const handTileW = 34;
+        const handTileH = 68;
+        const handStartX = Math.max(16, (w - hand.length * (handTileW + 8)) / 2);
+        const handY = trayY + 30;
+
+        for (let i = 0; i < hand.length; i++) {
+          const tile = hand[i];
+          const tx = handStartX + i * (handTileW + 8);
+          const isSelected = selectedTileIdx === i;
+          drawTileVertical(tx, handY, handTileW, handTileH, tile[0], tile[1], isSelected);
+        }
+      }
+
+      function drawTileHorizontal(x, y, w, h, a, b) {
+        ctx.fillStyle = '#fafaf9';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = '#d6d3d1';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y, w, h);
+
+        // Divider
+        ctx.strokeStyle = '#78716c';
+        ctx.beginPath();
+        ctx.moveTo(x + w / 2, y + 2);
+        ctx.lineTo(x + w / 2, y + h - 2);
+        ctx.stroke();
+
+        // Pips numbers or dots
+        ctx.fillStyle = '#1c1917';
+        ctx.font = '700 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(a, x + w * 0.25, y + h / 2);
+        ctx.fillText(b, x + w * 0.75, y + h / 2);
+      }
+
+      function drawTileVertical(x, y, w, h, a, b, isSelected) {
+        ctx.fillStyle = '#fafaf9';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = isSelected ? '#f59e0b' : '#d6d3d1';
+        ctx.lineWidth = isSelected ? 3 : 1.5;
+        ctx.strokeRect(x, y, w, h);
+
+        // Divider
+        ctx.strokeStyle = '#78716c';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 2, y + h / 2);
+        ctx.lineTo(x + w - 2, y + h / 2);
+        ctx.stroke();
+
+        // Pips numbers
+        ctx.fillStyle = '#1c1917';
+        ctx.font = '700 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(a, x + w / 2, y + h * 0.25);
+        ctx.fillText(b, x + w / 2, y + h * 0.75);
+      }
+
+      // Tap to select tile from hand
+      canvas.addEventListener('click', (e) => {
+        if (!state || state.gameOver) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        const w = canvas.width;
+        const h = canvas.height;
+        const trayY = h * 0.66;
+
+        if (y >= trayY + 20) {
+          const hand = state.playerHand;
+          const handTileW = 34;
+          const handStartX = Math.max(16, (w - hand.length * (handTileW + 8)) / 2);
+
+          for (let i = 0; i < hand.length; i++) {
+            const tx = handStartX + i * (handTileW + 8);
+            if (x >= tx && x <= tx + handTileW) {
+              selectedTileIdx = i;
+              updateUI();
+              render();
+              return;
+            }
+          }
+        }
+      });
+
+      btnRestart.onclick = () => initGame();
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>
