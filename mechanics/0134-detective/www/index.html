@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Murder at Midnight - Detective Mystery</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4338ca">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #1e1b4b;
+      border-radius: 8px;
+      border: 1px solid #6366f1;
+    }
+    h1 {
+      font-size: 1rem;
+      color: #818cf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #9ca3af;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-loc { color: #a5b4fc; }
+    .val-clues { color: #38bdf8; }
+    .val-contr { color: #f43f5e; }
+    .val-score { color: #34d399; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 7;
+      background: #030712;
+      border: 2px solid #4f46e5;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(79, 70, 229, 0.25);
+      touch-action: none;
+    }
+
+    .dossier-box {
+      width: 100%;
+      max-width: 460px;
+      background: #1e1e2f;
+      border: 1px solid #6366f1;
+      border-radius: 8px;
+      margin-top: 6px;
+      padding: 8px 10px;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+    .dossier-header {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #c7d2fe;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .evidence-chips {
+      font-size: 0.72rem;
+      color: #93c5fd;
+      line-height: 1.4;
+      min-height: 20px;
+    }
+
+    .notes-box {
+      width: 100%;
+      max-width: 460px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      margin-top: 6px;
+      padding: 6px 8px;
+      height: 90px;
+      overflow-y: auto;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.74rem;
+      color: #e2e8f0;
+    }
+    .note-line { margin-bottom: 3px; }
+    .note-alert { color: #f43f5e; font-weight: bold; }
+    .note-clue { color: #38bdf8; }
+    .note-testimony { color: #fde047; }
+    .note-win { color: #4ade80; font-weight: bold; }
+
+    .actions-grid {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+    }
+    .btn-act {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      padding: 8px 6px;
+      font-size: 0.74rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .btn-act:hover {
+      background: #334155;
+      border-color: #94a3b8;
+    }
+    .btn-act:active {
+      transform: scale(0.97);
+    }
+    .btn-examine {
+      background: #064e3b;
+      border-color: #10b981;
+      color: #ecfdf5;
+    }
+    .btn-examine:hover {
+      background: #047857;
+      border-color: #34d399;
+    }
+    .btn-question {
+      background: #78350f;
+      border-color: #f59e0b;
+      color: #fffbeb;
+    }
+    .btn-question:hover {
+      background: #92400e;
+      border-color: #fbbf24;
+    }
+    .btn-confront {
+      background: #701a75;
+      border-color: #d946ef;
+      color: #fdf4ff;
+    }
+    .btn-confront:hover {
+      background: #86198f;
+      border-color: #f0abfc;
+    }
+    .btn-accuse {
+      background: #881337;
+      border-color: #f43f5e;
+      color: #ffe4e6;
+    }
+    .btn-accuse:hover {
+      background: #9f1239;
+      border-color: #fb7185;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(11, 15, 25, 0.94);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      z-index: 10;
+    }
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .win-title { color: #34d399; text-shadow: 0 0 10px rgba(52, 211, 153, 0.5); }
+    .lose-title { color: #f43f5e; text-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🔍 Murder at Midnight</h1>
+    <div style="font-size:0.75rem; color:#c7d2fe;" id="turn-counter">Turn: 0/150</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Room</div>
+      <div class="hud-val val-loc" id="hud-room">Study</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Evidence</div>
+      <div class="hud-val val-clues" id="hud-evidence">0 Items</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Contradictions</div>
+      <div class="hud-val val-contr" id="hud-contradictions">0 Found</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Case Score</div>
+      <div class="hud-val val-score" id="hud-score">0</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="game-canvas" width="460" height="200"></canvas>
+
+    <div class="dossier-box">
+      <div class="dossier-header">
+        <span>CASE DOSSIER</span>
+        <span id="dossier-room-title">Sterling Manor Study</span>
+      </div>
+      <div class="evidence-chips" id="evidence-chips">
+        No physical evidence bagged yet.
+      </div>
+    </div>
+
+    <div class="notes-box" id="notes-box"></div>
+
+    <div class="actions-grid" id="actions-grid"></div>
+
+    <div id="end-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-title" id="modal-title">CASE CLOSED</div>
+      <p id="modal-desc" style="font-size:0.85rem; margin-bottom:12px; color:#cbd5e1;"></p>
+      <button class="btn-act" onclick="window.restartGame()" style="padding:10px 24px; font-size:0.9rem; font-weight:bold;">Investigate Another Case</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      function init() {
+        state = createState(Date.now ? Date.now() : 1);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(act) {
+        if (!state || state.done) return;
+        try {
+          step(state, act);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Update HUD
+        const rEl = document.getElementById('hud-room');
+        if (rEl) rEl.textContent = state.room.toUpperCase();
+
+        const evEl = document.getElementById('hud-evidence');
+        if (evEl) evEl.textContent = state.evidence.length + ' Items';
+
+        const cEl = document.getElementById('hud-contradictions');
+        if (cEl) cEl.textContent = state.contradictionsFound + ' Found';
+
+        const sEl = document.getElementById('hud-score');
+        if (sEl) sEl.textContent = state.score;
+
+        const turnEl = document.getElementById('turn-counter');
+        if (turnEl) turnEl.textContent = 'Turn: ' + state.turns + '/' + state.maxTurns;
+
+        // Dossier
+        const roomTitle = document.getElementById('dossier-room-title');
+        if (roomTitle) roomTitle.textContent = getRoomName(state.room);
+
+        const chipsEl = document.getElementById('evidence-chips');
+        if (chipsEl) {
+          if (state.evidence.length === 0) {
+            chipsEl.textContent = 'No physical evidence bagged yet.';
+          } else {
+            const formatted = state.evidence.map(formatClueName);
+            chipsEl.textContent = 'Evidence: ' + formatted.join(', ');
+          }
+        }
+
+        // Canvas Scene
+        if (ctx) {
+          ctx.clearRect(0, 0, 460, 200);
+
+          // Room Atmosphere
+          const grad = ctx.createLinearGradient(0, 0, 0, 200);
+          if (state.room === 'study') {
+            grad.addColorStop(0, '#1e1b4b');
+            grad.addColorStop(1, '#0f172a');
+          } else if (state.room === 'library') {
+            grad.addColorStop(0, '#312e81');
+            grad.addColorStop(1, '#1e293b');
+          } else {
+            // Conservatory
+            grad.addColorStop(0, '#064e3b');
+            grad.addColorStop(1, '#061912');
+          }
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 460, 200);
+
+          // Room Header Banner
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillRect(10, 10, 440, 36);
+          ctx.strokeStyle = '#6366f1';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(10, 10, 440, 36);
+
+          ctx.font = 'bold 15px -apple-system, sans-serif';
+          ctx.fillStyle = '#c7d2fe';
+          ctx.fillText('CRIME SCENE: ' + getRoomName(state.room).toUpperCase(), 24, 33);
+
+          // Room Visual Prop Cards
+          if (state.room === 'study') {
+            drawPropCard(ctx, 30, 60, 180, 120, 'Victim & Goblet', 'Lord Sterling slumped at desk.', '#ef4444');
+            drawPropCard(ctx, 240, 60, 180, 120, 'Study Desk & Safe', 'Scattered papers & locked safe.', '#f59e0b');
+          } else if (state.room === 'library') {
+            drawPropCard(ctx, 30, 60, 180, 120, 'Prof. Hawthorne', 'Pacing nervously near star charts.', '#818cf8');
+            drawPropCard(ctx, 240, 60, 180, 120, 'Grand Bookcases', 'Leather-bound encyclopedias.', '#38bdf8');
+          } else {
+            drawPropCard(ctx, 30, 60, 180, 120, 'Lady Sterling', 'Seated beside belladonna flowers.', '#f43f5e');
+            drawPropCard(ctx, 240, 60, 180, 120, 'Butler Graves', 'Standing near muddy greenhouse exit.', '#10b981');
+          }
+        }
+
+        // Notes Log
+        const notesBox = document.getElementById('notes-box');
+        if (notesBox) {
+          let html = '';
+          for (let i = 0; i < state.caseNotes.length; i++) {
+            const line = state.caseNotes[i];
+            let cls = 'note-line';
+            if (line.includes('CONTRADICTION') || line.includes('WRONGFUL')) cls += ' note-alert';
+            else if (line.includes('CASE CRACKED') || line.includes('CONFESSION')) cls += ' note-win';
+            else if (line.includes('Forensic') || line.includes('Examined') || line.includes('Found')) cls += ' note-clue';
+            else if (line.includes('"')) cls += ' note-testimony';
+            html += '<div class="' + cls + '">' + escapeHtml(line) + '</div>';
+          }
+          notesBox.innerHTML = html;
+          notesBox.scrollTop = notesBox.scrollHeight;
+        }
+
+        // Action Buttons
+        const actionsEl = document.getElementById('actions-grid');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act.startsWith('examine:')) cls += ' btn-examine';
+            else if (act.startsWith('question:')) cls += ' btn-question';
+            else if (act.startsWith('confront:')) cls += ' btn-confront';
+            else if (act.startsWith('accuse:')) cls += ' btn-accuse';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'CASE SOLVED!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'You unmasked the true culprit with undeniable physical proof! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'CASE UNSOLVED';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'The investigation collapsed due to false accusation or expired time. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function drawPropCard(ctx, x, y, w, h, title, subtitle, color) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y, w, h);
+
+        ctx.fillStyle = color;
+        ctx.font = 'bold 13px -apple-system, sans-serif';
+        ctx.fillText(title, x + 10, y + 25);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px -apple-system, sans-serif';
+        ctx.fillText(subtitle, x + 10, y + 50);
+      }
+
+      function getRoomName(room) {
+        if (room === 'study') return 'Private Study';
+        if (room === 'library') return 'Grand Library';
+        if (room === 'conservatory') return 'Conservatory';
+        return room;
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'move:study') return '🚪 Go to Study';
+        if (act === 'move:library') return '📚 Go to Library';
+        if (act === 'move:conservatory') return '🌿 Go to Conservatory';
+        if (act === 'examine:body') return '🔍 Examine Body';
+        if (act === 'examine:goblet') return '🍷 Examine Goblet';
+        if (act === 'examine:desk') return '📂 Search Desk';
+        if (act === 'examine:handkerchief') return '🧣 Inspect Handkerchief';
+        if (act === 'examine:encyclopedia') return '📖 Inspect Encyclopedia';
+        if (act === 'examine:ledger') return '📊 Audit Ledger';
+        if (act === 'examine:footprints') return '👣 Examine Footprints';
+        if (act === 'examine:nightshade') return '🥀 Inspect Belladonna';
+        if (act === 'examine:cellar_key') return '🔑 Search Flowerpot';
+        if (act === 'question:lady_sterling') return '💬 Question Lady Sterling';
+        if (act === 'question:prof_hawthorne') return '💬 Question Prof. Hawthorne';
+        if (act === 'question:butler_graves') return '💬 Question Butler Graves';
+        if (act.startsWith('confront:')) {
+          const parts = act.split(':');
+          return '⚡ Confront ' + formatShortName(parts[1]) + ' w/ ' + formatClueName(parts[2]);
+        }
+        if (act.startsWith('accuse:')) {
+          const s = act.split(':')[1];
+          return '⚖️ Accuse ' + formatShortName(s);
+        }
+        return act;
+      }
+
+      function formatShortName(s) {
+        if (s === 'lady_sterling') return 'Lady Sterling';
+        if (s === 'prof_hawthorne') return 'Hawthorne';
+        if (s === 'butler_graves') return 'Graves';
+        return s;
+      }
+
+      function formatClueName(c) {
+        if (c === 'autopsy_notes') return 'Autopsy Report';
+        if (c === 'cyanide_goblet') return 'Poison Goblet';
+        if (c === 'debt_letter') return 'Debt Demand';
+        if (c === 'torn_will') return 'Torn Will';
+        if (c === 'silk_handkerchief') return 'Silk Handkerchief';
+        if (c === 'hollow_book') return 'Hollow Book';
+        if (c === 'tampered_ledger') return 'Tampered Ledger';
+        if (c === 'muddy_footprints') return 'Muddy Footprints';
+        if (c === 'cut_nightshade') return 'Cut Belladonna';
+        if (c === 'butler_cellar_key') return 'Cellar Key';
+        return c;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      // Keyboard navigation
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
