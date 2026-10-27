@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aero Striker - Side-scrolling Shooter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#060914">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #030611;
+      color: #e0f2fe;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #7dd3fc;
+    }
+    .hud span { color: #ffffff; }
+    canvas {
+      background: #050b1a;
+      border: 2px solid #1e3a8a;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      display: block;
+    }
+    .status-panel {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #081226;
+      border: 1px solid #1e3a8a;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-top: 6px;
+      font-size: 0.78rem;
+      font-weight: bold;
+    }
+    .hp-bar-track {
+      width: 80px;
+      height: 8px;
+      background: #172554;
+      border-radius: 4px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .hp-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #00e5ff);
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 8px;
+      gap: 8px;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 40px);
+      grid-template-rows: repeat(3, 40px);
+      gap: 4px;
+    }
+    .action-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    button {
+      background: #0f172a;
+      border: 1px solid #1e40af;
+      color: #e0f2fe;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.05s;
+    }
+    button:active { background: #1e3a8a; transform: scale(0.96); }
+    .btn-action { padding: 8px 10px; min-height: 38px; }
+    .btn-fire { background: linear-gradient(135deg, #0284c7, #0ea5e9); border-color: #38bdf8; }
+    .btn-missile { background: linear-gradient(135deg, #b45309, #d97706); border-color: #fbbf24; }
+    .btn-shield { background: linear-gradient(135deg, #059669, #10b981); border-color: #34d399; }
+    #game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(3, 6, 17, 0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #game-overlay h2 { font-size: 2rem; color: #38bdf8; }
+  </style>
+</head>
+<body>
+  <div id="game-container" style="position: relative;">
+    <header>
+      <h1>AERO STRIKER</h1>
+      <div class="hud">
+        <div>WAVE: <span id="val-wave">1</span>/3</div>
+        <div>SCORE: <span id="val-score">0</span></div>
+      </div>
+    </header>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <div class="status-panel">
+      <div>
+        HULL: <div class="hp-bar-track"><div id="bar-hp" class="hp-bar-fill"></div></div>
+      </div>
+      <div>TORPEDO: <span id="val-missiles" style="color: #fbbf24;">3</span></div>
+      <div>BARRIER: <span id="val-shields" style="color: #34d399;">2</span></div>
+      <div>DEFLECTOR: <span id="val-shield-status" style="color: #64748b;">OFF</span></div>
+    </div>
+
+    <div class="controls">
+      <div class="dpad">
+        <div></div>
+        <button id="btn-up">▲</button>
+        <div></div>
+        <button id="btn-left">◀</button>
+        <button id="btn-rest" style="font-size:0.65rem;">REST</button>
+        <button id="btn-right">▶</button>
+        <div></div>
+        <button id="btn-down">▼</button>
+        <div></div>
+      </div>
+
+      <div class="action-panel">
+        <div class="action-row">
+          <button id="btn-fire" class="btn-action btn-fire" style="flex:1;">FIRE [SPC]</button>
+          <button id="btn-missile" class="btn-action btn-missile" style="flex:1;">TORPEDO [M]</button>
+        </div>
+        <div class="action-row">
+          <button id="btn-shield" class="btn-action btn-shield" style="flex:1;">BARRIER [B]</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="game-overlay">
+      <h2 id="overlay-title">VICTORY</h2>
+      <p id="overlay-sub" style="font-size: 1.1rem; color: #bae6fd;">Void Dreadnought obliteration confirmed!</p>
+      <button id="btn-restart" class="btn-action btn-fire" style="padding: 10px 24px; font-size: 1rem;">SCRAMBLE AGAIN</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const elWave = document.getElementById('val-wave');
+      const elScore = document.getElementById('val-score');
+      const barHp = document.getElementById('bar-hp');
+      const elMissiles = document.getElementById('val-missiles');
+      const elShields = document.getElementById('val-shields');
+      const elShieldStatus = document.getElementById('val-shield-status');
+      const overlay = document.getElementById('game-overlay');
+      const overlayTitle = document.getElementById('overlay-title');
+      const overlaySub = document.getElementById('overlay-sub');
+      const btnRestart = document.getElementById('btn-restart');
+
+      let state = AeroStriker.createState(Date.now() % 100000);
+      let stars = [];
+      for (let i = 0; i < 40; i++) {
+        stars.push({ x: Math.random() * 400, y: Math.random() * 400, spd: 1 + Math.random() * 3, r: Math.random() * 1.5 });
+      }
+
+      function triggerAction(act) {
+        if (AeroStriker.isOver(state)) return;
+        const legals = AeroStriker.legalActions(state);
+        if (!legals.includes(act)) return;
+
+        AeroStriker.step(state, act);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (elWave) elWave.textContent = state.wave;
+        if (elScore) elScore.textContent = state.scoreVal;
+
+        const p = state.player;
+        if (barHp) barHp.style.width = (p.hp / p.maxHp * 100) + '%';
+        if (elMissiles) elMissiles.textContent = p.missiles;
+        if (elShields) elShields.textContent = p.shields;
+
+        if (elShieldStatus) {
+          if (p.shieldTurns > 0) {
+            elShieldStatus.textContent = `ON (${p.shieldTurns})`;
+            elShieldStatus.style.color = '#38bdf8';
+          } else {
+            elShieldStatus.textContent = 'OFF';
+            elShieldStatus.style.color = '#64748b';
+          }
+        }
+
+        if (AeroStriker.isOver(state)) {
+          if (overlay) {
+            overlay.style.display = 'flex';
+            if (state.won) {
+              if (overlayTitle) { overlayTitle.textContent = 'NEBULA LIBERATED'; overlayTitle.style.color = '#38bdf8'; }
+              if (overlaySub) overlaySub.textContent = `Flagship Obliterated! Score: ${state.scoreVal}`;
+            } else {
+              if (overlayTitle) { overlayTitle.textContent = 'HULL BREACHED'; overlayTitle.style.color = '#ef4444'; }
+              if (overlaySub) overlaySub.textContent = `Destroyed in Wave ${state.wave}. Score: ${state.scoreVal}`;
+            }
+          }
+        } else {
+          if (overlay) overlay.style.display = 'none';
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 400, 400);
+
+        // Parallax Stars
+        ctx.fillStyle = '#ffffff';
+        for (const s of stars) {
+          s.x -= s.spd;
+          if (s.x < 0) s.x = 400;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Projectiles
+        for (const pr of state.projectiles) {
+          ctx.save();
+          if (pr.owner === 'player') {
+            if (pr.isMissile) {
+              // Homing Torpedo
+              ctx.fillStyle = '#f59e0b';
+              ctx.fillRect(pr.x - 8, pr.y - 3, 16, 6);
+              ctx.fillStyle = '#ef4444';
+              ctx.beginPath();
+              ctx.arc(pr.x - 8, pr.y, 4, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              // Dual plasma bolt
+              ctx.fillStyle = '#38bdf8';
+              ctx.fillRect(pr.x - 10, pr.y - 2, 20, 4);
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(pr.x - 6, pr.y - 1, 12, 2);
+            }
+          } else {
+            // Enemy laser/bullet
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(pr.x, pr.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fca5a5';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // Enemies
+        for (const e of state.enemies) {
+          ctx.save();
+          if (e.type === 'dreadnought') {
+            // Flagship Boss
+            ctx.fillStyle = '#475569';
+            ctx.beginPath();
+            ctx.moveTo(e.x + 35, e.y - 35);
+            ctx.lineTo(e.x - 35, e.y - 45);
+            ctx.lineTo(e.x - 45, e.y);
+            ctx.lineTo(e.x - 35, e.y + 45);
+            ctx.lineTo(e.x + 35, e.y + 35);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Core
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(e.x - 10, e.y, 14, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Boss HP Bar
+            ctx.fillStyle = '#450a0a';
+            ctx.fillRect(e.x - 40, e.y - 58, 80, 6);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(e.x - 40, e.y - 58, (e.hp / e.maxHp) * 80, 6);
+          } else if (e.type === 'corvette') {
+            // Heavy Corvette
+            ctx.fillStyle = '#991b1b';
+            ctx.beginPath();
+            ctx.moveTo(e.x + 20, e.y);
+            ctx.lineTo(e.x - 16, e.y - 20);
+            ctx.lineTo(e.x - 22, e.y);
+            ctx.lineTo(e.x - 16, e.y + 20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          } else {
+            // Scout Interceptor
+            ctx.fillStyle = '#7c3aed';
+            ctx.beginPath();
+            ctx.moveTo(e.x + 12, e.y);
+            ctx.lineTo(e.x - 12, e.y - 12);
+            ctx.lineTo(e.x - 8, e.y);
+            ctx.lineTo(e.x - 12, e.y + 12);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#c4b5fd';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // Player Fighter
+        const p = state.player;
+        ctx.save();
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.moveTo(p.x + 18, p.y);
+        ctx.lineTo(p.x - 16, p.y - 12);
+        ctx.lineTo(p.x - 10, p.y);
+        ctx.lineTo(p.x - 16, p.y + 12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Cockpit canopy
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(p.x + 2, p.y - 3, 6, 6);
+
+        // Jet Plume
+        ctx.fillStyle = '#f97316';
+        ctx.fillRect(p.x - 20, p.y - 2, 8, 4);
+
+        // Deflector Barrier Shield
+        if (p.shieldTurns > 0) {
+          ctx.strokeStyle = '#00e5ff';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 24, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(0, 229, 255, 0.2)';
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Button listeners
+      const btnUp = document.getElementById('btn-up');
+      const btnDown = document.getElementById('btn-down');
+      const btnLeft = document.getElementById('btn-left');
+      const btnRight = document.getElementById('btn-right');
+      const btnFire = document.getElementById('btn-fire');
+      const btnMissile = document.getElementById('btn-missile');
+      const btnShield = document.getElementById('btn-shield');
+      const btnRest = document.getElementById('btn-rest');
+
+      if (btnUp) btnUp.addEventListener('click', () => triggerAction('move_up'));
+      if (btnDown) btnDown.addEventListener('click', () => triggerAction('move_down'));
+      if (btnLeft) btnLeft.addEventListener('click', () => triggerAction('move_back'));
+      if (btnRight) btnRight.addEventListener('click', () => triggerAction('move_forward'));
+      if (btnFire) btnFire.addEventListener('click', () => triggerAction('fire'));
+      if (btnMissile) btnMissile.addEventListener('click', () => triggerAction('missile'));
+      if (btnShield) btnShield.addEventListener('click', () => triggerAction('barrier_shield'));
+      if (btnRest) btnRest.addEventListener('click', () => triggerAction('rest'));
+
+      if (btnRestart) {
+        btnRestart.addEventListener('click', () => {
+          state = AeroStriker.createState(Date.now() % 100000);
+          updateUI();
+          render();
+        });
+      }
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'arrowup' || k === 'w') triggerAction('move_up');
+        else if (k === 'arrowdown' || k === 's') triggerAction('move_down');
+        else if (k === 'arrowleft' || k === 'a') triggerAction('move_back');
+        else if (k === 'arrowright' || k === 'd') triggerAction('move_forward');
+        else if (k === ' ' || k === 'j') triggerAction('fire');
+        else if (k === 'm' || k === 'k') triggerAction('missile');
+        else if (k === 'b' || k === 'l') triggerAction('barrier_shield');
+        else if (k === 'r') triggerAction('rest');
+      });
+
+      // PWA registration
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>
