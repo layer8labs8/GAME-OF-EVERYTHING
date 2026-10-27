@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Paths of Destiny - CYOA Gamebook</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#b45309">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0c0a09;
+      color: #f5f5f4;
+      font-family: Georgia, "Times New Roman", serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #292524;
+      border-radius: 8px;
+      border: 1px solid #78350f;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+      font-family: monospace;
+    }
+    .hud-box {
+      background: #1c1917;
+      border: 1px solid #78350f;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .hud-label {
+      color: #d97706;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.82rem;
+    }
+    .val-sta { color: #f87171; }
+    .val-skl { color: #60a5fa; }
+    .val-lck { color: #fbbf24; }
+    .val-prv { color: #4ade80; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 7;
+      background: #1c1917;
+      border: 2px solid #b45309;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(180, 83, 9, 0.25);
+      touch-action: none;
+    }
+
+    .book-card {
+      width: 100%;
+      max-width: 460px;
+      background: #fef3c7;
+      color: #292524;
+      border: 2px solid #d97706;
+      border-radius: 8px;
+      margin-top: 6px;
+      padding: 10px 12px;
+      box-shadow: inset 0 0 12px rgba(180, 83, 9, 0.15);
+    }
+    .book-title {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #78350f;
+      margin-bottom: 6px;
+      border-bottom: 1px dashed #b45309;
+      padding-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .book-text {
+      font-size: 0.84rem;
+      line-height: 1.4;
+      min-height: 48px;
+      margin-bottom: 6px;
+    }
+    .book-inv {
+      font-family: monospace;
+      font-size: 0.72rem;
+      color: #92400e;
+      border-top: 1px dotted #d97706;
+      padding-top: 4px;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 460px;
+      background: #1c1917;
+      border: 1px solid #57534e;
+      border-radius: 6px;
+      margin-top: 6px;
+      padding: 6px 8px;
+      height: 60px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.72rem;
+      color: #d6d3d1;
+    }
+    .log-line { margin-bottom: 2px; }
+    .log-alert { color: #facc15; }
+    .log-dmg { color: #f87171; }
+    .log-heal { color: #4ade80; }
+
+    .choices-container {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .btn-choice {
+      background: #292524;
+      color: #fef3c7;
+      border: 1px solid #b45309;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-family: Georgia, serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+    .btn-choice:hover {
+      background: #44403c;
+      border-color: #f59e0b;
+      color: #ffffff;
+    }
+    .btn-choice:active {
+      transform: scale(0.98);
+    }
+    .btn-combat {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      color: #fef2f2;
+    }
+    .btn-combat:hover {
+      background: #991b1b;
+      border-color: #f87171;
+    }
+    .btn-ration {
+      background: #14532d;
+      border-color: #22c55e;
+      color: #f0fdf4;
+    }
+    .btn-ration:hover {
+      background: #166534;
+      border-color: #4ade80;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(12, 10, 9, 0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      z-index: 10;
+    }
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .win-title { color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+    .lose-title { color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📖 Paths of Destiny</h1>
+    <div style="font-size:0.75rem; color:#fde68a;" id="turn-counter">Turn: 0/150</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Stamina</div>
+      <div class="hud-val val-sta" id="hud-sta">24/24</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Skill</div>
+      <div class="hud-val val-skl" id="hud-skl">10</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Luck</div>
+      <div class="hud-val val-lck" id="hud-lck">10</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Provisions</div>
+      <div class="hud-val val-prv" id="hud-prv">3</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="game-canvas" width="460" height="200"></canvas>
+
+    <div class="book-card">
+      <div class="book-title">
+        <span id="passage-title">Section 1: The Citadel Gates</span>
+        <span id="score-badge" style="font-size:0.75rem; color:#b45309;">Score: 0</span>
+      </div>
+      <div class="book-text" id="passage-desc">
+        You stand before the obsidian portcullis of Kar-Drakis. Cold mountain wind howls across the battlements.
+      </div>
+      <div class="book-inv" id="passage-inv">
+        Inventory: None
+      </div>
+    </div>
+
+    <div class="log-box" id="log-box"></div>
+
+    <div class="choices-container" id="choices-container"></div>
+
+    <div id="end-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-title" id="modal-title">DESTINY FULFILLED</div>
+      <p id="modal-desc" style="font-size:0.85rem; margin-bottom:12px; color:#d6d3d1;"></p>
+      <button class="btn-choice" onclick="window.restartGame()" style="justify-content:center; padding:10px 24px; font-weight:bold;">Begin New Chronicle</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      function init() {
+        state = createState(Date.now ? Date.now() : 1);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(act) {
+        if (!state || state.done) return;
+        try {
+          step(state, act);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // HUD Updates
+        const staEl = document.getElementById('hud-sta');
+        if (staEl) staEl.textContent = state.stamina + '/' + state.maxStamina;
+
+        const sklEl = document.getElementById('hud-skl');
+        if (sklEl) sklEl.textContent = state.skill;
+
+        const lckEl = document.getElementById('hud-lck');
+        if (lckEl) lckEl.textContent = state.luck;
+
+        const prvEl = document.getElementById('hud-prv');
+        if (prvEl) prvEl.textContent = state.provisions;
+
+        const turnEl = document.getElementById('turn-counter');
+        if (turnEl) turnEl.textContent = 'Turn: ' + state.turns + '/' + state.maxTurns;
+
+        const scEl = document.getElementById('score-badge');
+        if (scEl) scEl.textContent = 'Score: ' + state.score;
+
+        // Book Card Updates
+        const titleEl = document.getElementById('passage-title');
+        const descEl = document.getElementById('passage-desc');
+        const invEl = document.getElementById('passage-inv');
+
+        if (titleEl) titleEl.textContent = getPassageTitle(state.passageId);
+        if (descEl) descEl.textContent = getPassageText(state.passageId);
+        if (invEl) {
+          const items = state.inventory.map(formatItemName);
+          invEl.textContent = 'Inventory: ' + (items.length > 0 ? items.join(', ') : 'None');
+        }
+
+        // Canvas Rendering
+        if (ctx) {
+          ctx.clearRect(0, 0, 460, 200);
+
+          // Atmospheric Scene Background
+          const grad = ctx.createLinearGradient(0, 0, 0, 200);
+          grad.addColorStop(0, '#292524');
+          grad.addColorStop(1, '#0c0a09');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 460, 200);
+
+          // Citadel Silhouette
+          ctx.fillStyle = '#1c1917';
+          ctx.beginPath();
+          ctx.moveTo(30, 200);
+          ctx.lineTo(30, 110);
+          ctx.lineTo(80, 110);
+          ctx.lineTo(80, 140);
+          ctx.lineTo(150, 140);
+          ctx.lineTo(150, 80);
+          ctx.lineTo(210, 80);
+          ctx.lineTo(210, 140);
+          ctx.lineTo(320, 140);
+          ctx.lineTo(320, 90);
+          ctx.lineTo(380, 90);
+          ctx.lineTo(380, 150);
+          ctx.lineTo(440, 150);
+          ctx.lineTo(440, 200);
+          ctx.fill();
+
+          // Full Moon
+          ctx.fillStyle = '#fef08a';
+          ctx.beginPath();
+          ctx.arc(230, 50, 24, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Combat Encounter Display
+          if (state.enemy) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(40, 55, 380, 115);
+            ctx.strokeStyle = state.enemy.isBoss ? '#f59e0b' : '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(40, 55, 380, 115);
+
+            ctx.font = 'bold 15px Georgia, serif';
+            ctx.fillStyle = state.enemy.isBoss ? '#fbbf24' : '#f87171';
+            ctx.fillText(state.enemy.name + (state.enemy.isBoss ? ' [BOSS FOE]' : ' [COMBAT]'), 60, 85);
+
+            ctx.font = '12px monospace';
+            ctx.fillStyle = '#e7e5e4';
+            ctx.fillText('SKILL: ' + state.enemy.skill + '   DAMAGE: ' + state.enemy.dmg, 60, 108);
+
+            // Enemy HP Bar
+            const hpW = 340;
+            const ratio = Math.max(0, state.enemy.hp / state.enemy.maxHp);
+            ctx.fillStyle = '#292524';
+            ctx.fillRect(60, 122, hpW, 16);
+            ctx.fillStyle = state.enemy.isBoss ? '#f59e0b' : '#ef4444';
+            ctx.fillRect(60, 122, Math.floor(hpW * ratio), 16);
+            ctx.strokeStyle = '#78716c';
+            ctx.strokeRect(60, 122, hpW, 16);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px monospace';
+            ctx.fillText('HP: ' + state.enemy.hp + ' / ' + state.enemy.maxHp, 66, 135);
+          } else {
+            // Narrative node marker
+            ctx.fillStyle = '#fde68a';
+            ctx.font = 'bold 13px Georgia, serif';
+            ctx.fillText('NODE: ' + state.passageId.toUpperCase().replace(/_/g, ' '), 50, 175);
+          }
+        }
+
+        // Log Box
+        const logBox = document.getElementById('log-box');
+        if (logBox) {
+          let html = '';
+          for (let i = 0; i < state.log.length; i++) {
+            const line = state.log[i];
+            let cls = 'log-line';
+            if (line.includes('TRIUMPH') || line.includes('Fortune')) cls += ' log-alert';
+            else if (line.includes('damage') || line.includes('exhausted') || line.includes('fell')) cls += ' log-dmg';
+            else if (line.includes('Restored') || line.includes('Drank') || line.includes('Sharpened')) cls += ' log-heal';
+            html += '<div class="' + cls + '">' + escapeHtml(line) + '</div>';
+          }
+          logBox.innerHTML = html;
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        // Choice Buttons
+        const choicesEl = document.getElementById('choices-container');
+        if (choicesEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-choice';
+            if (act.startsWith('fight:')) cls += ' btn-combat';
+            else if (act === 'action:eat_ration') cls += ' btn-ration';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '<span>➔</span></button>';
+          }
+          choicesEl.innerHTML = html;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'CROWN OF KAR-DRAKIS!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'You dismantled the Iron Colossus and claimed your rightful destiny! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'CHRONICLE CONCLUDED';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Your vitality was overwhelmed in the labyrinth. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function getPassageTitle(pid) {
+        if (pid === 'start') return 'Section 1: The Citadel Gates';
+        if (pid === 'watchtower') return 'Section 2: The Ruined Watchtower';
+        if (pid === 'battlement') return 'Section 3: Precarious Battlement';
+        if (pid === 'armory') return 'Section 4: The High Armory';
+        if (pid === 'portcullis') return 'Section 5: The Rusting Portcullis';
+        if (pid === 'courtyard') return 'Section 6: The Central Courtyard';
+        if (pid === 'garden') return 'Section 7: The Garden of Thorns';
+        if (pid === 'crypt') return 'Section 8: The Subterranean Crypt';
+        if (pid === 'crypt_cleared') return 'Section 8: Crypt of the Silver Stone';
+        if (pid === 'great_hall') return 'Section 9: The Adamantine Portal';
+        if (pid === 'sanctuary') return 'Section 10: Sanctuary of the Colossus';
+        if (pid === 'victory_throne') return 'Section 11: The Throne of Destiny';
+        if (pid === 'defeat_fallen') return 'Section 0: Fallen in Shadows';
+        return 'Section: ' + pid;
+      }
+
+      function getPassageText(pid) {
+        if (pid === 'start') return 'You stand before the obsidian portcullis of Kar-Drakis. Cold mountain wind howls across the battlements.';
+        if (pid === 'watchtower') return 'Cobwebs drape over a decaying timber chest beside the hollow armor of a Kar-Drakis sentry.';
+        if (pid === 'battlement') return 'Narrow parapets crumble above a dizzying drop into the chasm. A violent gale threatens your footing!';
+        if (pid === 'armory') return 'Racks of ancient steel gleam softly. You find travel rations and whetstones.';
+        if (pid === 'portcullis') return 'You crawl beneath the iron spikes. Vicious Shadow Imps drop from above with claws bared!';
+        if (pid === 'courtyard') return 'A vast cobblestone courtyard. Paths lead toward the overgrown Garden, the Crypt, and the Great Hall.';
+        if (pid === 'garden') return 'Bioluminescent orchids glow beside a tranquil fountain blessed by the Moon Goddess.';
+        if (pid === 'crypt') return 'Frost encrusts the stone vaults. A terrifying Spectral Wraith guards a gleaming Silver Runestone!';
+        if (pid === 'crypt_cleared') return 'The wraith has vanished into starlight. The crypt lies peaceful.';
+        if (pid === 'great_hall') return 'Enormous adamantine doors seal the inner sanctum. Two intricate lock mechanisms guard the threshold.';
+        if (pid === 'sanctuary') return 'The titanic Iron Colossus rises with thunderous gears. Its ruby optics lock onto you!';
+        if (pid === 'victory_throne') return 'The titan shatters into scrap. The Crown of Kar-Drakis rests upon your brow!';
+        if (pid === 'defeat_fallen') return 'Your stamina has faded into the shadows of the ancient citadel.';
+        return 'You ponder your next decision in the Citadel.';
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'choice:scale_battlement') return 'Scale the western battlement wall';
+        if (act === 'choice:enter_portcullis') return 'Crawl beneath the iron portcullis';
+        if (act === 'choice:search_watchtower') return 'Search the ruined watchtower';
+        if (act === 'choice:loot_chest') return 'Loot the rotting timber chest';
+        if (act === 'choice:return_start') return 'Return to the citadel gates';
+        if (act === 'choice:descend_courtyard') return 'Descend into the central courtyard';
+        if (act === 'choice:test_luck_balance') return 'Test your Luck to cross the wall walk';
+        if (act === 'choice:leap_courtyard') return 'Drop down into the courtyard (-3 Stamina)';
+        if (act === 'choice:take_armory_loot') return 'Sharpen blade & take armory rations';
+        if (act === 'choice:fight_imps') return 'Confront the Shadow Imps with steel';
+        if (act === 'choice:toss_torch') return 'Toss a burning torch to scatter them';
+        if (act === 'choice:enter_garden') return 'Enter the overgrown Garden of Thorns';
+        if (act === 'choice:drink_fountain') return 'Drink from the Moon Goddess fountain';
+        if (act === 'choice:harvest_orchid') return 'Harvest a glowing Moon Orchid';
+        if (act === 'choice:return_courtyard') return 'Return to the courtyard crossroads';
+        if (act === 'choice:descend_crypt') return 'Descend into the subterranean crypt';
+        if (act === 'choice:banish_wraith') return 'Brandish the Moon Orchid to banish wraith';
+        if (act === 'choice:fight_wraith') return 'Engage the Spectral Wraith in combat';
+        if (act === 'choice:flee_crypt') return 'Flee back to the courtyard';
+        if (act === 'choice:ascend_courtyard') return 'Ascend back to the courtyard';
+        if (act === 'choice:approach_hall') return 'Approach the Great Hall portal';
+        if (act === 'choice:unlock_doors') return 'Unlock doors with Brass Key & Silver Stone';
+        if (act === 'choice:force_doors') return 'Attempt to force open the adamantine doors';
+        if (act === 'choice:engage_colossus') return 'Engage the Iron Colossus in battle';
+        if (act === 'choice:test_luck_weakpoint') return 'Test Luck to strike power conduit early';
+        if (act === 'fight:strike') return 'Strike with your weapon (2d6 + Skill)';
+        if (act === 'fight:test_luck') return 'Test your Luck for critical strike (-1 Luck)';
+        if (act === 'fight:flee') return 'Disengage and flee to courtyard';
+        if (act === 'action:eat_ration') return 'Consume travel ration (+6 Stamina)';
+        return act;
+      }
+
+      function formatItemName(id) {
+        if (id === 'brass_key') return 'Brass Key';
+        if (id === 'moon_orchid') return 'Moon Orchid';
+        if (id === 'silver_runestone') return 'Silver Runestone';
+        return id;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      // Keyboard shortcut support
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
