@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="60%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#a7f3d0"/>
+    </linearGradient>
+    <linearGradient id="blade" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#sky)"/>
+  <!-- Mountain Ranges -->
+  <polygon points="0,512 80,310 180,420 310,250 440,380 512,320 512,512" fill="#047857"/>
+  <polygon points="0,512 140,360 260,450 380,320 512,410 512,512" fill="#065f46"/>
+  <!-- Sheikah Tower Blue Beam -->
+  <line x1="120" y1="310" x2="120" y2="40" stroke="#38bdf8" stroke-width="6" stroke-dasharray="16 10"/>
+  <polygon points="110,310 130,310 125,260 115,260" fill="#0f172a"/>
+  <!-- Ancient Stone Pedestal -->
+  <rect x="220" y="380" width="72" height="40" rx="8" fill="#334155" stroke="#94a3b8" stroke-width="4"/>
+  <!-- Sunforged Master Sword -->
+  <polygon points="256,150 264,175 264,380 256,395 248,380 248,175" fill="url(#blade)"/>
+  <rect x="226" y="270" width="60" height="14" rx="4" fill="#0284c7"/>
+  <circle cx="256" cy="277" r="6" fill="#fef08a"/>
+  <!-- Floating leaf particles -->
+  <ellipse cx="180" cy="220" rx="8" ry="4" fill="#4ade80" transform="rotate(-30 180 220)"/>
+  <ellipse cx="340" cy="190" rx="10" ry="5" fill="#4ade80" transform="rotate(25 340 190)"/>
+</svg>

@@ -1,0 +1,12 @@
+{
+  "name": "Wilds of Eldoria: Open World",
+  "short_name": "WildsOfEldoria",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#064e3b",
+  "theme_color": "#10b981",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
