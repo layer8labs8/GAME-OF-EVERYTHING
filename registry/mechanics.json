@@ -1076,9 +1076,11 @@
    "id": "0104",
    "slug": "trading",
    "name": "Trading",
+   "title": "Merchant Guild",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Merchant Guild: Trading</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #08111e;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f1c31;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #1e3a5f;
+      margin-bottom: 8px;
+      font-size: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .gold-val { color: #facc15; }
+    .cargo-val { color: #38bdf8; }
+    .ship-val { color: #4ade80; }
+    .voyage-val { color: #c084fc; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #071526;
+      border: 2px solid #1e3a5f;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+      cursor: pointer;
+    }
+    #actions-panel {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    button {
+      background: #132742;
+      color: #f1f5f9;
+      border: 1px solid #234873;
+      padding: 6px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover:not(:disabled) {
+      background: #1e3a5f;
+      border-color: #38bdf8;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    button.buy {
+      background: #14532d;
+      border-color: #22c55e;
+      color: #dcfce7;
+    }
+    button.sell {
+      background: #78350f;
+      border-color: #f59e0b;
+      color: #fef08a;
+    }
+    button.sail {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #dbeafe;
+    }
+    button.fleet {
+      background: #581c87;
+      border-color: #a855f7;
+      color: #f3e8ff;
+    }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #060e19;
+      border: 1px solid #1e3a5f;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      height: 54px;
+      overflow-y: auto;
+    }
+    #banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 28, 49, 0.95);
+      border: 2px solid #38bdf8;
+      padding: 16px 24px;
+      border-radius: 12px;
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+    #banner h2 { font-size: 20px; margin-bottom: 6px; }
+    #banner p { font-size: 12px; color: #cbd5e1; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge gold-val">🪙 <span id="val-gold">300</span> florins</div>
+    <div class="badge cargo-val">📦 <span id="val-cargo">0/20</span></div>
+    <div class="badge ship-val">⛵ <span id="val-ship">Sloop (60 HP)</span></div>
+    <div class="badge voyage-val">🧭 <span id="val-voyage">Voyage 1/25</span></div>
+    <button id="btn-reset" style="padding: 4px 8px; font-size: 11px;">Reset</button>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="c" width="480" height="480"></canvas>
+    <div id="banner">
+      <h2 id="banner-title">MERCHANT MAGNATE</h2>
+      <p id="banner-sub">Supreme guild status achieved across the Mediterranean.</p>
+      <button id="btn-restart" class="sail" style="margin: 0 auto;">New Expedition</button>
+    </div>
+  </div>
+
+  <div id="actions-panel">
+    <div class="panel-title">Port Market (Buy & Sell)</div>
+    <div class="action-group">
+      <button id="btn-buy-cheap" class="buy">📥 Buy 5 Primary</button>
+      <button id="btn-buy-secondary" class="buy">📥 Buy 5 Luxury</button>
+      <button id="btn-sell-cargo" class="sell">📤 Sell Owned Cargo</button>
+      <button id="btn-warehouse" class="fleet">🏛️ Build Warehouse (350)</button>
+    </div>
+
+    <div class="panel-title" style="margin-top: 4px;">Maritime Navigation (Sail)</div>
+    <div id="sail-group" class="action-group">
+      <button id="btn-sail-venice" class="sail">⛵ Sail Venice</button>
+      <button id="btn-sail-genoa" class="sail">⛵ Sail Genoa</button>
+      <button id="btn-sail-ragusa" class="sail">⛵ Sail Ragusa</button>
+      <button id="btn-sail-constant" class="sail">⛵ Sail Constantinople</button>
+      <button id="btn-sail-alexandria" class="sail">⛵ Sail Alexandria</button>
+    </div>
+
+    <div class="panel-title" style="margin-top: 4px;">Flagship Fleet Operations</div>
+    <div class="action-group">
+      <button id="btn-upgrade-ship" class="fleet">⭐ Upgrade Flagship</button>
+      <button id="btn-hire-escort" class="fleet">🛡️ Hire Escort (80)</button>
+      <button id="btn-repair-hull" class="fleet">🔨 Repair Hull (30)</button>
+    </div>
+  </div>
+
+  <div id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      const valGold = document.getElementById('val-gold');
+      const valCargo = document.getElementById('val-cargo');
+      const valShip = document.getElementById('val-ship');
+      const valVoyage = document.getElementById('val-voyage');
+      const logBox = document.getElementById('log-box');
+      const banner = document.getElementById('banner');
+      const bannerTitle = document.getElementById('banner-title');
+      const bannerSub = document.getElementById('banner-sub');
+      const btnReset = document.getElementById('btn-reset');
+      const btnRestart = document.getElementById('btn-restart');
+
+      const btnBuyCheap = document.getElementById('btn-buy-cheap');
+      const btnBuySecondary = document.getElementById('btn-buy-secondary');
+      const btnSellCargo = document.getElementById('btn-sell-cargo');
+      const btnWarehouse = document.getElementById('btn-warehouse');
+
+      const btnSailVenice = document.getElementById('btn-sail-venice');
+      const btnSailGenoa = document.getElementById('btn-sail-genoa');
+      const btnSailRagusa = document.getElementById('btn-sail-ragusa');
+      const btnSailConstant = document.getElementById('btn-sail-constant');
+      const btnSailAlexandria = document.getElementById('btn-sail-alexandria');
+
+      const btnUpgrade = document.getElementById('btn-upgrade-ship');
+      const btnEscort = document.getElementById('btn-hire-escort');
+      const btnRepair = document.getElementById('btn-repair-hull');
+
+      let state = createState(Date.now() & 0xffff);
+
+      // Web Audio sound synthesizer
+      function playSfx(type) {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctxA = new AudioContext();
+          const osc = ctxA.createOscillator();
+          const gain = ctxA.createGain();
+          osc.connect(gain);
+          gain.connect(ctxA.destination);
+
+          if (type === 'coin') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctxA.currentTime);
+            osc.frequency.setValueAtTime(1174.66, ctxA.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.25);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.25);
+          } else if (type === 'sail') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(220, ctxA.currentTime);
+            osc.frequency.linearRampToValueAtTime(140, ctxA.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.3);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.3);
+          } else if (type === 'upgrade') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(320, ctxA.currentTime);
+            osc.frequency.setValueAtTime(480, ctxA.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.25, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.3);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.3);
+          }
+        } catch(e) {}
+      }
+
+      function getHeldCargoCount() {
+        if (!state || !state.cargo) return 0;
+        let total = 0;
+        for (const c in state.cargo) total += state.cargo[c];
+        return total;
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const totalCargo = getHeldCargoCount();
+        const shipSpec = SHIP_TIERS[state.shipTier - 1];
+
+        if (valGold) valGold.textContent = state.gold;
+        if (valCargo) valCargo.textContent = totalCargo + '/' + state.cargoCap;
+        if (valShip) valShip.textContent = (shipSpec ? shipSpec.name : 'Ship') + ' (' + state.hp + ' HP)';
+        if (valVoyage) valVoyage.textContent = 'Voyage ' + state.voyage + '/' + state.maxVoyages;
+
+        if (logBox && state.history) {
+          logBox.innerHTML = state.history.slice(-5).map(h => '<div>&gt; ' + h + '</div>').join('');
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        if (banner) {
+          if (state.done) {
+            banner.style.display = 'block';
+            if (state.winner === 'player') {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'MERCHANT MAGNATE';
+                bannerTitle.style.color = '#38bdf8';
+              }
+              if (bannerSub) bannerSub.textContent = 'Grand trading fleet established maritime hegemony! (Score: ' + score(state) + ')';
+            } else {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'FLEET LOST';
+                bannerTitle.style.color = '#ef4444';
+              }
+              if (bannerSub) bannerSub.textContent = state.result === 'shipwreck' ? 'Flagship sank in corsair raid!' : 'Merchant company bankrupt.';
+            }
+          } else {
+            banner.style.display = 'none';
+          }
+        }
+
+        const legals = legalActions(state);
+
+        // Buy button actions
+        const buyActs = legals.filter(a => a.startsWith('buy:'));
+        if (btnBuyCheap) {
+          btnBuyCheap.disabled = buyActs.length === 0;
+          if (buyActs.length > 0) {
+            const parts = buyActs[0].split(':');
+            btnBuyCheap.textContent = '📥 Buy 5 ' + parts[1].toUpperCase() + ' ($' + (state.prices[state.port][parts[1]] * 5) + ')';
+          } else {
+            btnBuyCheap.textContent = '📥 Buy 5 Goods';
+          }
+        }
+
+        if (btnBuySecondary) {
+          btnBuySecondary.disabled = buyActs.length < 2;
+          if (buyActs.length >= 2) {
+            const parts = buyActs[1].split(':');
+            btnBuySecondary.textContent = '📥 Buy 5 ' + parts[1].toUpperCase() + ' ($' + (state.prices[state.port][parts[1]] * 5) + ')';
+          } else {
+            btnBuySecondary.textContent = '📥 Buy 5 Luxury';
+          }
+        }
+
+        // Sell button
+        const sellActs = legals.filter(a => a.startsWith('sell:'));
+        if (btnSellCargo) {
+          btnSellCargo.disabled = sellActs.length === 0;
+          if (sellActs.length > 0) {
+            const parts = sellActs[0].split(':');
+            btnSellCargo.textContent = '📤 Sell ' + parts[2] + ' ' + parts[1].toUpperCase() + ' (+$' + (state.prices[state.port][parts[1]] * parseInt(parts[2], 10)) + ')';
+          } else {
+            btnSellCargo.textContent = '📤 Sell Cargo';
+          }
+        }
+
+        // Sailing buttons
+        if (btnSailVenice) btnSailVenice.disabled = !legals.includes('sail:venice');
+        if (btnSailGenoa) btnSailGenoa.disabled = !legals.includes('sail:genoa');
+        if (btnSailRagusa) btnSailRagusa.disabled = !legals.includes('sail:ragusa');
+        if (btnSailConstant) btnSailConstant.disabled = !legals.includes('sail:constantinople');
+        if (btnSailAlexandria) btnSailAlexandria.disabled = !legals.includes('sail:alexandria');
+
+        // Fleet management
+        if (btnUpgrade) {
+          btnUpgrade.disabled = !legals.includes('upgrade_ship');
+          if (state.shipTier < 3) {
+            const curTier = SHIP_TIERS[state.shipTier - 1];
+            btnUpgrade.textContent = '⭐ Upgrade Ship ($' + curTier.upCost + ')';
+          } else {
+            btnUpgrade.textContent = '⭐ Grand Galleon (Max)';
+          }
+        }
+
+        if (btnEscort) {
+          btnEscort.disabled = !legals.includes('hire_escort');
+          btnEscort.textContent = '🛡️ Escort ($80) [' + state.escorts + '/2]';
+        }
+
+        if (btnRepair) {
+          btnRepair.disabled = !legals.includes('repair_hull');
+        }
+
+        if (btnWarehouse) {
+          const hasWh = state.warehouses.includes(state.port);
+          btnWarehouse.disabled = hasWh || !legals.includes('build_warehouse:' + state.port);
+          btnWarehouse.textContent = hasWh ? '🏛️ Warehouse (Active -15%)' : '🏛️ Build Warehouse ($350)';
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.fillStyle = '#071526';
+        ctx.fillRect(0, 0, 480, 480);
+
+        // Nautical Compass Rose Grid Lines
+        ctx.strokeStyle = '#102a4a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(240, 240, 180, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(240, 40); ctx.lineTo(240, 440);
+        ctx.moveTo(40, 240); ctx.lineTo(440, 240);
+        ctx.stroke();
+
+        // Draw Maritime Trade Routes
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#1e40af';
+        ctx.setLineDash([5, 4]);
+
+        for (const pid in PORTS) {
+          const p1 = PORTS[pid];
+          p1.routes.forEach(destId => {
+            const p2 = PORTS[destId];
+            if (p2) {
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.stroke();
+            }
+          });
+        }
+        ctx.setLineDash([]);
+
+        // Draw Ports
+        for (const pid in PORTS) {
+          const p = PORTS[pid];
+          const isCurrent = (state.port === pid);
+          const hasWarehouse = state.warehouses ? state.warehouses.includes(pid) : false;
+
+          ctx.fillStyle = isCurrent ? '#0284c7' : '#1e293b';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, isCurrent ? 26 : 22, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = isCurrent ? '#38bdf8' : (hasWarehouse ? '#facc15' : '#475569');
+          ctx.lineWidth = isCurrent ? 3 : 2;
+          ctx.stroke();
+
+          // Port Name & Symbol
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(p.name, p.x, p.y - 28);
+
+          // Warehouse Icon
+          if (hasWarehouse) {
+            ctx.fillStyle = '#facc15';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('🏛️', p.x + 18, p.y - 12);
+          }
+
+          // Active Flagship at current port
+          if (isCurrent) {
+            ctx.font = '22px sans-serif';
+            ctx.fillText('⛵', p.x, p.y + 7);
+          } else {
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '9px monospace';
+            ctx.fillText('ANCHOR', p.x, p.y + 4);
+          }
+        }
+
+        // Port Market Ledger Box (Bottom)
+        ctx.fillStyle = '#0b192c';
+        ctx.fillRect(15, 340, 450, 125);
+        ctx.strokeStyle = '#1e3a5f';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(15, 340, 450, 125);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('PORT EXCHANGE: ' + PORTS[state.port].name.toUpperCase() + ' (LOCAL SPOT PRICES)', 25, 360);
+
+        const curPrices = state.prices ? state.prices[state.port] : PORTS[state.port].basePrices;
+        const commodities = [
+          { key: 'grain', name: 'Grain', icon: '🌾' },
+          { key: 'wine', name: 'Fine Wine', icon: '🍷' },
+          { key: 'weapons', name: 'Weapons', icon: '⚔️' },
+          { key: 'silk', name: 'Silk', icon: '🧣' },
+          { key: 'spices', name: 'Spices', icon: '🌶️' }
+        ];
+
+        commodities.forEach((c, idx) => {
+          const x = 25 + (idx * 88);
+          const y = 390;
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '10px sans-serif';
+          ctx.fillText(c.icon + ' ' + c.name, x, y);
+
+          ctx.fillStyle = '#facc15';
+          ctx.font = 'bold 11px monospace';
+          ctx.fillText('$' + (curPrices ? curPrices[c.key] : 20), x, y + 20);
+
+          const owned = state.cargo ? (state.cargo[c.key] || 0) : 0;
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '10px monospace';
+          ctx.fillText('Hold: ' + owned, x, y + 40);
+        });
+      }
+
+      function executeAction(act) {
+        if (!act) return;
+        try {
+          if (act.includes('buy:') || act.includes('sell:')) playSfx('coin');
+          else if (act.includes('sail:')) playSfx('sail');
+          else if (act.includes('upgrade_ship') || act.includes('build_warehouse:')) playSfx('upgrade');
+
+          step(state, act);
+          updateUI();
+          draw();
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      if (btnBuyCheap) {
+        btnBuyCheap.onclick = function() {
+          const act = legalActions(state).filter(a => a.startsWith('buy:'))[0];
+          executeAction(act);
+        };
+      }
+
+      if (btnBuySecondary) {
+        btnBuySecondary.onclick = function() {
+          const act = legalActions(state).filter(a => a.startsWith('buy:'))[1];
+          executeAction(act);
+        };
+      }
+
+      if (btnSellCargo) {
+        btnSellCargo.onclick = function() {
+          const act = legalActions(state).filter(a => a.startsWith('sell:'))[0];
+          executeAction(act);
+        };
+      }
+
+      if (btnSailVenice) btnSailVenice.onclick = function() { executeAction('sail:venice'); };
+      if (btnSailGenoa) btnSailGenoa.onclick = function() { executeAction('sail:genoa'); };
+      if (btnSailRagusa) btnSailRagusa.onclick = function() { executeAction('sail:ragusa'); };
+      if (btnSailConstant) btnSailConstant.onclick = function() { executeAction('sail:constantinople'); };
+      if (btnSailAlexandria) btnSailAlexandria.onclick = function() { executeAction('sail:alexandria'); };
+
+      if (btnUpgrade) btnUpgrade.onclick = function() { executeAction('upgrade_ship'); };
+      if (btnEscort) btnEscort.onclick = function() { executeAction('hire_escort'); };
+      if (btnRepair) btnRepair.onclick = function() { executeAction('repair_hull'); };
+      if (btnWarehouse) btnWarehouse.onclick = function() { executeAction('build_warehouse:' + state.port); };
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          updateUI();
+          draw();
+        };
+      }
+
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          updateUI();
+          draw();
+        };
+      }
+
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>

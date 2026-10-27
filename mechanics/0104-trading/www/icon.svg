@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#081b33" />
+      <stop offset="100%" stop-color="#1e3a5f" />
+    </linearGradient>
+    <linearGradient id="sailGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#facc15" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)" stroke="#ca8a04" stroke-width="8"/>
+  <!-- Sea Wave Waves -->
+  <path d="M 60 410 Q 140 370 220 410 T 380 410 T 460 410" fill="none" stroke="#38bdf8" stroke-width="6" opacity="0.6"/>
+  <!-- Wooden Ship Hull -->
+  <path d="M 120 360 C 180 410 332 410 392 360 L 412 320 L 100 320 Z" fill="#854d0e" stroke="#ca8a04" stroke-width="6"/>
+  <!-- Main Mast & Sails -->
+  <line x1="256" y1="120" x2="256" y2="330" stroke="#78350f" stroke-width="8"/>
+  <!-- Lower Sail -->
+  <path d="M 170 230 Q 256 250 342 230 L 332 300 Q 256 320 180 300 Z" fill="url(#sailGrad)" stroke="#64748b" stroke-width="4"/>
+  <!-- Upper Topsail -->
+  <path d="M 190 140 Q 256 160 322 140 L 312 210 Q 256 230 200 210 Z" fill="url(#sailGrad)" stroke="#64748b" stroke-width="4"/>
+  <!-- Fore Mast & Jib -->
+  <line x1="160" y1="180" x2="160" y2="330" stroke="#78350f" stroke-width="6"/>
+  <polygon points="160,190 100,310 160,310" fill="url(#sailGrad)" stroke="#64748b" stroke-width="3"/>
+  <!-- Gold Compass Star on Top -->
+  <polygon points="256,60 266,90 296,90 272,110 282,140 256,120 230,140 240,110 216,90 246,90" fill="url(#goldGrad)"/>
+</svg>
