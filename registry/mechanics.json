@@ -1308,9 +1308,11 @@
    "slug": "procedural-generation",
    "name": "Procedural Generation",
    "family": "Roguelike",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Genesis Engine",
+   "levels": "endless"
   },
   {
    "id": "0126",
