@@ -1693,9 +1693,11 @@
       "slug": "time-management",
       "name": "Time Management",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Grand Hotel Rush",
+      "levels": "endless"
     },
     {
       "id": "0161",

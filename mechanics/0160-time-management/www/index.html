@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Grand Hotel Rush - Time Management</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#eab308">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #18181b;
+      color: #fafaf9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 14px;
+      background: #27272a;
+      border-radius: 8px;
+      border: 1px solid #3f3f46;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #facc15;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      background: #27272a;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #3f3f46;
+      font-size: 0.72rem;
+    }
+    .hud-box {
+      background: #18181b;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #3f3f46;
+    }
+    .hud-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    .text-gold { color: #facc15; }
+    .text-green { color: #10b981; }
+    .text-blue { color: #38bdf8; }
+    .text-rose { color: #f43f5e; }
+    .text-amber { color: #f59e0b; }
+
+    #canvas-container {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      background: #09090b;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #3f3f46;
+      aspect-ratio: 16 / 10;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .status-banner {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      padding: 6px 12px;
+      background: #27272a;
+      border-left: 4px solid #eab308;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .guests-queue-panel {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+    .section-title {
+      font-size: 0.72rem;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .queue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .guest-card {
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+    }
+
+    .controls-grid {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    button {
+      background: #27272a;
+      border: 1px solid #eab308;
+      color: #fafaf9;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+    button:hover:not(:disabled) {
+      background: #ca8a04;
+      border-color: #facc15;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      opacity: 0.35;
+      border-color: #52525b;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #ca8a04;
+      border-color: #facc15;
+    }
+    button.btn-success {
+      background: #059669;
+      border-color: #10b981;
+    }
+    button.btn-blue {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    button.btn-purple {
+      background: #7c3aed;
+      border-color: #a855f7;
+    }
+    .btn-sub {
+      font-size: 0.62rem;
+      font-weight: normal;
+      color: #d4d4d8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🛎️ Grand Hotel Rush</h1>
+    <div style="font-size: 0.72rem; color: #a1a1aa;">
+      Turn: <span id="hdr-turn" class="text-blue">0</span>/120 | Rating: <span id="hdr-rep" class="text-gold">80%</span>
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div style="color: #a1a1aa;">Manager Energy</div>
+      <div id="hud-energy" class="hud-val text-amber">90%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a1a1aa;">Hotel Funds</div>
+      <div id="hud-cap" class="hud-val text-green">$350</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a1a1aa;">Served Patrons</div>
+      <div id="hud-served" class="hud-val text-blue">0 / 15</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a1a1aa;">Walkouts</div>
+      <div id="hud-walkouts" class="hud-val text-rose">0 / 5</div>
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="520" height="325"></canvas>
+  </div>
+
+  <div id="status-banner" class="status-banner">
+    Grand Hotel lobby open! Welcome arriving travelers.
+  </div>
+
+  <div class="guests-queue-panel">
+    <div class="section-title">
+      <span>Active Guest Service Requests</span>
+      <span id="queue-count">2 Active</span>
+    </div>
+    <div id="queue-list" class="queue-list">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+
+  <div id="controls" class="controls-grid">
+    <!-- Injected by JS -->
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Date.now() % 1000000));
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const STAGE_LABELS = ['Lobby Check-in', 'Luggage Bellhop', 'Room Service', 'Ready to Checkout'];
+
+    function renderScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Hotel building facade
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(0, 0, 520, 325);
+
+      // Brass Elevator shaft in center
+      ctx.fillStyle = '#27272a';
+      ctx.fillRect(235, 10, 50, 305);
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(235, 10, 50, 305);
+      ctx.fillStyle = '#eab308';
+      ctx.font = '9px sans-serif';
+      ctx.fillText('LIFT', 250, 24);
+
+      // 4 Suites (Floor 2: Suite 1 & 2, Floor 3: Suite 3 & 4)
+      const roomBoxes = [
+        { id: 1, x: 20, y: 110, w: 200, h: 80, name: 'Suite 101' },
+        { id: 2, x: 300, y: 110, w: 200, h: 80, name: 'Suite 102' },
+        { id: 3, x: 20, y: 20, w: 200, h: 80, name: 'Suite 201' },
+        { id: 4, x: 300, y: 20, w: 200, h: 80, name: 'Suite 202' }
+      ];
+
+      for (const box of roomBoxes) {
+        const rm = state.rooms.find(r => r.id === box.id);
+        ctx.fillStyle = '#27272a';
+        ctx.fillRect(box.x, box.y, box.w, box.h);
+
+        let borderCol = '#10b981'; // Clean
+        let statusText = 'PRISTINE CLEAN';
+        if (rm.status === 'occupied') {
+          borderCol = '#38bdf8';
+          statusText = 'OCCUPIED';
+        } else if (rm.status === 'dirty') {
+          borderCol = '#f43f5e';
+          statusText = 'NEEDS CLEANING';
+        }
+
+        ctx.strokeStyle = borderCol;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(box.x, box.y, box.w, box.h);
+
+        // Room Name & Status
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(box.name, box.x + 10, box.y + 20);
+        ctx.fillStyle = borderCol;
+        ctx.font = '9px monospace';
+        ctx.fillText(statusText, box.x + 10, box.y + 36);
+
+        // Bed graphic
+        ctx.fillStyle = '#3f3f46';
+        ctx.fillRect(box.x + 130, box.y + 30, 55, 38);
+        ctx.fillStyle = '#f1f5f9';
+        ctx.fillRect(box.x + 130, box.y + 30, 55, 12); // Pillow/sheet
+      }
+
+      // Lobby Ground Floor (y = 200 to 325)
+      ctx.fillStyle = '#3f3f46';
+      ctx.fillRect(0, 205, 520, 120);
+      // Red velvet carpet in lobby
+      ctx.fillStyle = '#991b1b';
+      ctx.fillRect(0, 260, 520, 50);
+
+      // Front Desk Counter
+      ctx.fillStyle = '#713f12';
+      ctx.fillRect(60, 240, 120, 45);
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(60, 240, 120, 45);
+      ctx.fillStyle = '#fef08a';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('CONCIERGE DESK', 70, 265);
+
+      // Gold Service Bell on desk
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(120, 236, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Guest avatars waiting in lobby queue (stage 0)
+      const waiting = state.guests.filter(g => g.stage === 0);
+      for (let i = 0; i < waiting.length; i++) {
+        const gx = 220 + i * 50;
+        const gy = 265;
+        // Avatar
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(gx, gy - 16, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(gx - 10, gy - 6, 20, 22);
+
+        // Patience bar above head
+        const g = waiting[i];
+        const pRatio = Math.max(0, g.patience / 15);
+        ctx.fillStyle = '#18181b';
+        ctx.fillRect(gx - 16, gy - 34, 32, 5);
+        ctx.fillStyle = pRatio > 0.5 ? '#10b981' : (pRatio > 0.25 ? '#f59e0b' : '#f43f5e');
+        ctx.fillRect(gx - 16, gy - 34, Math.floor(32 * pRatio), 5);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('hdr-turn').textContent = state.turns;
+      document.getElementById('hdr-rep').textContent = state.reputation + '%';
+
+      const nrg = document.getElementById('hud-energy');
+      nrg.textContent = state.energy + '%';
+      nrg.className = 'hud-val ' + (state.energy > 40 ? 'text-amber' : 'text-rose');
+
+      document.getElementById('hud-cap').textContent = '$' + state.capital;
+      document.getElementById('hud-served').textContent = state.servedGuests + ' / 15';
+      document.getElementById('hud-walkouts').textContent = state.walkouts + ' / 5';
+      document.getElementById('status-banner').textContent = state.gameMessage;
+
+      // Render Active Guests Queue
+      document.getElementById('queue-count').textContent = state.guests.length + ' Active';
+      let qHtml = '';
+      if (state.guests.length === 0) {
+        qHtml = '<div style="color: #71717a; font-size: 0.72rem; padding: 4px;">No waiting patrons. Lobby is tranquil.</div>';
+      } else {
+        for (const g of state.guests) {
+          const loc = g.roomId ? `Suite #${g.roomId}` : 'Lobby Front Desk';
+          const pCol = g.patience <= 4 ? '#f43f5e' : (g.patience <= 8 ? '#f59e0b' : '#10b981');
+          qHtml += `
+            <div class="guest-card">
+              <div>
+                <div style="font-weight: bold; color: #f8fafc;">${g.name} <span style="color:#a1a1aa; font-weight:normal;">(${loc})</span></div>
+                <div style="color: #a1a1aa; font-size: 0.65rem;">
+                  Request: <span style="color:#facc15">${STAGE_LABELS[g.stage]}</span> | 
+                  Patience: <span style="color:${pCol}; font-weight:bold;">${g.patience} turns</span>
+                </div>
+              </div>
+              <div style="font-weight: bold; color: #10b981;">+$${g.reward}</div>
+            </div>
+          `;
+        }
+      }
+      document.getElementById('queue-list').innerHTML = qHtml;
+
+      // Render Controls
+      const legal = legalActions(state);
+      let ctrlHtml = '';
+
+      if (isOver(state)) {
+        ctrlHtml = `
+          <button class="btn-primary" style="grid-column: span 2; padding: 14px;" onclick="window.resetGame()">
+            🔄 Launch New Grand Hotel Season
+          </button>
+        `;
+      } else {
+        // Routine utility buttons
+        ctrlHtml += `
+          <button class="btn-primary" onclick="window.doAction('action:manager_espresso_break')">
+            ☕ Manager Espresso
+            <span class="btn-sub">+35 Energy</span>
+          </button>
+          <button ${legal.includes('action:serve_welcome_cocktails') ? '' : 'disabled'} onclick="window.doAction('action:serve_welcome_cocktails')">
+            🥂 Welcome Cocktails ($30)
+            <span class="btn-sub">+5 Patience to All Guests</span>
+          </button>
+        `;
+
+        if (legal.includes('action:hire_assistant_bellhop')) {
+          ctrlHtml += `
+            <button class="btn-blue" onclick="window.doAction('action:hire_assistant_bellhop')">
+              🛎️ Hire Bellhop ($200)
+              <span class="btn-sub">50% Less Luggage Energy</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:hire_express_maid')) {
+          ctrlHtml += `
+            <button class="btn-purple" onclick="window.doAction('action:hire_express_maid')">
+              🧹 Express Maid ($220)
+              <span class="btn-sub">Instant Room Cleaning</span>
+            </button>
+          `;
+        }
+
+        // Room Cleaning buttons
+        for (const rm of state.rooms) {
+          const act = 'action:clean_vacant_room:' + rm.id;
+          if (legal.includes(act)) {
+            ctrlHtml += `
+              <button class="btn-primary" onclick="window.doAction('${act}')">
+                🧽 Clean Suite #${rm.id}
+                <span class="btn-sub">Make ready for next guest</span>
+              </button>
+            `;
+          }
+        }
+
+        // Guest Action buttons
+        for (const g of state.guests) {
+          if (g.stage === 0) {
+            const act = 'action:check_in_guest:' + g.id;
+            if (legal.includes(act)) {
+              ctrlHtml += `
+                <button class="btn-success" onclick="window.doAction('${act}')">
+                  🔑 Check-In ${g.name}
+                  <span class="btn-sub">Assign clean room keycard</span>
+                </button>
+              `;
+            }
+          } else if (g.stage === 1) {
+            const act = 'action:dispatch_bellhop:' + g.id;
+            if (legal.includes(act)) {
+              ctrlHtml += `
+                <button class="btn-blue" onclick="window.doAction('${act}')">
+                  🧳 Bellhop to Suite #${g.roomId}
+                  <span class="btn-sub">Deliver ${g.name}'s luggage</span>
+                </button>
+              `;
+            }
+          } else if (g.stage === 2) {
+            const act = 'action:deliver_room_service:' + g.id;
+            if (legal.includes(act)) {
+              ctrlHtml += `
+                <button class="btn-primary" onclick="window.doAction('${act}')">
+                  🍽️ Room Service to #${g.roomId}
+                  <span class="btn-sub">Serve gourmet dining tray</span>
+                </button>
+              `;
+            }
+          } else if (g.stage === 3) {
+            const act = 'action:checkout_guest:' + g.id;
+            if (legal.includes(act)) {
+              ctrlHtml += `
+                <button class="btn-success" style="grid-column: span 2;" onclick="window.doAction('${act}')">
+                  💳 Checkout ${g.name}
+                  <span class="btn-sub">Collect $${g.reward} bill + 5-star tip</span>
+                </button>
+              `;
+            }
+          }
+        }
+      }
+
+      document.getElementById('controls').innerHTML = ctrlHtml;
+      renderScene();
+    }
+
+    window.doAction = function(act) {
+      try {
+        step(state, act);
+        updateUI();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    window.resetGame = function() {
+      state = createState(Math.floor(Date.now() % 1000000));
+      updateUI();
+    };
+
+    updateUI();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
