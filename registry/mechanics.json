@@ -808,9 +808,10 @@
       "slug": "board-game",
       "name": "Board Game",
       "family": "Cards & Board",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0079",

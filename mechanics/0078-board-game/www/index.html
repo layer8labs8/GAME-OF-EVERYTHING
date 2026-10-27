@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Royal Ludo - Cross & Circle Board Game</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #090d16;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-emerald { color: #10b981; }
+    .badge-red { color: #ef4444; }
+    .badge-amber { color: #f59e0b; }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      background: #0f172a;
+      border: 4px solid #334155;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: block;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #34d399;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+    .btn:active {
+      transform: translateY(2px);
+    }
+    .btn-roll {
+      background: linear-gradient(135deg, #059669, #047857);
+      border-color: #10b981;
+      color: #fff;
+    }
+    .footer {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div>Turn: <span class="badge-amber" id="hud-turn">1 / 120</span></div>
+      <div>You (Green): <span class="badge-emerald" id="hud-player-home">0 / 3</span> Home</div>
+      <div>Opp (Red): <span class="badge-red" id="hud-opp-home">0 / 3</span> Home</div>
+    </div>
+
+    <canvas id="game-canvas" width="600" height="600"></canvas>
+
+    <div class="message-bar" id="message-bar">Welcome to Royal Ludo. Roll the die to begin!</div>
+
+    <div class="action-row">
+      <button class="btn btn-roll" id="btn-roll">Roll Die</button>
+      <button class="btn" id="btn-restart">Restart Match</button>
+    </div>
+
+    <div class="footer">
+      Roll 6 to launch from yard &bull; Land on opponent to capture &bull; Reach home by exact roll
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('game-canvas');
+      if (!canvas || typeof canvas.getContext !== 'function') return;
+      const ctx = canvas.getContext('2d');
+
+      let currentSeed = Math.floor(Math.random() * 100000) + 1;
+      let state = createState(currentSeed);
+
+      // Precalculate 15x15 board cell grid mapping for track
+      const GRID_N = 15;
+      const CELL_SIZE = 36;
+      const BOARD_OFFSET_X = 30;
+      const BOARD_OFFSET_Y = 30;
+
+      // 40 Perimeter track (col, row) coordinates around cross
+      const TRACK_COORDS = [
+        // 0: Green Entry
+        { c: 6, r: 13 }, { c: 6, r: 12 }, { c: 6, r: 11 }, { c: 6, r: 10 }, { c: 6, r: 9 },
+        // 5 - 9: Left Arm
+        { c: 5, r: 8 }, { c: 4, r: 8 }, { c: 3, r: 8 }, { c: 2, r: 8 }, { c: 1, r: 8 },
+        // 10 - 14: Left Corner up
+        { c: 0, r: 7 }, { c: 1, r: 6 }, { c: 2, r: 6 }, { c: 3, r: 6 }, { c: 4, r: 6 },
+        // 15 - 19: Top Left
+        { c: 5, r: 6 }, { c: 6, r: 5 }, { c: 6, r: 4 }, { c: 6, r: 3 }, { c: 6, r: 2 },
+        // 20: Red Entry
+        { c: 7, r: 1 }, { c: 8, r: 2 }, { c: 8, r: 3 }, { c: 8, r: 4 }, { c: 8, r: 5 },
+        // 25 - 29: Right Arm
+        { c: 9, r: 6 }, { c: 10, r: 6 }, { c: 11, r: 6 }, { c: 12, r: 6 }, { c: 13, r: 6 },
+        // 30 - 34: Right Corner down
+        { c: 14, r: 7 }, { c: 13, r: 8 }, { c: 12, r: 8 }, { c: 11, r: 8 }, { c: 10, r: 8 },
+        // 35 - 39: Bottom Right
+        { c: 9, r: 8 }, { c: 8, r: 9 }, { c: 8, r: 10 }, { c: 8, r: 11 }, { c: 8, r: 12 }
+      ];
+
+      // Green Home Corridor (steps 40 to 44) & Goal (45)
+      const GREEN_HOME_COORDS = [
+        { c: 7, r: 13 }, { c: 7, r: 12 }, { c: 7, r: 11 }, { c: 7, r: 10 }, { c: 7, r: 9 },
+        { c: 7, r: 8 } // Center Goal
+      ];
+
+      // Red Home Corridor (steps 40 to 44) & Goal (45)
+      const RED_HOME_COORDS = [
+        { c: 7, r: 2 }, { c: 7, r: 3 }, { c: 7, r: 4 }, { c: 7, r: 5 }, { c: 7, r: 6 },
+        { c: 7, r: 7 } // Center Goal
+      ];
+
+      // Yard slot offsets
+      const GREEN_YARD_SLOTS = [
+        { c: 2, r: 11 }, { c: 4, r: 11 }, { c: 3, r: 13 }
+      ];
+      const RED_YARD_SLOTS = [
+        { c: 2, r: 2 }, { c: 4, r: 2 }, { c: 3, r: 4 }
+      ];
+
+      function updateHUD() {
+        const hudTurn = document.getElementById('hud-turn');
+        const hudPlayerHome = document.getElementById('hud-player-home');
+        const hudOppHome = document.getElementById('hud-opp-home');
+        const msgBar = document.getElementById('message-bar');
+        const btnRoll = document.getElementById('btn-roll');
+
+        if (hudTurn) hudTurn.textContent = state.turn + ' / ' + state.maxTurns;
+        if (hudPlayerHome) hudPlayerHome.textContent = state.playerHomeCount + ' / 3';
+        if (hudOppHome) hudOppHome.textContent = state.oppHomeCount + ' / 3';
+        if (msgBar) msgBar.textContent = state.message;
+
+        if (btnRoll) {
+          btnRoll.disabled = (state.phase !== 'roll' || state.done);
+          btnRoll.style.opacity = (state.phase === 'roll' && !state.done) ? '1' : '0.5';
+        }
+      }
+
+      function drawDieFace(c, x, y, size, val) {
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,0.5)';
+        c.shadowBlur = 10;
+        c.shadowOffsetY = 4;
+
+        c.fillStyle = '#ffffff';
+        c.beginPath();
+        c.roundRect(x, y, size, size, 10);
+        c.fill();
+        c.strokeStyle = '#cbd5e1';
+        c.lineWidth = 2;
+        c.stroke();
+        c.shadowColor = 'transparent';
+
+        const pipRadius = size * 0.09;
+        const p1 = size * 0.25;
+        const p2 = size * 0.50;
+        const p3 = size * 0.75;
+
+        c.fillStyle = val === 6 ? '#ef4444' : '#0f172a';
+
+        function pip(px, py) {
+          c.beginPath();
+          c.arc(x + px, y + py, pipRadius, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        if (val === 1) pip(p2, p2);
+        else if (val === 2) { pip(p1, p1); pip(p3, p3); }
+        else if (val === 3) { pip(p1, p1); pip(p2, p2); pip(p3, p3); }
+        else if (val === 4) { pip(p1, p1); pip(p3, p1); pip(p1, p3); pip(p3, p3); }
+        else if (val === 5) { pip(p1, p1); pip(p3, p1); pip(p2, p2); pip(p1, p3); pip(p3, p3); }
+        else if (val === 6) {
+          pip(p1, p1); pip(p3, p1);
+          pip(p1, p2); pip(p3, p2);
+          pip(p1, p3); pip(p3, p3);
+        }
+        c.restore();
+      }
+
+      function getTokenScreenPos(token) {
+        if (token.state === 'yard') {
+          const idx = parseInt(token.id[1], 10);
+          const slot = (token.owner === 'player') ? GREEN_YARD_SLOTS[idx] : RED_YARD_SLOTS[idx];
+          return {
+            x: BOARD_OFFSET_X + slot.c * CELL_SIZE + CELL_SIZE / 2,
+            y: BOARD_OFFSET_Y + slot.r * CELL_SIZE + CELL_SIZE / 2
+          };
+        } else if (token.state === 'home') {
+          return {
+            x: BOARD_OFFSET_X + 7 * CELL_SIZE + CELL_SIZE / 2,
+            y: BOARD_OFFSET_Y + (token.owner === 'player' ? 8 : 7) * CELL_SIZE + CELL_SIZE / 2
+          };
+        } else if (token.progress >= 40) {
+          const cIdx = token.progress - 40;
+          const coords = (token.owner === 'player') ? GREEN_HOME_COORDS[cIdx] : RED_HOME_COORDS[cIdx];
+          return {
+            x: BOARD_OFFSET_X + coords.c * CELL_SIZE + CELL_SIZE / 2,
+            y: BOARD_OFFSET_Y + coords.r * CELL_SIZE + CELL_SIZE / 2
+          };
+        } else {
+          const space = getTokenTrackSpace(token);
+          const coords = TRACK_COORDS[space];
+          return {
+            x: BOARD_OFFSET_X + coords.c * CELL_SIZE + CELL_SIZE / 2,
+            y: BOARD_OFFSET_Y + coords.r * CELL_SIZE + CELL_SIZE / 2
+          };
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        // 1. BOARD FRAME & YARDS
+        ctx.save();
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(BOARD_OFFSET_X, BOARD_OFFSET_Y, GRID_N * CELL_SIZE, GRID_N * CELL_SIZE);
+
+        // Red Yard (Top Left: 6x6)
+        ctx.fillStyle = '#991b1b';
+        ctx.beginPath();
+        ctx.roundRect(BOARD_OFFSET_X + 4, BOARD_OFFSET_Y + 4, 6 * CELL_SIZE - 8, 6 * CELL_SIZE - 8, 12);
+        ctx.fill();
+
+        // Blue Quadrant (Top Right: 6x6)
+        ctx.fillStyle = '#1e3a8a';
+        ctx.beginPath();
+        ctx.roundRect(BOARD_OFFSET_X + 9 * CELL_SIZE + 4, BOARD_OFFSET_Y + 4, 6 * CELL_SIZE - 8, 6 * CELL_SIZE - 8, 12);
+        ctx.fill();
+
+        // Green Yard (Bottom Left: 6x6)
+        ctx.fillStyle = '#065f46';
+        ctx.beginPath();
+        ctx.roundRect(BOARD_OFFSET_X + 4, BOARD_OFFSET_Y + 9 * CELL_SIZE + 4, 6 * CELL_SIZE - 8, 6 * CELL_SIZE - 8, 12);
+        ctx.fill();
+
+        // Yellow Quadrant (Bottom Right: 6x6)
+        ctx.fillStyle = '#854d0e';
+        ctx.beginPath();
+        ctx.roundRect(BOARD_OFFSET_X + 9 * CELL_SIZE + 4, BOARD_OFFSET_Y + 9 * CELL_SIZE + 4, 6 * CELL_SIZE - 8, 6 * CELL_SIZE - 8, 12);
+        ctx.fill();
+        ctx.restore();
+
+        // 2. TRACK SPACES
+        for (let i = 0; i < TRACK_COORDS.length; i++) {
+          const pt = TRACK_COORDS[i];
+          const x = BOARD_OFFSET_X + pt.c * CELL_SIZE;
+          const y = BOARD_OFFSET_Y + pt.r * CELL_SIZE;
+
+          ctx.fillStyle = '#1e293b';
+          if (i === 0) ctx.fillStyle = '#10b981'; // Green start
+          else if (i === 20) ctx.fillStyle = '#ef4444'; // Red start
+          else if (SAFE_SPACES.includes(i)) ctx.fillStyle = '#334155'; // Star safe
+
+          ctx.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+          ctx.strokeStyle = '#475569';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+
+          // Star icon on safe spaces
+          if (SAFE_SPACES.includes(i)) {
+            ctx.fillStyle = '#fde047';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('★', x + CELL_SIZE / 2, y + CELL_SIZE / 2);
+          }
+        }
+
+        // Green Home Corridor
+        for (let i = 0; i < 5; i++) {
+          const pt = GREEN_HOME_COORDS[i];
+          const x = BOARD_OFFSET_X + pt.c * CELL_SIZE;
+          const y = BOARD_OFFSET_Y + pt.r * CELL_SIZE;
+          ctx.fillStyle = '#059669';
+          ctx.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+          ctx.strokeStyle = '#34d399';
+          ctx.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+        }
+
+        // Red Home Corridor
+        for (let i = 0; i < 5; i++) {
+          const pt = RED_HOME_COORDS[i];
+          const x = BOARD_OFFSET_X + pt.c * CELL_SIZE;
+          const y = BOARD_OFFSET_Y + pt.r * CELL_SIZE;
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+          ctx.strokeStyle = '#f87171';
+          ctx.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+        }
+
+        // Center Home Triangle / Goal
+        const cx = BOARD_OFFSET_X + 7.5 * CELL_SIZE;
+        const cy = BOARD_OFFSET_Y + 7.5 * CELL_SIZE;
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('HOME', cx, cy);
+
+        // 3. TOKENS RENDERING
+        const legals = legalActions(state);
+
+        // Render Opponent Tokens (Red)
+        state.oppTokens.forEach(ot => {
+          const pos = getTokenScreenPos(ot);
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,0,0,0.6)';
+          ctx.shadowBlur = 6;
+          ctx.shadowOffsetY = 3;
+
+          ctx.fillStyle = '#dc2626';
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 13, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fca5a5';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('R', pos.x, pos.y);
+          ctx.restore();
+        });
+
+        // Render Player Tokens (Green)
+        state.playerTokens.forEach(pt => {
+          const pos = getTokenScreenPos(pt);
+          const isMovable = legals.includes('move:' + pt.id);
+
+          ctx.save();
+          ctx.shadowColor = isMovable ? '#fde047' : 'rgba(0,0,0,0.6)';
+          ctx.shadowBlur = isMovable ? 14 : 6;
+          ctx.shadowOffsetY = 3;
+
+          ctx.fillStyle = '#10b981';
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = isMovable ? '#fbbf24' : '#6ee7b7';
+          ctx.lineWidth = isMovable ? 3.5 : 2.5;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('G', pos.x, pos.y);
+          ctx.restore();
+        });
+
+        // 4. CURRENT DIE DISPLAY (Centered or Floating)
+        if (state.currentRoll) {
+          drawDieFace(ctx, BOARD_OFFSET_X + 10 * CELL_SIZE + 10, BOARD_OFFSET_Y + 10 * CELL_SIZE + 10, 64, state.currentRoll);
+        }
+
+        // 5. GAME OVER OVERLAY
+        if (state.done) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+          ctx.fillRect(0, 0, 600, 600);
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('ROYAL TRIUMPH!', 300, 260);
+            ctx.fillStyle = '#ecfdf5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('All 3 green tokens guided to Home Goal!', 300, 305);
+          } else {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('MATCH DEFEAT', 300, 260);
+            ctx.fillStyle = '#ecfdf5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('Opponent guided tokens home first.', 300, 305);
+          }
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.fillText('Final Score: ' + score(state), 300, 355);
+          ctx.restore();
+        }
+      }
+
+      function handleCanvasClick(evt) {
+        if (state.done) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = (evt.clientX - rect.left) * scaleX;
+        const cy = (evt.clientY - rect.top) * scaleY;
+
+        // If in roll phase, clicking canvas rolls die
+        if (state.phase === 'roll') {
+          if (legalActions(state).includes('roll')) {
+            step(state, 'roll');
+            updateHUD();
+            render();
+            return;
+          }
+        }
+
+        // If in move phase, check token click
+        if (state.phase === 'move') {
+          const legals = legalActions(state);
+          for (const pt of state.playerTokens) {
+            const pos = getTokenScreenPos(pt);
+            if (Math.hypot(cx - pos.x, cy - pos.y) <= 22) {
+              const act = 'move:' + pt.id;
+              if (legals.includes(act)) {
+                step(state, act);
+                updateHUD();
+                render();
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      canvas.addEventListener('click', handleCanvasClick);
+      canvas.addEventListener('touchstart', function(e) {
+        if (e.touches && e.touches.length > 0) {
+          handleCanvasClick(e.touches[0]);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      const btnRoll = document.getElementById('btn-roll');
+      if (btnRoll && btnRoll.addEventListener) {
+        btnRoll.addEventListener('click', function() {
+          if (!state.done && legalActions(state).includes('roll')) {
+            step(state, 'roll');
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnRestart = document.getElementById('btn-restart');
+      if (btnRestart && btnRestart.addEventListener) {
+        btnRestart.addEventListener('click', function() {
+          currentSeed = Math.floor(Math.random() * 100000) + 1;
+          state = createState(currentSeed);
+          updateHUD();
+          render();
+        });
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (state.done) return;
+        if (e.key === ' ' || e.key === 'Enter') {
+          if (legalActions(state).includes('roll')) {
+            step(state, 'roll');
+            updateHUD();
+            render();
+          }
+        } else if (e.key === '1' || e.key === '2' || e.key === '3') {
+          const idx = parseInt(e.key, 10) - 1;
+          const act = 'move:p' + idx;
+          if (legalActions(state).includes(act)) {
+            step(state, act);
+            updateHUD();
+            render();
+          }
+        }
+      });
+
+      updateHUD();
+      render();
+    })();
+  </script>
+</body>
+</html>
