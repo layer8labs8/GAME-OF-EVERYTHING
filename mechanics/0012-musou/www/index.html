@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dynasty Cleave - Musou Battlefield</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#180a0a">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #100606;
+      color: #fef08a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #f59e0b;
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    }
+    .hud {
+      display: flex;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fef3c7;
+    }
+    .hud span { color: #ffffff; }
+    canvas {
+      background: #1c0e0e;
+      border: 2px solid #581c1c;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      display: block;
+    }
+    .bars-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .bar-track {
+      flex: 1;
+      height: 9px;
+      background: #2a1212;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid #451a1a;
+    }
+    .bar-fill-hp { width: 100%; height: 100%; background: linear-gradient(90deg, #ef4444, #f87171); transition: width 0.1s; }
+    .bar-fill-sta { width: 100%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); transition: width 0.1s; }
+    .bar-fill-musou { width: 0%; height: 100%; background: linear-gradient(90deg, #d97706, #fbbf24); transition: width 0.1s; }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 8px;
+      gap: 8px;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 40px);
+      grid-template-rows: repeat(3, 40px);
+      gap: 4px;
+    }
+    .action-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    button {
+      background: #2d1212;
+      border: 1px solid #78350f;
+      color: #fef08a;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.05s;
+    }
+    button:active { background: #5a2020; transform: scale(0.96); }
+    .btn-action { padding: 8px 12px; min-height: 38px; }
+    .btn-musou {
+      background: linear-gradient(135deg, #78350f, #b45309);
+      border-color: #fbbf24;
+      color: #ffffff;
+      font-weight: 800;
+    }
+    .btn-musou.ready {
+      background: linear-gradient(135deg, #b45309, #f59e0b);
+      box-shadow: 0 0 12px #f59e0b;
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse {
+      from { box-shadow: 0 0 6px #f59e0b; }
+      to { box-shadow: 0 0 16px #fef08a; }
+    }
+    #game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(16, 6, 6, 0.88);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #game-overlay h2 { font-size: 2rem; color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <div id="game-container" style="position: relative;">
+    <header>
+      <h1>DYNASTY CLEAVE</h1>
+      <div class="hud">
+        <div>ZONE: <span id="val-zone">1</span>/3</div>
+        <div>K.O.: <span id="val-ko">0</span></div>
+        <div>SCORE: <span id="val-score">0</span></div>
+      </div>
+    </header>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <div class="bars-container">
+      <div class="bar-row">
+        <span style="width: 48px; color: #f87171;">HP</span>
+        <div class="bar-track"><div id="bar-hp" class="bar-fill-hp"></div></div>
+      </div>
+      <div class="bar-row">
+        <span style="width: 48px; color: #34d399;">STA</span>
+        <div class="bar-track"><div id="bar-sta" class="bar-fill-sta"></div></div>
+      </div>
+      <div class="bar-row">
+        <span style="width: 48px; color: #fbbf24;">MUSOU</span>
+        <div class="bar-track"><div id="bar-musou" class="bar-fill-musou"></div></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="dpad">
+        <div></div>
+        <button id="btn-up">▲</button>
+        <div></div>
+        <button id="btn-left">◀</button>
+        <button id="btn-rest" style="font-size:0.65rem;">REST</button>
+        <button id="btn-right">▶</button>
+        <div></div>
+        <button id="btn-down">▼</button>
+        <div></div>
+      </div>
+
+      <div class="action-panel">
+        <div class="action-row">
+          <button id="btn-cleave" class="btn-action" style="flex:1;">CLEAVE [J]</button>
+          <button id="btn-smash" class="btn-action" style="flex:1;">SMASH [K]</button>
+        </div>
+        <div class="action-row">
+          <button id="btn-dash" class="btn-action" style="flex:1;">DASH [L]</button>
+          <button id="btn-musou" class="btn-action btn-musou" style="flex:1.2;">MUSOU [SPC]</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="game-overlay">
+      <h2 id="overlay-title">VICTORY</h2>
+      <p id="overlay-sub" style="font-size: 1.1rem; color: #fef3c7;">All Vanguard Officers Defeated!</p>
+      <button id="btn-restart" class="btn-action" style="padding: 10px 24px; font-size: 1rem;">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const elZone = document.getElementById('val-zone');
+      const elKo = document.getElementById('val-ko');
+      const elScore = document.getElementById('val-score');
+      const barHp = document.getElementById('bar-hp');
+      const barSta = document.getElementById('bar-sta');
+      const barMusou = document.getElementById('bar-musou');
+      const btnMusou = document.getElementById('btn-musou');
+      const overlay = document.getElementById('game-overlay');
+      const overlayTitle = document.getElementById('overlay-title');
+      const overlaySub = document.getElementById('overlay-sub');
+
+      let state = DynastyCleave.createState(Date.now() % 100000);
+      let fxList = [];
+
+      function triggerAction(act) {
+        if (DynastyCleave.isOver(state)) return;
+        const legals = DynastyCleave.legalActions(state);
+        if (!legals.includes(act)) return;
+
+        // Visual FX triggers
+        const p = state.player;
+        if (act === 'wide_cleave') {
+          fxList.push({ type: 'arc', x: p.x, y: p.y, fx: p.facingX, fy: p.facingY, r: 68, color: '#f59e0b', life: 10 });
+        } else if (act === 'heavy_smash') {
+          fxList.push({ type: 'shock', x: p.x + p.facingX * 30, y: p.y + p.facingY * 30, r: 55, color: '#ef4444', life: 12 });
+        } else if (act === 'musou_rampage') {
+          fxList.push({ type: 'nova', x: p.x, y: p.y, r: 92, color: '#fbbf24', life: 18 });
+        }
+
+        DynastyCleave.step(state, act);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (elZone) elZone.textContent = state.zone;
+        if (elKo) elKo.textContent = state.koCount;
+        if (elScore) elScore.textContent = state.scoreVal;
+
+        const p = state.player;
+        if (barHp) barHp.style.width = (p.hp / p.maxHp * 100) + '%';
+        if (barSta) barSta.style.width = (p.stamina / p.maxStamina * 100) + '%';
+        if (barMusou) barMusou.style.width = (p.musouGauge) + '%';
+
+        if (btnMusou && btnMusou.classList) {
+          if (p.musouGauge >= 100) {
+            btnMusou.classList.add('ready');
+          } else {
+            btnMusou.classList.remove('ready');
+          }
+        }
+
+        if (DynastyCleave.isOver(state)) {
+          if (overlay) {
+            overlay.style.display = 'flex';
+            if (state.won) {
+              if (overlayTitle) { overlayTitle.textContent = 'DYNASTY VICTORY'; overlayTitle.style.color = '#fbbf24'; }
+              if (overlaySub) overlaySub.textContent = `All 3 Zones Conquered! K.O.: ${state.koCount} Score: ${state.scoreVal}`;
+            } else {
+              if (overlayTitle) { overlayTitle.textContent = 'GENERAL FALLEN'; overlayTitle.style.color = '#ef4444'; }
+              if (overlaySub) overlaySub.textContent = `Fell in Zone ${state.zone}. K.O.: ${state.koCount} Score: ${state.scoreVal}`;
+            }
+          }
+        } else {
+          if (overlay) overlay.style.display = 'none';
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 400, 400);
+
+        // Battlefield Grid
+        ctx.strokeStyle = '#281313';
+        ctx.lineWidth = 1;
+        for (let i = 40; i < 400; i += 40) {
+          ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 400); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(400, i); ctx.stroke();
+        }
+
+        // Zone banners / borders
+        ctx.strokeStyle = '#7f1d1d';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(25, 25, 350, 350);
+
+        // Render FX
+        const nextFx = [];
+        for (const fx of fxList) {
+          ctx.save();
+          if (fx.type === 'arc') {
+            const angle = Math.atan2(fx.fy, fx.fx);
+            ctx.beginPath();
+            ctx.arc(fx.x, fx.y, fx.r, angle - Math.PI * 0.45, angle + Math.PI * 0.45);
+            ctx.strokeStyle = fx.color;
+            ctx.lineWidth = 8 * (fx.life / 10);
+            ctx.stroke();
+          } else if (fx.type === 'shock') {
+            ctx.beginPath();
+            ctx.arc(fx.x, fx.y, fx.r * (1 - fx.life / 12), 0, Math.PI * 2);
+            ctx.strokeStyle = fx.color;
+            ctx.lineWidth = 5;
+            ctx.stroke();
+          } else if (fx.type === 'nova') {
+            ctx.beginPath();
+            ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(251, 191, 36, ${fx.life / 25})`;
+            ctx.fill();
+            ctx.strokeStyle = fx.color;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+          }
+          ctx.restore();
+          fx.life--;
+          if (fx.life > 0) nextFx.push(fx);
+        }
+        fxList = nextFx;
+
+        // Render Enemies
+        for (const e of state.enemies) {
+          ctx.save();
+          if (e.type === 'captain') {
+            // Captain Boss
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Twin battleaxes
+            ctx.fillStyle = '#f87171';
+            ctx.fillRect(e.x - 20, e.y - 18, 7, 7);
+            ctx.fillRect(e.x + 13, e.y - 18, 7, 7);
+
+            // Captain HP bar
+            ctx.fillStyle = '#450a0a';
+            ctx.fillRect(e.x - 20, e.y - 25, 40, 5);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(e.x - 20, e.y - 25, (e.hp / e.maxHp) * 40, 5);
+          } else if (e.type === 'archer') {
+            // Archer
+            ctx.fillStyle = '#0284c7';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          } else {
+            // Grunt
+            ctx.fillStyle = '#b91c1c';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // Render Projectiles (Arrows)
+        for (const pr of state.projectiles) {
+          ctx.save();
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.arc(pr.x, pr.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ffedd5';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Render General (Player)
+        const p = state.player;
+        ctx.save();
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Crescent Halberd
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + p.facingX * 28, p.y + p.facingY * 28);
+        ctx.stroke();
+
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(p.x + p.facingX * 28, p.y + p.facingY * 28, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        if (fxList.length > 0) {
+          requestAnimationFrame(render);
+        }
+      }
+
+      // Button listeners
+      const btnUp = document.getElementById('btn-up');
+      const btnDown = document.getElementById('btn-down');
+      const btnLeft = document.getElementById('btn-left');
+      const btnRight = document.getElementById('btn-right');
+      const btnCleave = document.getElementById('btn-cleave');
+      const btnSmash = document.getElementById('btn-smash');
+      const btnDash = document.getElementById('btn-dash');
+      const btnRest = document.getElementById('btn-rest');
+      const btnRestart = document.getElementById('btn-restart');
+
+      if (btnUp) btnUp.addEventListener('click', () => triggerAction('move_n'));
+      if (btnDown) btnDown.addEventListener('click', () => triggerAction('move_s'));
+      if (btnLeft) btnLeft.addEventListener('click', () => triggerAction('move_w'));
+      if (btnRight) btnRight.addEventListener('click', () => triggerAction('move_e'));
+      if (btnCleave) btnCleave.addEventListener('click', () => triggerAction('wide_cleave'));
+      if (btnSmash) btnSmash.addEventListener('click', () => triggerAction('heavy_smash'));
+      if (btnDash) btnDash.addEventListener('click', () => triggerAction('dash'));
+      if (btnMusou) btnMusou.addEventListener('click', () => triggerAction('musou_rampage'));
+      if (btnRest) btnRest.addEventListener('click', () => triggerAction('rest'));
+
+      if (btnRestart) {
+        btnRestart.addEventListener('click', () => {
+          state = DynastyCleave.createState(Date.now() % 100000);
+          fxList = [];
+          updateUI();
+          render();
+        });
+      }
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'arrowup' || k === 'w') triggerAction('move_n');
+        else if (k === 'arrowdown' || k === 's') triggerAction('move_s');
+        else if (k === 'arrowleft' || k === 'a') triggerAction('move_w');
+        else if (k === 'arrowright' || k === 'd') triggerAction('move_e');
+        else if (k === 'j') triggerAction('wide_cleave');
+        else if (k === 'k') triggerAction('heavy_smash');
+        else if (k === 'l') triggerAction('dash');
+        else if (k === ' ' || k === 'u') triggerAction('musou_rampage');
+        else if (k === 'r') triggerAction('rest');
+      });
+
+      // PWA registration
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>
