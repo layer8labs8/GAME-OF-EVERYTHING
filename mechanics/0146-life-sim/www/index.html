@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Metro Life - Career & Ambition</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#8b5cf6">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #090d16;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #1e1b4b;
+      border-radius: 8px;
+      border: 1px solid #8b5cf6;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #c4b5fd;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #94a3b8;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-wealth { color: #4ade80; }
+    .val-career { color: #fbbf24; }
+    .val-energy { color: #38bdf8; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #020617;
+      border: 2px solid #8b5cf6;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .vitals-grid {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .vital-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 2px;
+      text-align: center;
+      font-size: 0.65rem;
+    }
+    .vital-bar-bg {
+      width: 80%;
+      height: 4px;
+      background: #334155;
+      border-radius: 2px;
+      margin: 3px auto 2px;
+      overflow: hidden;
+    }
+    .vital-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #334155;
+      transform: translateY(-1px);
+    }
+    .btn-work {
+      background: #1d4ed8;
+      border-color: #3b82f6;
+    }
+    .btn-work:hover { background: #2563eb; }
+    .btn-study {
+      background: #4338ca;
+      border-color: #6366f1;
+    }
+    .btn-gym {
+      background: #047857;
+      border-color: #10b981;
+    }
+    .btn-social {
+      background: #be185d;
+      border-color: #ec4899;
+    }
+    .btn-rest {
+      background: #0891b2;
+      border-color: #06b6d4;
+    }
+    .btn-promo {
+      background: #b45309;
+      border-color: #f59e0b;
+      grid-column: span 2;
+      font-size: 0.82rem;
+    }
+    .btn-week {
+      background: #6d28d9;
+      border-color: #8b5cf6;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 9px 6px;
+    }
+    .btn-week:hover { background: #7c3aed; }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #94a3b8;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #c4b5fd;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 6, 23, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #8b5cf6;
+      border: none;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #4ade80; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💼 Metro Life</h1>
+    <div style="font-size: 0.72rem; color: #fbbf24;" id="header-salary">$200 / shift</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Week</div>
+      <div class="hud-val" id="val-week">Week 1</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Net Savings</div>
+      <div class="hud-val val-wealth" id="val-wealth">$600</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Career Rank</div>
+      <div class="hud-val val-career" id="val-career">Intern</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Energy</div>
+      <div class="hud-val val-energy" id="val-energy">100%</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="life-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">EXECUTIVE SUCCESS</div>
+      <div class="modal-desc" id="modal-desc">You conquered Metro City as a prosperous CEO!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Begin New Career Journey</button>
+    </div>
+  </div>
+
+  <div class="section-title">Personal Vitals & Aptitude</div>
+  <div class="vitals-grid">
+    <div class="vital-card">
+      <div style="color: #f87171;">❤️ Health</div>
+      <div class="vital-bar-bg"><div class="vital-bar-fill" id="bar-health" style="width: 85%; background: #f87171;"></div></div>
+      <div id="val-health">85%</div>
+    </div>
+    <div class="vital-card">
+      <div style="color: #facc15;">😊 Happiness</div>
+      <div class="vital-bar-bg"><div class="vital-bar-fill" id="bar-happiness" style="width: 80%; background: #facc15;"></div></div>
+      <div id="val-happiness">80%</div>
+    </div>
+    <div class="vital-card">
+      <div style="color: #a78bfa;">🧠 Intellect</div>
+      <div class="vital-bar-bg"><div class="vital-bar-fill" id="bar-intellect" style="width: 15%; background: #a78bfa;"></div></div>
+      <div id="val-intellect">15</div>
+    </div>
+    <div class="vital-card">
+      <div style="color: #38bdf8;">📈 Performance</div>
+      <div class="vital-bar-bg"><div class="vital-bar-fill" id="bar-perf" style="width: 20%; background: #38bdf8;"></div></div>
+      <div id="val-perf">20%</div>
+    </div>
+  </div>
+
+  <div class="section-title">Weekly Schedule & Decisions</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Life Journal Log</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('life-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Skyline Window Background
+        ctx.fillStyle = '#1e1b4b';
+        ctx.fillRect(20, 20, 420, 110);
+        // Window frame grid
+        ctx.strokeStyle = '#312e81';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(20, 20, 420, 110);
+        ctx.beginPath();
+        ctx.moveTo(160, 20); ctx.lineTo(160, 130);
+        ctx.moveTo(300, 20); ctx.lineTo(300, 130);
+        ctx.moveTo(20, 75); ctx.lineTo(440, 75);
+        ctx.stroke();
+
+        // Skyscraper silhouettes in window
+        ctx.fillStyle = '#4338ca';
+        ctx.fillRect(40, 45, 30, 85);
+        ctx.fillRect(90, 30, 45, 100);
+        ctx.fillRect(180, 50, 40, 80);
+        ctx.fillRect(240, 25, 50, 105);
+        ctx.fillRect(320, 40, 35, 90);
+        ctx.fillRect(380, 35, 45, 95);
+
+        // Office / Apartment Floor
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 130, canvas.width, 100);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 130); ctx.lineTo(canvas.width, 130);
+        ctx.stroke();
+
+        // Furniture: Work Desk (Left), Executive Chair, Bed/Lounge (Right)
+        // Work Desk
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(50, 155, 110, 45);
+        // Laptop
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(80, 142, 35, 13);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(83, 144, 29, 9);
+
+        // Lounge Bed
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(310, 160, 100, 40);
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(380, 150, 30, 20); // pillow
+
+        // Character Avatar at center
+        const avatarX = 220;
+        const avatarY = 175;
+        // Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(avatarX, avatarY + 22, 18, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Avatar Icon
+        ctx.font = '28px sans-serif';
+        ctx.textAlign = 'center';
+        let avatarEmoji = '🧑‍💻';
+        if (state.careerLevel === 0) avatarEmoji = '🧑‍💻';
+        else if (state.careerLevel === 1) avatarEmoji = '👨‍💼';
+        else if (state.careerLevel === 2) avatarEmoji = '👔';
+        else if (state.careerLevel === 3) avatarEmoji = '💼';
+        else if (state.careerLevel === 4) avatarEmoji = '👑';
+        ctx.fillText(avatarEmoji, avatarX, avatarY + 16);
+
+        // Career Title Plinth
+        ctx.fillStyle = '#8b5cf6';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText(CAREER_TITLES[state.careerLevel], avatarX, avatarY + 36);
+        ctx.textAlign = 'start';
+
+        // Update HUD
+        const salEl = document.getElementById('header-salary');
+        if (salEl) salEl.textContent = '$' + SALARIES[state.careerLevel] + ' / shift';
+
+        const weekEl = document.getElementById('val-week');
+        if (weekEl) weekEl.textContent = 'Week ' + state.week;
+
+        const wltEl = document.getElementById('val-wealth');
+        if (wltEl) {
+          wltEl.textContent = '$' + state.wealth;
+          wltEl.style.color = state.wealth >= 0 ? '#4ade80' : '#f87171';
+        }
+
+        const crrEl = document.getElementById('val-career');
+        if (crrEl) crrEl.textContent = CAREER_TITLES[state.careerLevel];
+
+        const engEl = document.getElementById('val-energy');
+        if (engEl) engEl.textContent = state.energy + '%';
+
+        // Vitals
+        const hVal = document.getElementById('val-health');
+        const hBar = document.getElementById('bar-health');
+        if (hVal) hVal.textContent = state.health + '%';
+        if (hBar) hBar.style.width = state.health + '%';
+
+        const mVal = document.getElementById('val-happiness');
+        const mBar = document.getElementById('bar-happiness');
+        if (mVal) mVal.textContent = state.happiness + '%';
+        if (mBar) mBar.style.width = state.happiness + '%';
+
+        const iVal = document.getElementById('val-intellect');
+        const iBar = document.getElementById('bar-intellect');
+        if (iVal) iVal.textContent = state.intellect + ' / 100';
+        if (iBar) iBar.style.width = state.intellect + '%';
+
+        const pVal = document.getElementById('val-perf');
+        const pBar = document.getElementById('bar-perf');
+        if (pVal) pVal.textContent = state.performance + '%';
+        if (pBar) pBar.style.width = state.performance + '%';
+
+        // Action Buttons
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:advance_week') cls += ' btn-week';
+            else if (act === 'action:work_shift') cls += ' btn-work';
+            else if (act === 'action:study_course') cls += ' btn-study';
+            else if (act === 'action:gym_workout') cls += ' btn-gym';
+            else if (act === 'action:socialize') cls += ' btn-social';
+            else if (act === 'action:rest_and_recharge') cls += ' btn-rest';
+            else if (act === 'action:apply_promotion') cls += ' btn-promo';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Render Activity Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'EXECUTIVE SUCCESS ATTAINED!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'You conquered Metro City as CEO with $' + state.wealth + ' savings! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'CAREER CONCLUDED';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Adulthood challenges overtook your journey. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:work_shift') return '💼 Work Shift (-25e)';
+        if (act === 'action:study_course') return '🎓 University Class ($150)';
+        if (act === 'action:gym_workout') return '💪 Gym Workout ($40)';
+        if (act === 'action:socialize') return '🍸 Social Outing ($60)';
+        if (act === 'action:rest_and_recharge') return '🛌 Rest & Recharge (+35e)';
+        if (act === 'action:apply_promotion') return '🌟 APPLY FOR PROMOTION';
+        if (act === 'action:advance_week') return '🗓️ ADVANCE CALENDAR WEEK (Rent/Bills)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

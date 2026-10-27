@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="metro-sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="50%" stop-color="#312e81"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#metro-sky)"/>
+  <!-- City Skyline Silhouette -->
+  <polygon points="40,420 40,260 100,260 100,420" fill="#4338ca" opacity="0.6"/>
+  <polygon points="110,420 110,210 190,210 190,420" fill="#6366f1" opacity="0.8"/>
+  <polygon points="200,420 200,160 300,160 300,420" fill="#818cf8"/>
+  <polygon points="310,420 310,230 380,230 380,420" fill="#6366f1" opacity="0.8"/>
+  <polygon points="390,420 390,290 470,290 470,420" fill="#4338ca" opacity="0.6"/>
+  <!-- Glowing Executive Success Star -->
+  <polygon points="256,70 274,124 330,124 285,158 302,212 256,178 210,212 227,158 182,124 238,124" fill="url(#gold-grad)"/>
+  <!-- Business Briefcase at Center Plinth -->
+  <rect x="186" y="320" width="140" height="90" rx="12" fill="#0f172a" stroke="#fbbf24" stroke-width="8"/>
+  <path d="M 226 320 V 290 H 286 V 320" fill="none" stroke="#fbbf24" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="256" cy="365" r="8" fill="#fbbf24"/>
+</svg>

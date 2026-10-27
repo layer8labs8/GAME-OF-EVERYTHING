@@ -1539,9 +1539,11 @@
       "slug": "life-sim",
       "name": "Life Sim",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Metro Life",
+      "levels": "endless"
     },
     {
       "id": "0147",
