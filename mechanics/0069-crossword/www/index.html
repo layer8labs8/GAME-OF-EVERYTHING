@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LexiCross - Mini Crossword</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #090e17;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-cyan { color: #38bdf8; }
+    .badge-amber { color: #f59e0b; }
+    .badge-emerald { color: #34d399; }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      background: #0b1120;
+      border: 3px solid #1e293b;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: block;
+    }
+    .active-clue-banner {
+      width: 100%;
+      background: #1e293b;
+      border-left: 4px solid #38bdf8;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #f1f5f9;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: center;
+      min-height: 16px;
+      font-weight: 600;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+    .btn:active {
+      transform: translateY(2px);
+    }
+    .btn-accent {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .footer {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div><span class="badge-cyan" id="hud-stage">Stage 1</span>: <span id="hud-title">Harbor Haven</span></div>
+      <div>Moves: <span class="badge-amber" id="hud-moves">0 / 60</span></div>
+      <div>Score: <span class="badge-emerald" id="hud-score">0</span></div>
+    </div>
+
+    <div class="active-clue-banner" id="active-clue">1A: Large ocean-faring vessel</div>
+
+    <canvas id="game-canvas" width="600" height="600"></canvas>
+
+    <div class="message-bar" id="message-bar">Tap a cell then pick a letter from the bank or type on keyboard.</div>
+
+    <div class="action-row">
+      <button class="btn" id="btn-hint">Hint (<span id="hint-count">3</span> left)</button>
+      <button class="btn" id="btn-check">Check Grid</button>
+      <button class="btn" id="btn-clear-cell">Clear Cell</button>
+      <button class="btn btn-accent" id="btn-restart">Restart Puzzle</button>
+    </div>
+
+    <div class="footer">
+      Tap cell to change direction &bull; Tap rack letters or type A-Z &bull; Backspace to delete
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('game-canvas');
+      if (!canvas || typeof canvas.getContext !== 'function') return;
+      const ctx = canvas.getContext('2d');
+
+      let currentSeed = Math.floor(Math.random() * 100000) + 1;
+      let state = createState(currentSeed);
+
+      let selR = 0;
+      let selC = 0;
+      let direction = 'across'; // 'across' or 'down'
+
+      function updateActiveClue() {
+        const clueEl = document.getElementById('active-clue');
+        if (!clueEl) return;
+
+        if (direction === 'across' && state.acrossClues && state.acrossClues[selR]) {
+          clueEl.textContent = state.acrossClues[selR];
+        } else if (direction === 'down' && state.downClues && state.downClues[selC]) {
+          clueEl.textContent = state.downClues[selC];
+        }
+      }
+
+      function updateHUD() {
+        const hudStage = document.getElementById('hud-stage');
+        const hudTitle = document.getElementById('hud-title');
+        const hudMoves = document.getElementById('hud-moves');
+        const hudScore = document.getElementById('hud-score');
+        const hintCount = document.getElementById('hint-count');
+        const msgBar = document.getElementById('message-bar');
+
+        if (hudStage) hudStage.textContent = 'Stage ' + state.stage;
+        if (hudTitle) hudTitle.textContent = state.title || '';
+        if (hudMoves) hudMoves.textContent = state.stageMoves + ' / ' + state.maxMoves;
+        if (hudScore) hudScore.textContent = score(state);
+        if (hintCount) hintCount.textContent = state.hintsRemaining;
+        if (msgBar) msgBar.textContent = state.message;
+
+        updateActiveClue();
+      }
+
+      function advanceSelection() {
+        if (direction === 'across') {
+          if (selC < state.size - 1) {
+            selC++;
+          } else if (selR < state.size - 1) {
+            selR++;
+            selC = 0;
+          }
+        } else {
+          if (selR < state.size - 1) {
+            selR++;
+          } else if (selC < state.size - 1) {
+            selC++;
+            selR = 0;
+          }
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        // Grid Area
+        const gridW = 320;
+        const gridH = 320;
+        const gridX = (600 - gridW) / 2;
+        const gridY = 25;
+        const cellW = gridW / state.size;
+        const cellH = gridH / state.size;
+
+        // Draw Crossword Grid
+        for (let r = 0; r < state.size; r++) {
+          for (let c = 0; c < state.size; c++) {
+            const x = gridX + c * cellW;
+            const y = gridY + r * cellH;
+
+            const isSelected = (r === selR && c === selC);
+            const inActiveWord = (direction === 'across' && r === selR) || (direction === 'down' && c === selC);
+
+            // Fill cell background
+            if (isSelected) {
+              ctx.fillStyle = '#0284c7';
+            } else if (inActiveWord) {
+              ctx.fillStyle = '#1e293b';
+            } else {
+              ctx.fillStyle = '#0f172a';
+            }
+            ctx.fillRect(x + 2, y + 2, cellW - 4, cellH - 4);
+
+            // Border
+            ctx.lineWidth = isSelected ? 3 : 1.5;
+            ctx.strokeStyle = isSelected ? '#38bdf8' : '#334155';
+            ctx.strokeRect(x + 2, y + 2, cellW - 4, cellH - 4);
+
+            // Number in top-left of cell
+            let num = null;
+            if (r === 0) num = (c + 1).toString();
+            else if (c === 0) num = (r + 1).toString();
+
+            if (num) {
+              ctx.fillStyle = '#64748b';
+              ctx.font = 'bold 11px sans-serif';
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'top';
+              ctx.fillText(num, x + 6, y + 6);
+            }
+
+            // Letter
+            const char = state.grid[r][c];
+            if (char) {
+              ctx.fillStyle = isSelected ? '#ffffff' : '#f1f5f9';
+              ctx.font = 'bold ' + Math.floor(cellH * 0.5) + 'px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(char, x + cellW / 2, y + cellH / 2 + 2);
+            }
+          }
+        }
+
+        // Divider
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(30, 365);
+        ctx.lineTo(570, 365);
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('LETTER BANK (Click tile to enter into selected cell)', 35, 385);
+
+        // Draw Letter Rack / Bank at the bottom
+        const bank = state.letterBank || [];
+        const tilesPerRow = 8;
+        const tileW = 56;
+        const tileH = 50;
+        const rackX = (600 - Math.min(bank.length, tilesPerRow) * (tileW + 8)) / 2;
+        const rackY = 405;
+
+        bank.forEach((char, idx) => {
+          const col = idx % tilesPerRow;
+          const row = Math.floor(idx / tilesPerRow);
+          const tx = rackX + col * (tileW + 8);
+          const ty = rackY + row * (tileH + 8);
+
+          // Tile background
+          ctx.save();
+          ctx.fillStyle = '#1e293b';
+          ctx.shadowColor = 'rgba(0,0,0,0.4)';
+          ctx.shadowBlur = 6;
+          ctx.shadowOffsetY = 3;
+          ctx.beginPath();
+          ctx.roundRect(tx, ty, tileW, tileH, 8);
+          ctx.fill();
+          ctx.restore();
+
+          ctx.strokeStyle = '#475569';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.roundRect(tx, ty, tileW, tileH, 8);
+          ctx.stroke();
+
+          // Character
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 22px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(char, tx + tileW / 2, ty + tileH / 2);
+        });
+
+        // Overlay Game Over
+        if (state.done) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          ctx.fillRect(0, 0, 600, 600);
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillText('LEXICAL MASTER!', 300, 270);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('All 3 crossword grids deciphered successfully!', 300, 310);
+          } else {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillText('SCHOLAR FATIGUE', 300, 270);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('Move limit reached before grids were finished.', 300, 310);
+          }
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 18px sans-serif';
+          ctx.fillText('Final Score: ' + score(state), 300, 355);
+          ctx.restore();
+        }
+      }
+
+      function handleCanvasClick(evt) {
+        if (state.done) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = (evt.clientX - rect.left) * scaleX;
+        const cy = (evt.clientY - rect.top) * scaleY;
+
+        const gridW = 320;
+        const gridH = 320;
+        const gridX = (600 - gridW) / 2;
+        const gridY = 25;
+
+        // Click on grid
+        if (cx >= gridX && cx <= gridX + gridW && cy >= gridY && cy <= gridY + gridH) {
+          const c = Math.floor((cx - gridX) / (gridW / state.size));
+          const r = Math.floor((cy - gridY) / (gridH / state.size));
+
+          if (r >= 0 && r < state.size && c >= 0 && c < state.size) {
+            if (selR === r && selC === c) {
+              // Toggle direction
+              direction = (direction === 'across') ? 'down' : 'across';
+            } else {
+              selR = r;
+              selC = c;
+            }
+            updateHUD();
+            render();
+          }
+          return;
+        }
+
+        // Click on letter bank
+        const bank = state.letterBank || [];
+        const tilesPerRow = 8;
+        const tileW = 56;
+        const tileH = 50;
+        const rackX = (600 - Math.min(bank.length, tilesPerRow) * (tileW + 8)) / 2;
+        const rackY = 405;
+
+        bank.forEach((char, idx) => {
+          const col = idx % tilesPerRow;
+          const row = Math.floor(idx / tilesPerRow);
+          const tx = rackX + col * (tileW + 8);
+          const ty = rackY + row * (tileH + 8);
+
+          if (cx >= tx && cx <= tx + tileW && cy >= ty && cy <= ty + tileH) {
+            // Apply letter to current cell
+            const act = 'set:' + selR + ',' + selC + ',' + char;
+            if (legalActions(state).includes(act)) {
+              step(state, act);
+              advanceSelection();
+              updateHUD();
+              render();
+            }
+          }
+        });
+      }
+
+      canvas.addEventListener('click', handleCanvasClick);
+      canvas.addEventListener('touchstart', function(e) {
+        if (e.touches && e.touches.length > 0) {
+          handleCanvasClick(e.touches[0]);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      const btnHint = document.getElementById('btn-hint');
+      if (btnHint && btnHint.addEventListener) {
+        btnHint.addEventListener('click', function() {
+          if (state.done) return;
+          const act = 'reveal:' + selR + ',' + selC;
+          if (legalActions(state).includes(act)) {
+            step(state, act);
+            advanceSelection();
+            updateHUD();
+            render();
+          } else {
+            state.message = 'No hints remaining or cell is already filled!';
+            updateHUD();
+          }
+        });
+      }
+
+      const btnCheck = document.getElementById('btn-check');
+      if (btnCheck && btnCheck.addEventListener) {
+        btnCheck.addEventListener('click', function() {
+          if (!state.done && legalActions(state).includes('check')) {
+            step(state, 'check');
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnClearCell = document.getElementById('btn-clear-cell');
+      if (btnClearCell && btnClearCell.addEventListener) {
+        btnClearCell.addEventListener('click', function() {
+          if (state.done) return;
+          const act = 'delete:' + selR + ',' + selC;
+          if (legalActions(state).includes(act)) {
+            step(state, act);
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnRestart = document.getElementById('btn-restart');
+      if (btnRestart && btnRestart.addEventListener) {
+        btnRestart.addEventListener('click', function() {
+          currentSeed = Math.floor(Math.random() * 100000) + 1;
+          state = createState(currentSeed);
+          selR = 0;
+          selC = 0;
+          direction = 'across';
+          updateHUD();
+          render();
+        });
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (state.done) return;
+        const key = e.key.toUpperCase();
+
+        if (key >= 'A' && key <= 'Z' && key.length === 1) {
+          const act = 'set:' + selR + ',' + selC + ',' + key;
+          if (legalActions(state).includes(act)) {
+            step(state, act);
+            advanceSelection();
+            updateHUD();
+            render();
+          }
+        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+          const act = 'delete:' + selR + ',' + selC;
+          if (legalActions(state).includes(act)) {
+            step(state, act);
+            updateHUD();
+            render();
+          }
+        } else if (e.key === 'ArrowRight') {
+          selC = (selC + 1) % state.size;
+          updateHUD();
+          render();
+        } else if (e.key === 'ArrowLeft') {
+          selC = (selC - 1 + state.size) % state.size;
+          updateHUD();
+          render();
+        } else if (e.key === 'ArrowDown') {
+          selR = (selR + 1) % state.size;
+          updateHUD();
+          render();
+        } else if (e.key === 'ArrowUp') {
+          selR = (selR - 1 + state.size) % state.size;
+          updateHUD();
+          render();
+        } else if (e.key === ' ') {
+          direction = (direction === 'across') ? 'down' : 'across';
+          updateHUD();
+          render();
+        }
+      });
+
+      updateHUD();
+      render();
+    })();
+  </script>
+</body>
+</html>

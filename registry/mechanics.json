@@ -715,9 +715,10 @@
       "slug": "crossword",
       "name": "Crossword",
       "family": "Puzzle",
-      "status": "idea",
-      "bot": false,
-      "source": "classic"
+      "status": "playable",
+      "bot": true,
+      "source": "classic",
+      "levels": "endless"
     },
     {
       "id": "0070",
