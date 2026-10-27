@@ -798,9 +798,10 @@
       "slug": "poker",
       "name": "Poker",
       "family": "Cards & Board",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0078",

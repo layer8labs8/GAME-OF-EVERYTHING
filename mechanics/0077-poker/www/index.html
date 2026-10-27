@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Royal Hold'em - Texas Poker</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #022c22;
+      color: #ecfdf5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #064e3b;
+      border: 1px solid #047857;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-gold { color: #fbbf24; }
+    .badge-emerald { color: #34d399; }
+    .badge-red { color: #f87171; }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      background: radial-gradient(circle at center, #065f46 0%, #064e3b 55%, #022c22 100%);
+      border: 4px solid #78350f;
+      border-radius: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: block;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #fef08a;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn {
+      background: #065f46;
+      color: #ecfdf5;
+      border: 1px solid #10b981;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      background: #047857;
+      border-color: #34d399;
+    }
+    .btn:active {
+      transform: translateY(2px);
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      border-color: #fbbf24;
+      color: #fff;
+    }
+    .btn-red {
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      border-color: #ef4444;
+      color: #fff;
+    }
+    .footer {
+      font-size: 11px;
+      color: #6ee7b7;
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div>Hand: <span class="badge-gold" id="hud-hand">#1</span></div>
+      <div>Pot: <span class="badge-gold" id="hud-pot">$30</span></div>
+      <div>Stack: <span class="badge-emerald" id="hud-stack">$500</span> | Opp: <span class="badge-red" id="hud-opp">$500</span></div>
+    </div>
+
+    <canvas id="game-canvas" width="600" height="600"></canvas>
+
+    <div class="message-bar" id="message-bar">Welcome to Royal Hold'em.</div>
+
+    <div class="action-row">
+      <button class="btn" id="btn-check-call">Check / Call</button>
+      <button class="btn btn-gold" id="btn-bet-raise">Bet / Raise</button>
+      <button class="btn btn-gold" id="btn-all-in">All-In</button>
+      <button class="btn btn-red" id="btn-fold">Fold</button>
+      <button class="btn" id="btn-restart">Restart</button>
+    </div>
+
+    <div class="footer">
+      No-Limit Heads-Up Poker &bull; Flop, Turn, River community cards &bull; Best 5 of 7 wins
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('game-canvas');
+      if (!canvas || typeof canvas.getContext !== 'function') return;
+      const ctx = canvas.getContext('2d');
+
+      let currentSeed = Math.floor(Math.random() * 100000) + 1;
+      let state = createState(currentSeed);
+
+      const SUIT_SYMBOLS = { S: '♠', H: '♥', D: '♦', C: '♣' };
+      const SUIT_COLORS = { S: '#0f172a', H: '#dc2626', D: '#dc2626', C: '#0f172a' };
+
+      function updateHUD() {
+        const hudHand = document.getElementById('hud-hand');
+        const hudPot = document.getElementById('hud-pot');
+        const hudStack = document.getElementById('hud-stack');
+        const hudOpp = document.getElementById('hud-opp');
+        const msgBar = document.getElementById('message-bar');
+
+        if (hudHand) hudHand.textContent = '#' + state.handNumber;
+        if (hudPot) hudPot.textContent = '$' + state.pot;
+        if (hudStack) hudStack.textContent = '$' + state.playerChips;
+        if (hudOpp) hudOpp.textContent = '$' + state.oppChips;
+        if (msgBar) msgBar.textContent = state.message;
+
+        // Update button labels
+        const callAmt = Math.max(0, state.oppBet - state.playerBet);
+        const btnCheckCall = document.getElementById('btn-check-call');
+        if (btnCheckCall) {
+          btnCheckCall.textContent = callAmt === 0 ? 'Check' : 'Call ($' + callAmt + ')';
+        }
+
+        const btnBetRaise = document.getElementById('btn-bet-raise');
+        if (btnBetRaise) {
+          btnBetRaise.textContent = callAmt === 0 ? 'Bet ($20)' : 'Raise (+$20)';
+        }
+      }
+
+      function drawCard(c, x, y, w, h, card, faceDown) {
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,0.5)';
+        c.shadowBlur = 8;
+        c.shadowOffsetY = 4;
+
+        if (faceDown) {
+          c.fillStyle = '#1e293b';
+          c.beginPath();
+          c.roundRect(x, y, w, h, 6);
+          c.fill();
+          c.strokeStyle = '#475569';
+          c.lineWidth = 2;
+          c.stroke();
+
+          // Cross-hatch back
+          c.strokeStyle = '#0284c7';
+          c.lineWidth = 1;
+          c.strokeRect(x + 6, y + 6, w - 12, h - 12);
+          c.restore();
+          return;
+        }
+
+        c.fillStyle = '#ffffff';
+        c.beginPath();
+        c.roundRect(x, y, w, h, 6);
+        c.fill();
+        c.strokeStyle = '#cbd5e1';
+        c.lineWidth = 1.5;
+        c.stroke();
+        c.shadowColor = 'transparent';
+
+        const sColor = SUIT_COLORS[card.suit] || '#0f172a';
+        const sSym = SUIT_SYMBOLS[card.suit] || card.suit;
+        const rDisplay = card.rank === 'T' ? '10' : card.rank;
+
+        // Top-left
+        c.fillStyle = sColor;
+        c.font = 'bold ' + Math.floor(h * 0.22) + 'px serif';
+        c.textAlign = 'left';
+        c.textBaseline = 'top';
+        c.fillText(rDisplay, x + 5, y + 4);
+
+        c.font = Math.floor(h * 0.18) + 'px serif';
+        c.fillText(sSym, x + 5, y + h * 0.26);
+
+        // Center big symbol
+        c.font = Math.floor(h * 0.42) + 'px serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(sSym, x + w / 2, y + h / 2 + 4);
+
+        c.restore();
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        // 1. OPPONENT HOLE CARDS & CHIPS (Top)
+        ctx.save();
+        ctx.fillStyle = '#a7f3d0';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('OPPONENT STACK: $' + state.oppChips, 300, 32);
+
+        const oppCardW = 60;
+        const oppCardH = 85;
+        const oppX1 = 265;
+        const oppX2 = 330;
+        const oppY = 45;
+
+        const showOppCards = state.street === 'showdown';
+        drawCard(ctx, oppX1, oppY, oppCardW, oppCardH, state.oppHole[0], !showOppCards);
+        drawCard(ctx, oppX2, oppY, oppCardW, oppCardH, state.oppHole[1], !showOppCards);
+        ctx.restore();
+
+        // 2. COMMUNITY BOARD & POT (Center)
+        // Pot Display
+        ctx.save();
+        ctx.fillStyle = 'rgba(6, 78, 59, 0.8)';
+        ctx.beginPath();
+        ctx.roundRect(220, 165, 160, 36, 18);
+        ctx.fill();
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('POT: $' + state.pot, 300, 183);
+        ctx.restore();
+
+        // Community Cards (up to 5)
+        const commW = 66;
+        const commH = 92;
+        const commSpacing = 76;
+        const commStartX = (600 - 5 * commSpacing + 10) / 2;
+        const commY = 220;
+
+        for (let i = 0; i < 5; i++) {
+          const x = commStartX + i * commSpacing;
+          if (i < state.community.length) {
+            drawCard(ctx, x, commY, commW, commH, state.community[i], false);
+          } else {
+            // Placeholder empty card frame
+            ctx.save();
+            ctx.strokeStyle = '#047857';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.roundRect(x, commY, commW, commH, 6);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
+        // Dealer Button
+        const dBtnX = state.playerButton ? 180 : 420;
+        const dBtnY = 183;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(dBtnX, dBtnY, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('D', dBtnX, dBtnY);
+
+        // 3. PLAYER HOLE CARDS & EVALUATION (Bottom)
+        const pCardW = 75;
+        const pCardH = 108;
+        const pX1 = 215;
+        const pX2 = 310;
+        const pY = 360;
+
+        drawCard(ctx, pX1, pY, pCardW, pCardH, state.playerHole[0], false);
+        drawCard(ctx, pX2, pY, pCardW, pCardH, state.playerHole[1], false);
+
+        // Hand Evaluation text
+        const currentCards = [...state.playerHole, ...state.community];
+        let evalText = 'High Card';
+        if (currentCards.length >= 5) {
+          const s = evaluateBest5Of7(currentCards);
+          const cats = {
+            9: 'Straight Flush', 8: 'Four of a Kind', 7: 'Full House',
+            6: 'Flush', 5: 'Straight', 4: 'Three of a Kind',
+            3: 'Two Pair', 2: 'One Pair', 1: 'High Card'
+          };
+          evalText = cats[s[0]] || 'High Card';
+        }
+
+        ctx.fillStyle = '#fde047';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(evalText, 300, 495);
+
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText('YOUR STACK: $' + state.playerChips, 300, 520);
+
+        // 4. GAME OVER OVERLAY
+        if (state.done) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(2, 44, 34, 0.94)';
+          ctx.fillRect(0, 0, 600, 600);
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('POKER CHAMPION!', 300, 260);
+            ctx.fillStyle = '#ecfdf5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('You cleaned out the opponent and took the championship!', 300, 305);
+          } else {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('BUSTED OUT!', 300, 260);
+            ctx.fillStyle = '#ecfdf5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('You ran out of chips in this high-stakes duel.', 300, 305);
+          }
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.fillText('Final Score: ' + score(state), 300, 355);
+          ctx.restore();
+        }
+      }
+
+      function executeAction(act) {
+        if (state.done) return;
+        if (legalActions(state).includes(act)) {
+          step(state, act);
+          updateHUD();
+          render();
+        }
+      }
+
+      const btnCheckCall = document.getElementById('btn-check-call');
+      if (btnCheckCall && btnCheckCall.addEventListener) {
+        btnCheckCall.addEventListener('click', function() {
+          const callAmt = Math.max(0, state.oppBet - state.playerBet);
+          executeAction(callAmt === 0 ? 'check' : 'call');
+        });
+      }
+
+      const btnBetRaise = document.getElementById('btn-bet-raise');
+      if (btnBetRaise && btnBetRaise.addEventListener) {
+        btnBetRaise.addEventListener('click', function() {
+          const callAmt = Math.max(0, state.oppBet - state.playerBet);
+          executeAction(callAmt === 0 ? 'bet' : 'raise');
+        });
+      }
+
+      const btnAllIn = document.getElementById('btn-all-in');
+      if (btnAllIn && btnAllIn.addEventListener) {
+        btnAllIn.addEventListener('click', function() {
+          executeAction('all_in');
+        });
+      }
+
+      const btnFold = document.getElementById('btn-fold');
+      if (btnFold && btnFold.addEventListener) {
+        btnFold.addEventListener('click', function() {
+          executeAction('fold');
+        });
+      }
+
+      const btnRestart = document.getElementById('btn-restart');
+      if (btnRestart && btnRestart.addEventListener) {
+        btnRestart.addEventListener('click', function() {
+          currentSeed = Math.floor(Math.random() * 100000) + 1;
+          state = createState(currentSeed);
+          updateHUD();
+          render();
+        });
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (state.done) return;
+        if (e.key === 'c' || e.key === 'C') {
+          const callAmt = Math.max(0, state.oppBet - state.playerBet);
+          executeAction(callAmt === 0 ? 'check' : 'call');
+        } else if (e.key === 'b' || e.key === 'B' || e.key === 'r' || e.key === 'R') {
+          const callAmt = Math.max(0, state.oppBet - state.playerBet);
+          executeAction(callAmt === 0 ? 'bet' : 'raise');
+        } else if (e.key === 'f' || e.key === 'F') {
+          executeAction('fold');
+        } else if (e.key === 'a' || e.key === 'A') {
+          executeAction('all_in');
+        }
+      });
+
+      updateHUD();
+      render();
+    })();
+  </script>
+</body>
+</html>
