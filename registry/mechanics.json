@@ -1726,9 +1726,11 @@
       "slug": "survival-horror",
       "name": "Survival Horror",
       "family": "Survival",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Shadow Descent",
+      "levels": "endless"
     },
     {
       "id": "0164",
