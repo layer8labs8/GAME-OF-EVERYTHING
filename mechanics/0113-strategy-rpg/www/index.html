@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tactics of Aethelgard - Strategy RPG</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#238636">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 4px 8px;
+      background: #161b22;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+    }
+    h1 {
+      font-size: 1.1rem;
+      color: #58a6ff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #8b949e;
+    }
+    .stats span {
+      color: #f0883e;
+      margin-left: 4px;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 560px;
+      aspect-ratio: 1;
+      background: #090d13;
+      border: 2px solid #30363d;
+      border-radius: 8px;
+      touch-action: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .control-panel {
+      width: 100%;
+      max-width: 560px;
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    button.btn {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 10px 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    button.btn:active {
+      background: #30363d;
+    }
+    button.btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #238636;
+      border-color: #2ea043;
+      color: #fff;
+    }
+    button.btn-skill {
+      background: #8957e5;
+      border-color: #a371f7;
+      color: #fff;
+    }
+    button.btn-danger {
+      background: #da3633;
+      border-color: #f85149;
+      color: #fff;
+    }
+    #log-panel {
+      width: 100%;
+      max-width: 560px;
+      height: 72px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #8b949e;
+    }
+    #log-panel p {
+      margin-bottom: 2px;
+    }
+    #log-panel p:first-child {
+      color: #58a6ff;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚔️ Tactics of Aethelgard</h1>
+    <div class="stats">
+      Rnd: <span id="val-round">1</span> | Score: <span id="val-score">0</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="battlefield" width="480" height="480"></canvas>
+    
+    <div class="control-panel">
+      <button id="btn-attack" class="btn btn-danger">Attack</button>
+      <button id="btn-skill" class="btn btn-skill">Skill</button>
+      <button id="btn-wait" class="btn">Wait</button>
+      <button id="btn-restart" class="btn btn-primary">Restart</button>
+    </div>
+
+    <div id="log-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now());
+      let selectedAction = null; // 'move', 'attack', 'skill'
+      const canvas = document.getElementById('battlefield');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      const valRound = document.getElementById('val-round');
+      const valScore = document.getElementById('val-score');
+      const logPanel = document.getElementById('log-panel');
+
+      const btnAttack = document.getElementById('btn-attack');
+      const btnSkill = document.getElementById('btn-skill');
+      const btnWait = document.getElementById('btn-wait');
+      const btnRestart = document.getElementById('btn-restart');
+
+      function updateUI() {
+        if (valRound) valRound.textContent = state.round;
+        if (valScore) valScore.textContent = state.score;
+
+        if (logPanel && state.combatLog) {
+          logPanel.innerHTML = state.combatLog.slice(-5).reverse().map(function(line) {
+            return '<p>' + line + '</p>';
+          }).join('');
+        }
+
+        const legal = legalActions(state);
+        const hasAttack = legal.some(function(a) { return a.startsWith('attack:'); });
+        const hasSkill = legal.some(function(a) { return a.startsWith('skill:'); });
+        const hasWait = legal.includes('wait');
+
+        if (btnAttack) btnAttack.disabled = state.done || !hasAttack;
+        if (btnSkill) btnSkill.disabled = state.done || !hasSkill;
+        if (btnWait) btnWait.disabled = state.done || !hasWait;
+
+        render();
+      }
+
+      function getActiveUnit() {
+        return state.players.find(function(p) { return p.id === state.activeUnitId; });
+      }
+
+      function render() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 480, 480);
+
+        const cellSize = 480 / 6;
+
+        // Draw terrain grid
+        for (let y = 0; y < 6; y++) {
+          for (let x = 0; x < 6; x++) {
+            const terr = state.terrain[y][x];
+            if (terr === 1) {
+              // Forest
+              ctx.fillStyle = '#1e382b';
+              ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+              ctx.fillStyle = '#2ea043';
+              ctx.font = '20px sans-serif';
+              ctx.fillText('🌲', x * cellSize + 26, y * cellSize + 48);
+            } else if (terr === 2) {
+              // Hill
+              ctx.fillStyle = '#3a2e1d';
+              ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+              ctx.fillStyle = '#d29922';
+              ctx.font = '20px sans-serif';
+              ctx.fillText('⛰️', x * cellSize + 26, y * cellSize + 48);
+            } else {
+              // Plains
+              ctx.fillStyle = ((x + y) % 2 === 0) ? '#161b22' : '#0d1117';
+              ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            }
+
+            ctx.strokeStyle = '#21262d';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+          }
+        }
+
+        const active = getActiveUnit();
+
+        // Highlight legal move cells if active and hasn't moved
+        if (active && !active.hasMoved && !state.done) {
+          ctx.fillStyle = 'rgba(56, 139, 253, 0.18)';
+          const legal = legalActions(state);
+          for (let i = 0; i < legal.length; i++) {
+            if (legal[i].startsWith('move:')) {
+              const coords = legal[i].slice(5).split(',').map(Number);
+              ctx.fillRect(coords[0] * cellSize + 2, coords[1] * cellSize + 2, cellSize - 4, cellSize - 4);
+              ctx.strokeStyle = '#58a6ff';
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(coords[0] * cellSize + 4, coords[1] * cellSize + 4, cellSize - 8, cellSize - 8);
+            }
+          }
+        }
+
+        // Draw Player Units
+        for (let i = 0; i < state.players.length; i++) {
+          const p = state.players[i];
+          if (p.hp <= 0) continue;
+
+          const cx = p.x * cellSize + cellSize / 2;
+          const cy = p.y * cellSize + cellSize / 2;
+
+          // Active aura
+          if (p.id === state.activeUnitId) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 32, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(88, 166, 255, 0.25)';
+            ctx.fill();
+            ctx.strokeStyle = '#58a6ff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+
+          // Unit base circle
+          ctx.beginPath();
+          ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+          ctx.fillStyle = p.acted ? '#484f58' : (p.role === 'commander' ? '#1f6feb' : (p.role === 'ranger' ? '#238636' : '#8957e5'));
+          ctx.fill();
+          ctx.strokeStyle = '#f0f6fc';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Icon or letter
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const symbol = p.role === 'commander' ? '⚔️' : (p.role === 'ranger' ? '🏹' : '⚡');
+          ctx.fillText(symbol, cx, cy - 2);
+
+          // Facing indicator
+          drawFacing(cx, cy, p.facing, '#58a6ff');
+
+          // HP bar
+          drawBar(p.x * cellSize + 6, p.y * cellSize + 68, cellSize - 12, 6, p.hp, p.maxHp, '#2ea043');
+        }
+
+        // Draw Enemy Units
+        for (let i = 0; i < state.enemies.length; i++) {
+          const e = state.enemies[i];
+          if (e.hp <= 0) continue;
+
+          const cx = e.x * cellSize + cellSize / 2;
+          const cy = e.y * cellSize + cellSize / 2;
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+          ctx.fillStyle = e.role === 'warlord' ? '#da3633' : (e.role === 'archer' ? '#bd561d' : '#8c1538');
+          ctx.fill();
+          ctx.strokeStyle = '#f85149';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const symbol = e.role === 'warlord' ? '👑' : (e.role === 'archer' ? '🎯' : '💀');
+          ctx.fillText(symbol, cx, cy - 2);
+
+          // Stun indicator
+          if (e.stun > 0) {
+            ctx.fillStyle = '#f0883e';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('💫', cx, cy - 26);
+          }
+
+          // Facing indicator
+          drawFacing(cx, cy, e.facing, '#f85149');
+
+          // HP bar
+          drawBar(e.x * cellSize + 6, e.y * cellSize + 68, cellSize - 12, 6, e.hp, e.maxHp, '#da3633');
+        }
+
+        // Overlay Game Over
+        if (state.done) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.fillRect(0, 0, 480, 480);
+          ctx.fillStyle = state.victory ? '#3fb950' : '#f85149';
+          ctx.font = 'bold 32px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.victory ? 'VICTORY!' : 'MISSION FAILED', 240, 220);
+          ctx.fillStyle = '#c9d1d9';
+          ctx.font = '16px sans-serif';
+          ctx.fillText('Final Score: ' + state.score, 240, 260);
+        }
+      }
+
+      function drawFacing(cx, cy, facing, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        let fx = 0, fy = 0;
+        if (facing === 'N') fy = -28;
+        if (facing === 'S') fy = 28;
+        if (facing === 'E') fx = 28;
+        if (facing === 'W') fx = -28;
+        ctx.arc(cx + fx, cy + fy, 4, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+
+      function drawBar(x, y, w, h, val, max, color) {
+        ctx.fillStyle = '#21262d';
+        ctx.fillRect(x, y, w, h);
+        const fillW = Math.max(0, Math.min(w, (val / max) * w));
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, fillW, h);
+        ctx.strokeStyle = '#30363d';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, w, h);
+      }
+
+      function handleClick(e) {
+        if (state.done) return;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        const x = Math.floor((clientX - rect.left) / (rect.width / 6));
+        const y = Math.floor((clientY - rect.top) / (rect.height / 6));
+
+        if (x < 0 || x >= 6 || y < 0 || y >= 6) return;
+
+        const legal = legalActions(state);
+
+        // Check if clicked an enemy
+        const enemy = state.enemies.find(function(en) { return en.hp > 0 && en.x === x && en.y === y; });
+        if (enemy) {
+          if (selectedAction === 'skill' && legal.includes('skill:' + enemy.id)) {
+            step(state, 'skill:' + enemy.id);
+            selectedAction = null;
+            updateUI();
+            return;
+          }
+          if (legal.includes('attack:' + enemy.id)) {
+            step(state, 'attack:' + enemy.id);
+            selectedAction = null;
+            updateUI();
+            return;
+          }
+        }
+
+        // Check if moving to cell
+        const moveAction = 'move:' + x + ',' + y;
+        if (legal.includes(moveAction)) {
+          step(state, moveAction);
+          updateUI();
+          return;
+        }
+      }
+
+      if (canvas) {
+        canvas.addEventListener('click', handleClick);
+      }
+
+      if (btnAttack) {
+        btnAttack.onclick = function() {
+          const legal = legalActions(state);
+          const firstAttack = legal.find(function(a) { return a.startsWith('attack:'); });
+          if (firstAttack) {
+            step(state, firstAttack);
+            updateUI();
+          }
+        };
+      }
+
+      if (btnSkill) {
+        btnSkill.onclick = function() {
+          const legal = legalActions(state);
+          const firstSkill = legal.find(function(a) { return a.startsWith('skill:'); });
+          if (firstSkill) {
+            step(state, firstSkill);
+            updateUI();
+          }
+        };
+      }
+
+      if (btnWait) {
+        btnWait.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('wait')) {
+            step(state, 'wait');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now());
+          updateUI();
+        };
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>

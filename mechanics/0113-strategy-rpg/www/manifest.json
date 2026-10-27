@@ -1,0 +1,12 @@
+{
+  "name": "Tactics of Aethelgard: Strategy RPG",
+  "short_name": "Aethelgard",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#238636",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

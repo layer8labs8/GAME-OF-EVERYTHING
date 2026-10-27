@@ -1176,9 +1176,11 @@
    "slug": "strategy-rpg",
    "name": "Strategy RPG",
    "family": "RPG",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Tactics of Aethelgard",
+   "levels": "endless"
   },
   {
    "id": "0114",
