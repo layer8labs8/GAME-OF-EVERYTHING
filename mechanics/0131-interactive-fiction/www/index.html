@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Colossal Vault - Interactive Fiction</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0284c7">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #050b14;
+      color: #e0f2fe;
+      font-family: "Courier New", Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #0c1c33;
+      border-radius: 8px;
+      border: 1px solid #0284c7;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #0c1c33;
+      border: 1px solid #0369a1;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .hud-label {
+      color: #7dd3fc;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.85rem;
+    }
+    .val-loc { color: #facc15; }
+    .val-treas { color: #38bdf8; }
+    .val-score { color: #4ade80; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 7;
+      background: #020617;
+      border: 2px solid #0284c7;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.2);
+      touch-action: none;
+    }
+
+    .terminal-window {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      background: #030a16;
+      border: 1px solid #075985;
+      border-radius: 6px;
+      padding: 8px 10px;
+      min-height: 110px;
+      max-height: 130px;
+      overflow-y: auto;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: #bae6fd;
+    }
+    .terminal-loc {
+      color: #facc15;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    .terminal-desc {
+      color: #e0f2fe;
+      margin-bottom: 4px;
+    }
+    .terminal-log {
+      color: #38bdf8;
+      border-top: 1px dashed #0c4a6e;
+      padding-top: 4px;
+      margin-top: 4px;
+    }
+
+    .nav-grid {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .nav-btn {
+      background: #0c1c33;
+      border: 1px solid #0369a1;
+      color: #38bdf8;
+      padding: 8px 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .nav-btn:active {
+      background: #075985;
+    }
+
+    .command-list {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    .cmd-chip {
+      background: #082f49;
+      border: 1px solid #0284c7;
+      color: #f0f9ff;
+      padding: 5px 8px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .cmd-chip:active {
+      background: #0369a1;
+    }
+
+    .inv-bar {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      background: #081a2e;
+      border: 1px solid #0c4a6e;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(3, 10, 22, 0.96);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      border-radius: 8px;
+      z-index: 50;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-card {
+      background: #0c1c33;
+      border: 2px solid #0284c7;
+      border-radius: 12px;
+      padding: 18px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #38bdf8;
+      margin-bottom: 4px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      border: none;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>📜</span> COLOSSAL VAULT</h1>
+    <span style="font-size: 0.75rem; color: #38bdf8; font-weight: bold;" id="step-badge">TURN 0 / 150</span>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Location</div>
+      <div class="hud-val val-loc" id="val-loc">CLEARING</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Trophy Case</div>
+      <div class="hud-val val-treas" id="val-treas">0 / 3</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Score</div>
+      <div class="hud-val val-score" id="val-score">0</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="vault-canvas" width="460" height="200"></canvas>
+
+    <!-- Ending Modal -->
+    <div class="modal-overlay" id="quest-modal">
+      <div class="modal-card">
+        <div class="modal-title" id="quest-title">VAULT EXPEDITION END</div>
+        <p style="font-size: 0.8rem; color: #bae6fd; margin: 8px 0;" id="quest-desc"></p>
+        <div style="font-size: 1rem; color: #facc15; font-weight: bold; margin-bottom: 8px;" id="quest-score">Score: 0</div>
+        <button class="btn-primary" id="btn-restart">EXPLORE ANEW</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="terminal-window" id="terminal-window">
+    <div class="terminal-loc" id="terminal-loc">Cottage Clearing</div>
+    <div class="terminal-desc" id="terminal-desc">You stand in a sunlit clearing west of a weathered cottage.</div>
+    <div class="terminal-log" id="terminal-log">Seek the 3 Treasures of Legend for the Trophy Case.</div>
+  </div>
+
+  <div class="inv-bar">
+    <span style="color: #7dd3fc; font-weight: bold;">INVENTORY:</span>
+    <span id="inv-list" style="color: #e0f2fe;">Empty</span>
+  </div>
+
+  <div class="nav-grid">
+    <button class="nav-btn" onclick="executeAction('go:north')">NORTH (N)</button>
+    <button class="nav-btn" onclick="executeAction('go:up')">UP (U)</button>
+    <button class="nav-btn" onclick="executeAction('go:east')">EAST (E)</button>
+    <button class="nav-btn" onclick="executeAction('go:west')">WEST (W)</button>
+    <button class="nav-btn" onclick="executeAction('go:down')">DOWN (D)</button>
+    <button class="nav-btn" onclick="executeAction('go:south')">SOUTH (S)</button>
+  </div>
+
+  <div class="command-list" id="command-list"></div>
+
+  <div style="width: 100%; max-width: 460px; margin-top: 4px; display: flex; justify-content: flex-end;">
+    <button class="nav-btn" id="btn-bot" style="padding: 4px 10px; font-size: 0.7rem; border-color: #38bdf8;">AI SOLVE</button>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Math.random() * 1000000));
+    const canvas = document.getElementById('vault-canvas');
+    const ctx = canvas.getContext('2d');
+
+    window.executeAction = function(act) {
+      if (isOver(state)) return;
+      const legals = legalActions(state);
+      if (!legals.includes(act)) return;
+
+      step(state, act);
+      render();
+    };
+
+    function renderScene() {
+      const loc = state.currentLocation;
+      const w = 460;
+      const h = 200;
+      ctx.clearRect(0, 0, w, h);
+
+      if (loc === 'clearing') {
+        // Sky & grass
+        ctx.fillStyle = '#0369a1';
+        ctx.fillRect(0, 0, w, 110);
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(0, 110, w, 90);
+
+        // Cottage wall
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(260, 40, 200, 100);
+        ctx.fillStyle = '#78350f'; // roof
+        ctx.beginPath();
+        ctx.moveTo(250, 40);
+        ctx.lineTo(360, 10);
+        ctx.lineTo(470, 40);
+        ctx.fill();
+
+        // Door
+        ctx.fillStyle = state.world.front_door_locked ? '#7f1d1d' : '#15803d';
+        ctx.fillRect(320, 80, 40, 60);
+
+        // Mailbox
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(80, 110, 8, 40);
+        ctx.fillStyle = state.world.mailbox_open ? '#38bdf8' : '#64748b';
+        ctx.fillRect(70, 95, 28, 18);
+      } else if (loc === 'forest') {
+        // Pine forest
+        ctx.fillStyle = '#052e16';
+        ctx.fillRect(0, 0, w, h);
+
+        // Giant oak trunk
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(190, 0, 80, h);
+        // Branches
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 14;
+        ctx.beginPath();
+        ctx.moveTo(210, 90);
+        ctx.lineTo(90, 40);
+        ctx.moveTo(250, 80);
+        ctx.lineTo(370, 30);
+        ctx.stroke();
+      } else if (loc === 'tree_canopy') {
+        // High canopy
+        ctx.fillStyle = '#022c22';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.arc(100, 100, 80, 0, Math.PI * 2);
+        ctx.arc(360, 100, 80, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bird nest
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(200, 120, 60, 25);
+        if (state.itemsAt.tree_canopy.includes('jeweled_egg')) {
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.arc(230, 120, 10, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (loc === 'shrine') {
+        // Ancient shrine clearing
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, w, h);
+
+        // Stone altar
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(170, 100, 120, 60);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(160, 90, 140, 15);
+
+        if (state.itemsAt.shrine.includes('golden_chalice')) {
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.arc(230, 80, 12, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (loc === 'cottage') {
+        // Living room
+        ctx.fillStyle = '#1e1b4b';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#311042';
+        ctx.fillRect(0, 130, w, 70);
+
+        // Trophy case
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(160, 20, 140, 90);
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(170, 30, 120, 70);
+
+        // Rug
+        ctx.fillStyle = state.world.rug_moved ? '#334155' : '#831843';
+        ctx.fillRect(170, 150, 120, 40);
+      } else {
+        // Cavern
+        if (state.lanternLit) {
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(0, 0, w, h);
+
+          // Golden illumination circle
+          ctx.fillStyle = 'rgba(250, 204, 21, 0.25)';
+          ctx.beginPath();
+          ctx.arc(230, 100, 90, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Ingot
+          if (state.itemsAt.cavern.includes('platinum_ingot')) {
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(210, 120, 40, 15);
+          }
+        } else {
+          // Pitch black
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = '#f43f5e';
+          ctx.font = 'bold 16px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('IT IS PITCH BLACK', 230, 100);
+        }
+      }
+    }
+
+    function render() {
+      const loc = getCurrentLocation(state);
+      if (!loc) return;
+
+      // HUD
+      document.getElementById('val-loc').textContent = loc.name.toUpperCase();
+      document.getElementById('val-treas').textContent = state.treasuresDeposited + ' / 3';
+      document.getElementById('val-score').textContent = state.score;
+      document.getElementById('step-badge').textContent = 'TURN ' + state.turns + ' / ' + state.maxTurns;
+
+      // Terminal text
+      document.getElementById('terminal-loc').textContent = loc.name;
+      document.getElementById('terminal-desc').textContent = loc.desc;
+      const recent = (state.combatLog || []).slice(-2);
+      document.getElementById('terminal-log').innerHTML = recent.map(l => '<p>' + l + '</p>').join('');
+
+      // Inventory
+      const invStr = state.inventory.length === 0 ? 'Empty' : state.inventory.map(i => i.replace(/_/g, ' ')).join(', ');
+      document.getElementById('inv-list').textContent = invStr + (state.lanternLit ? ' (LANTERN LIT 🔥)' : '');
+
+      // Commands
+      const legals = legalActions(state);
+      const cmdList = document.getElementById('command-list');
+      // Filter out pure compass 'go:' since compass buttons exist
+      const actionCmds = legals.filter(a => !a.startsWith('go:'));
+      cmdList.innerHTML = actionCmds.map(cmd => {
+        return '<button class="cmd-chip" onclick="executeAction(\'' + cmd + '\')">' + cmd.replace(/:/g, ' ') + '</button>';
+      }).join('');
+
+      // Render graphic
+      renderScene();
+
+      // Modal
+      const modal = document.getElementById('quest-modal');
+      if (isOver(state)) {
+        modal.className = 'modal-overlay active';
+        const title = document.getElementById('quest-title');
+        const desc = document.getElementById('quest-desc');
+        const sc = document.getElementById('quest-score');
+        sc.textContent = 'Final Score: ' + state.score;
+
+        if (state.victory) {
+          title.textContent = 'VAULT CONQUERED!';
+          title.style.color = '#4ade80';
+          desc.textContent = 'All 3 Treasures of Legend rest in the Trophy Case! Your name is immortalized in adventure lore!';
+        } else {
+          title.textContent = 'EXPEDITION FAILED';
+          title.style.color = '#f87171';
+          desc.textContent = state.world.grueWarning ? 'You were devoured by a sinister grue in the dark cavern.' : 'Your journey exceeded the time limit.';
+        }
+      } else {
+        modal.className = 'modal-overlay';
+      }
+    }
+
+    document.getElementById('btn-bot').onclick = () => {
+      const legals = legalActions(state);
+      if (legals.length > 0) {
+        // Smart priority
+        const depAct = legals.find(a => a.startsWith('deposit:'));
+        const takeAct = legals.find(a => a.startsWith('take:'));
+        const lightAct = legals.find(a => a === 'light:lantern');
+        const unlAct = legals.find(a => a.startsWith('unlock:'));
+        const act = depAct || takeAct || lightAct || unlAct || legals[0];
+        executeAction(act);
+      }
+    };
+
+    document.getElementById('btn-restart').onclick = () => {
+      state = createState(Math.floor(Math.random() * 1000000));
+      render();
+    };
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      if (isOver(state)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'n') executeAction('go:north');
+      else if (key === 's') executeAction('go:south');
+      else if (key === 'e') executeAction('go:east');
+      else if (key === 'w') executeAction('go:west');
+      else if (key === 'u') executeAction('go:up');
+      else if (key === 'd') executeAction('go:down');
+      else if (key === 'z' || key === ' ') executeAction('wait');
+    });
+
+    render();
+  </script>
+</body>
+</html>

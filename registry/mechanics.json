@@ -1374,9 +1374,11 @@
    "slug": "interactive-fiction",
    "name": "Interactive Fiction",
    "family": "Adventure",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Colossal Vault",
+   "levels": "endless"
   },
   {
    "id": "0132",
