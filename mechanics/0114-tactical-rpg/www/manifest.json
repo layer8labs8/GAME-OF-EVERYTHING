@@ -1,0 +1,12 @@
+{
+  "name": "Strike Protocol: Tactical Vanguard",
+  "short_name": "StrikeProtocol",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#090d16",
+  "theme_color": "#1f6feb",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

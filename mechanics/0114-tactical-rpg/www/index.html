@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Strike Protocol: Tactical Vanguard</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1f6feb">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #090d16;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+    }
+    h1 {
+      font-size: 1.1rem;
+      color: #58a6ff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #8b949e;
+    }
+    .stats span {
+      color: #3fb950;
+      margin-left: 4px;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 560px;
+      aspect-ratio: 7 / 6;
+      background: #0d1117;
+      border: 2px solid #30363d;
+      border-radius: 8px;
+      touch-action: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .control-panel {
+      width: 100%;
+      max-width: 560px;
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+    }
+    button.btn {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 10px 2px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.btn:active {
+      background: #30363d;
+    }
+    button.btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #1f6feb;
+      border-color: #388bfd;
+      color: #fff;
+    }
+    button.btn-danger {
+      background: #da3633;
+      border-color: #f85149;
+      color: #fff;
+    }
+    button.btn-warn {
+      background: #d29922;
+      border-color: #e3b341;
+      color: #000;
+    }
+    button.btn-purple {
+      background: #8957e5;
+      border-color: #a371f7;
+      color: #fff;
+    }
+    #log-panel {
+      width: 100%;
+      max-width: 560px;
+      height: 72px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #8b949e;
+    }
+    #log-panel p {
+      margin-bottom: 2px;
+    }
+    #log-panel p:first-child {
+      color: #58a6ff;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎯 Strike Protocol: Vanguard</h1>
+    <div class="stats">
+      Turn: <span id="val-round">1</span> | Score: <span id="val-score">0</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="field" width="490" height="420"></canvas>
+
+    <div class="control-panel">
+      <button id="btn-shoot" class="btn btn-danger">Fire</button>
+      <button id="btn-overwatch" class="btn btn-warn">Watch</button>
+      <button id="btn-reload" class="btn">Reload</button>
+      <button id="btn-skill" class="btn btn-purple">Skill</button>
+      <button id="btn-end" class="btn">End AP</button>
+      <button id="btn-restart" class="btn btn-primary">Restart</button>
+    </div>
+
+    <div id="log-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now());
+      const canvas = document.getElementById('field');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      const valRound = document.getElementById('val-round');
+      const valScore = document.getElementById('val-score');
+      const logPanel = document.getElementById('log-panel');
+
+      const btnShoot = document.getElementById('btn-shoot');
+      const btnOverwatch = document.getElementById('btn-overwatch');
+      const btnReload = document.getElementById('btn-reload');
+      const btnSkill = document.getElementById('btn-skill');
+      const btnEnd = document.getElementById('btn-end');
+      const btnRestart = document.getElementById('btn-restart');
+
+      function updateUI() {
+        if (valRound) valRound.textContent = state.round;
+        if (valScore) valScore.textContent = state.score;
+
+        if (logPanel && state.combatLog) {
+          logPanel.innerHTML = state.combatLog.slice(-5).reverse().map(function(line) {
+            return '<p>' + line + '</p>';
+          }).join('');
+        }
+
+        const legal = legalActions(state);
+        const hasShoot = legal.some(function(a) { return a.startsWith('shoot:'); });
+        const hasOverwatch = legal.includes('overwatch');
+        const hasReload = legal.includes('reload');
+        const hasSkill = legal.some(function(a) { return a.startsWith('skill:') || a.startsWith('heal:'); });
+
+        if (btnShoot) btnShoot.disabled = state.done || !hasShoot;
+        if (btnOverwatch) btnOverwatch.disabled = state.done || !hasOverwatch;
+        if (btnReload) btnReload.disabled = state.done || !hasReload;
+        if (btnSkill) btnSkill.disabled = state.done || !hasSkill;
+        if (btnEnd) btnEnd.disabled = state.done || !legal.includes('end_turn');
+
+        render();
+      }
+
+      function getActive() {
+        return state.players.find(function(p) { return p.id === state.activeUnitId; });
+      }
+
+      function render() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 490, 420);
+
+        const cellW = 490 / 7;
+        const cellH = 420 / 6;
+
+        // Draw cover grid
+        for (let y = 0; y < 6; y++) {
+          for (let x = 0; x < 7; x++) {
+            const cover = state.coverGrid[y][x];
+
+            // Base cell
+            ctx.fillStyle = ((x + y) % 2 === 0) ? '#161b22' : '#0d1117';
+            ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+
+            if (cover === 1) {
+              // Half cover barricade
+              ctx.fillStyle = '#8b949e';
+              ctx.fillRect(x * cellW + 10, y * cellH + 20, cellW - 20, cellH - 40);
+              ctx.fillStyle = '#f0883e';
+              ctx.font = '12px sans-serif';
+              ctx.fillText('🛡️ Low', x * cellW + 14, y * cellH + cellH / 2 + 4);
+            } else if (cover === 2) {
+              // Full cover pillar
+              ctx.fillStyle = '#30363d';
+              ctx.fillRect(x * cellW + 6, y * cellH + 6, cellW - 12, cellH - 12);
+              ctx.strokeStyle = '#58a6ff';
+              ctx.lineWidth = 2;
+              ctx.strokeRect(x * cellW + 6, y * cellH + 6, cellW - 12, cellH - 12);
+              ctx.fillStyle = '#58a6ff';
+              ctx.font = 'bold 12px sans-serif';
+              ctx.fillText('PILLAR', x * cellW + 12, y * cellH + cellH / 2 + 4);
+            }
+
+            ctx.strokeStyle = '#21262d';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x * cellW, y * cellH, cellW, cellH);
+          }
+        }
+
+        const active = getActive();
+
+        // Highlight movement paths
+        if (active && active.ap > 0 && !state.done) {
+          const legal = legalActions(state);
+          ctx.fillStyle = 'rgba(31, 111, 235, 0.22)';
+          for (let i = 0; i < legal.length; i++) {
+            if (legal[i].startsWith('move:')) {
+              const c = legal[i].slice(5).split(',').map(Number);
+              ctx.fillRect(c[0] * cellW + 3, c[1] * cellH + 3, cellW - 6, cellH - 6);
+              ctx.strokeStyle = '#388bfd';
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(c[0] * cellW + 5, c[1] * cellH + 5, cellW - 10, cellH - 10);
+            }
+          }
+        }
+
+        // Draw Player Operatives
+        for (let i = 0; i < state.players.length; i++) {
+          const p = state.players[i];
+          if (p.hp <= 0) continue;
+
+          const cx = p.x * cellW + cellW / 2;
+          const cy = p.y * cellH + cellH / 2;
+
+          // Active indicator
+          if (p.id === state.activeUnitId) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(88, 166, 255, 0.28)';
+            ctx.fill();
+            ctx.strokeStyle = '#58a6ff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+
+          // Operative token
+          ctx.beginPath();
+          ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+          ctx.fillStyle = p.role === 'pointman' ? '#1f6feb' : (p.role === 'sniper' ? '#238636' : '#8957e5');
+          ctx.fill();
+          ctx.strokeStyle = '#f0f6fc';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Symbol
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const icon = p.role === 'pointman' ? '💥' : (p.role === 'sniper' ? '🎯' : '💉');
+          ctx.fillText(icon, cx, cy - 2);
+
+          // Overwatch status
+          if (p.overwatch) {
+            ctx.fillStyle = '#d29922';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('👁️ OW', cx, cy - 22);
+          }
+
+          // AP pips
+          for (let a = 0; a < 2; a++) {
+            ctx.beginPath();
+            ctx.arc(cx - 8 + a * 16, cy + 18, 3, 0, Math.PI * 2);
+            ctx.fillStyle = a < p.ap ? '#3fb950' : '#484f58';
+            ctx.fill();
+          }
+
+          // HP bar
+          drawBar(p.x * cellW + 4, p.y * cellH + cellH - 7, cellW - 8, 4, p.hp, p.maxHp, '#3fb950');
+        }
+
+        // Draw Hostiles
+        for (let i = 0; i < state.enemies.length; i++) {
+          const e = state.enemies[i];
+          if (e.hp <= 0) continue;
+
+          const cx = e.x * cellW + cellW / 2;
+          const cy = e.y * cellH + cellH / 2;
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+          ctx.fillStyle = e.role === 'enforcer' ? '#da3633' : (e.role === 'scout' ? '#bd561d' : '#ab2267');
+          ctx.fill();
+          ctx.strokeStyle = '#f85149';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const icon = e.role === 'enforcer' ? '🛡️' : (e.role === 'scout' ? '⚡' : '🧠');
+          ctx.fillText(icon, cx, cy - 2);
+
+          // HP bar
+          drawBar(e.x * cellW + 4, e.y * cellH + cellH - 7, cellW - 8, 4, e.hp, e.maxHp, '#da3633');
+        }
+
+        // End of mission banner
+        if (state.done) {
+          ctx.fillStyle = 'rgba(9, 13, 22, 0.85)';
+          ctx.fillRect(0, 0, 490, 420);
+          ctx.fillStyle = state.victory ? '#3fb950' : '#f85149';
+          ctx.font = 'bold 30px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.victory ? 'MISSION ACCOMPLISHED' : 'SQUAD ELIMINATED', 245, 190);
+          ctx.fillStyle = '#c9d1d9';
+          ctx.font = '16px sans-serif';
+          ctx.fillText('Score: ' + state.score, 245, 230);
+        }
+      }
+
+      function drawBar(x, y, w, h, val, max, color) {
+        ctx.fillStyle = '#21262d';
+        ctx.fillRect(x, y, w, h);
+        const fillW = Math.max(0, Math.min(w, (val / max) * w));
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, fillW, h);
+        ctx.strokeStyle = '#30363d';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, w, h);
+      }
+
+      function handleClick(e) {
+        if (state.done) return;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        const x = Math.floor((clientX - rect.left) / (rect.width / 7));
+        const y = Math.floor((clientY - rect.top) / (rect.height / 6));
+
+        if (x < 0 || x >= 7 || y < 0 || y >= 6) return;
+
+        const legal = legalActions(state);
+
+        // Click on enemy to shoot
+        const enemy = state.enemies.find(function(en) { return en.hp > 0 && en.x === x && en.y === y; });
+        if (enemy && legal.includes('shoot:' + enemy.id)) {
+          step(state, 'shoot:' + enemy.id);
+          updateUI();
+          return;
+        }
+
+        // Click to move
+        const moveAction = 'move:' + x + ',' + y;
+        if (legal.includes(moveAction)) {
+          step(state, moveAction);
+          updateUI();
+          return;
+        }
+      }
+
+      if (canvas) {
+        canvas.addEventListener('click', handleClick);
+      }
+
+      if (btnShoot) {
+        btnShoot.onclick = function() {
+          const legal = legalActions(state);
+          const firstShoot = legal.find(function(a) { return a.startsWith('shoot:'); });
+          if (firstShoot) {
+            step(state, firstShoot);
+            updateUI();
+          }
+        };
+      }
+
+      if (btnOverwatch) {
+        btnOverwatch.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('overwatch')) {
+            step(state, 'overwatch');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnReload) {
+        btnReload.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('reload')) {
+            step(state, 'reload');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnSkill) {
+        btnSkill.onclick = function() {
+          const legal = legalActions(state);
+          const firstSkill = legal.find(function(a) { return a.startsWith('skill:') || a.startsWith('heal:'); });
+          if (firstSkill) {
+            step(state, firstSkill);
+            updateUI();
+          }
+        };
+      }
+
+      if (btnEnd) {
+        btnEnd.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('end_turn')) {
+            step(state, 'end_turn');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now());
+          updateUI();
+        };
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
