@@ -1759,9 +1759,11 @@
       "slug": "heist",
       "name": "Heist",
       "family": "Survival",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Vault Infiltrator",
+      "levels": "endless"
     },
     {
       "id": "0167",

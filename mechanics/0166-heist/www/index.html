@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vault Infiltrator - Tactical Heist</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #050508;
+      color: #f4f4f5;
+      font-family: 'Courier New', Courier, monospace, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #111116;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #eab308;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(234, 179, 8, 0.4);
+    }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #27272a;
+      color: #a1a1aa;
+      font-weight: 600;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4/3;
+      background: #020204;
+      border: 2px solid #27272a;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.85);
+      image-rendering: pixelated;
+    }
+    .meters-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .meter-card {
+      background: #0d0d12;
+      border: 1px solid #27272a;
+      padding: 4px 6px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .meter-title {
+      font-size: 0.62rem;
+      color: #71717a;
+      text-transform: uppercase;
+    }
+    .meter-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 1px;
+    }
+    .loot-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #18181b;
+      border: 1px solid #ca8a04;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: #fef08a;
+      font-weight: bold;
+    }
+    .log-box {
+      background: #0d0d12;
+      border: 1px solid #27272a;
+      border-left: 4px solid #eab308;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: #d4d4d8;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .btn {
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      color: #f4f4f5;
+      padding: 8px 6px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .btn:hover {
+      background: #27272a;
+      border-color: #eab308;
+      color: #fff;
+      box-shadow: 0 0 8px rgba(234, 179, 8, 0.3);
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .btn-stealth { border-color: #0284c7; color: #7dd3fc; }
+    .btn-stealth:hover { background: #0c4a6e; }
+    .btn-loot { border-color: #ca8a04; background: #291b00; color: #fef08a; }
+    .btn-loot:hover { background: #452c03; border-color: #facc15; }
+    .btn-danger { border-color: #dc2626; color: #fca5a5; }
+    .btn-danger:hover { background: #450a0a; }
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💼 Vault Infiltrator</h1>
+    <div>
+      <span id="turn-badge" class="badge">TURN 0 / 120</span>
+      <span id="score-badge" class="badge" style="background:#854d0e; color:#fef08a;">0 PTS</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+
+    <div class="meters-bar">
+      <div class="meter-card">
+        <div class="meter-title">Suspicion</div>
+        <div id="val-suspicion" class="meter-val" style="color: #22c55e;">10%</div>
+      </div>
+      <div class="meter-card">
+        <div class="meter-title">Crew Health</div>
+        <div id="val-health" class="meter-val" style="color: #38bdf8;">100%</div>
+      </div>
+      <div class="meter-card">
+        <div class="meter-title">Radio Pagers</div>
+        <div id="val-pagers" class="meter-val" style="color: #facc15;">4 / 4</div>
+      </div>
+      <div class="meter-card">
+        <div class="meter-title">Thermal Drill</div>
+        <div id="val-drill" class="meter-val" style="color: #a1a1aa;">OFFLINE</div>
+      </div>
+    </div>
+
+    <div class="loot-banner">
+      <span>SECURED BOUNTY:</span>
+      <span id="val-loot">$0</span>
+    </div>
+
+    <div id="game-log" class="log-box">
+      Getaway van idling in perimeter alley. Infiltrate security hub and breach deep vault.
+    </div>
+
+    <div id="actions-panel" class="actions-grid">
+      <!-- Injected dynamically -->
+    </div>
+
+    <div class="footer-bar">
+      <div id="zone-summary" style="font-size:0.7rem; color:#71717a;">Zone 0: Perimeter Alley</div>
+      <button id="bot-toggle-btn" class="btn" style="padding: 4px 10px; font-size: 0.68rem;" onclick="window.toggleBot()">BOT: OFF</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now ? Date.now() : 12345);
+    let botRunning = false;
+    let botInterval = null;
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'loot') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, t); // C5
+          osc.frequency.setValueAtTime(659.25, t + 0.1); // E5
+          osc.frequency.setValueAtTime(783.99, t + 0.2); // G5
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+          osc.start(t);
+          osc.stop(t + 0.35);
+        } else if (type === 'drill') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, t);
+          osc.frequency.linearRampToValueAtTime(160, t + 0.25);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+          osc.start(t);
+          osc.stop(t + 0.3);
+        } else if (type === 'alarm') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(880, t);
+          osc.frequency.setValueAtTime(440, t + 0.15);
+          gain.gain.setValueAtTime(0.25, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+          osc.start(t);
+          osc.stop(t + 0.3);
+        } else if (type === 'stealth') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(300, t);
+          osc.frequency.exponentialRampToValueAtTime(120, t + 0.1);
+          gain.gain.setValueAtTime(0.15, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+          osc.start(t);
+          osc.stop(t + 0.12);
+        }
+      } catch (e) {}
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function render() {
+      // Meters UI
+      document.getElementById('turn-badge').textContent = 'TURN ' + state.turns + ' / ' + state.maxTurns;
+      document.getElementById('score-badge').textContent = score(state) + ' PTS';
+      document.getElementById('game-log').textContent = state.gameMessage;
+      document.getElementById('val-loot').textContent = '$' + state.lootValue.toLocaleString();
+
+      const suspEl = document.getElementById('val-suspicion');
+      suspEl.textContent = state.suspicion + '% ' + (state.alarmTriggered ? '[ALARM!]' : '');
+      suspEl.style.color = state.alarmTriggered ? '#ef4444' : (state.suspicion > 60 ? '#f59e0b' : '#22c55e');
+
+      const hEl = document.getElementById('val-health');
+      hEl.textContent = state.crewHealth + '%';
+      hEl.style.color = state.crewHealth > 50 ? '#38bdf8' : '#ef4444';
+
+      document.getElementById('val-pagers').textContent = state.pagersRemaining + ' / 4';
+
+      const dEl = document.getElementById('val-drill');
+      if (state.vaultOpened) {
+        dEl.textContent = 'BREACHED';
+        dEl.style.color = '#22c55e';
+      } else if (state.drillDeployed) {
+        dEl.textContent = state.drillProgress + '% ' + (state.drillJammed ? '[JAMMED]' : '[DRILLING]');
+        dEl.style.color = state.drillJammed ? '#ef4444' : '#eab308';
+      } else {
+        dEl.textContent = 'OFFLINE';
+        dEl.style.color = '#71717a';
+      }
+
+      document.getElementById('zone-summary').textContent = 'Current Sector: ' + ZONE_NAMES[state.zone];
+
+      // Canvas Blueprint Rendering
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.fillStyle = '#06060c';
+      ctx.fillRect(0, 0, w, h);
+
+      // Blueprint grid lines
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // Draw 4 security zone quadrants
+      const zonesCoord = [
+        { x: 30, y: 40, w: 260, h: 180, name: 'ZONE 0: PERIMETER ALLEY' },
+        { x: 350, y: 40, w: 260, h: 180, name: 'ZONE 1: SECURITY HUB' },
+        { x: 30, y: 260, w: 260, h: 180, name: 'ZONE 2: ANTECHAMBER' },
+        { x: 350, y: 260, w: 260, h: 180, name: 'ZONE 3: TITANIUM VAULT' }
+      ];
+
+      zonesCoord.forEach((zc, idx) => {
+        const isCurrent = state.zone === idx;
+        ctx.strokeStyle = isCurrent ? '#eab308' : '#27272a';
+        ctx.lineWidth = isCurrent ? 3 : 1;
+        ctx.strokeRect(zc.x, zc.y, zc.w, zc.h);
+
+        ctx.fillStyle = isCurrent ? 'rgba(234, 179, 8, 0.08)' : 'rgba(15, 23, 42, 0.4)';
+        ctx.fillRect(zc.x, zc.y, zc.w, zc.h);
+
+        ctx.fillStyle = isCurrent ? '#fef08a' : '#71717a';
+        ctx.font = 'bold 11px Courier New';
+        ctx.textAlign = 'left';
+        ctx.fillText(zc.name, zc.x + 10, zc.y + 20);
+
+        // Zone contents
+        if (idx === 0) {
+          // Getaway Van
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(zc.x + 40, zc.y + 60, 100, 50);
+          ctx.fillStyle = '#64748b';
+          ctx.font = '10px Courier New';
+          ctx.fillText('[GETAWAY VAN]', zc.x + 45, zc.y + 90);
+          if (state.lootValue >= 500000 && state.hasImperialDiamond) {
+            ctx.fillStyle = '#22c55e';
+            ctx.fillText('EXTRACTION READY!', zc.x + 45, zc.y + 125);
+          }
+        } else if (idx === 1) {
+          // CCTV status
+          ctx.fillStyle = state.cctvLooped[1] ? '#22c55e' : '#ef4444';
+          ctx.font = '10px Courier New';
+          ctx.fillText(state.cctvLooped[1] ? 'CCTV: LOOPED' : 'CCTV: ACTIVE PATROL', zc.x + 15, zc.y + 60);
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText('Guards: ' + state.guardsInZone[1], zc.x + 15, zc.y + 85);
+        } else if (idx === 2) {
+          // Vault Blast Door
+          ctx.fillStyle = '#3f3f46';
+          ctx.fillRect(zc.x + 140, zc.y + 40, 30, 90);
+          ctx.fillStyle = state.vaultOpened ? '#22c55e' : (state.drillDeployed ? '#eab308' : '#ef4444');
+          ctx.font = '10px Courier New';
+          ctx.fillText(state.vaultOpened ? 'BLAST DOOR BREACHED' : (state.drillDeployed ? 'DRILLING (' + state.drillProgress + '%)' : 'VAULT DOOR SEALED'), zc.x + 15, zc.y + 60);
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText('Guards: ' + state.guardsInZone[2], zc.x + 15, zc.y + 85);
+        } else if (idx === 3) {
+          // The Imperial Diamond
+          ctx.fillStyle = state.hasImperialDiamond ? '#71717a' : '#fef08a';
+          ctx.beginPath();
+          ctx.arc(zc.x + 130, zc.y + 80, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.font = '10px Courier New';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.hasImperialDiamond ? '[DIAMOND BAGGED]' : 'IMPERIAL DIAMOND ($500K)', zc.x + 130, zc.y + 120);
+          ctx.fillStyle = '#ca8a04';
+          ctx.fillText('Gold: ' + state.goldBags + '/' + state.maxGold + ' | Cash: ' + state.cashBags + '/' + state.maxCash, zc.x + 130, zc.y + 140);
+        }
+      });
+
+      // Alarm Strobe
+      if (state.alarmTriggered) {
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(0, 0, w, h);
+      }
+
+      // Game Over Screen
+      if (isOver(state)) {
+        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText(state.victory ? 'PERFECT HEIST ESCAPE!' : 'OPERATION COMPROMISED - BUSTED', w / 2, h / 2 - 20);
+        ctx.font = '14px Courier New';
+        ctx.fillText('Final Heist Payout: $' + state.lootValue.toLocaleString() + ' | Score: ' + score(state), w / 2, h / 2 + 15);
+      }
+
+      updateActions();
+    }
+
+    function updateActions() {
+      const panel = document.getElementById('actions-panel');
+      if (isOver(state)) {
+        panel.innerHTML = '<button class="btn btn-loot" onclick="window.restartGame()">PLAN NEXT HEIST</button>';
+        return;
+      }
+
+      const actions = legalActions(state);
+      let html = '';
+
+      for (const act of actions) {
+        let cls = 'btn';
+        let label = act;
+        let sub = '';
+
+        if (act === 'action:recon_surveillance') {
+          cls += ' btn-stealth';
+          label = '👀 Recon Security';
+          sub = 'Cool Suspicion (-10%)';
+        } else if (act === 'action:deploy_emp_jammer') {
+          cls += ' btn-stealth';
+          label = '⚡ Deploy EMP Jammer';
+          sub = 'Suppress Systems (3 turns)';
+        } else if (act === 'action:hack_camera_loop') {
+          cls += ' btn-stealth';
+          label = '💻 Hack Camera Loop';
+          sub = 'Blind Security Hub';
+        } else if (act === 'action:silent_guard_takedown') {
+          cls += ' btn-danger';
+          label = '🥋 Silent Takedown';
+          sub = 'Answer Radio Pager';
+        } else if (act === 'action:pick_security_lock') {
+          label = '🔓 Pick Security Lock';
+          sub = 'Unlock Next Sector';
+        } else if (act === 'action:start_thermal_drill') {
+          cls += ' btn-loot';
+          label = '🔥 Mount Thermal Drill';
+          sub = 'Breach Vault Door';
+        } else if (act === 'action:service_drill') {
+          cls += ' btn-danger';
+          label = '🔧 Clear Drill Jam';
+          sub = 'Restart Motor';
+        } else if (act === 'action:bag_cash') {
+          cls += ' btn-loot';
+          label = '💵 Bag Currency Stash';
+          sub = '+$50,000';
+        } else if (act === 'action:bag_gold') {
+          cls += ' btn-loot';
+          label = '🧈 Bag Gold Bullion';
+          sub = '+$100,000';
+        } else if (act === 'action:bag_imperial_diamond') {
+          cls += ' btn-loot';
+          label = '💎 Steal Imperial Diamond!';
+          sub = '+$500,000 Crown Jewel';
+        } else if (act === 'action:defend_against_swat') {
+          cls += ' btn-danger';
+          label = '💥 Suppressing Fire';
+          sub = 'Repel SWAT Assault';
+        } else if (act.startsWith('action:advance_to_zone:')) {
+          const z = parseInt(act.split(':')[2], 10);
+          label = '🚪 Move: ' + ZONE_NAMES[z];
+        } else if (act === 'action:escape_in_getaway_van') {
+          cls += ' btn-loot';
+          label = '🚐 DIVE IN GETAWAY VAN!';
+          sub = 'Secure Escape';
+        }
+
+        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
+      }
+
+      panel.innerHTML = html;
+    }
+
+    window.triggerAction = function(act) {
+      if (isOver(state)) return;
+      if (act.includes('bag') || act.includes('escape')) playSfx('loot');
+      else if (act.includes('drill')) playSfx('drill');
+      else if (act.includes('takedown') || act.includes('defend')) playSfx('alarm');
+      else playSfx('stealth');
+
+      step(state, act);
+      render();
+    };
+
+    window.restartGame = function() {
+      state = createState(Date.now ? Date.now() : 12345);
+      render();
+    };
+
+    window.toggleBot = function() {
+      botRunning = !botRunning;
+      document.getElementById('bot-toggle-btn').textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
+      document.getElementById('bot-toggle-btn').style.background = botRunning ? '#0284c7' : '#18181b';
+
+      if (botRunning) {
+        botInterval = setInterval(() => {
+          if (isOver(state)) {
+            state = createState(Date.now ? Date.now() : 9999);
+            render();
+            return;
+          }
+          const acts = legalActions(state);
+          if (acts.length > 0) {
+            let choice = acts[0];
+            if (acts.includes('action:escape_in_getaway_van')) choice = 'action:escape_in_getaway_van';
+            else if (acts.includes('action:bag_imperial_diamond')) choice = 'action:bag_imperial_diamond';
+            else if (acts.includes('action:bag_gold')) choice = 'action:bag_gold';
+            else if (acts.includes('action:service_drill')) choice = 'action:service_drill';
+            else if (acts.includes('action:start_thermal_drill')) choice = 'action:start_thermal_drill';
+            else if (acts.includes('action:hack_camera_loop')) choice = 'action:hack_camera_loop';
+            else if (acts.includes('action:pick_security_lock')) choice = 'action:pick_security_lock';
+            else if (state.alarmTriggered && acts.includes('action:defend_against_swat')) choice = 'action:defend_against_swat';
+            else if (state.suspicion > 50 && acts.includes('action:recon_surveillance')) choice = 'action:recon_surveillance';
+            else if (acts.find(a => a.startsWith('action:advance_to_zone:'))) {
+              choice = acts.find(a => a.startsWith('action:advance_to_zone:'));
+            }
+            window.triggerAction(choice);
+          }
+        }, 350);
+      } else {
+        clearInterval(botInterval);
+      }
+    };
+
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
