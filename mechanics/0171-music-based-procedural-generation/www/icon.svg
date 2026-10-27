@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <radialGradient id="beatBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3b0764" />
+      <stop offset="60%" stop-color="#1e0438" />
+      <stop offset="100%" stop-color="#050014" />
+    </radialGradient>
+    <linearGradient id="neonSun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#beatBg)" />
+  <!-- Neon Sun -->
+  <circle cx="256" cy="220" r="90" fill="url(#neonSun)" />
+  <!-- Sun stripes -->
+  <line x1="170" y1="210" x2="342" y2="210" stroke="#1e0438" stroke-width="6" />
+  <line x1="176" y1="230" x2="336" y2="230" stroke="#1e0438" stroke-width="8" />
+  <line x1="190" y1="250" x2="322" y2="250" stroke="#1e0438" stroke-width="10" />
+  <!-- Perspective 3-Lane Highway -->
+  <polygon points="216,280 296,280 440,460 72,460" fill="#0f021e" stroke="#ec4899" stroke-width="6" />
+  <line x1="242" y1="280" x2="190" y2="460" stroke="#06b6d4" stroke-width="4" stroke-dasharray="14 10" />
+  <line x1="270" y1="280" x2="322" y2="460" stroke="#06b6d4" stroke-width="4" stroke-dasharray="14 10" />
+  <!-- Ship Silhouette -->
+  <polygon points="256,380 280,430 256,415 232,430" fill="#38bdf8" stroke="#ffffff" stroke-width="3" />
+</svg>

@@ -1,0 +1,12 @@
+{
+  "name": "Beat Odyssey: Procedural Rhythm Racer",
+  "short_name": "BeatOdyssey",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#050014",
+  "theme_color": "#ec4899",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

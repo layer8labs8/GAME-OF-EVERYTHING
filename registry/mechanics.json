@@ -1814,9 +1814,11 @@
       "slug": "music-based-procedural-generation",
       "name": "Music-Based Procedural Generation",
       "family": "Rhythm",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Beat Odyssey",
+      "levels": "endless"
     },
     {
       "id": "0172",
