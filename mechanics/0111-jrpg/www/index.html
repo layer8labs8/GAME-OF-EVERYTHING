@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Crystal Echoes: JRPG</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #151c2e;
+      border: 1px solid #283553;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      color: #38bdf8;
+      text-transform: uppercase;
+    }
+    .hud-stat {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #facc15;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      background: #060913;
+      border: 1px solid #1f2b45;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+    .controls-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-section {
+      background: #151c2e;
+      border: 1px solid #283553;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f1f5f9;
+      padding: 6px 4px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 46px;
+    }
+    .btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #38bdf8;
+    }
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .btn-fire {
+      background: #451a1a;
+      border-color: #ef4444;
+      color: #fee2e2;
+    }
+    .btn-ice {
+      background: #082f49;
+      border-color: #38bdf8;
+      color: #e0f2fe;
+    }
+    .btn-thunder {
+      background: #422006;
+      border-color: #eab308;
+      color: #fef08a;
+    }
+    .btn-limit {
+      background: #4c1d95;
+      border-color: #a855f7;
+      color: #f3e8ff;
+      font-weight: 700;
+    }
+    .log-feed {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      max-height: 52px;
+      overflow-y: auto;
+      line-height: 1.3;
+      padding: 4px;
+      background: #080c16;
+      border-radius: 4px;
+      border: 1px solid #1a243a;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Crystal Echoes</h1>
+    <div class="hud-stat" id="hud-stats">Stage 1 / 3 • Turn 1 • Limit 20%</div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="view" width="560" height="380"></canvas>
+
+    <div class="controls-panel">
+      <!-- Target & Member Directives -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span id="active-turn-label" style="color: #38bdf8;">Active: Aiden (Knight)</span>
+          <span id="target-selection-label" style="color: #f87171;">Target: Enemy 1</span>
+        </div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-target-0" class="btn" style="border-color: #ef4444;">Target Enemy 1</button>
+          <button id="btn-target-1" class="btn" style="border-color: #ef4444;">Target Enemy 2</button>
+          <button id="btn-defend" class="btn">Defend & Focus<br><small>Half Dmg • +6 MP</small></button>
+        </div>
+
+        <!-- Action Commands -->
+        <div class="section-title" style="margin-top: 6px;">
+          <span>Class Commands & Sorcery</span>
+          <span id="limit-status-badge" style="color: #a855f7;">Limit Gauge: 20%</span>
+        </div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-act-attack" class="btn">Physical Strike<br><small>Melee Weapon</small></button>
+          <button id="btn-act-skill1" class="btn">Skill 1<br><small>Cost MP</small></button>
+          <button id="btn-act-skill2" class="btn">Skill 2<br><small>Cost MP</small></button>
+          <button id="btn-act-skill3" class="btn">Skill 3<br><small>Cost MP</small></button>
+          <button id="btn-act-cure" class="btn">Heal Ally<br><small>Cure Spell</small></button>
+          <button id="btn-act-limit" class="btn btn-limit">LIMIT BREAK<br><small>Super Skill</small></button>
+        </div>
+      </div>
+
+      <!-- Battle History Feed -->
+      <div class="panel-section">
+        <div class="section-title">Battle Chronicle</div>
+        <div id="log-feed" class="log-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now() & 0xffff);
+    const canvas = document.getElementById('view');
+    const ctx = canvas.getContext('2d');
+
+    let currentTargetIdx = 0;
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(freq = 240, type = 'sine', duration = 0.12) {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state !== 'closed') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        }
+      } catch (e) {}
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        step(state, action);
+        if (action.startsWith('skill_fire') || action.startsWith('skill_power')) playSfx(150, 'sawtooth', 0.2);
+        else if (action.startsWith('skill_blizzard') || action.startsWith('skill_thunder')) playSfx(580, 'triangle', 0.22);
+        else if (action.startsWith('skill_cure') || action.startsWith('skill_revive')) playSfx(660, 'sine', 0.25);
+        else if (action.startsWith('limit_break')) playSfx(750, 'square', 0.35);
+        else playSfx(220, 'sawtooth', 0.1);
+
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn('Action error:', err);
+      }
+    }
+
+    // Attach static listeners
+    document.getElementById('btn-target-0').onclick = () => { currentTargetIdx = 0; updateUI(); render(); };
+    document.getElementById('btn-target-1').onclick = () => { currentTargetIdx = 1; updateUI(); render(); };
+
+    document.getElementById('btn-defend').onclick = () => doAction('defend:self');
+    document.getElementById('btn-act-attack').onclick = () => doAction(`attack:${currentTargetIdx}`);
+    document.getElementById('btn-act-limit').onclick = () => {
+      const m = state.party[state.activeMemberIndex];
+      if (m && m.id === 'rowan') doAction('limit_break:party');
+      else doAction(`limit_break:${currentTargetIdx}`);
+    };
+
+    document.getElementById('btn-act-skill1').onclick = () => {
+      const m = state.party[state.activeMemberIndex];
+      if (!m) return;
+      if (m.id === 'aiden') doAction('skill_taunt:self');
+      else if (m.id === 'lyra') doAction(`skill_fire:${currentTargetIdx}`);
+      else if (m.id === 'rowan') doAction(`skill_holy:${currentTargetIdx}`);
+    };
+
+    document.getElementById('btn-act-skill2').onclick = () => {
+      const m = state.party[state.activeMemberIndex];
+      if (!m) return;
+      if (m.id === 'aiden') doAction(`skill_power_slash:${currentTargetIdx}`);
+      else if (m.id === 'lyra') doAction(`skill_blizzard:${currentTargetIdx}`);
+      else if (m.id === 'rowan') doAction(`skill_cure:${getMostDamagedAllyIndex()}`);
+    };
+
+    document.getElementById('btn-act-skill3').onclick = () => {
+      const m = state.party[state.activeMemberIndex];
+      if (!m) return;
+      if (m.id === 'lyra') doAction(`skill_thunder:${currentTargetIdx}`);
+      else if (m.id === 'rowan') doAction(`skill_revive:${getFallenAllyIndex()}`);
+    };
+
+    document.getElementById('btn-act-cure').onclick = () => {
+      doAction(`skill_cure:${getMostDamagedAllyIndex()}`);
+    };
+
+    function getMostDamagedAllyIndex() {
+      let lowestIdx = 0;
+      let minHp = 999;
+      state.party.forEach((p, idx) => {
+        if (p.hp > 0 && p.hp < minHp) {
+          minHp = p.hp;
+          lowestIdx = idx;
+        }
+      });
+      return lowestIdx;
+    }
+
+    function getFallenAllyIndex() {
+      const idx = state.party.findIndex(p => p.hp === 0);
+      return idx !== -1 ? idx : 0;
+    }
+
+    function updateUI() {
+      const legals = legalActions(state);
+      const m = state.party[state.activeMemberIndex];
+
+      // HUD Stats
+      const hud = document.getElementById('hud-stats');
+      if (hud) {
+        hud.textContent = `Stage ${state.stage} / 3 • Turn ${state.turn} • Limit: ${state.limitGauge}%`;
+      }
+
+      const turnLbl = document.getElementById('active-turn-label');
+      if (turnLbl && m) {
+        turnLbl.textContent = `Active: ${m.name} [${m.hp}/${m.maxHp} HP • ${m.mp}/${m.maxMp} MP]`;
+      }
+
+      // Target verification
+      const aliveEnemies = state.enemies.filter(e => e.alive);
+      if (currentTargetIdx >= aliveEnemies.length) {
+        currentTargetIdx = 0;
+      }
+
+      const tgtLbl = document.getElementById('target-selection-label');
+      if (tgtLbl && aliveEnemies[currentTargetIdx]) {
+        const e = aliveEnemies[currentTargetIdx];
+        const stg = e.staggered ? ' [STAGGERED 2X!]' : '';
+        tgtLbl.textContent = `Target: ${e.name} (${e.shields}/${e.maxShields} Shields • Weak: ${e.weakness.toUpperCase()})${stg}`;
+      }
+
+      // Target buttons
+      const bTgt0 = document.getElementById('btn-target-0');
+      const bTgt1 = document.getElementById('btn-target-1');
+      if (bTgt0) {
+        bTgt0.disabled = !aliveEnemies[0];
+        bTgt0.textContent = aliveEnemies[0] ? `Target: ${aliveEnemies[0].name}` : 'Enemy 1 (Defeated)';
+      }
+      if (bTgt1) {
+        bTgt1.disabled = !aliveEnemies[1];
+        bTgt1.textContent = aliveEnemies[1] ? `Target: ${aliveEnemies[1].name}` : 'Enemy 2 (None)';
+      }
+
+      // Dynamic skill buttons
+      const bAtk = document.getElementById('btn-act-attack');
+      const bS1 = document.getElementById('btn-act-skill1');
+      const bS2 = document.getElementById('btn-act-skill2');
+      const bS3 = document.getElementById('btn-act-skill3');
+      const bCure = document.getElementById('btn-act-cure');
+      const bLimit = document.getElementById('btn-act-limit');
+      const bDef = document.getElementById('btn-defend');
+
+      if (bAtk) bAtk.disabled = !legals.includes(`attack:${currentTargetIdx}`);
+      if (bDef) bDef.disabled = !legals.includes('defend:self');
+
+      if (m && m.id === 'aiden') {
+        if (bS1) { bS1.innerHTML = 'Iron Taunt<br><small>8 MP • Guard</small>'; bS1.disabled = !legals.includes('skill_taunt:self'); }
+        if (bS2) { bS2.innerHTML = 'Power Slash<br><small>12 MP • Heavy</small>'; bS2.disabled = !legals.includes(`skill_power_slash:${currentTargetIdx}`); }
+        if (bS3) { bS3.innerHTML = '---<br><small>N/A</small>'; bS3.disabled = true; }
+        if (bCure) bCure.disabled = true;
+      } else if (m && m.id === 'lyra') {
+        if (bS1) { bS1.innerHTML = 'Fire<br><small>10 MP • Fire</small>'; bS1.disabled = !legals.includes(`skill_fire:${currentTargetIdx}`); }
+        if (bS2) { bS2.innerHTML = 'Blizzard<br><small>10 MP • Ice</small>'; bS2.disabled = !legals.includes(`skill_blizzard:${currentTargetIdx}`); }
+        if (bS3) { bS3.innerHTML = 'Thunder<br><small>10 MP • Lightning</small>'; bS3.disabled = !legals.includes(`skill_thunder:${currentTargetIdx}`); }
+        if (bCure) bCure.disabled = true;
+      } else if (m && m.id === 'rowan') {
+        if (bS1) { bS1.innerHTML = 'Holy Ray<br><small>14 MP • Light</small>'; bS1.disabled = !legals.includes(`skill_holy:${currentTargetIdx}`); }
+        const dmgIdx = getMostDamagedAllyIndex();
+        if (bS2) { bS2.innerHTML = 'Cure Spell<br><small>12 MP • Heal</small>'; bS2.disabled = !legals.includes(`skill_cure:${dmgIdx}`); }
+        const falIdx = getFallenAllyIndex();
+        if (bS3) { bS3.innerHTML = 'Revive Hero<br><small>20 MP • Resurrection</small>'; bS3.disabled = !legals.includes(`skill_revive:${falIdx}`); }
+        if (bCure) bCure.disabled = !legals.includes(`skill_cure:${dmgIdx}`);
+      }
+
+      if (bLimit) {
+        const canLimit = legals.some(a => a.startsWith('limit_break'));
+        bLimit.disabled = !canLimit;
+        bLimit.textContent = canLimit ? 'LIMIT BREAK READY!' : `Limit (${state.limitGauge}%)`;
+      }
+
+      // History log
+      const logFeed = document.getElementById('log-feed');
+      if (logFeed && state.history.length > 0) {
+        logFeed.innerHTML = state.history.slice(-4).reverse().join('<br>');
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // JRPG Battle Scenic Background
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      if (state.stage === 1) {
+        bgGrad.addColorStop(0, '#0c2340'); bgGrad.addColorStop(1, '#051329'); // Glacial Caverns
+      } else if (state.stage === 2) {
+        bgGrad.addColorStop(0, '#312e81'); bgGrad.addColorStop(1, '#1e1b4b'); // Thunder Peak
+      } else {
+        bgGrad.addColorStop(0, '#450a0a'); bgGrad.addColorStop(1, '#1f0404'); // Sanctum of Behemoth
+      }
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Arena Floor Strip
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 260, canvas.width, 120);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 260, canvas.width, 120);
+
+      // Top Stage Banner & Limit Gauge
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText(`${BATTLES[state.stage - 1].name} — Battle ${state.stage} of 3`, 24, 28);
+
+      // Limit Break Meter
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(360, 16, 170, 14);
+      ctx.strokeStyle = '#a855f7';
+      ctx.strokeRect(360, 16, 170, 14);
+
+      const limitW = Math.max(0, Math.min(170, (170 * state.limitGauge) / 100));
+      ctx.fillStyle = state.limitGauge >= 100 ? '#fde047' : '#a855f7';
+      ctx.fillRect(360, 16, limitW, 14);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText(`LIMIT GAUGE: ${state.limitGauge}%`, 370, 27);
+
+      // Left: 3 Party Members
+      state.party.forEach((p, idx) => {
+        const px = 30 + idx * 40;
+        const py = 120 + idx * 45;
+        const isActive = (state.activeMemberIndex === idx);
+        drawPartyMember(px, py, p, isActive);
+      });
+
+      // Right: Enemies
+      const aliveEnemies = state.enemies.filter(e => e.alive);
+      aliveEnemies.forEach((e, idx) => {
+        const ex = 360 + (idx === 1 ? 70 : 0);
+        const ey = 140 + idx * 65;
+        const isTargeted = (currentTargetIdx === idx);
+        drawEnemy(ex, ey, e, isTargeted);
+      });
+
+      // Battle Score at bottom right
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`Battle Score: ${score(state)}`, 410, 370);
+
+      // Game Over Screen Overlay
+      if (state.done) {
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.textAlign = 'center';
+        if (state.winner === 'player') {
+          ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('ANCIENT BEHEMOTH SLAYN!', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Victory of Light! The crystals echo in triumph! Score: ${score(state)}`, 280, 195);
+        } else {
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('ALL HEROES HAVE FALLEN', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Fell in ${BATTLES[state.stage - 1].name}. Final Score: ${score(state)}`, 280, 195);
+        }
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function drawPartyMember(x, y, p, isActive) {
+      ctx.save();
+      // Active halo
+      if (isActive) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x + 12, y + 16, 26, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Character Sprite
+      if (p.id === 'aiden') {
+        // Heavy Armor Knight
+        ctx.fillStyle = p.hp > 0 ? '#3b82f6' : '#475569';
+        ctx.fillRect(x, y, 24, 34);
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath(); ctx.arc(x + 12, y - 8, 8, 0, Math.PI * 2); ctx.fill();
+        // Sword
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + 24, y + 20); ctx.lineTo(x + 36, y + 2); ctx.stroke();
+      } else if (p.id === 'lyra') {
+        // Black Mage Robe
+        ctx.fillStyle = p.hp > 0 ? '#6366f1' : '#475569';
+        ctx.fillRect(x, y, 22, 34);
+        ctx.fillStyle = '#e0e7ff';
+        ctx.beginPath(); ctx.arc(x + 11, y - 8, 8, 0, Math.PI * 2); ctx.fill();
+        // Staff
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + 22, y + 28); ctx.lineTo(x + 30, y - 10); ctx.stroke();
+      } else {
+        // White Mage Cleric
+        ctx.fillStyle = p.hp > 0 ? '#10b981' : '#475569';
+        ctx.fillRect(x, y, 22, 34);
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath(); ctx.arc(x + 11, y - 8, 8, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Member Name & Health
+      ctx.fillStyle = p.hp > 0 ? '#f8fafc' : '#ef4444';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText(p.name.split(' ')[0], x - 10, y + 48);
+
+      const hpPct = Math.max(0, p.hp / p.maxHp);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x - 10, y + 52, 48, 5);
+      ctx.fillStyle = hpPct > 0.3 ? '#22c55e' : '#ef4444';
+      ctx.fillRect(x - 10, y + 52, Math.floor(48 * hpPct), 5);
+
+      ctx.restore();
+    }
+
+    function drawEnemy(x, y, e, isTargeted) {
+      ctx.save();
+      // Target Reticle
+      if (isTargeted) {
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x - 20, y - 24, 90, 75);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillText('TARGET', x + 6, y - 28);
+      }
+
+      // Enemy Monster Graphic
+      if (e.isBoss) {
+        // Ancient Behemoth
+        ctx.fillStyle = '#7f1d1d';
+        ctx.beginPath();
+        ctx.moveTo(x, y + 30); ctx.lineTo(x + 50, y - 20); ctx.lineTo(x + 65, y + 30);
+        ctx.closePath(); ctx.fill();
+      } else {
+        ctx.fillStyle = e.weakness === 'fire' ? '#38bdf8' : (e.weakness === 'ice' ? '#ef4444' : '#eab308');
+        ctx.beginPath();
+        ctx.arc(x + 25, y + 10, 18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Stagger Effect Overlay
+      if (e.staggered) {
+        ctx.fillStyle = '#fde047';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('STAGGERED! (2X DMG)', x - 10, y + 48);
+      }
+
+      // Name & HP Bar
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(e.name, x - 15, y - 10);
+
+      const hpPct = Math.max(0, e.hp / e.maxHp);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x - 15, y - 6, 80, 6);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(x - 15, y - 6, Math.floor(80 * hpPct), 6);
+
+      // Shields & Weakness Display
+      ctx.fillStyle = '#fde047';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(`Shield: ${e.shields}/${e.maxShields} • Weak: ${e.weakness.toUpperCase()}`, x - 15, y + 36);
+
+      ctx.restore();
+    }
+
+    // Initialize
+    updateUI();
+    render();
+
+    // Register service worker if supported
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

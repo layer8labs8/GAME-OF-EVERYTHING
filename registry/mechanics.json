@@ -1153,9 +1153,11 @@
    "id": "0111",
    "slug": "jrpg",
    "name": "JRPG",
+   "title": "Crystal Echoes",
    "family": "RPG",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {
