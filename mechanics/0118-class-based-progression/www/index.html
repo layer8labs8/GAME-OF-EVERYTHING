@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Trials of Mastery: Ascendant Classes</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#8957e5">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #8957e5;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #8b949e;
+    }
+    .stats span {
+      color: #f0883e;
+      margin-left: 2px;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 16 / 9;
+      background: #090d13;
+      border: 2px solid #30363d;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      touch-action: none;
+    }
+    .status-ribbon {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 0.82rem;
+      font-weight: bold;
+    }
+    .ribbon-pill {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .class-tree-bar {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 6px;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .action-grid {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    button.btn {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 10px 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.btn:active {
+      background: #30363d;
+    }
+    button.btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #8957e5;
+      border-color: #a371f7;
+      color: #fff;
+    }
+    button.btn-skill {
+      background: #da3633;
+      border-color: #f85149;
+      color: #fff;
+    }
+    button.btn-evolve {
+      background: #238636;
+      border-color: #2ea043;
+      color: #fff;
+    }
+    #log-panel {
+      width: 100%;
+      max-width: 500px;
+      height: 64px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #8b949e;
+    }
+    #log-panel p {
+      margin-bottom: 2px;
+    }
+    #log-panel p:first-child {
+      color: #8957e5;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>👑 Trials of Mastery</h1>
+    <div class="stats">
+      Trial: <span id="val-trial">1/5</span> | Score: <span id="val-score">0</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <div class="status-ribbon">
+      <div class="ribbon-pill">Class: <span id="val-class" style="color: #a371f7;">Novice (T0)</span></div>
+      <div class="ribbon-pill">JP: <span id="val-jp" style="color: #f0883e;">1</span></div>
+      <div class="ribbon-pill">HP: <span id="val-hp" style="color: #3fb950;">100/100</span></div>
+      <div class="ribbon-pill">MP: <span id="val-mp" style="color: #58a6ff;">40/40</span></div>
+    </div>
+
+    <canvas id="arena" width="500" height="280"></canvas>
+
+    <div id="class-tree" class="class-tree-bar"></div>
+
+    <div class="action-grid">
+      <button id="btn-attack" class="btn btn-primary">Attack</button>
+      <button id="btn-skill" class="btn btn-skill">Skill</button>
+      <button id="btn-defend" class="btn">Defend</button>
+      <button id="btn-potion" class="btn">Potion</button>
+    </div>
+
+    <div id="log-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now());
+      const canvas = document.getElementById('arena');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      const valTrial = document.getElementById('val-trial');
+      const valScore = document.getElementById('val-score');
+      const valClass = document.getElementById('val-class');
+      const valJp = document.getElementById('val-jp');
+      const valHp = document.getElementById('val-hp');
+      const valMp = document.getElementById('val-mp');
+      const classTree = document.getElementById('class-tree');
+      const logPanel = document.getElementById('log-panel');
+
+      const btnAttack = document.getElementById('btn-attack');
+      const btnSkill = document.getElementById('btn-skill');
+      const btnDefend = document.getElementById('btn-defend');
+      const btnPotion = document.getElementById('btn-potion');
+
+      function updateUI() {
+        if (valTrial) valTrial.textContent = state.trial + '/' + state.maxTrials;
+        if (valScore) valScore.textContent = state.score;
+        if (valClass) valClass.textContent = state.hero.currentClass.toUpperCase() + ' (L' + state.hero.level + ' T' + state.hero.tier + ')';
+        if (valJp) valJp.textContent = state.hero.jp;
+        if (valHp) valHp.textContent = state.hero.hp + '/' + state.hero.maxHp + (state.hero.shield > 0 ? ' [+' + state.hero.shield + ']' : '');
+        if (valMp) valMp.textContent = state.hero.mp + '/' + state.hero.maxMp;
+
+        if (logPanel && state.combatLog) {
+          logPanel.innerHTML = state.combatLog.slice(-5).reverse().map(function(line) {
+            return '<p>' + line + '</p>';
+          }).join('');
+        }
+
+        const legal = legalActions(state);
+
+        if (btnAttack) btnAttack.disabled = state.done || !legal.includes('attack');
+        if (btnDefend) btnDefend.disabled = state.done || !legal.includes('defend');
+        if (btnPotion) {
+          btnPotion.disabled = state.done || !legal.includes('potion');
+          btnPotion.textContent = 'Potion (' + state.hero.potions + ')';
+        }
+
+        // Active Skill selection
+        if (btnSkill) {
+          const firstSkill = legal.find(function(a) { return a.startsWith('skill:'); });
+          if (firstSkill) {
+            btnSkill.disabled = state.done;
+            btnSkill.textContent = firstSkill.slice(6).replace('_', ' ').toUpperCase();
+            btnSkill.onclick = function() {
+              step(state, firstSkill);
+              updateUI();
+            };
+          } else {
+            btnSkill.disabled = true;
+            btnSkill.textContent = 'No MP';
+          }
+        }
+
+        // Render Evolution & Learn Skill buttons in Class Tree bar
+        if (classTree) {
+          const evolutions = legal.filter(function(a) { return a.startsWith('evolve:'); });
+          const learns = legal.filter(function(a) { return a.startsWith('learn:'); });
+
+          let html = '';
+          for (let i = 0; i < evolutions.length; i++) {
+            const cls = evolutions[i].slice(7);
+            html += '<button class="btn btn-evolve" data-action="' + evolutions[i] + '">Ascend: ' + cls.toUpperCase() + '</button>';
+          }
+          for (let j = 0; j < learns.length; j++) {
+            const sk = learns[j].slice(6);
+            html += '<button class="btn" style="background: #388bfd; border-color: #58a6ff;" data-action="' + learns[j] + '">Learn: ' + sk.replace('_', ' ') + ' (1 JP)</button>';
+          }
+          classTree.innerHTML = html;
+
+          const btns = classTree.querySelectorAll ? classTree.querySelectorAll('button') : [];
+          for (let b = 0; b < btns.length; b++) {
+            btns[b].onclick = function() {
+              const act = this.getAttribute('data-action');
+              if (legal.includes(act)) {
+                step(state, act);
+                updateUI();
+              }
+            };
+          }
+        }
+
+        render();
+      }
+
+      function render() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 500, 280);
+
+        // Arena Stone Hall
+        const grad = ctx.createLinearGradient(0, 0, 0, 280);
+        grad.addColorStop(0, '#161b22');
+        grad.addColorStop(1, '#090d13');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 500, 280);
+
+        // Arena Arena Platform
+        ctx.fillStyle = '#1f242c';
+        ctx.beginPath();
+        ctx.ellipse(250, 210, 220, 60, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#30363d';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw Hero on Left
+        const hx = 140, hy = 170;
+        ctx.beginPath();
+        ctx.arc(hx, hy, 30, 0, Math.PI * 2);
+        ctx.fillStyle = state.hero.tier === 0 ? '#484f58' : (state.hero.tier === 1 ? '#1f6feb' : '#8957e5');
+        ctx.fill();
+        ctx.strokeStyle = state.hero.shield > 0 ? '#58a6ff' : '#f0f6fc';
+        ctx.lineWidth = state.hero.shield > 0 ? 4 : 2;
+        ctx.stroke();
+
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const hIcon = state.hero.tier === 2 ? '👑' : (state.hero.currentClass === 'warrior' ? '🛡️' : (state.hero.currentClass === 'rogue' ? '🗡️' : (state.hero.currentClass === 'mage' ? '🔮' : '⚔️')));
+        ctx.fillText(hIcon, hx, hy - 2);
+
+        // Hero Name & Bars
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(state.hero.currentClass.toUpperCase(), hx, hy - 40);
+        drawBar(hx - 35, hy + 38, 70, 5, state.hero.hp, state.hero.maxHp, '#3fb950');
+        drawBar(hx - 35, hy + 45, 70, 4, state.hero.mp, state.hero.maxMp, '#58a6ff');
+
+        // Draw Enemy on Right
+        const ex = 360, ey = 170;
+        ctx.beginPath();
+        ctx.arc(ex, ey, 34, 0, Math.PI * 2);
+        ctx.fillStyle = state.trial === 5 ? '#da3633' : '#6e40c9';
+        ctx.fill();
+        ctx.strokeStyle = '#f85149';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = '26px sans-serif';
+        const eIcon = state.trial === 5 ? '🔥' : (state.trial === 1 ? '🤖' : (state.trial === 2 ? '🧌' : (state.trial === 3 ? '🦁' : '🧙‍♂️')));
+        ctx.fillText(eIcon, ex, ey - 2);
+
+        ctx.fillStyle = '#f85149';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(state.enemy.name, ex, ey - 44);
+        drawBar(ex - 40, ey + 42, 80, 5, state.enemy.hp, state.enemy.maxHp, '#da3633');
+
+        // Game Over Overlay
+        if (state.done) {
+          ctx.fillStyle = 'rgba(9, 13, 22, 0.85)';
+          ctx.fillRect(0, 0, 500, 280);
+          ctx.fillStyle = state.victory ? '#3fb950' : '#f85149';
+          ctx.font = 'bold 28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.victory ? 'MASTER OF ALL CLASSES!' : 'DEFEATED IN THE TRIALS', 250, 130);
+          ctx.fillStyle = '#c9d1d9';
+          ctx.font = '15px sans-serif';
+          ctx.fillText('Score: ' + state.score, 250, 170);
+        }
+      }
+
+      function drawBar(x, y, w, h, val, max, color) {
+        ctx.fillStyle = '#21262d';
+        ctx.fillRect(x, y, w, h);
+        const fillW = Math.max(0, Math.min(w, (val / max) * w));
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, fillW, h);
+      }
+
+      if (btnAttack) {
+        btnAttack.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('attack')) {
+            step(state, 'attack');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnDefend) {
+        btnDefend.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('defend')) {
+            step(state, 'defend');
+            updateUI();
+          }
+        };
+      }
+
+      if (btnPotion) {
+        btnPotion.onclick = function() {
+          const legal = legalActions(state);
+          if (legal.includes('potion')) {
+            step(state, 'potion');
+            updateUI();
+          }
+        };
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>

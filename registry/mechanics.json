@@ -1231,9 +1231,11 @@
    "slug": "class-based-progression",
    "name": "Class-Based Progression",
    "family": "RPG",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Trials of Mastery",
+   "levels": "endless"
   },
   {
    "id": "0119",
