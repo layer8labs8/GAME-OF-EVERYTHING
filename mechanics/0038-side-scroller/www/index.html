@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cyber Ronin - Side Scroller</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#09090b">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #09090b;
+      color: #f43f5e;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(18, 18, 22, 0.9);
+      border-bottom: 1px solid #27272a;
+    }
+    .title-group h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
+    }
+    .title-group .sub {
+      font-size: 0.72rem;
+      color: #a1a1aa;
+    }
+    .score-badge {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #facc15;
+    }
+    .hud-bar {
+      width: 100%;
+      max-width: 480px;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #121216;
+      border-bottom: 1px solid #27272a;
+      font-size: 0.78rem;
+    }
+    .stat-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .stat-wrap .label {
+      font-size: 0.65rem;
+      color: #71717a;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .bar-bg {
+      width: 75px;
+      height: 6px;
+      background: #27272a;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      transition: width 0.15s ease;
+    }
+    .fill-hp { background: #10b981; }
+    .fill-stamina { background: #38bdf8; }
+    #gameCanvas {
+      background: #020204;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      display: block;
+      border-bottom: 1px solid #27272a;
+    }
+    .event-ticker {
+      width: 100%;
+      max-width: 480px;
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      color: #38bdf8;
+      background: #0c0c0e;
+      border-bottom: 1px solid #27272a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .controls-panel {
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #09090b;
+      flex-grow: 1;
+    }
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .dpad-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      flex-grow: 1;
+    }
+    .btn-act {
+      background: #18181b;
+      border: 1px solid #27272a;
+      color: #f4f4f5;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      padding: 10px 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      transition: background 0.1s;
+    }
+    .btn-act:active {
+      background: #0284c7;
+      color: white;
+    }
+    .btn-slash {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: white;
+    }
+    .btn-dash {
+      background: #4f46e5;
+      border-color: #6366f1;
+      color: white;
+    }
+    .btn-shuriken {
+      background: #e11d48;
+      border-color: #f43f5e;
+      color: white;
+    }
+    .bottom-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .btn-tool {
+      background: #18181b;
+      color: #a1a1aa;
+      border: 1px solid #27272a;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 2, 4, 0.88);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-box {
+      background: #18181b;
+      border: 1px solid #38bdf8;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(56, 189, 248, 0.2);
+    }
+    .modal-box h2 {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+    .modal-box.win h2 {
+      color: #38bdf8;
+    }
+    .modal-box.lose h2 {
+      color: #f43f5e;
+    }
+    .modal-box p {
+      color: #a1a1aa;
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+    }
+    .modal-box .btn-modal {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-group">
+      <h1>Cyber Ronin</h1>
+      <div class="sub">Neo-Tokyo Industrial Sector</div>
+    </div>
+    <div class="score-badge" id="scoreDisp">0 PTS</div>
+  </header>
+
+  <div class="hud-bar">
+    <div class="stat-wrap">
+      <span class="label">HP</span>
+      <div class="bar-bg"><div class="bar-fill fill-hp" id="hpFill" style="width: 100%;"></div></div>
+    </div>
+    <div class="stat-wrap">
+      <span class="label">Stamina</span>
+      <div class="bar-bg"><div class="bar-fill fill-stamina" id="staminaFill" style="width: 100%;"></div></div>
+    </div>
+    <div style="font-weight: 700; color: #f43f5e;" id="comboDisp">COMBO: x0</div>
+    <div style="font-weight: 600; color: #facc15;" id="shurikenDisp">Shuriken: 5</div>
+  </div>
+
+  <canvas id="gameCanvas" width="480" height="480"></canvas>
+
+  <div class="event-ticker" id="eventTicker">Infiltrating Neo-Tokyo Industrial Sector. Blade drawn!</div>
+
+  <div class="controls-panel">
+    <div class="control-row">
+      <div class="dpad-btns">
+        <button class="btn-act" id="btnLeft" style="width: 52px;">&larr;</button>
+        <button class="btn-act" id="btnRight" style="width: 52px;">&rarr;</button>
+      </div>
+      <div class="action-grid">
+        <button class="btn-act" id="btnJump">Jump</button>
+        <button class="btn-act btn-slash" id="btnSlash">Slash</button>
+        <button class="btn-act btn-dash" id="btnDash">Dash</button>
+      </div>
+    </div>
+    <div class="bottom-row">
+      <button class="btn-tool btn-shuriken" id="btnShuriken">Shuriken (Q)</button>
+      <button class="btn-tool" id="btnDeflect">Deflect (E)</button>
+      <button class="btn-tool" id="btnRest">Rest (R)</button>
+      <button class="btn-tool" id="btnReset">Restart (Esc)</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="endModal">
+    <div class="modal-box" id="modalBox">
+      <h2 id="modalTitle">Victory!</h2>
+      <p id="modalMsg">Goliath Mech destroyed.</p>
+      <button class="btn-modal" id="modalBtn">Replay Mission</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      let state = null;
+
+      function initGame() {
+        state = CyberRonin.createState(12345);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const scoreDisp = document.getElementById('scoreDisp');
+        if (scoreDisp) scoreDisp.textContent = state.scoreVal + ' PTS';
+
+        const hpFill = document.getElementById('hpFill');
+        if (hpFill) hpFill.style.width = Math.max(0, Math.min(100, state.player.hp)) + '%';
+
+        const staminaFill = document.getElementById('staminaFill');
+        if (staminaFill) staminaFill.style.width = Math.max(0, Math.min(100, state.player.stamina)) + '%';
+
+        const comboDisp = document.getElementById('comboDisp');
+        if (comboDisp) comboDisp.textContent = 'COMBO: x' + state.player.combo;
+
+        const shurikenDisp = document.getElementById('shurikenDisp');
+        if (shurikenDisp) shurikenDisp.textContent = 'Shuriken: ' + state.player.shurikens;
+
+        const eventTicker = document.getElementById('eventTicker');
+        if (eventTicker && state.lastEvent) eventTicker.textContent = state.lastEvent;
+
+        // Modals
+        const modal = document.getElementById('endModal');
+        const modalBox = document.getElementById('modalBox');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMsg = document.getElementById('modalMsg');
+        const modalBtn = document.getElementById('modalBtn');
+
+        if (state.won) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('lose');
+            modalBox.classList.add('win');
+          }
+          if (modalTitle) modalTitle.textContent = 'SECTOR CLEARED!';
+          if (modalMsg) modalMsg.textContent = 'Mission Complete! Final Score: ' + state.scoreVal + ' | HP Left: ' + state.player.hp + '%';
+          if (modalBtn) modalBtn.onclick = () => {
+            if (modal && modal.classList) modal.classList.remove('active');
+            initGame();
+          };
+        } else if (state.lost) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('win');
+            modalBox.classList.add('lose');
+          }
+          if (modalTitle) modalTitle.textContent = 'MISSION FAILED';
+          if (modalMsg) modalMsg.textContent = state.player.hp <= 0 ? 'Cyber Ronin fell in combat.' : 'Sector lockdown initiated.';
+          if (modalBtn) modalBtn.onclick = () => {
+            if (modal && modal.classList) modal.classList.remove('active');
+            initGame();
+          };
+        } else {
+          if (modal && modal.classList) modal.classList.remove('active');
+        }
+      }
+
+      function handleAction(action) {
+        if (!state || state.won || state.lost) return;
+        const legal = CyberRonin.legalActions(state);
+        if (!legal.includes(action)) return;
+
+        CyberRonin.step(state, action);
+        updateUI();
+        render();
+      }
+
+      function render() {
+        if (!ctx || !state) return;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // Camera tracks player horizontally
+        const camX = state.player.x * 16 - w / 2;
+        const camY = (8 - state.player.y) * 32 - h / 2;
+
+        ctx.fillStyle = '#020204';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.translate(-camX, -camY);
+
+        // 1. Draw Platforms
+        for (let i = 0; i < CyberRonin.PLATFORMS.length; i++) {
+          const plat = CyberRonin.PLATFORMS[i];
+          const px = plat.x1 * 16;
+          const pw = (plat.x2 - plat.x1) * 16;
+          const py = (8 - plat.y) * 32;
+
+          ctx.fillStyle = '#27272a';
+          ctx.fillRect(px, py, pw, 10);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(px, py, pw, 2);
+        }
+
+        // 2. Draw Hazard Spikes
+        for (let i = 0; i < CyberRonin.SPIKES.length; i++) {
+          const spk = CyberRonin.SPIKES[i];
+          const sx = spk.x1 * 16;
+          const sw = (spk.x2 - spk.x1) * 16;
+          const sy = (8 - 0) * 32;
+
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          for (let k = 0; k < sw; k += 8) {
+            ctx.moveTo(sx + k, sy + 10);
+            ctx.lineTo(sx + k + 4, sy - 6);
+            ctx.lineTo(sx + k + 8, sy + 10);
+          }
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // 3. Draw Vertical Wall at x=90
+        ctx.fillStyle = '#3f3f46';
+        ctx.fillRect(90 * 16, (8 - 6) * 32, 12, 6 * 32);
+
+        // 4. Draw Extraction Gate at x=195
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(195 * 16, (8 - 2) * 32, 8, 64);
+
+        // 5. Draw Enemies
+        for (let i = 0; i < state.enemies.length; i++) {
+          const e = state.enemies[i];
+          const ex = e.x * 16;
+          const ey = (8 - e.y) * 32 - 16;
+
+          if (e.type === 'boss') {
+            // Goliath Forge Mech
+            ctx.fillStyle = '#4c0519';
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 3;
+            ctx.fillRect(ex - 24, ey - 32, 48, 64);
+            ctx.strokeRect(ex - 24, ey - 32, 48, 64);
+            // Health bar
+            ctx.fillStyle = '#18181b';
+            ctx.fillRect(ex - 25, ey - 44, 50, 6);
+            ctx.fillStyle = '#f43f5e';
+            ctx.fillRect(ex - 25, ey - 44, 50 * (e.hp / e.maxHp), 6);
+          } else if (e.type === 'enforcer') {
+            // Cyber Enforcer
+            ctx.fillStyle = '#7f1d1d';
+            ctx.fillRect(ex - 10, ey - 14, 20, 28);
+          } else {
+            // Flying Drone
+            ctx.fillStyle = '#eab308';
+            ctx.beginPath();
+            ctx.arc(ex, ey, 8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // 6. Draw Player Cyber Ronin
+        const px = state.player.x * 16;
+        const py = (8 - state.player.y) * 32 - 16;
+
+        ctx.save();
+        ctx.translate(px, py);
+        if (state.player.facing < 0) ctx.scale(-1, 1);
+
+        // Ninja body
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(-8, -12, 16, 24);
+
+        // Neon Visor
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(0, -10, 8, 3);
+
+        // Scarf
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(-14, -8, 8, 4);
+
+        // Katana blade
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(8, -8, 14, 3);
+
+        // Deflect shield aura
+        if (state.player.deflecting) {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, 22, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+
+        ctx.restore();
+      }
+
+      // Action Handlers
+      const btnLeft = document.getElementById('btnLeft');
+      if (btnLeft) btnLeft.onclick = () => handleAction('move_left');
+
+      const btnRight = document.getElementById('btnRight');
+      if (btnRight) btnRight.onclick = () => handleAction('move_right');
+
+      const btnJump = document.getElementById('btnJump');
+      if (btnJump) btnJump.onclick = () => {
+        if (state && !state.player.onGround && Math.abs(state.player.x - 90) <= 2) {
+          handleAction('wall_kick');
+        } else {
+          handleAction('jump');
+        }
+      };
+
+      const btnSlash = document.getElementById('btnSlash');
+      if (btnSlash) btnSlash.onclick = () => handleAction('slash');
+
+      const btnDash = document.getElementById('btnDash');
+      if (btnDash) btnDash.onclick = () => handleAction('phase_dash');
+
+      const btnShuriken = document.getElementById('btnShuriken');
+      if (btnShuriken) btnShuriken.onclick = () => handleAction('throw_shuriken');
+
+      const btnDeflect = document.getElementById('btnDeflect');
+      if (btnDeflect) btnDeflect.onclick = () => handleAction('deflect');
+
+      const btnRest = document.getElementById('btnRest');
+      if (btnRest) btnRest.onclick = () => handleAction('rest');
+
+      const btnReset = document.getElementById('btnReset');
+      if (btnReset) btnReset.onclick = initGame;
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          e.preventDefault();
+          handleAction('move_left');
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          handleAction('move_right');
+        } else if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (state && !state.player.onGround && Math.abs(state.player.x - 90) <= 2) {
+            handleAction('wall_kick');
+          } else {
+            handleAction('jump');
+          }
+        } else if (e.key === ' ') {
+          e.preventDefault();
+          handleAction('slash');
+        } else if (e.key === 'Shift') {
+          e.preventDefault();
+          handleAction('phase_dash');
+        } else if (e.key === 'q' || e.key === 'Q') {
+          e.preventDefault();
+          handleAction('throw_shuriken');
+        } else if (e.key === 'e' || e.key === 'E') {
+          e.preventDefault();
+          handleAction('deflect');
+        } else if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          handleAction('rest');
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          initGame();
+        }
+      });
+
+      // PWA service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch(() => {});
+        });
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>
