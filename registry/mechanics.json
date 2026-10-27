@@ -1781,9 +1781,11 @@
       "slug": "incremental",
       "name": "Incremental",
       "family": "Idle",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Quantum Forge",
+      "levels": "endless"
     },
     {
       "id": "0169",

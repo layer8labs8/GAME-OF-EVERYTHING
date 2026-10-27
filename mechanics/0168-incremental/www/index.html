@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Quantum Forge - Incremental Engine</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #030014;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #1e103a;
+      border: 1px solid #7c3aed;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #c084fc;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #4c1d95;
+      color: #ede9fe;
+      font-weight: 600;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4/3;
+      background: #060218;
+      border: 2px solid #581c87;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.25);
+    }
+    .resources-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .res-card {
+      background: #0f0728;
+      border: 1px solid #3b0764;
+      padding: 4px 6px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .res-title {
+      font-size: 0.62rem;
+      color: #c084fc;
+      text-transform: uppercase;
+    }
+    .res-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+    .log-box {
+      background: #0c0520;
+      border: 1px solid #6b21a8;
+      border-left: 4px solid #a855f7;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: #e2e8f0;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .btn {
+      background: #170b33;
+      border: 1px solid #4c1d95;
+      color: #f1f5f9;
+      padding: 8px 6px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .btn:hover {
+      background: #2e1065;
+      border-color: #a855f7;
+      color: #fff;
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .btn-tap {
+      background: #581c87;
+      border-color: #a855f7;
+      color: #faf5ff;
+    }
+    .btn-tap:hover {
+      background: #6b21a8;
+    }
+    .btn-res {
+      border-color: #2563eb;
+      color: #93c5fd;
+    }
+    .btn-res:hover {
+      background: #1e3a8a;
+    }
+    .btn-prestige {
+      background: #831843;
+      border-color: #f43f5e;
+      color: #ffe4e6;
+    }
+    .btn-prestige:hover {
+      background: #9f1239;
+    }
+    .btn-gold {
+      background: #78350f;
+      border-color: #d97706;
+      color: #fde68a;
+    }
+    .btn-gold:hover {
+      background: #b45309;
+    }
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌌 Quantum Forge</h1>
+    <div>
+      <span id="turn-badge" class="badge">STEP 0 / 120</span>
+      <span id="score-badge" class="badge" style="background:#6b21a8; color:#f5d0fe;">0 PTS</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+
+    <div class="resources-grid">
+      <div class="res-card">
+        <div class="res-title">Subatomic Matter</div>
+        <div id="val-matter" class="res-val" style="color: #c084fc;">20</div>
+      </div>
+      <div class="res-card">
+        <div class="res-title">Concentrated Energy</div>
+        <div id="val-energy" class="res-val" style="color: #38bdf8;">0</div>
+      </div>
+      <div class="res-card">
+        <div class="res-title">Entangled Cubits</div>
+        <div id="val-cubits" class="res-val" style="color: #f472b6;">0 (1.0x)</div>
+      </div>
+    </div>
+
+    <div id="game-log" class="log-box">
+      Quantum Forge initialized. Harvest subatomic matter and construct particle facilities.
+    </div>
+
+    <div id="actions-panel" class="actions-grid">
+      <!-- Injected dynamically -->
+    </div>
+
+    <div class="footer-bar">
+      <div id="facilities-summary" style="font-size:0.7rem; color:#a78bfa;">Tier 1: 0 Synthesizers | 0 Splitters</div>
+      <button id="bot-toggle-btn" class="btn" style="padding: 4px 10px; font-size: 0.68rem;" onclick="window.toggleBot()">BOT: OFF</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now ? Date.now() : 12345);
+    let botRunning = false;
+    let botInterval = null;
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'tap') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, t);
+          osc.frequency.exponentialRampToValueAtTime(120, t + 0.1);
+          gain.gain.setValueAtTime(0.25, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+          osc.start(t);
+          osc.stop(t + 0.12);
+        } else if (type === 'buy') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, t);
+          osc.frequency.setValueAtTime(659.25, t + 0.08);
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+          osc.start(t);
+          osc.stop(t + 0.2);
+        } else if (type === 'prestige') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(80, t);
+          osc.frequency.linearRampToValueAtTime(350, t + 0.35);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+          osc.start(t);
+          osc.stop(t + 0.4);
+        }
+      } catch (e) {}
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let tesseractAngle = 0;
+
+    function render() {
+      // Status badges
+      document.getElementById('turn-badge').textContent = 'STEP ' + state.turns + ' / ' + state.maxTurns;
+      document.getElementById('score-badge').textContent = score(state) + ' PTS';
+      document.getElementById('game-log').textContent = state.gameMessage;
+
+      document.getElementById('val-matter').textContent = state.matter.toLocaleString();
+      document.getElementById('val-energy').textContent = state.energy.toLocaleString();
+
+      const cubitBonus = state.researches.quantumResonance ? 1.5 : 1.0;
+      const mult = (1 + state.cubits * cubitBonus).toFixed(1);
+      document.getElementById('val-cubits').textContent = state.cubits + ' (' + mult + 'x)';
+
+      const f = state.facilities;
+      document.getElementById('facilities-summary').textContent =
+        'Synths: ' + f.synthesizer + ' | Splitters: ' + f.splitter + ' | Accels: ' + f.accelerator +
+        ' | Q-Computers: ' + f.quantumComputer + ' | Singularity: ' + f.singularityEngine;
+
+      // Canvas Tesseract Animation
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+
+      ctx.fillStyle = '#060218';
+      ctx.fillRect(0, 0, w, h);
+
+      tesseractAngle += 0.02;
+
+      // Rotating Hypercube Vertices
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      const rOuter = 130;
+      const rInner = 75;
+      const sides = 6;
+
+      ctx.strokeStyle = '#7c3aed';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let i = 0; i <= sides; i++) {
+        const a = tesseractAngle + (i * Math.PI * 2) / sides;
+        const x = Math.cos(a) * rOuter;
+        const y = Math.sin(a) * rOuter;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= sides; i++) {
+        const a = -tesseractAngle + (i * Math.PI * 2) / sides;
+        const x = Math.cos(a) * rInner;
+        const y = Math.sin(a) * rInner;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Connecting spokes
+      for (let i = 0; i < sides; i++) {
+        const a1 = tesseractAngle + (i * Math.PI * 2) / sides;
+        const a2 = -tesseractAngle + (i * Math.PI * 2) / sides;
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a1) * rOuter, Math.sin(a1) * rOuter);
+        ctx.lineTo(Math.cos(a2) * rInner, Math.sin(a2) * rInner);
+        ctx.stroke();
+      }
+
+      // Singularity core
+      const coreR = 25 + Math.sin(tesseractAngle * 4) * 4;
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, coreR);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.5, '#c084fc');
+      grad.addColorStop(1, '#4c1d95');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 0, coreR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+
+      // Game Over Screen
+      if (isOver(state)) {
+        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(state.victory ? 'UNIVERSAL GENESIS ACHIEVED!' : 'QUANTUM MANIFOLD COLLAPSED', cx, cy - 20);
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Final Quantum Value: ' + score(state), cx, cy + 15);
+      }
+
+      updateActions();
+    }
+
+    function updateActions() {
+      const panel = document.getElementById('actions-panel');
+      if (isOver(state)) {
+        panel.innerHTML = '<button class="btn btn-gold" onclick="window.restartGame()">NEW FORGE UNIVERSE</button>';
+        return;
+      }
+
+      const actions = legalActions(state);
+      let html = '';
+
+      for (const act of actions) {
+        let cls = 'btn';
+        let label = act;
+        let sub = '';
+
+        if (act === 'action:synthesize_matter') {
+          cls += ' btn-tap';
+          label = '⚛️ Extract Subatomic Matter';
+          sub = 'Manual Quantum Tap';
+        } else if (act === 'action:research_matter_compression') {
+          cls += ' btn-res';
+          label = '🔬 Matter Compression';
+          sub = '2x Manual Extract (150 Matter)';
+        } else if (act === 'action:research_superconductivity') {
+          cls += ' btn-res';
+          label = '⚡ Superconductivity';
+          sub = '+50% Global Yield (600 M, 40 E)';
+        } else if (act === 'action:research_quantum_resonance') {
+          cls += ' btn-res';
+          label = '🔮 Quantum Resonance';
+          sub = '+150% Per Cubit (2.5k M, 150 E)';
+        } else if (act === 'action:quantum_inversion_prestige') {
+          cls += ' btn-prestige';
+          label = '🌀 Quantum Inversion';
+          sub = '+1 Entangled Cubit';
+        } else if (act === 'action:trigger_universal_genesis') {
+          cls += ' btn-gold';
+          label = '🌌 TRIGGER UNIVERSAL GENESIS!';
+          sub = 'Victory';
+        } else if (act.startsWith('action:purchase_facility:')) {
+          const type = act.split(':')[2];
+          const cost = getFacilityCost(type, state.facilities[type]);
+          label = '+1 ' + type.toUpperCase();
+          sub = cost.matter + ' Matter' + (cost.energy > 0 ? ', ' + cost.energy + ' Energy' : '');
+        }
+
+        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
+      }
+
+      panel.innerHTML = html;
+    }
+
+    window.triggerAction = function(act) {
+      if (isOver(state)) return;
+      if (act.includes('synthesize')) playSfx('tap');
+      else if (act.includes('purchase') || act.includes('research')) playSfx('buy');
+      else if (act.includes('inversion') || act.includes('genesis')) playSfx('prestige');
+
+      step(state, act);
+      render();
+    };
+
+    window.restartGame = function() {
+      state = createState(Date.now ? Date.now() : 12345);
+      render();
+    };
+
+    window.toggleBot = function() {
+      botRunning = !botRunning;
+      document.getElementById('bot-toggle-btn').textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
+      document.getElementById('bot-toggle-btn').style.background = botRunning ? '#6b21a8' : '#170b33';
+
+      if (botRunning) {
+        botInterval = setInterval(() => {
+          if (isOver(state)) {
+            state = createState(Date.now ? Date.now() : 9999);
+            render();
+            return;
+          }
+          const acts = legalActions(state);
+          if (acts.length > 0) {
+            let choice = acts[0];
+            if (acts.includes('action:trigger_universal_genesis')) choice = 'action:trigger_universal_genesis';
+            else if (acts.includes('action:quantum_inversion_prestige') && state.energy >= 150) choice = 'action:quantum_inversion_prestige';
+            else if (acts.includes('action:research_quantum_resonance')) choice = 'action:research_quantum_resonance';
+            else if (acts.includes('action:research_superconductivity')) choice = 'action:research_superconductivity';
+            else if (acts.includes('action:research_matter_compression')) choice = 'action:research_matter_compression';
+            else if (acts.includes('action:purchase_facility:singularityEngine')) choice = 'action:purchase_facility:singularityEngine';
+            else if (acts.includes('action:purchase_facility:quantumComputer')) choice = 'action:purchase_facility:quantumComputer';
+            else if (acts.includes('action:purchase_facility:accelerator')) choice = 'action:purchase_facility:accelerator';
+            else if (acts.includes('action:purchase_facility:splitter')) choice = 'action:purchase_facility:splitter';
+            else if (acts.includes('action:purchase_facility:synthesizer')) choice = 'action:purchase_facility:synthesizer';
+            else choice = 'action:synthesize_matter';
+            window.triggerAction(choice);
+          }
+        }, 300);
+      } else {
+        clearInterval(botInterval);
+      }
+    };
+
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
