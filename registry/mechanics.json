@@ -260,9 +260,10 @@
       "slug": "top-down-shooter",
       "name": "Top-Down Shooter",
       "family": "Shooter",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0026",

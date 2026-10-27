@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shadow Breach - Tactical Top-down Shooter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#090d16">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #060911;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .hud span { color: #f8fafc; }
+    canvas {
+      background: #0f172a;
+      border: 2px solid #1e293b;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      display: block;
+    }
+    .status-panel {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #090e17;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-top: 6px;
+      font-size: 0.78rem;
+      font-weight: bold;
+    }
+    .hp-bar-track {
+      width: 80px;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .hp-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #22c55e);
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 8px;
+      gap: 8px;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 40px);
+      grid-template-rows: repeat(3, 40px);
+      gap: 4px;
+    }
+    .action-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    button {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.05s;
+    }
+    button:active { background: #334155; transform: scale(0.96); }
+    .btn-action { padding: 8px 10px; min-height: 38px; }
+    .btn-fire { background: linear-gradient(135deg, #0369a1, #0284c7); border-color: #38bdf8; }
+    .btn-breach { background: linear-gradient(135deg, #b45309, #d97706); border-color: #fbbf24; }
+    .btn-breach.active { animation: breachPulse 1s infinite alternate; }
+    @keyframes breachPulse {
+      from { box-shadow: 0 0 6px #f59e0b; }
+      to { box-shadow: 0 0 16px #fbbf24; }
+    }
+    #game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(6, 9, 17, 0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #game-overlay h2 { font-size: 2rem; color: #38bdf8; }
+  </style>
+</head>
+<body>
+  <div id="game-container" style="position: relative;">
+    <header>
+      <h1>SHADOW BREACH</h1>
+      <div class="hud">
+        <div>SCORE: <span id="val-score">0</span></div>
+      </div>
+    </header>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <div class="status-panel">
+      <div>
+        HP: <div class="hp-bar-track"><div id="bar-hp" class="hp-bar-fill"></div></div>
+      </div>
+      <div>AMMO: <span id="val-ammo" style="color: #38bdf8;">12/12</span></div>
+      <div>FLASH: <span id="val-flash" style="color: #fbbf24;">2</span></div>
+      <div>BREACH: <span id="val-breach" style="color: #f97316;">2</span></div>
+      <div>CORE: <span id="val-core" style="color: #ef4444;">SECURE</span></div>
+    </div>
+
+    <div class="controls">
+      <div class="dpad">
+        <div></div>
+        <button id="btn-up">▲</button>
+        <div></div>
+        <button id="btn-left">◀</button>
+        <button id="btn-reload" style="font-size:0.65rem;">RELOAD</button>
+        <button id="btn-right">▶</button>
+        <div></div>
+        <button id="btn-down">▼</button>
+        <div></div>
+      </div>
+
+      <div class="action-panel">
+        <div class="action-row">
+          <button id="btn-fire" class="btn-action btn-fire" style="flex:1;">FIRE [SPC]</button>
+          <button id="btn-flash" class="btn-action" style="flex:1;">FLASH [F]</button>
+        </div>
+        <div class="action-row">
+          <button id="btn-breach" class="btn-action btn-breach" style="flex:1;">BREACH [B]</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="game-overlay">
+      <h2 id="overlay-title">MISSION ACCOMPLISHED</h2>
+      <p id="overlay-sub" style="font-size: 1.1rem; color: #cbd5e1;">Vault Core extracted safely!</p>
+      <button id="btn-restart" class="btn-action" style="padding: 10px 24px; font-size: 1rem;">DEPLOY AGAIN</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const elScore = document.getElementById('val-score');
+      const barHp = document.getElementById('bar-hp');
+      const elAmmo = document.getElementById('val-ammo');
+      const elFlash = document.getElementById('val-flash');
+      const elBreach = document.getElementById('val-breach');
+      const elCore = document.getElementById('val-core');
+      const btnBreach = document.getElementById('btn-breach');
+      const overlay = document.getElementById('game-overlay');
+      const overlayTitle = document.getElementById('overlay-title');
+      const overlaySub = document.getElementById('overlay-sub');
+
+      let state = ShadowBreach.createState(Date.now() % 100000);
+      let fxList = [];
+
+      function triggerAction(act) {
+        if (ShadowBreach.isOver(state)) return;
+        const legals = ShadowBreach.legalActions(state);
+        if (!legals.includes(act)) return;
+
+        const p = state.player;
+        if (act === 'fire') {
+          fxList.push({
+            type: 'laser',
+            x1: p.x,
+            y1: p.y,
+            x2: p.x + p.facingX * 180,
+            y2: p.y + p.facingY * 180,
+            life: 6
+          });
+        } else if (act === 'flashbang') {
+          fxList.push({
+            type: 'flash',
+            x: p.x + p.facingX * 60,
+            y: p.y + p.facingY * 60,
+            life: 15
+          });
+        } else if (act === 'breach_charge') {
+          for (const d of state.doors) {
+            if (!d.breached && Math.hypot(p.x - d.x, p.y - d.y) <= 50) {
+              fxList.push({ type: 'explosion', x: d.x, y: d.y, life: 16 });
+            }
+          }
+        }
+
+        ShadowBreach.step(state, act);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (elScore) elScore.textContent = state.scoreVal;
+        const p = state.player;
+        if (barHp) barHp.style.width = (p.hp / p.maxHp * 100) + '%';
+        if (elAmmo) elAmmo.textContent = `${p.ammo}/12`;
+        if (elFlash) elFlash.textContent = p.flashbangs;
+        if (elBreach) elBreach.textContent = p.breachCharges;
+
+        if (elCore) {
+          if (state.hasCore) {
+            elCore.textContent = 'EXTRACTING';
+            elCore.style.color = '#22c55e';
+          } else {
+            elCore.textContent = 'SECURE';
+            elCore.style.color = '#ef4444';
+          }
+        }
+
+        const legals = ShadowBreach.legalActions(state);
+        if (btnBreach && btnBreach.classList) {
+          if (legals.includes('breach_charge')) {
+            btnBreach.classList.add('active');
+          } else {
+            btnBreach.classList.remove('active');
+          }
+        }
+
+        if (ShadowBreach.isOver(state)) {
+          if (overlay) {
+            overlay.style.display = 'flex';
+            if (state.won) {
+              if (overlayTitle) { overlayTitle.textContent = 'MISSION ACCOMPLISHED'; overlayTitle.style.color = '#38bdf8'; }
+              if (overlaySub) overlaySub.textContent = `Operative Extracted! Score: ${state.scoreVal}`;
+            } else {
+              if (overlayTitle) { overlayTitle.textContent = 'OPERATIVE KIA'; overlayTitle.style.color = '#ef4444'; }
+              if (overlaySub) overlaySub.textContent = `Signal lost in Sector. Score: ${state.scoreVal}`;
+            }
+          }
+        } else {
+          if (overlay) overlay.style.display = 'none';
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 400, 400);
+
+        // Sector backgrounds
+        ctx.fillStyle = '#0d1527'; // Sector 1 Reception
+        ctx.fillRect(20, 260, 360, 120);
+        ctx.fillStyle = '#0f172a'; // Sector 2 Lab
+        ctx.fillRect(20, 140, 360, 120);
+        ctx.fillStyle = '#131e33'; // Sector 3 Vault
+        ctx.fillRect(20, 20, 360, 120);
+
+        // Extraction Zone
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(175, 25, 50, 45);
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.15)';
+        ctx.fillRect(175, 25, 50, 45);
+
+        // Vault Core
+        if (!state.hasCore) {
+          ctx.save();
+          ctx.fillStyle = '#06b6d4';
+          ctx.beginPath();
+          ctx.arc(state.vaultCore.x, state.vaultCore.y, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#67e8f9';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Walls
+        ctx.fillStyle = '#334155';
+        for (const w of state.walls) {
+          ctx.fillRect(w.x, w.y, w.w, w.h);
+        }
+
+        // Doors
+        for (const d of state.doors) {
+          if (!d.breached) {
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
+          } else {
+            // Breached rubble
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
+          }
+        }
+
+        // Laser Sight line for player
+        const p = state.player;
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + p.facingX * 180, p.y + p.facingY * 180);
+        ctx.stroke();
+
+        // Enemies
+        for (const e of state.enemies) {
+          ctx.save();
+          if (e.type === 'sentry') {
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(e.x - 12, e.y - 12, 24, 24);
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (e.type === 'enforcer') {
+            ctx.fillStyle = '#1e3a8a';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 11, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#60a5fa';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            // Shield arc
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 15, -Math.PI * 0.4, Math.PI * 0.4);
+            ctx.stroke();
+          } else {
+            // Guard
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          if (e.stunned > 0) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('⚡', e.x - 4, e.y - 14);
+          }
+          ctx.restore();
+        }
+
+        // Player Operative
+        ctx.save();
+        ctx.fillStyle = '#0ea5e9';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Carbine barrel
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + p.facingX * 16, p.y + p.facingY * 16);
+        ctx.stroke();
+        ctx.restore();
+
+        // FX Rendering
+        const nextFx = [];
+        for (const fx of fxList) {
+          ctx.save();
+          if (fx.type === 'laser') {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3 * (fx.life / 6);
+            ctx.beginPath();
+            ctx.moveTo(fx.x1, fx.y1);
+            ctx.lineTo(fx.x2, fx.y2);
+            ctx.stroke();
+          } else if (fx.type === 'flash') {
+            ctx.fillStyle = `rgba(255, 255, 255, ${fx.life / 15})`;
+            ctx.beginPath();
+            ctx.arc(fx.x, fx.y, 90, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (fx.type === 'explosion') {
+            ctx.fillStyle = `rgba(245, 158, 11, ${fx.life / 16})`;
+            ctx.beginPath();
+            ctx.arc(fx.x, fx.y, 75 * (1 - fx.life / 20), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+          ctx.restore();
+          fx.life--;
+          if (fx.life > 0) nextFx.push(fx);
+        }
+        fxList = nextFx;
+
+        if (fxList.length > 0) {
+          requestAnimationFrame(render);
+        }
+      }
+
+      // Button listeners
+      const btnUp = document.getElementById('btn-up');
+      const btnDown = document.getElementById('btn-down');
+      const btnLeft = document.getElementById('btn-left');
+      const btnRight = document.getElementById('btn-right');
+      const btnFire = document.getElementById('btn-fire');
+      const btnReload = document.getElementById('btn-reload');
+      const btnFlash = document.getElementById('btn-flash');
+      const btnRestart = document.getElementById('btn-restart');
+
+      if (btnUp) btnUp.addEventListener('click', () => triggerAction('move_n'));
+      if (btnDown) btnDown.addEventListener('click', () => triggerAction('move_s'));
+      if (btnLeft) btnLeft.addEventListener('click', () => triggerAction('move_w'));
+      if (btnRight) btnRight.addEventListener('click', () => triggerAction('move_e'));
+      if (btnFire) btnFire.addEventListener('click', () => triggerAction('fire'));
+      if (btnReload) btnReload.addEventListener('click', () => triggerAction('reload'));
+      if (btnFlash) btnFlash.addEventListener('click', () => triggerAction('flashbang'));
+      if (btnBreach) btnBreach.addEventListener('click', () => triggerAction('breach_charge'));
+
+      if (btnRestart) {
+        btnRestart.addEventListener('click', () => {
+          state = ShadowBreach.createState(Date.now() % 100000);
+          fxList = [];
+          updateUI();
+          render();
+        });
+      }
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'arrowup' || k === 'w') triggerAction('move_n');
+        else if (k === 'arrowdown' || k === 's') triggerAction('move_s');
+        else if (k === 'arrowleft' || k === 'a') triggerAction('move_w');
+        else if (k === 'arrowright' || k === 'd') triggerAction('move_e');
+        else if (k === ' ' || k === 'j') triggerAction('fire');
+        else if (k === 'r') triggerAction('reload');
+        else if (k === 'f') triggerAction('flashbang');
+        else if (k === 'b' || k === 'e') triggerAction('breach_charge');
+      });
+
+      // PWA registration
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>
