@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Conveyor Core - Factory Automation</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#06b6d4">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #030712;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #082f49;
+      border-radius: 8px;
+      border: 1px solid #06b6d4;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #22d3ee;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #0c4a6e;
+      border: 1px solid #0369a1;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #bae6fd;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-credits { color: #4ade80; }
+    .val-power { color: #38bdf8; }
+    .val-export { color: #facc15; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #020617;
+      border: 2px solid #06b6d4;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.72rem;
+      color: #7dd3fc;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .grid-6 {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .item-card {
+      background: #0c4a6e;
+      border: 1px solid #0284c7;
+      border-radius: 6px;
+      padding: 4px 2px;
+      text-align: center;
+      font-size: 0.62rem;
+    }
+    .item-num {
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: #ffffff;
+      margin-top: 2px;
+    }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #0c4a6e;
+      color: #f1f5f9;
+      border: 1px solid #0284c7;
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #0284c7;
+      transform: translateY(-1px);
+    }
+    .btn-cycle {
+      background: #0891b2;
+      border-color: #22d3ee;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 9px 6px;
+    }
+    .btn-cycle:hover { background: #06b6d4; }
+    .btn-export {
+      background: #15803d;
+      border-color: #22c55e;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 8px 6px;
+    }
+    .btn-export:hover { background: #16a34a; }
+    .btn-belt {
+      background: #4f46e5;
+      border-color: #818cf8;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #020617;
+      border: 1px solid #0f2d48;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #94a3b8;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #22d3ee;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 6, 23, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #06b6d4;
+      border: none;
+      color: #030712;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #4ade80; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚙️ Conveyor Core</h1>
+    <div style="font-size: 0.72rem; color: #38bdf8;" id="header-belt">Belt Mark-1</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Factory Cycle</div>
+      <div class="hud-val" id="val-cycle">Cycle 1</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Credits</div>
+      <div class="hud-val val-credits" id="val-credits">$400</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Power Balance</div>
+      <div class="hud-val val-power" id="val-power">+4 kW</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Processors Exported</div>
+      <div class="hud-val val-export" id="val-export">0 / 15</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="factory-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">AUTOMATION SUPREMACY</div>
+      <div class="modal-desc" id="modal-desc">Conveyor Core has achieved flawless autonomous industrial scale!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Initialize New Industrial Grid</button>
+    </div>
+  </div>
+
+  <div class="section-title">Factory Inventory & Buffers</div>
+  <div class="grid-6">
+    <div class="item-card">
+      <div style="color: #fb923c;">🪨 Cu</div>
+      <div class="item-num" id="itm-cu">8</div>
+    </div>
+    <div class="item-card">
+      <div style="color: #94a3b8;">⛏️ Si</div>
+      <div class="item-num" id="itm-si">8</div>
+    </div>
+    <div class="item-card">
+      <div style="color: #fdba74;">🧵 Wire</div>
+      <div class="item-num" id="itm-wire">2</div>
+    </div>
+    <div class="item-card">
+      <div style="color: #67e8f9;">💿 Wafer</div>
+      <div class="item-num" id="itm-wafer">2</div>
+    </div>
+    <div class="item-card">
+      <div style="color: #a78bfa;">🎛️ Gate</div>
+      <div class="item-num" id="itm-gate">0</div>
+    </div>
+    <div class="item-card">
+      <div style="color: #facc15;">💻 Chip</div>
+      <div class="item-num" id="itm-chip">0</div>
+    </div>
+  </div>
+
+  <div class="section-title">Industrial Grid Directives</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Automated Logistics Chronicle</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('factory-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Grid floor pattern
+        ctx.strokeStyle = '#082f49';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 30) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 30) {
+          ctx.beginPath();
+          ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+
+        // Conveyor Belt Pathways
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 12;
+        // Horizontal main belt
+        ctx.beginPath();
+        ctx.moveTo(30, 80); ctx.lineTo(430, 80);
+        ctx.moveTo(30, 160); ctx.lineTo(430, 160);
+        ctx.stroke();
+
+        // Inner glowing conveyor track
+        ctx.strokeStyle = state.beltLevel === 1 ? '#0284c7' : (state.beltLevel === 2 ? '#38bdf8' : '#a855f7');
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(30, 80); ctx.lineTo(430, 80);
+        ctx.moveTo(30, 160); ctx.lineTo(430, 160);
+        ctx.stroke();
+
+        // Animated Conveyor Pulses
+        const pulse = (Date.now() / 250) % 1;
+        for (let b = 0; b < 5; b++) {
+          const bx = 30 + ((b * 80 + pulse * 80) % 400);
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.arc(bx, 80, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Render Machine Nodes
+        // 1. Drills (Mining)
+        drawNode(ctx, 60, 45, '⛏️ Miner', state.machines.miners, '#94a3b8');
+        // 2. Smelters
+        drawNode(ctx, 170, 45, '🔥 Smelter', state.machines.smelters, '#f97316');
+        // 3. Assemblers
+        drawNode(ctx, 290, 45, '🤖 Assembler', state.machines.assemblers, '#22d3ee');
+        // 4. Power Generators
+        drawNode(ctx, 400, 45, '⚡ Generator', state.machines.generators, '#eab308');
+
+        // Factory Floor Labeling
+        ctx.font = '10px monospace';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText('CONVEYOR LINE A: ORES & WIRE', 40, 98);
+        ctx.fillText('CONVEYOR LINE B: WAFERS & PROCESSORS', 40, 178);
+
+        // Update HUD
+        const headerBelt = document.getElementById('header-belt');
+        if (headerBelt) headerBelt.textContent = 'Belt Mark-' + state.beltLevel;
+
+        const cycleEl = document.getElementById('val-cycle');
+        if (cycleEl) cycleEl.textContent = 'Cycle ' + state.cycle;
+
+        const credsEl = document.getElementById('val-credits');
+        if (credsEl) {
+          credsEl.textContent = '$' + state.credits;
+          credsEl.style.color = state.credits >= 0 ? '#4ade80' : '#f87171';
+        }
+
+        const power = calculatePower(state);
+        const powerEl = document.getElementById('val-power');
+        if (powerEl) {
+          powerEl.textContent = (power.balance >= 0 ? '+' : '') + power.balance + ' kW';
+          powerEl.style.color = power.balance >= 0 ? '#38bdf8' : '#f87171';
+        }
+
+        const expEl = document.getElementById('val-export');
+        if (expEl) expEl.textContent = state.processorsExported + ' / 15';
+
+        // Item counts
+        const cuEl = document.getElementById('itm-cu');
+        if (cuEl) cuEl.textContent = state.items.copper;
+
+        const siEl = document.getElementById('itm-si');
+        if (siEl) siEl.textContent = state.items.silicon;
+
+        const wireEl = document.getElementById('itm-wire');
+        if (wireEl) wireEl.textContent = state.items.wire;
+
+        const wafEl = document.getElementById('itm-wafer');
+        if (wafEl) wafEl.textContent = state.items.wafers;
+
+        const gateEl = document.getElementById('itm-gate');
+        if (gateEl) gateEl.textContent = state.items.gates;
+
+        const chipEl = document.getElementById('itm-chip');
+        if (chipEl) chipEl.textContent = state.items.processors;
+
+        // Action Buttons
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:cycle_factory') cls += ' btn-cycle';
+            else if (act === 'action:export_goods') cls += ' btn-export';
+            else if (act === 'action:upgrade_conveyors') cls += ' btn-belt';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Activity Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'AUTOMATION SUPREMACY!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Conveyor Core exported ' + state.processorsExported + ' quantum processors with $' + state.credits + ' credits! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'FACTORY LIQUIDATION';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Autonomous logistics collapsed under operational costs. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function drawNode(ctx, x, y, label, count, color) {
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x - 30, y - 18, 60, 36, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '8px monospace';
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x, y - 4);
+
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('x' + count, x, y + 10);
+        ctx.textAlign = 'start';
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:cycle_factory') return '⚙️ RUN AUTOMATED FACTORY TICK';
+        if (act === 'action:export_goods') return '🚀 EXPORT CHIPS & GATES';
+        if (act === 'action:build_miner') return '⛏️ Miner Drill ($80)';
+        if (act === 'action:build_smelter') return '🔥 Induction Smelter ($120)';
+        if (act === 'action:build_assembler') return '🤖 Robotic Assembler ($180)';
+        if (act === 'action:build_generator') return '⚡ Power Generator ($100)';
+        if (act === 'action:upgrade_conveyors') return '🚀 Upgrade Conveyor Speed ($150)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
