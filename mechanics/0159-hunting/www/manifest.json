@@ -1,0 +1,12 @@
+{
+  "name": "Wilderness Stalker: Hunting",
+  "short_name": "WildStalker",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#14532d",
+  "theme_color": "#16a34a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

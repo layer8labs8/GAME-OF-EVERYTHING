@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Wilderness Stalker - Hunting</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#16a34a">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #052e16;
+      color: #f0fdf4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 14px;
+      background: #14532d;
+      border-radius: 8px;
+      border: 1px solid #16a34a;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #86efac;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      background: #022c22;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #166534;
+      font-size: 0.72rem;
+    }
+    .hud-box {
+      background: #064e3b;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #16a34a;
+    }
+    .hud-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    .text-green { color: #86efac; }
+    .text-amber { color: #f59e0b; }
+    .text-cyan { color: #38bdf8; }
+    .text-rose { color: #f43f5e; }
+    .text-gold { color: #fbbf24; }
+
+    #canvas-container {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      background: #000000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #166534;
+      aspect-ratio: 16 / 10;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .status-banner {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      padding: 6px 12px;
+      background: #064e3b;
+      border-left: 4px solid #16a34a;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .target-bar {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      background: #022c22;
+      border: 1px solid #166534;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .controls-grid {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    button {
+      background: #064e3b;
+      border: 1px solid #16a34a;
+      color: #f0fdf4;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+    button:hover:not(:disabled) {
+      background: #15803d;
+      border-color: #86efac;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      opacity: 0.35;
+      border-color: #14532d;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #16a34a;
+      border-color: #86efac;
+    }
+    button.btn-success {
+      background: #059669;
+      border-color: #10b981;
+    }
+    button.btn-amber {
+      background: #d97706;
+      border-color: #f59e0b;
+    }
+    button.btn-rose {
+      background: #e11d48;
+      border-color: #fb7185;
+      grid-column: span 2;
+    }
+    .btn-sub {
+      font-size: 0.62rem;
+      font-weight: normal;
+      color: #a7f3d0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🦌 Wilderness Stalker</h1>
+    <div style="font-size: 0.72rem; color: #a7f3d0;">
+      Biome: <span id="hdr-biome" class="text-green">Valley Marshes</span> | Turn: <span id="hdr-turn" class="text-cyan">0</span>/120
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div style="color: #a7f3d0;">Stamina</div>
+      <div id="hud-stamina" class="hud-val text-green">100%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a7f3d0;">Scent Mask</div>
+      <div id="hud-scent" class="hud-val text-cyan">80%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a7f3d0;">Rifle Rounds</div>
+      <div id="hud-ammo" class="hud-val text-amber">8</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a7f3d0;">Bounty Funds</div>
+      <div id="hud-funds" class="hud-val text-gold">$300</div>
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="520" height="325"></canvas>
+  </div>
+
+  <div id="status-banner" class="status-banner">
+    Ranger arrives at Valley Marsh trail. Binoculars ready to scan the tree line.
+  </div>
+
+  <div class="target-bar">
+    <div>
+      Target: <span id="target-name" style="font-weight: bold; color: #86efac;">No Animal In Sight</span>
+    </div>
+    <div id="target-stats" style="color: #cbd5e1; font-size: 0.68rem;">
+      Range: - | Alert: - | Trophy: -
+    </div>
+  </div>
+
+  <div id="controls" class="controls-grid">
+    <!-- Buttons injected by JS -->
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Date.now() % 1000000));
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function renderScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Sky
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 160);
+      if (state.biome === 3) {
+        skyGrad.addColorStop(0, '#1e1b4b');
+        skyGrad.addColorStop(1, '#a5f3fc');
+      } else {
+        skyGrad.addColorStop(0, '#064e3b');
+        skyGrad.addColorStop(1, '#fde68a');
+      }
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, 520, 160);
+
+      // Distant mountain ridge
+      ctx.fillStyle = '#064e3b';
+      ctx.beginPath();
+      ctx.moveTo(0, 160);
+      ctx.lineTo(80, 90); ctx.lineTo(190, 140); ctx.lineTo(310, 70); ctx.lineTo(430, 130); ctx.lineTo(520, 90);
+      ctx.lineTo(520, 160);
+      ctx.closePath();
+      ctx.fill();
+
+      // Foreground terrain
+      ctx.fillStyle = state.biome === 3 ? '#e0f2fe' : '#14532d';
+      ctx.fillRect(0, 160, 520, 165);
+
+      // Pine trees
+      ctx.fillStyle = '#022c22';
+      const trees = [[40, 130], [80, 120], [130, 140], [390, 130], [450, 120], [480, 135]];
+      for (const [tx, ty] of trees) {
+        ctx.beginPath();
+        ctx.moveTo(tx, ty); ctx.lineTo(tx - 18, ty + 60); ctx.lineTo(tx + 18, ty + 60);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Animal visualization (if currentTarget)
+      if (state.currentTarget) {
+        const t = state.currentTarget;
+        const ax = 260;
+        // Map distance (30m to 220m) to scale & vertical offset
+        const scale = Math.max(0.4, 1.2 - (t.distance / 250));
+        const ay = 180 + (1 - (t.distance / 250)) * 60;
+
+        ctx.save();
+        ctx.translate(ax, ay);
+        ctx.scale(scale, scale);
+
+        if (t.isDowned) {
+          // Downed animal on ground
+          ctx.fillStyle = '#b45309';
+          ctx.beginPath();
+          ctx.ellipse(0, 15, 30, 12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.fillText('DOWNED', -25, 0);
+        } else {
+          // Standing game animal
+          ctx.fillStyle = state.biome === 3 ? '#f8fafc' : '#b45309';
+          // Torso
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 32, 20, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Neck & Head
+          ctx.beginPath();
+          ctx.moveTo(15, -5); ctx.lineTo(30, -28); ctx.lineTo(42, -18); ctx.lineTo(25, 5);
+          ctx.closePath();
+          ctx.fill();
+          // Antlers
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(35, -28); ctx.lineTo(45, -45); ctx.lineTo(35, -42);
+          ctx.moveTo(40, -35); ctx.lineTo(52, -35);
+          ctx.stroke();
+          // Legs
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = ctx.fillStyle;
+          ctx.beginPath();
+          ctx.moveTo(-18, 12); ctx.lineTo(-20, 35);
+          ctx.moveTo(-8, 12); ctx.lineTo(-10, 35);
+          ctx.moveTo(12, 12); ctx.lineTo(10, 35);
+          ctx.moveTo(22, 12); ctx.lineTo(20, 35);
+          ctx.stroke();
+
+          // Distance callout
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '11px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${t.distance}m`, 0, -48);
+        }
+        ctx.restore();
+
+        // Scope Crosshair overlay
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(ax, ay - 10, 45, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ax - 55, ay - 10); ctx.lineTo(ax + 55, ay - 10);
+        ctx.moveTo(ax, ay - 65); ctx.lineTo(ax, ay + 45);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = '#86efac';
+        ctx.font = '13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Glass the forest edges with binoculars to spot game', 260, 210);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('hdr-biome').textContent = BIOME_NAMES[state.biome] || 'Wilderness';
+      document.getElementById('hdr-turn').textContent = state.turns;
+
+      const st = document.getElementById('hud-stamina');
+      st.textContent = state.stamina + '%';
+      st.className = 'hud-val ' + (state.stamina > 40 ? 'text-green' : 'text-rose');
+
+      document.getElementById('hud-scent').textContent = state.scentMask + '%';
+      document.getElementById('hud-ammo').textContent = state.ammo;
+      document.getElementById('hud-funds').textContent = '$' + state.funds;
+      document.getElementById('status-banner').textContent = state.gameMessage;
+
+      if (state.currentTarget) {
+        const t = state.currentTarget;
+        document.getElementById('target-name').textContent = t.species + (t.isDowned ? ' [DOWNED]' : '');
+        document.getElementById('target-stats').textContent = 
+          `Range: ${t.distance}m | Alert: ${t.alert}% | Trophy: ${t.trophyScore} pts`;
+      } else {
+        document.getElementById('target-name').textContent = 'No Animal In Sight';
+        document.getElementById('target-stats').textContent = `Spooked: ${state.spookCount} / 5 | Harvests: ${state.harvestCount}`;
+      }
+
+      const legal = legalActions(state);
+      let ctrlHtml = '';
+
+      if (isOver(state)) {
+        ctrlHtml = `
+          <button class="btn-primary" style="grid-column: span 2; padding: 14px;" onclick="window.resetGame()">
+            🔄 Embark on New Wilderness Hunting Season
+          </button>
+        `;
+      } else {
+        if (legal.includes('action:glass_with_binoculars')) {
+          ctrlHtml += `
+            <button class="btn-primary" style="grid-column: span 2;" onclick="window.doAction('action:glass_with_binoculars')">
+              🔭 Glass with Binoculars
+              <span class="btn-sub">Scan meadows and ridges for wild game</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:crawl_stalk')) {
+          ctrlHtml += `
+            <button class="btn-primary" onclick="window.doAction('action:crawl_stalk')">
+              🌾 Low-Profile Crawl Stalk
+              <span class="btn-sub">-12 Stamina, close 30m</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:use_animal_caller')) {
+          ctrlHtml += `
+            <button class="btn-amber" onclick="window.doAction('action:use_animal_caller')">
+              📯 Blow Animal Call
+              <span class="btn-sub">-6 Stamina, lure 25m closer</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:steady_aim_and_fire')) {
+          ctrlHtml += `
+            <button class="btn-rose" onclick="window.doAction('action:steady_aim_and_fire')">
+              🎯 Steady Aim & Take Vital Shot!
+              <span class="btn-sub">Double-lung clean ethical harvest</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:harvest_downed_game')) {
+          ctrlHtml += `
+            <button class="btn-success" style="grid-column: span 2;" onclick="window.doAction('action:harvest_downed_game')">
+              🏷️ Tag & Harvest Trophy
+              <span class="btn-sub">Claim meat, antlers, and guild bounty</span>
+            </button>
+          `;
+        }
+
+        ctrlHtml += `
+          <button onclick="window.doAction('action:rest_at_blind')">
+            🏕️ Rest at Blind
+            <span class="btn-sub">+45 Stamina, +30 Steady Aim</span>
+          </button>
+          <button ${legal.includes('action:apply_scent_mask') ? '' : 'disabled'} onclick="window.doAction('action:apply_scent_mask')">
+            🌲 Pine Scent Mask ($25)
+            <span class="btn-sub">+35 Concealment</span>
+          </button>
+          <button ${legal.includes('action:restock_supplies') ? '' : 'disabled'} onclick="window.doAction('action:restock_supplies')">
+            📦 Ammo & Gear ($50)
+            <span class="btn-sub">+4 Rifle Cartridges</span>
+          </button>
+        `;
+
+        for (const act of legal) {
+          if (act.startsWith('action:travel_to_biome:')) {
+            const b = parseInt(act.split(':')[2], 10);
+            ctrlHtml += `
+              <button class="btn-primary" onclick="window.doAction('${act}')">
+                ⛰️ Trek to ${BIOME_NAMES[b]}
+                <span class="btn-sub">-15 Stamina</span>
+              </button>
+            `;
+          }
+        }
+      }
+
+      document.getElementById('controls').innerHTML = ctrlHtml;
+      renderScene();
+    }
+
+    window.doAction = function(act) {
+      try {
+        step(state, act);
+        updateUI();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    window.resetGame = function() {
+      state = createState(Math.floor(Date.now() % 1000000));
+      updateUI();
+    };
+
+    updateUI();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
