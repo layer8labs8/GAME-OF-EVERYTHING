@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="briefcase" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#bg)" />
+  <rect x="86" y="160" width="340" height="240" rx="24" fill="url(#briefcase)" stroke="#60a5fa" stroke-width="8" />
+  <path d="M 186 160 L 186 120 C 186 100 202 84 222 84 L 290 84 C 310 84 326 100 326 120 L 326 160" fill="none" stroke="#60a5fa" stroke-width="16" stroke-linecap="round" />
+  <rect x="86" y="240" width="340" height="20" fill="#1e3a8a" />
+  <rect x="236" y="226" width="40" height="48" rx="8" fill="url(#gold)" stroke="#78350f" stroke-width="4" />
+  <!-- Coffee mug accent -->
+  <circle cx="360" cy="380" r="44" fill="#ef4444" stroke="#fca5a5" stroke-width="6" />
+  <path d="M 390 365 C 415 365 415 395 390 395" fill="none" stroke="#fca5a5" stroke-width="8" stroke-linecap="round" />
+  <ellipse cx="360" cy="365" rx="30" ry="12" fill="#78350f" />
+</svg>

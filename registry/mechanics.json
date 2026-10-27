@@ -1616,9 +1616,11 @@
       "slug": "job-simulator",
       "name": "Job Simulator",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Office Mayhem",
+      "levels": "endless"
     },
     {
       "id": "0154",
