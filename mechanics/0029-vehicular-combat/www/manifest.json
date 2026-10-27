@@ -1,0 +1,12 @@
+{
+  "name": "Metal Carnage",
+  "short_name": "MetalCarnage",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#18120c",
+  "theme_color": "#18120c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

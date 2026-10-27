@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Metal Carnage - Vehicular Combat</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#18120c">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #18120c;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(30, 20, 15, 0.9);
+      border-bottom: 1px solid #442a18;
+    }
+    .title-group h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f97316;
+      letter-spacing: 0.5px;
+    }
+    .title-group .sub {
+      font-size: 0.72rem;
+      color: #a8a29e;
+    }
+    .score-badge {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #facc15;
+    }
+    .hud-bar {
+      width: 100%;
+      max-width: 480px;
+      padding: 8px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 8px;
+      background: #1c140d;
+      border-bottom: 1px solid #442a18;
+      font-size: 0.75rem;
+    }
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .hud-stat .label {
+      font-size: 0.65rem;
+      color: #78716c;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #292524;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      transition: width 0.15s ease;
+    }
+    .fill-armor { background: #38bdf8; }
+    .fill-hull { background: #ef4444; }
+    .fill-nitro { background: #f97316; }
+    .fill-ammo { background: #eab308; }
+    #gameCanvas {
+      background: #24160c;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      display: block;
+      border-bottom: 1px solid #442a18;
+    }
+    .event-ticker {
+      width: 100%;
+      max-width: 480px;
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      color: #f97316;
+      background: #18110b;
+      border-bottom: 1px solid #442a18;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .controls-panel {
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #18120c;
+      flex-grow: 1;
+    }
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .dpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(2, 40px);
+      gap: 4px;
+    }
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 40px);
+      gap: 6px;
+      flex-grow: 1;
+    }
+    .btn-act {
+      background: #292524;
+      border: 1px solid #44403c;
+      color: #f5f5f4;
+      font-weight: 700;
+      font-size: 0.78rem;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      transition: background 0.1s;
+    }
+    .btn-act:active {
+      background: #ea580c;
+      color: white;
+    }
+    .btn-cannons {
+      background: #dc2626;
+      border-color: #ef4444;
+      color: white;
+    }
+    .btn-rocket {
+      background: #d97706;
+      border-color: #f59e0b;
+      color: white;
+    }
+    .btn-mine {
+      background: #4f46e5;
+      border-color: #6366f1;
+      color: white;
+    }
+    .btn-nitro {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: white;
+    }
+    .bottom-tools {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .btn-tool {
+      background: #292524;
+      color: #a8a29e;
+      border: 1px solid #44403c;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .btn-tool:hover {
+      background: #44403c;
+      color: #f5f5f4;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 10, 6, 0.9);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-box {
+      background: #1c140d;
+      border: 1px solid #f97316;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(249, 115, 22, 0.2);
+    }
+    .modal-box h2 {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+    .modal-box.win h2 {
+      color: #f97316;
+    }
+    .modal-box.lose h2 {
+      color: #ef4444;
+    }
+    .modal-box p {
+      color: #a8a29e;
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+    }
+    .modal-box .btn-modal {
+      background: #ea580c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-group">
+      <h1>Metal Carnage</h1>
+      <div class="sub" id="waveSub">Wasteland Arena: Wave 1 / 3</div>
+    </div>
+    <div class="score-badge" id="scoreDisp">0 PTS</div>
+  </header>
+
+  <div class="hud-bar">
+    <div class="hud-stat">
+      <span class="label">Armor</span>
+      <div class="bar-bg"><div class="bar-fill fill-armor" id="armorFill" style="width: 100%;"></div></div>
+    </div>
+    <div class="hud-stat">
+      <span class="label">Hull HP</span>
+      <div class="bar-bg"><div class="bar-fill fill-hull" id="hullFill" style="width: 100%;"></div></div>
+    </div>
+    <div class="hud-stat">
+      <span class="label">Nitro</span>
+      <div class="bar-bg"><div class="bar-fill fill-nitro" id="nitroFill" style="width: 100%;"></div></div>
+    </div>
+    <div class="hud-stat">
+      <span class="label" id="ordnanceLabel">R:4 M:3 S:0</span>
+      <div class="bar-bg"><div class="bar-fill fill-ammo" id="ammoFill" style="width: 100%;"></div></div>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas" width="480" height="480"></canvas>
+
+  <div class="event-ticker" id="eventTicker">Arena gates drop! Wave 1 raiders approaching!</div>
+
+  <div class="controls-panel">
+    <div class="control-row">
+      <div class="dpad-grid">
+        <button class="btn-act" id="btnSteerLeft">&larr;</button>
+        <button class="btn-act" id="btnGas">&uarr;</button>
+        <button class="btn-act" id="btnSteerRight">&rarr;</button>
+        <div></div>
+        <button class="btn-act" id="btnRev">&darr;</button>
+        <div></div>
+      </div>
+      <div class="action-grid">
+        <button class="btn-act btn-cannons" id="btnCannons">Cannons (Space)</button>
+        <button class="btn-act btn-rocket" id="btnRocket">Rocket (M)</button>
+        <button class="btn-act btn-mine" id="btnMine">Mine (E)</button>
+        <button class="btn-act btn-nitro" id="btnNitro">Nitro (Shift)</button>
+      </div>
+    </div>
+    <div class="bottom-tools">
+      <button class="btn-tool" id="btnDrift">Drift Turn (B)</button>
+      <button class="btn-tool" id="btnRepair">Repair Armor (R)</button>
+      <button class="btn-tool" id="btnReset">Restart (Esc)</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="endModal">
+    <div class="modal-box" id="modalBox">
+      <h2 id="modalTitle">Victory!</h2>
+      <p id="modalMsg">Arena Champion!</p>
+      <button class="btn-modal" id="modalBtn">Next Bout</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      let state = null;
+      let skidMarks = [];
+
+      function initGame() {
+        state = MetalCarnage.createState(Date.now() & 0xffff);
+        skidMarks = [];
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const scoreDisp = document.getElementById('scoreDisp');
+        if (scoreDisp) scoreDisp.textContent = state.scoreVal + ' PTS';
+
+        const waveSub = document.getElementById('waveSub');
+        if (waveSub) waveSub.textContent = 'Wasteland Arena: Wave ' + state.wave + ' / ' + state.maxWaves;
+
+        const armorFill = document.getElementById('armorFill');
+        if (armorFill) armorFill.style.width = Math.max(0, Math.min(100, state.player.armor)) + '%';
+
+        const hullFill = document.getElementById('hullFill');
+        if (hullFill) hullFill.style.width = Math.max(0, Math.min(100, state.player.hull)) + '%';
+
+        const nitroFill = document.getElementById('nitroFill');
+        if (nitroFill) nitroFill.style.width = Math.max(0, Math.min(100, state.player.nitro)) + '%';
+
+        const ammoFill = document.getElementById('ammoFill');
+        if (ammoFill) ammoFill.style.width = Math.max(0, Math.min(100, (state.player.ammo / 60) * 100)) + '%';
+
+        const ordLabel = document.getElementById('ordnanceLabel');
+        if (ordLabel) ordLabel.textContent = 'R:' + state.player.rockets + ' M:' + state.player.mines + ' S:' + state.player.scrap;
+
+        const eventTicker = document.getElementById('eventTicker');
+        if (eventTicker && state.lastEvent) eventTicker.textContent = state.lastEvent;
+
+        // Modals
+        const modal = document.getElementById('endModal');
+        const modalBox = document.getElementById('modalBox');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMsg = document.getElementById('modalMsg');
+        const modalBtn = document.getElementById('modalBtn');
+
+        if (state.won) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('lose');
+            modalBox.classList.add('win');
+          }
+          if (modalTitle) modalTitle.textContent = 'ARENA CHAMPION!';
+          if (modalMsg) modalMsg.textContent = 'Wrecked all 3 waves! Final Score: ' + state.scoreVal + ' | Hull Left: ' + state.player.hull + '%';
+          if (modalBtn) modalBtn.onclick = () => {
+            if (modal && modal.classList) modal.classList.remove('active');
+            initGame();
+          };
+        } else if (state.lost) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('win');
+            modalBox.classList.add('lose');
+          }
+          if (modalTitle) modalTitle.textContent = 'DEMOLISHED!';
+          if (modalMsg) modalMsg.textContent = state.player.hull <= 0 ? 'Your battle-rig was reduced to scrap iron.' : 'Fuel and supplies depleted.';
+          if (modalBtn) modalBtn.onclick = () => {
+            if (modal && modal.classList) modal.classList.remove('active');
+            initGame();
+          };
+        } else {
+          if (modal && modal.classList) modal.classList.remove('active');
+        }
+      }
+
+      function handleAction(action) {
+        if (!state || state.won || state.lost) return;
+        const legal = MetalCarnage.legalActions(state);
+        if (!legal.includes(action)) return;
+
+        // Record skid mark for high speed or turns
+        if (action === 'handbrake_turn' || action === 'nitro_boost' || state.player.speed >= 4) {
+          skidMarks.push({
+            x: state.player.x * 1.2,
+            y: state.player.y * 1.2,
+            heading: state.player.heading
+          });
+          if (skidMarks.length > 30) skidMarks.shift();
+        }
+
+        MetalCarnage.step(state, action);
+        updateUI();
+        render();
+      }
+
+      function render() {
+        if (!ctx || !state) return;
+        const w = canvas.width;
+        const h = canvas.height;
+        const scale = w / 400;
+
+        ctx.fillStyle = '#24160c';
+        ctx.fillRect(0, 0, w, h);
+
+        // 1. Draw Skid Marks
+        ctx.strokeStyle = 'rgba(15, 10, 6, 0.4)';
+        ctx.lineWidth = 4;
+        for (let i = 0; i < skidMarks.length; i++) {
+          const s = skidMarks[i];
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, 8, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // 2. Draw Arena Barrier Perimeter
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(MetalCarnage.ARENA_MIN * scale, MetalCarnage.ARENA_MIN * scale, (MetalCarnage.ARENA_MAX - MetalCarnage.ARENA_MIN) * scale, (MetalCarnage.ARENA_MAX - MetalCarnage.ARENA_MIN) * scale);
+
+        // Hazard corner pylons
+        ctx.fillStyle = '#ea580c';
+        ctx.fillRect(MetalCarnage.ARENA_MIN * scale, MetalCarnage.ARENA_MIN * scale, 12, 12);
+        ctx.fillRect((MetalCarnage.ARENA_MAX - 10) * scale, MetalCarnage.ARENA_MIN * scale, 12, 12);
+        ctx.fillRect(MetalCarnage.ARENA_MIN * scale, (MetalCarnage.ARENA_MAX - 10) * scale, 12, 12);
+        ctx.fillRect((MetalCarnage.ARENA_MAX - 10) * scale, (MetalCarnage.ARENA_MAX - 10) * scale, 12, 12);
+
+        // 3. Draw Proximity Mines
+        for (let i = 0; i < state.mines.length; i++) {
+          const m = state.mines[i];
+          const mx = m.x * scale;
+          const my = m.y * scale;
+
+          ctx.fillStyle = '#dc2626';
+          ctx.beginPath();
+          ctx.arc(mx, my, 7, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#f87171';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(mx, my, 12, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // 4. Draw Scrap Crates
+        for (let i = 0; i < state.crates.length; i++) {
+          const c = state.crates[i];
+          const cx = c.x * scale;
+          const cy = c.y * scale;
+
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(cx - 7, cy - 7, 14, 14);
+          ctx.strokeStyle = '#86efac';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(cx - 7, cy - 7, 14, 14);
+        }
+
+        // 5. Draw Enemies
+        for (let i = 0; i < state.enemies.length; i++) {
+          const e = state.enemies[i];
+          const ex = e.x * scale;
+          const ey = e.y * scale;
+          const angle = (e.heading * 45) * Math.PI / 180;
+
+          ctx.save();
+          ctx.translate(ex, ey);
+          ctx.rotate(angle);
+
+          if (e.type === 'warrig') {
+            // Giant War Rig Flagship
+            ctx.fillStyle = '#451a03';
+            ctx.strokeStyle = '#f97316';
+            ctx.lineWidth = 3;
+            ctx.fillRect(-18, -32, 36, 64);
+            ctx.strokeRect(-18, -32, 36, 64);
+            // Turrets
+            ctx.fillStyle = '#ea580c';
+            ctx.beginPath();
+            ctx.arc(0, -10, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(0, 15, 8, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (e.type === 'crusher') {
+            // Scrap Crusher Truck
+            ctx.fillStyle = '#14532d';
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 2;
+            ctx.fillRect(-12, -22, 24, 44);
+            ctx.strokeRect(-12, -22, 24, 44);
+          } else {
+            // Raider Buggy
+            ctx.fillStyle = '#713f12';
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 2;
+            ctx.fillRect(-8, -16, 16, 32);
+            ctx.strokeRect(-8, -16, 16, 32);
+          }
+
+          ctx.restore();
+
+          // Health bar above enemy
+          const barW = e.type === 'warrig' ? 40 : 24;
+          const barH = 4;
+          ctx.fillStyle = '#292524';
+          ctx.fillRect(ex - barW / 2, ey - 28, barW, barH);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(ex - barW / 2, ey - 28, barW * (e.hp / e.maxHp), barH);
+        }
+
+        // 6. Draw Player Battle-Rig
+        const px = state.player.x * scale;
+        const py = state.player.y * scale;
+        const pAngle = (state.player.heading * 45) * Math.PI / 180;
+
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(pAngle);
+
+        // Chassis
+        ctx.fillStyle = '#ea580c';
+        ctx.strokeStyle = '#fed7aa';
+        ctx.lineWidth = 2;
+        ctx.fillRect(-10, -20, 20, 40);
+        ctx.strokeRect(-10, -20, 20, 40);
+
+        // Cowcatcher spiked bumper
+        ctx.fillStyle = '#78716c';
+        ctx.beginPath();
+        ctx.moveTo(-12, -20);
+        ctx.lineTo(0, -28);
+        ctx.lineTo(12, -20);
+        ctx.closePath();
+        ctx.fill();
+
+        // Wheels
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(-14, -16, 4, 10);
+        ctx.fillRect(10, -16, 4, 10);
+        ctx.fillRect(-14, 6, 4, 10);
+        ctx.fillRect(10, 6, 4, 10);
+
+        // Roof autocannons
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(-2, -14, 4, 12);
+
+        // Nitro flame if fast
+        if (state.player.speed >= 6) {
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.moveTo(-4, 20);
+          ctx.lineTo(0, 32);
+          ctx.lineTo(4, 20);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      // Action Handlers
+      const btnGas = document.getElementById('btnGas');
+      if (btnGas) btnGas.onclick = () => handleAction('accelerate');
+
+      const btnRev = document.getElementById('btnRev');
+      if (btnRev) btnRev.onclick = () => handleAction('reverse');
+
+      const btnSteerLeft = document.getElementById('btnSteerLeft');
+      if (btnSteerLeft) btnSteerLeft.onclick = () => handleAction('steer_left');
+
+      const btnSteerRight = document.getElementById('btnSteerRight');
+      if (btnSteerRight) btnSteerRight.onclick = () => handleAction('steer_right');
+
+      const btnCannons = document.getElementById('btnCannons');
+      if (btnCannons) btnCannons.onclick = () => handleAction('fire_cannons');
+
+      const btnRocket = document.getElementById('btnRocket');
+      if (btnRocket) btnRocket.onclick = () => handleAction('fire_rocket');
+
+      const btnMine = document.getElementById('btnMine');
+      if (btnMine) btnMine.onclick = () => handleAction('deploy_mine');
+
+      const btnNitro = document.getElementById('btnNitro');
+      if (btnNitro) btnNitro.onclick = () => handleAction('nitro_boost');
+
+      const btnDrift = document.getElementById('btnDrift');
+      if (btnDrift) btnDrift.onclick = () => handleAction('handbrake_turn');
+
+      const btnRepair = document.getElementById('btnRepair');
+      if (btnRepair) btnRepair.onclick = () => handleAction('repair_armor');
+
+      const btnReset = document.getElementById('btnReset');
+      if (btnReset) btnReset.onclick = initGame;
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+          e.preventDefault();
+          handleAction('accelerate');
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+          e.preventDefault();
+          handleAction('reverse');
+        } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          e.preventDefault();
+          handleAction('steer_left');
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          handleAction('steer_right');
+        } else if (e.key === ' ') {
+          e.preventDefault();
+          handleAction('fire_cannons');
+        } else if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          handleAction('fire_rocket');
+        } else if (e.key === 'e' || e.key === 'E') {
+          e.preventDefault();
+          handleAction('deploy_mine');
+        } else if (e.key === 'Shift') {
+          e.preventDefault();
+          handleAction('nitro_boost');
+        } else if (e.key === 'b' || e.key === 'B') {
+          e.preventDefault();
+          handleAction('handbrake_turn');
+        } else if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          handleAction('repair_armor');
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          initGame();
+        }
+      });
+
+      // PWA service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch(() => {});
+        });
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>

@@ -301,8 +301,9 @@
       "slug": "vehicular-combat",
       "name": "Vehicular Combat",
       "family": "Shooter",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "endless",
       "source": "steam-tag"
     },
     {
