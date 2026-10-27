@@ -970,8 +970,9 @@
    "slug": "real-time-tactics",
    "name": "Real-Time Tactics",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {

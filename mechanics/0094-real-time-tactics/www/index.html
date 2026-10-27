@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Commando Strike: Real-Time Tactics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #18181b;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #27272a;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .sq-val { color: #38bdf8; }
+    .en-val { color: #f87171; }
+    .tk-val { color: #a1a1aa; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #111827;
+      border: 2px solid #27272a;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+    }
+    #controls {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #selection-bar {
+      font-size: 13px;
+      color: #a1a1aa;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 20px;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #1d4ed8; }
+    button:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
+    #btn-headshot { background: #dc2626; }
+    #btn-headshot:hover:not(:disabled) { background: #b91c1c; }
+    #btn-heal { background: #059669; }
+    #btn-heal:hover:not(:disabled) { background: #047857; }
+    #btn-wait { background: #d97706; }
+    #btn-wait:hover:not(:disabled) { background: #b45309; }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #a1a1aa;
+      background: #18181b;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #27272a;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+    }
+    #game-over-banner {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .victory-bg { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
+    .defeat-bg { background: #4c0519; color: #fda4af; border: 1px solid #f43f5e; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="stat-badge">Tick: <span id="ui-tick" class="tk-val">1/60</span></div>
+    <div class="stat-badge">Squad Alive: <span id="ui-squad" class="sq-val">3/3</span></div>
+    <div class="stat-badge">Enemies: <span id="ui-enemies" class="en-val">4</span></div>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="480" height="480"></canvas>
+  </div>
+
+  <div id="controls">
+    <div id="selection-bar">
+      <span id="selected-name">Select an operative or target</span>
+      <span id="selected-info"></span>
+    </div>
+    <div class="action-row">
+      <button id="btn-sel-sniper">Eagle (Sniper)</button>
+      <button id="btn-sel-heavy">Rhino (Heavy)</button>
+      <button id="btn-sel-medic">Fox (Medic)</button>
+      <button id="btn-attack" style="display:none; background:#dc2626;">Attack Target</button>
+      <button id="btn-headshot" style="display:none;">Headshot (Sniper)</button>
+      <button id="btn-heal" style="display:none;">Heal Ally (Medic)</button>
+      <button id="btn-wait">Wait / Hold Sector</button>
+      <button id="btn-reset" style="background:#3f3f46;">Restart</button>
+    </div>
+  </div>
+
+  <div id="log-box">Commando infiltration initiated. Neutralize enemy commander and reach extraction bunker.</div>
+  <div id="game-over-banner"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now() & 0xffff);
+      let selectedSquadId = 'sniper';
+      let targetEnemyId = null;
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+
+      const uiTick = document.getElementById('ui-tick');
+      const uiSquad = document.getElementById('ui-squad');
+      const uiEnemies = document.getElementById('ui-enemies');
+      const selectedName = document.getElementById('selected-name');
+      const selectedInfo = document.getElementById('selected-info');
+
+      const btnSelSniper = document.getElementById('btn-sel-sniper');
+      const btnSelHeavy = document.getElementById('btn-sel-heavy');
+      const btnSelMedic = document.getElementById('btn-sel-medic');
+      const btnAttack = document.getElementById('btn-attack');
+      const btnHeadshot = document.getElementById('btn-headshot');
+      const btnHeal = document.getElementById('btn-heal');
+      const btnWait = document.getElementById('btn-wait');
+      const btnReset = document.getElementById('btn-reset');
+      const logBox = document.getElementById('log-box');
+      const gameOverBanner = document.getElementById('game-over-banner');
+
+      function updateUI() {
+        if (uiTick) uiTick.textContent = state.tick + '/' + state.maxTicks;
+        const aliveSq = state.squad.filter(u => u.hp > 0).length;
+        const aliveEn = state.enemies.filter(e => e.hp > 0).length;
+        if (uiSquad) uiSquad.textContent = aliveSq + '/3';
+        if (uiEnemies) uiEnemies.textContent = aliveEn;
+
+        if (logBox && state.history && state.history.length > 0) {
+          logBox.textContent = state.history[state.history.length - 1];
+        }
+
+        const legals = legalActions(state);
+        const selUnit = state.squad.find(u => u.id === selectedSquadId);
+
+        if (selUnit) {
+          if (selectedName) selectedName.textContent = selUnit.name + (selUnit.hp > 0 ? '' : ' (KIA)');
+          if (selectedInfo) selectedInfo.textContent = 'HP: ' + selUnit.hp + '/' + selUnit.maxHp + ' • Rng: ' + selUnit.range;
+        }
+
+        // Action buttons
+        if (btnAttack) {
+          if (targetEnemyId && selUnit && selUnit.hp > 0) {
+            const attackStr = 'attack:' + selUnit.id + ':' + targetEnemyId;
+            const canAttack = legals.includes(attackStr);
+            btnAttack.style.display = 'inline-block';
+            btnAttack.disabled = !canAttack || state.done;
+            btnAttack.textContent = 'Attack ' + targetEnemyId;
+            btnAttack.onclick = function() {
+              try {
+                step(state, attackStr);
+                targetEnemyId = null;
+                updateUI();
+                draw();
+              } catch(e) { console.error(e); }
+            };
+          } else {
+            btnAttack.style.display = 'none';
+          }
+        }
+
+        if (btnHeadshot) {
+          if (targetEnemyId && selectedSquadId === 'sniper') {
+            const hsStr = 'headshot:' + targetEnemyId;
+            const canHs = legals.includes(hsStr);
+            btnHeadshot.style.display = 'inline-block';
+            btnHeadshot.disabled = !canHs || state.done;
+            btnHeadshot.onclick = function() {
+              try {
+                step(state, hsStr);
+                targetEnemyId = null;
+                updateUI();
+                draw();
+              } catch(e) { console.error(e); }
+            };
+          } else {
+            btnHeadshot.style.display = 'none';
+          }
+        }
+
+        if (btnHeal) {
+          if (selectedSquadId === 'medic') {
+            // Find wounded adjacent ally
+            const woundedAlly = state.squad.find(u => u.hp > 0 && u.hp < u.maxHp && legals.includes('heal:' + u.id));
+            if (woundedAlly) {
+              btnHeal.style.display = 'inline-block';
+              btnHeal.textContent = 'Heal ' + woundedAlly.name;
+              btnHeal.disabled = state.done;
+              btnHeal.onclick = function() {
+                try {
+                  step(state, 'heal:' + woundedAlly.id);
+                  updateUI();
+                  draw();
+                } catch(e) { console.error(e); }
+              };
+            } else {
+              btnHeal.style.display = 'none';
+            }
+          } else {
+            btnHeal.style.display = 'none';
+          }
+        }
+
+        if (btnWait) btnWait.disabled = state.done;
+
+        if (state.done && gameOverBanner) {
+          gameOverBanner.style.display = 'block';
+          if (state.winner === 'player') {
+            gameOverBanner.className = 'victory-bg';
+            gameOverBanner.textContent = 'MISSION COMPLETE! Syndicate Commander eliminated & extraction secured.';
+          } else {
+            gameOverBanner.className = 'defeat-bg';
+            gameOverBanner.textContent = 'MISSION FAILED! Commando squad neutralized.';
+          }
+        } else if (gameOverBanner) {
+          gameOverBanner.style.display = 'none';
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 480, 480);
+        const cellSize = 480 / GRID_SIZE;
+
+        // Draw grid
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const x = c * cellSize;
+            const y = r * cellSize;
+
+            ctx.fillStyle = (r + c) % 2 === 0 ? '#18212f' : '#141c28';
+            ctx.fillRect(x, y, cellSize, cellSize);
+
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, cellSize, cellSize);
+          }
+        }
+
+        // Draw Walls
+        WALL_TILES.forEach(function(w) {
+          const x = w.c * cellSize;
+          const y = w.r * cellSize;
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+          ctx.strokeStyle = '#64748b';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('WALL', x + cellSize / 2, y + cellSize / 2 + 3);
+        });
+
+        // Draw Cover (Sandbags)
+        COVER_TILES.forEach(function(cv) {
+          const x = cv.c * cellSize;
+          const y = cv.r * cellSize;
+          ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+          ctx.fillRect(x + 4, y + 4, cellSize - 8, cellSize - 8);
+          ctx.strokeStyle = '#eab308';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + 4, y + 4, cellSize - 8, cellSize - 8);
+          ctx.fillStyle = '#fde047';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('COVER', x + cellSize / 2, y + cellSize / 2 + 3);
+        });
+
+        // Draw Extraction Point
+        const exX = EXTRACTION_POINT.c * cellSize;
+        const exY = EXTRACTION_POINT.r * cellSize;
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.3)';
+        ctx.fillRect(exX + 2, exY + 2, cellSize - 4, cellSize - 4);
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(exX + 2, exY + 2, cellSize - 4, cellSize - 4);
+        ctx.fillStyle = '#4ade80';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('BUNKER', exX + cellSize / 2, exY + cellSize / 2 - 4);
+        ctx.fillText('EXIT 🏁', exX + cellSize / 2, exY + cellSize / 2 + 10);
+
+        // Draw Enemies
+        for (let i = 0; i < state.enemies.length; i++) {
+          const e = state.enemies[i];
+          if (e.hp <= 0) continue;
+          const x = e.c * cellSize + cellSize / 2;
+          const y = e.r * cellSize + cellSize / 2;
+          const isTargeted = targetEnemyId === e.id;
+
+          if (isTargeted) {
+            ctx.beginPath();
+            ctx.arc(x, y, 24, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, y, 18, 0, Math.PI * 2);
+          ctx.fillStyle = e.id === 'boss' ? '#7f1d1d' : '#991b1b';
+          ctx.fill();
+          ctx.strokeStyle = e.id === 'boss' ? '#f87171' : '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const icon = e.id === 'boss' ? '💀' : (e.id === 'turret' ? '🗼' : '⚠️');
+          ctx.fillText(icon, x, y);
+
+          // Enemy HP bar
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(x - 18, y - 24, 36, 4);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(x - 18, y - 24, 36 * (e.hp / e.maxHp), 4);
+        }
+
+        // Draw Squad Members
+        for (let i = 0; i < state.squad.length; i++) {
+          const u = state.squad[i];
+          if (u.hp <= 0) continue;
+          const x = u.c * cellSize + cellSize / 2;
+          const y = u.r * cellSize + cellSize / 2;
+          const isSelected = selectedSquadId === u.id;
+
+          if (isSelected) {
+            ctx.beginPath();
+            ctx.arc(x, y, 24, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, y, 18, 0, Math.PI * 2);
+          ctx.fillStyle = '#1e40af';
+          ctx.fill();
+          ctx.strokeStyle = '#60a5fa';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const icon = u.id === 'sniper' ? '🎯' : (u.id === 'heavy' ? '🛡️' : '💊');
+          ctx.fillText(icon, x, y);
+
+          // Operative HP bar
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(x - 18, y - 24, 36, 4);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(x - 18, y - 24, 36 * (u.hp / u.maxHp), 4);
+        }
+      }
+
+      // Handle map clicks for unit selection, move, or target
+      if (canvas && canvas.addEventListener) {
+        canvas.addEventListener('click', function(e) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = 480 / rect.width;
+          const scaleY = 480 / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+
+          const cellSize = 480 / GRID_SIZE;
+          const c = Math.floor(mx / cellSize);
+          const r = Math.floor(my / cellSize);
+
+          // 1. Check if clicked an ally
+          const clickedAlly = state.squad.find(u => u.hp > 0 && u.r === r && u.c === c);
+          if (clickedAlly) {
+            selectedSquadId = clickedAlly.id;
+            targetEnemyId = null;
+            updateUI();
+            draw();
+            return;
+          }
+
+          // 2. Check if clicked an enemy
+          const clickedEnemy = state.enemies.find(en => en.hp > 0 && en.r === r && en.c === c);
+          if (clickedEnemy) {
+            targetEnemyId = clickedEnemy.id;
+            updateUI();
+            draw();
+            return;
+          }
+
+          // 3. Move order if empty tile clicked
+          const selUnit = state.squad.find(u => u.id === selectedSquadId);
+          if (selUnit && selUnit.hp > 0) {
+            const moveAction = 'move:' + selUnit.id + ':' + r + ',' + c;
+            const legals = legalActions(state);
+            if (legals.includes(moveAction)) {
+              try {
+                step(state, moveAction);
+                updateUI();
+                draw();
+              } catch(err) { console.error(err); }
+            }
+          }
+        });
+      }
+
+      if (btnSelSniper) btnSelSniper.onclick = function() { selectedSquadId = 'sniper'; updateUI(); draw(); };
+      if (btnSelHeavy) btnSelHeavy.onclick = function() { selectedSquadId = 'heavy'; updateUI(); draw(); };
+      if (btnSelMedic) btnSelMedic.onclick = function() { selectedSquadId = 'medic'; updateUI(); draw(); };
+
+      if (btnWait) {
+        btnWait.onclick = function() {
+          try {
+            step(state, 'wait');
+            updateUI();
+            draw();
+          } catch(e) { console.error(e); }
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedSquadId = 'sniper';
+          targetEnemyId = null;
+          updateUI();
+          draw();
+        };
+      }
+
+      // Initial render
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>
