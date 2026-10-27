@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Relic Seeker</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#d97706">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: #1c1917;
+      color: #fef3c7;
+      font-family: Georgia, serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #292524;
+      border: 1px solid #78350f;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .hud-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #f59e0b;
+      letter-spacing: 1px;
+    }
+    .hud-stats {
+      display: flex;
+      gap: 12px;
+      font-size: 14px;
+    }
+    .stat-pill {
+      background: #44403c;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #57534e;
+      color: #fde68a;
+    }
+
+    #gameCanvas {
+      background: #0c0a09;
+      border: 3px solid #78350f;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      max-width: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .quest-panel {
+      width: 100%;
+      max-width: 720px;
+      background: #292524;
+      border: 1px solid #78350f;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+    }
+    .quest-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #d97706;
+      margin-bottom: 6px;
+    }
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px;
+    }
+    .quest-item {
+      background: #1c1917;
+      border: 1px solid #44403c;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #fef3c7;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .quest-item.found {
+      color: #34d399;
+      text-decoration: line-through;
+      border-color: #059669;
+      background: #064e3b;
+    }
+
+    .btn-row {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .action-btn {
+      flex: 1;
+      background: #78350f;
+      border: 1px solid #b45309;
+      color: #fef3c7;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.1s;
+    }
+    .action-btn:hover { background: #92400e; }
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(12, 10, 9, 0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hud-title">Victorian Study</div>
+    <div class="hud-stats">
+      <span class="stat-pill">Lamp Oil: <strong id="turnsEl">30</strong></span>
+      <span class="stat-pill">Found: <strong id="foundEl">0/5</strong></span>
+      <span class="stat-pill">Score: <strong id="scoreEl">0</strong></span>
+    </div>
+  </header>
+
+  <div style="position: relative; width: 640px; max-width: 100%;">
+    <canvas id="gameCanvas" width="640" height="640"></canvas>
+    <div id="overlay">
+      <h2 id="overlayTitle" style="font-size: 32px; color: #f59e0b; margin-bottom: 12px;">STUDY CLEARED!</h2>
+      <p id="overlayDesc" style="color: #d6d3d1; margin-bottom: 24px;">All relics successfully recovered!</p>
+      <button class="action-btn" id="playAgainBtn" style="max-width: 200px;">Next Chamber</button>
+    </div>
+  </div>
+
+  <div class="quest-panel">
+    <div class="quest-title">Target Relics Checklist:</div>
+    <div class="checklist" id="checklist"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="action-btn" id="hintBtn">
+      <span>🔍 Use Magnifying Glass</span>
+      <span id="hintCount">(3)</span>
+    </button>
+    <button class="action-btn" id="restartBtn">Reset Study</button>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(1);
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas ? canvas.getContext("2d") : null;
+    const CELL_SIZE = 80; // 8 * 80 = 640
+
+    let audioCtx = null;
+    function playBeep(freq, type = 'sine', duration = 0.1) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function updateUI() {
+      const turnsEl = document.getElementById("turnsEl");
+      if (turnsEl) turnsEl.textContent = state.turnsLeft;
+      const foundEl = document.getElementById("foundEl");
+      if (foundEl) foundEl.textContent = `${state.foundCount}/${TARGET_COUNT}`;
+      const scoreEl = document.getElementById("scoreEl");
+      if (scoreEl) scoreEl.textContent = score(state);
+
+      const hintCount = document.getElementById("hintCount");
+      if (hintCount) hintCount.textContent = `(${state.hintsLeft})`;
+      const hintBtn = document.getElementById("hintBtn");
+      if (hintBtn) hintBtn.disabled = (state.hintsLeft <= 0 || state.done);
+
+      // Checklist rendering
+      const listEl = document.getElementById("checklist");
+      if (listEl) {
+        let html = "";
+        const targetItems = state.items.filter(it => it.isTarget);
+        targetItems.forEach(t => {
+          const cls = t.found ? "quest-item found" : "quest-item";
+          const checkIcon = t.found ? "✓ " : "• ";
+          html += `<div class="${cls}"><span>${checkIcon}${t.icon}</span><span>${t.name}</span></div>`;
+        });
+        listEl.innerHTML = html;
+      }
+
+      if (state.done) {
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "flex";
+        const title = document.getElementById("overlayTitle");
+        const desc = document.getElementById("overlayDesc");
+        if (title && desc) {
+          if (state.won) {
+            title.textContent = "INVESTIGATION COMPLETE!";
+            title.style.color = "#34d399";
+            desc.textContent = `All relics secured! Total score: ${score(state)}`;
+            playBeep(587, 'triangle', 0.3);
+          } else {
+            title.textContent = "LAMP OIL EXHAUSTED";
+            title.style.color = "#f87171";
+            desc.textContent = `Darkness fell before finding all relics.`;
+            playBeep(220, 'sawtooth', 0.3);
+          }
+        }
+      }
+    }
+
+    function render() {
+      if (!ctx || !canvas) return;
+      ctx.fillStyle = "#1c1917";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Draw study chamber tiles (wooden parquet floor & wallpaper)
+      for (let y = 0; y < state.gridSize; y++) {
+        for (let x = 0; x < state.gridSize; x++) {
+          const px = x * CELL_SIZE;
+          const py = y * CELL_SIZE;
+          ctx.fillStyle = ((x + y) % 2 === 0) ? "#292524" : "#24201e";
+          ctx.fillRect(px, py, CELL_SIZE, CELL_SIZE);
+          ctx.strokeStyle = "#44403c";
+          ctx.strokeRect(px, py, CELL_SIZE, CELL_SIZE);
+        }
+      }
+
+      // 2. Draw items
+      state.items.forEach(it => {
+        const px = it.x * CELL_SIZE + CELL_SIZE / 2;
+        const py = it.y * CELL_SIZE + CELL_SIZE / 2;
+
+        // If inside a closed container, it's hidden under the container!
+        if (it.containerId) {
+          const container = state.containers.find(c => c.id === it.containerId);
+          if (container && !container.opened) return;
+        }
+
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        if (it.found) {
+          // Found relic glow / spark
+          ctx.fillStyle = "rgba(52, 211, 153, 0.2)";
+          ctx.beginPath();
+          ctx.arc(px, py, 26, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.font = "32px sans-serif";
+        ctx.fillText(it.icon, px, py - 4);
+
+        ctx.font = "10px Georgia, serif";
+        ctx.fillStyle = it.found ? "#6ee7b7" : (it.isTarget ? "#fef3c7" : "#a8a29e");
+        ctx.fillText(it.name, px, py + 22);
+
+        ctx.restore();
+      });
+
+      // 3. Draw Containers
+      state.containers.forEach(c => {
+        const px = c.x * CELL_SIZE + 6;
+        const py = c.y * CELL_SIZE + 6;
+        const w = CELL_SIZE - 12;
+        const h = CELL_SIZE - 12;
+
+        if (!c.opened) {
+          ctx.save();
+          if (c.id === "mahogany_cabinet") {
+            ctx.fillStyle = "#78350f";
+            ctx.fillRect(px, py, w, h);
+            ctx.strokeStyle = "#92400e";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(px, py, w, h);
+            // Cabinet knob
+            ctx.fillStyle = "#fbbf24";
+            ctx.beginPath();
+            ctx.arc(px + w / 2, py + h / 2, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = "bold 10px Georgia, serif";
+            ctx.fillStyle = "#fde68a";
+            ctx.textAlign = "center";
+            ctx.fillText("Cabinet", px + w / 2, py + h - 8);
+          } else if (c.id === "velvet_curtain") {
+            ctx.fillStyle = "#831843";
+            ctx.fillRect(px, py, w, h);
+            ctx.strokeStyle = "#9d174d";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(px, py, w, h);
+            ctx.font = "bold 10px Georgia, serif";
+            ctx.fillStyle = "#fbcfe8";
+            ctx.textAlign = "center";
+            ctx.fillText("Curtain", px + w / 2, py + h / 2);
+          } else {
+            ctx.fillStyle = "#b45309";
+            ctx.fillRect(px, py, w, h);
+            ctx.strokeStyle = "#d97706";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(px, py, w, h);
+            // Brass Lock
+            ctx.fillStyle = "#fbbf24";
+            ctx.fillRect(px + w / 2 - 6, py + h / 2 - 6, 12, 12);
+            ctx.font = "bold 10px Georgia, serif";
+            ctx.fillStyle = "#fef3c7";
+            ctx.textAlign = "center";
+            ctx.fillText("Chest", px + w / 2, py + h - 8);
+          }
+          ctx.restore();
+        }
+      });
+
+      // 4. Draw Hint Radar highlight if active
+      if (state.lastHint) {
+        const hx = state.lastHint.x * CELL_SIZE + CELL_SIZE / 2;
+        const hy = state.lastHint.y * CELL_SIZE + CELL_SIZE / 2;
+        ctx.save();
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(hx, hy, 34, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        const res = step(state, action);
+        if (res.reward > 0) {
+          playBeep(494, 'triangle', 0.12);
+        } else {
+          playBeep(220, 'sine', 0.08);
+        }
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    if (canvas) {
+      canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+        const x = Math.floor(clickX / CELL_SIZE);
+        const y = Math.floor(clickY / CELL_SIZE);
+
+        if (x >= 0 && x < state.gridSize && y >= 0 && y < state.gridSize) {
+          doAction(`inspect:${x}:${y}`);
+        }
+      });
+    }
+
+    const hintBtn = document.getElementById("hintBtn");
+    if (hintBtn) {
+      hintBtn.addEventListener("click", () => {
+        if (state.hintsLeft > 0 && !state.done) {
+          doAction("use_hint");
+        }
+      });
+    }
+
+    const restartBtn = document.getElementById("restartBtn");
+    if (restartBtn) {
+      restartBtn.addEventListener("click", () => {
+        state = createState(state.seed);
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "none";
+        updateUI();
+        render();
+      });
+    }
+
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    if (playAgainBtn) {
+      playAgainBtn.addEventListener("click", () => {
+        state = createState(state.seed + 1);
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "none";
+        updateUI();
+        render();
+      });
+    }
+
+    updateUI();
+    render();
+  </script>
+</body>
+</html>
