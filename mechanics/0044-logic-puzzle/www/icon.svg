@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="100" fill="#060f1c" />
+  <circle cx="256" cy="256" r="210" fill="#0b1e38" stroke="#00e5ff" stroke-width="8"/>
+  <!-- Circuit conduits -->
+  <line x1="256" y1="80" x2="256" y2="432" stroke="#00e5ff" stroke-width="12" stroke-linecap="round"/>
+  <line x1="80" y1="256" x2="432" y2="256" stroke="#00e5ff" stroke-width="12" stroke-linecap="round"/>
+  <rect x="196" y="196" width="120" height="120" rx="20" fill="#00e5ff" />
+  <circle cx="256" cy="256" r="36" fill="#ffffff" />
+  <!-- Corner relays -->
+  <circle cx="160" cy="160" r="24" fill="#10b981" stroke="#34d399" stroke-width="4"/>
+  <circle cx="352" cy="160" r="24" fill="#10b981" stroke="#34d399" stroke-width="4"/>
+  <circle cx="160" cy="352" r="24" fill="#10b981" stroke="#34d399" stroke-width="4"/>
+  <circle cx="352" cy="352" r="24" fill="#10b981" stroke="#34d399" stroke-width="4"/>
+</svg>

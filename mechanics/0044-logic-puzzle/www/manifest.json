@@ -1,0 +1,12 @@
+{
+  "name": "Circuit Relay",
+  "short_name": "CircuitRelay",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#060f1c",
+  "theme_color": "#060f1c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

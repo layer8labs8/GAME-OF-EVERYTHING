@@ -1,0 +1,230 @@
+{
+  "schema": 1,
+  "mechanic": "logic-puzzle",
+  "levels": [
+    {
+      "id": "001",
+      "name": "Core Relight",
+      "difficulty": 1,
+      "data": {
+        "size": 3,
+        "grid": [
+          1,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1
+        ]
+      },
+      "par": 1,
+      "solution": "e"
+    },
+    {
+      "id": "002",
+      "name": "Corner Spark",
+      "difficulty": 1,
+      "data": {
+        "size": 3,
+        "grid": [
+          0,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "par": 1,
+      "solution": "a"
+    },
+    {
+      "id": "003",
+      "name": "Cross Polarity",
+      "difficulty": 1,
+      "data": {
+        "size": 3,
+        "grid": [
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "par": 2,
+      "solution": "ai"
+    },
+    {
+      "id": "004",
+      "name": "Dual Transistor",
+      "difficulty": 2,
+      "data": {
+        "size": 3,
+        "grid": [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "par": 2,
+      "solution": "bh"
+    },
+    {
+      "id": "005",
+      "name": "Diagonal Trace",
+      "difficulty": 2,
+      "data": {
+        "size": 3,
+        "grid": [
+          0,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      "par": 3,
+      "solution": "aei"
+    },
+    {
+      "id": "006",
+      "name": "Triad Gateway",
+      "difficulty": 3,
+      "data": {
+        "size": 3,
+        "grid": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          0
+        ]
+      },
+      "par": 3,
+      "solution": "cdh"
+    },
+    {
+      "id": "007",
+      "name": "Perimeter Ring",
+      "difficulty": 3,
+      "data": {
+        "size": 3,
+        "grid": [
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          0,
+          1,
+          0
+        ]
+      },
+      "par": 4,
+      "solution": "acgi"
+    },
+    {
+      "id": "008",
+      "name": "Matrix Quincunx",
+      "difficulty": 3,
+      "data": {
+        "size": 3,
+        "grid": [
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "par": 5,
+      "solution": "bdefh"
+    },
+    {
+      "id": "009",
+      "name": "Grid Expansion",
+      "difficulty": 4,
+      "data": {
+        "size": 4,
+        "grid": [
+          0,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      "par": 2,
+      "solution": "ap"
+    },
+    {
+      "id": "010",
+      "name": "Quantum Lattice",
+      "difficulty": 5,
+      "data": {
+        "size": 4,
+        "grid": [
+          0,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      "par": 4,
+      "solution": "afkp"
+    }
+  ]
+}

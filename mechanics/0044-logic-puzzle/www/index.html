@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Circuit Relay - Logic Puzzle</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#060f1c">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #040914;
+      color: #e0f2fe;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #00e5ff;
+      text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #7dd3fc;
+    }
+    .hud span { color: #ffffff; }
+    canvas {
+      background: #09172e;
+      border: 2px solid #0284c7;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 0 40px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      display: block;
+      cursor: pointer;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 8px;
+      gap: 8px;
+    }
+    button {
+      background: #0c4a6e;
+      border: 1px solid #0284c7;
+      color: #e0f2fe;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      min-height: 40px;
+      flex: 1;
+      transition: all 0.05s;
+    }
+    button:active { background: #0369a1; transform: scale(0.96); }
+    #game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(4, 9, 20, 0.92);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #game-overlay h2 { font-size: 2rem; color: #00e5ff; }
+  </style>
+</head>
+<body>
+  <div id="game-container" style="position: relative;">
+    <header>
+      <h1>CIRCUIT RELAY</h1>
+      <div class="hud">
+        <div>POWERED: <span id="val-powered">0</span>/<span id="val-total">9</span></div>
+        <div>MOVES: <span id="val-moves">0</span></div>
+      </div>
+    </header>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <div class="controls">
+      <button id="btn-prev">PREV LVL</button>
+      <button id="btn-reset">RESET [R]</button>
+      <button id="btn-next">NEXT LVL</button>
+    </div>
+
+    <div id="game-overlay">
+      <h2 id="overlay-title">CIRCUIT ENERGIZED</h2>
+      <p id="overlay-sub" style="font-size: 1.1rem; color: #7dd3fc;">All relays online!</p>
+      <button id="btn-overlay-next" style="padding: 10px 24px; font-size: 1rem; max-width: 200px;">CONTINUE</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const elPowered = document.getElementById('val-powered');
+      const elTotal = document.getElementById('val-total');
+      const elMoves = document.getElementById('val-moves');
+      const btnPrev = document.getElementById('btn-prev');
+      const btnReset = document.getElementById('btn-reset');
+      const btnNext = document.getElementById('btn-next');
+      const overlay = document.getElementById('game-overlay');
+      const overlayTitle = document.getElementById('overlay-title');
+      const overlaySub = document.getElementById('overlay-sub');
+      const btnOverlayNext = document.getElementById('btn-overlay-next');
+
+      const LEVELS = [
+        { id: '001', name: 'Core Relight', size: 3, grid: [1,0,1,0,0,0,1,0,1], par: 1 },
+        { id: '002', name: 'Corner Spark', size: 3, grid: [0,0,1,0,1,1,1,1,1], par: 1 },
+        { id: '003', name: 'Cross Polarity', size: 3, grid: [0,0,1,0,1,0,1,0,0], par: 2 },
+        { id: '004', name: 'Dual Transistor', size: 3, grid: [0,1,0,1,1,1,0,1,0], par: 2 },
+        { id: '005', name: 'Diagonal Trace', size: 3, grid: [1,0,0,0,0,1,0,1,1], par: 3 },
+        { id: '006', name: 'Triad Gateway', size: 3, grid: [1,0,0,0,0,1,1,1,1], par: 3 },
+        { id: '007', name: 'Perimeter Ring', size: 3, grid: [0,0,0,0,1,0,0,0,0], par: 4 },
+        { id: '008', name: 'Matrix Quincunx', size: 3, grid: [0,1,0,1,0,1,0,1,0], par: 5 },
+        { id: '009', name: 'Grid Expansion', size: 4, grid: [0,0,1,1,0,1,1,1,1,1,1,0,1,1,0,0], par: 2 },
+        { id: '010', name: 'Quantum Lattice', size: 4, grid: [0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0], par: 4 }
+      ];
+
+      let currentLvlIdx = 0;
+      let state = null;
+      let fxRipples = [];
+
+      function loadLevel(idx) {
+        currentLvlIdx = Math.max(0, Math.min(LEVELS.length - 1, idx));
+        const lvl = LEVELS[currentLvlIdx];
+
+        state = {
+          stepCount: 0,
+          size: lvl.size,
+          scoreVal: 0,
+          won: false,
+          lost: false,
+          grid: lvl.grid.slice(),
+          par: lvl.par,
+          name: lvl.name
+        };
+
+        fxRipples = [];
+        updateUI();
+        render();
+      }
+
+      loadLevel(0);
+
+      function updateUI() {
+        if (!state) return;
+        const total = state.grid.length;
+        let powered = 0;
+        for (let i = 0; i < total; i++) {
+          if (state.grid[i] === 1) powered++;
+        }
+
+        if (elPowered) elPowered.textContent = powered;
+        if (elTotal) elTotal.textContent = total;
+        if (elMoves) elMoves.textContent = state.stepCount;
+
+        if (state.won || CircuitRelay.isAllPowered(state.grid)) {
+          if (overlay) {
+            overlay.style.display = 'flex';
+            if (overlayTitle) overlayTitle.textContent = 'CIRCUIT ENERGIZED';
+            if (overlaySub) overlaySub.textContent = `Level Complete in ${state.stepCount} moves! (Par: ${state.par || '-'})`;
+          }
+        } else {
+          if (overlay) overlay.style.display = 'none';
+        }
+      }
+
+      function getCellRect(idx) {
+        const size = state.size;
+        const padding = 30;
+        const usable = 400 - padding * 2;
+        const cellGap = 12;
+        const cellSize = (usable - (size - 1) * cellGap) / size;
+
+        const gx = idx % size;
+        const gy = Math.floor(idx / size);
+
+        const x = padding + gx * (cellSize + cellGap);
+        const y = padding + gy * (cellSize + cellGap);
+        return { x, y, size: cellSize };
+      }
+
+      function render() {
+        if (!state) return;
+        ctx.clearRect(0, 0, 400, 400);
+
+        const size = state.size;
+
+        // Render PCB trace lines between adjacent cells
+        ctx.strokeStyle = '#0369a1';
+        ctx.lineWidth = 4;
+        for (let i = 0; i < state.grid.length; i++) {
+          const r1 = getCellRect(i);
+          const cx1 = r1.x + r1.size / 2;
+          const cy1 = r1.y + r1.size / 2;
+
+          const gx = i % size;
+          const gy = Math.floor(i / size);
+
+          if (gx < size - 1) {
+            const r2 = getCellRect(i + 1);
+            ctx.beginPath();
+            ctx.moveTo(cx1, cy1);
+            ctx.lineTo(r2.x + r2.size / 2, r2.y + r2.size / 2);
+            ctx.stroke();
+          }
+          if (gy < size - 1) {
+            const r2 = getCellRect(i + size);
+            ctx.beginPath();
+            ctx.moveTo(cx1, cy1);
+            ctx.lineTo(r2.x + r2.size / 2, r2.y + r2.size / 2);
+            ctx.stroke();
+          }
+        }
+
+        // Render Relays
+        for (let i = 0; i < state.grid.length; i++) {
+          const r = getCellRect(i);
+          const isPowered = state.grid[i] === 1;
+
+          ctx.save();
+          if (isPowered) {
+            // Powered Node
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(r.x, r.y, r.size, r.size);
+
+            ctx.fillStyle = '#00e5ff';
+            ctx.fillRect(r.x + 4, r.y + 4, r.size - 8, r.size - 8);
+
+            ctx.strokeStyle = '#e0f2fe';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(r.x, r.y, r.size, r.size);
+
+            // Core glow
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(r.x + r.size / 2, r.y + r.size / 2, r.size * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            // Unpowered Node
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(r.x, r.y, r.size, r.size);
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(r.x, r.y, r.size, r.size);
+
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.arc(r.x + r.size / 2, r.y + r.size / 2, r.size * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // Render Energy Ripples
+        const nextRipples = [];
+        for (const rip of fxRipples) {
+          ctx.save();
+          ctx.strokeStyle = `rgba(0, 229, 255, ${rip.life / 10})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(rip.x, rip.y, rip.r * (1 - rip.life / 10), 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+          rip.life--;
+          if (rip.life > 0) nextRipples.push(rip);
+        }
+        fxRipples = nextRipples;
+
+        if (fxRipples.length > 0) {
+          requestAnimationFrame(render);
+        }
+      }
+
+      function handleCellClick(clickX, clickY) {
+        if (!state || state.won) return;
+
+        for (let i = 0; i < state.grid.length; i++) {
+          const r = getCellRect(i);
+          if (clickX >= r.x && clickX <= r.x + r.size && clickY >= r.y && clickY <= r.y + r.size) {
+            state.stepCount++;
+            CircuitRelay.toggleCell(state.grid, state.size, i);
+
+            fxRipples.push({
+              x: r.x + r.size / 2,
+              y: r.y + r.size / 2,
+              r: r.size * 1.5,
+              life: 10
+            });
+
+            if (CircuitRelay.isAllPowered(state.grid)) {
+              state.won = true;
+            }
+
+            updateUI();
+            render();
+            break;
+          }
+        }
+      }
+
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = 400 / rect.width;
+        const scaleY = 400 / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        handleCellClick(x, y);
+      });
+
+      if (btnPrev) btnPrev.addEventListener('click', () => loadLevel(currentLvlIdx - 1));
+      if (btnNext) btnNext.addEventListener('click', () => loadLevel(currentLvlIdx + 1));
+      if (btnReset) btnReset.addEventListener('click', () => loadLevel(currentLvlIdx));
+      if (btnOverlayNext) btnOverlayNext.addEventListener('click', () => loadLevel(currentLvlIdx + 1));
+
+      window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'r') loadLevel(currentLvlIdx);
+        else if (k === 'arrowright') loadLevel(currentLvlIdx + 1);
+        else if (k === 'arrowleft') loadLevel(currentLvlIdx - 1);
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+    })();
+  </script>
+</body>
+</html>
