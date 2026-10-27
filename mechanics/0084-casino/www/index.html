@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Grand Casino Roulette</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #032018;
+      --felt: #064e3b;
+      --panel: #065f46;
+      --panel-border: #047857;
+      --text: #f0fdf4;
+      --text-muted: #a7f3d0;
+      --gold: #fbbf24;
+      --red: #dc2626;
+      --black: #18181b;
+      --green: #16a34a;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #022c22;
+      border-bottom: 2px solid #047857;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--gold);
+    }
+    main {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+    .bankroll-dashboard {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #022c22;
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.88rem;
+    }
+    .chips-badge {
+      font-weight: 800;
+      color: var(--gold);
+      font-size: 1rem;
+    }
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid var(--gold);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+    .betting-table {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    button {
+      background: #047857;
+      border: 1px solid var(--gold);
+      color: var(--text);
+      padding: 9px 4px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+    .btn-red { background: var(--red); border-color: #fca5a5; }
+    .btn-red:hover { background: #b91c1c; }
+    .btn-black { background: var(--black); border-color: #a1a1aa; }
+    .btn-black:hover { background: #27272a; }
+    .btn-spin {
+      background: #b45309;
+      border-color: var(--gold);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 800;
+      grid-column: span 2;
+    }
+    .btn-spin:hover {
+      background: #d97706;
+    }
+    .btn-clear {
+      background: #374151;
+      border-color: #6b7280;
+    }
+    .btn-clear:hover {
+      background: #4b5563;
+    }
+    .log-feed {
+      width: 100%;
+      background: #022c22;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      height: 38px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icon.svg" alt="Casino Roulette Logo">
+      <h1>Grand Casino Roulette</h1>
+    </div>
+    <div style="font-size: 0.82rem; font-weight: 700; color: var(--gold);" id="spin-counter">Spin: 0 / 25</div>
+  </header>
+
+  <main>
+    <div class="bankroll-dashboard">
+      <div>Chips: <span class="chips-badge" id="chips-num">500</span> 🪙</div>
+      <div style="font-size: 0.8rem; color: var(--text-muted);" id="current-bet-display">Active Bet: 0 🪙</div>
+      <div style="font-size: 0.8rem; color: var(--gold);">VIP Goal: 1,500 🪙</div>
+    </div>
+
+    <div class="board-container">
+      <canvas id="rouletteCanvas" width="600" height="600"></canvas>
+    </div>
+
+    <div class="betting-table">
+      <button class="btn-red" id="btn-bet-red">🔴 Red (1:1)</button>
+      <button class="btn-black" id="btn-bet-black">⚫ Black (1:1)</button>
+      <button id="btn-bet-even">Even (1:1)</button>
+
+      <button id="btn-bet-odd">Odd (1:1)</button>
+      <button id="btn-bet-low">1 - 18 Low</button>
+      <button id="btn-bet-high">19 - 36 High</button>
+
+      <button id="btn-bet-d1">1st 12 (2:1)</button>
+      <button id="btn-bet-d2">2nd 12 (2:1)</button>
+      <button id="btn-bet-d3">3rd 12 (2:1)</button>
+
+      <button class="btn-clear" id="btn-clear">Clear Bets</button>
+      <button class="btn-spin" id="btn-spin">Spin Wheel!</button>
+    </div>
+
+    <div class="log-feed" id="log-feed">
+      <div>Place your bets on Red, Black, Even, Odd, or Dozens and tap Spin Wheel!</div>
+    </div>
+  </main>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('rouletteCanvas');
+      const ctx = canvas.getContext('2d');
+      const chipsNum = document.getElementById('chips-num');
+      const spinCounter = document.getElementById('spin-counter');
+      const betDisplay = document.getElementById('current-bet-display');
+      const logFeed = document.getElementById('log-feed');
+
+      const btnSpin = document.getElementById('btn-spin');
+      const btnClear = document.getElementById('btn-clear');
+      const btnRed = document.getElementById('btn-bet-red');
+      const btnBlack = document.getElementById('btn-bet-black');
+      const btnEven = document.getElementById('btn-bet-even');
+      const btnOdd = document.getElementById('btn-bet-odd');
+      const btnLow = document.getElementById('btn-bet-low');
+      const btnHigh = document.getElementById('btn-bet-high');
+      const btnD1 = document.getElementById('btn-bet-d1');
+      const btnD2 = document.getElementById('btn-bet-d2');
+      const btnD3 = document.getElementById('btn-bet-d3');
+
+      let state = null;
+
+      function initGame() {
+        const seed = Math.floor(Date.now() % 1000000) || 12345;
+        state = casinoLogic.createState(seed);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        chipsNum.textContent = state.bankroll;
+        spinCounter.textContent = `Spin: ${state.spinCount} / 25`;
+
+        let totalBet = 0;
+        for (let i = 0; i < state.bets.length; i++) totalBet += state.bets[i].amt;
+        betDisplay.textContent = `Active Bet: ${totalBet} 🪙`;
+
+        if (state.log.length > 0) {
+          const recent = state.log.slice(-2);
+          logFeed.innerHTML = recent.map(msg => `<div>${msg}</div>`).reverse().join('');
+        }
+
+        if (state.gameOver) {
+          btnSpin.textContent = state.winner === 'player' ? '🏆 VIP Winner! (Restart)' : '💀 Game Over (Restart)';
+          btnSpin.style.background = state.winner === 'player' ? '#16a34a' : '#dc2626';
+          btnSpin.onclick = () => initGame();
+        } else {
+          btnSpin.textContent = totalBet > 0 ? `Spin Wheel (${totalBet} 🪙)` : 'Place a Bet First';
+          btnSpin.style.background = totalBet > 0 ? '#b45309' : '#374151';
+          btnSpin.onclick = () => {
+            const legal = casinoLogic.legalActions(state);
+            if (legal.includes('spin')) {
+              casinoLogic.step(state, 'spin');
+              updateUI();
+              render();
+            }
+          };
+        }
+      }
+
+      function handleBet(bType) {
+        if (!state || state.gameOver) return;
+        const act = `bet:${bType}:25`;
+        const legal = casinoLogic.legalActions(state);
+        if (legal.includes(act)) {
+          casinoLogic.step(state, act);
+          updateUI();
+          render();
+        }
+      }
+
+      btnRed.onclick = () => handleBet('red');
+      btnBlack.onclick = () => handleBet('black');
+      btnEven.onclick = () => handleBet('even');
+      btnOdd.onclick = () => handleBet('odd');
+      btnLow.onclick = () => handleBet('low');
+      btnHigh.onclick = () => handleBet('high');
+      btnD1.onclick = () => handleBet('dozen1');
+      btnD2.onclick = () => handleBet('dozen2');
+      btnD3.onclick = () => handleBet('dozen3');
+
+      btnClear.onclick = () => {
+        if (!state || state.gameOver) return;
+        const legal = casinoLogic.legalActions(state);
+        if (legal.includes('clear_bets')) {
+          casinoLogic.step(state, 'clear_bets');
+          updateUI();
+          render();
+        }
+      };
+
+      function render() {
+        const size = canvas.width;
+        ctx.clearRect(0, 0, size, size);
+
+        // 1. Emerald Felt Table
+        ctx.fillStyle = '#064e3b';
+        ctx.fillRect(0, 0, size, size);
+
+        // Border
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = '#b45309';
+        ctx.strokeRect(4, 4, size - 8, size - 8);
+
+        // 2. Center European Roulette Wheel
+        const cx = size / 2;
+        const cy = size / 2 - 30;
+        const radius = size * 0.38;
+
+        // Outer mahogany rim
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#1c1917';
+        ctx.fill();
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = '#d97706';
+        ctx.stroke();
+
+        // 37 Pockets rim
+        const numPockets = 37;
+        const angleStep = (Math.PI * 2) / numPockets;
+
+        for (let i = 0; i < numPockets; i++) {
+          const startA = i * angleStep;
+          const endA = (i + 1) * angleStep;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, radius - 10, startA, endA);
+          ctx.closePath();
+
+          if (i === 0) {
+            ctx.fillStyle = '#16a34a'; // Green zero
+          } else if (casinoLogic.RED_NUMBERS.includes(i)) {
+            ctx.fillStyle = '#dc2626';
+          } else {
+            ctx.fillStyle = '#18181b';
+          }
+          ctx.fill();
+          ctx.strokeStyle = '#d97706';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+
+        // Inner gold bowl
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * 0.55, 0, Math.PI * 2);
+        ctx.fillStyle = '#022c22';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#d97706';
+        ctx.stroke();
+
+        // Central turret & winning ball display
+        if (state && state.lastWinningNumber !== null) {
+          const winNum = state.lastWinningNumber;
+          const isRed = casinoLogic.RED_NUMBERS.includes(winNum);
+          const isGreen = winNum === 0;
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, 54, 0, Math.PI * 2);
+          ctx.fillStyle = isGreen ? '#16a34a' : isRed ? '#dc2626' : '#18181b';
+          ctx.fill();
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = '#fbbf24';
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '700 36px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(winNum, cx, cy);
+
+          // Subtitle
+          ctx.font = '700 12px sans-serif';
+          ctx.fillText(isGreen ? 'ZERO' : isRed ? 'RED' : 'BLACK', cx, cy + 30);
+        } else {
+          // Default golden turret
+          ctx.beginPath();
+          ctx.arc(cx, cy, 32, 0, Math.PI * 2);
+          ctx.fillStyle = '#d97706';
+          ctx.fill();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = '#fef08a';
+          ctx.stroke();
+
+          ctx.font = '28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🎰', cx, cy);
+        }
+
+        // 3. Bottom Spin History Strip
+        ctx.fillStyle = '#022c22';
+        ctx.fillRect(16, size - 64, size - 32, 48);
+        ctx.strokeStyle = '#047857';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(16, size - 64, size - 32, 48);
+
+        ctx.fillStyle = '#a7f3d0';
+        ctx.font = '600 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('History:', 28, size - 40);
+
+        if (state && state.history.length > 0) {
+          const recent = state.history.slice(-7);
+          for (let i = 0; i < recent.length; i++) {
+            const num = recent[i];
+            const hx = 100 + i * 65;
+            const hy = size - 40;
+
+            const isRed = casinoLogic.RED_NUMBERS.includes(num);
+            const isGreen = num === 0;
+
+            ctx.beginPath();
+            ctx.arc(hx, hy, 16, 0, Math.PI * 2);
+            ctx.fillStyle = isGreen ? '#16a34a' : isRed ? '#dc2626' : '#18181b';
+            ctx.fill();
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '700 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(num, hx, hy);
+          }
+        }
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>
