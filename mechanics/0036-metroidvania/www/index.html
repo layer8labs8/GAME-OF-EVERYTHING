@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chasm Crawler - Metroidvania</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d081a">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #080410;
+      color: #f3e8ff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #c084fc;
+      text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #e9d5ff;
+    }
+    .hud span { color: #ffffff; }
+    canvas {
+      background: #130924;
+      border: 2px solid #581c87;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      display: block;
+    }
+    .status-panel {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #170b2e;
+      border: 1px solid #6b21a8;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-top: 6px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .hp-bar-track {
+      width: 70px;
+      height: 8px;
+      background: #3b0764;
+      border-radius: 4px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .hp-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #10b981);
+    }
+    .badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      border: 1px solid #4c1d95;
+      background: #2e1065;
+      color: #94a3b8;
+    }
+    .badge.active {
+      border-color: #34d399;
+      background: #064e3b;
+      color: #6ee7b7;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 8px;
+      gap: 8px;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 40px);
+      grid-template-rows: repeat(3, 40px);
+      gap: 4px;
+    }
+    .action-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    button {
+      background: #2e1065;
+      border: 1px solid #6b21a8;
+      color: #f3e8ff;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.05s;
+    }
+    button:active { background: #581c87; transform: scale(0.96); }
+    .btn-action { padding: 8px 10px; min-height: 38px; }
+    .btn-fire { background: linear-gradient(135deg, #0284c7, #0ea5e9); border-color: #38bdf8; }
+    .btn-missile { background: linear-gradient(135deg, #991b1b, #dc2626); border-color: #f87171; }
+    .btn-dash { background: linear-gradient(135deg, #047857, #10b981); border-color: #34d399; }
+    #game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(8, 4, 16, 0.92);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #game-overlay h2 { font-size: 2rem; color: #c084fc; }
+  </style>
+</head>
+<body>
+  <div id="game-container" style="position: relative;">
+    <header>
+      <h1>CHASM CRAWLER</h1>
+      <div class="hud">
+        <div>SCORE: <span id="val-score">0</span></div>
+      </div>
+    </header>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <div class="status-panel">
+      <div>
+        HP: <div class="hp-bar-track"><div id="bar-hp" class="hp-bar-fill"></div></div>
+      </div>
+      <div>MISSILE: <span id="val-missiles" style="color: #f87171;">0</span></div>
+      <div id="badge-jump" class="badge">JUMPx2</div>
+      <div id="badge-dash" class="badge">DASH</div>
+    </div>
+
+    <div class="controls">
+      <div class="dpad">
+        <div></div>
+        <button id="btn-jump">JUMP</button>
+        <div></div>
+        <button id="btn-left">◀</button>
+        <button id="btn-rest" style="font-size:0.65rem;">REST</button>
+        <button id="btn-right">▶</button>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+
+      <div class="action-panel">
+        <div class="action-row">
+          <button id="btn-fire" class="btn-action btn-fire" style="flex:1;">BEAM [J]</button>
+          <button id="btn-missile" class="btn-action btn-missile" style="flex:1;">MISSILE [K]</button>
+        </div>
+        <div class="action-row">
+          <button id="btn-dash" class="btn-action btn-dash" style="flex:1;">PHASE DASH [L]</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="game-overlay">
+      <h2 id="overlay-title">REACTOR STABILIZED</h2>
+      <p id="overlay-sub" style="font-size: 1.1rem; color: #e9d5ff;">Core Guardian defeated!</p>
+      <button id="btn-restart" class="btn-action btn-fire" style="padding: 10px 24px; font-size: 1rem;">DESCEND AGAIN</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const elScore = document.getElementById('val-score');
+      const barHp = document.getElementById('bar-hp');
+      const elMissiles = document.getElementById('val-missiles');
+      const badgeJump = document.getElementById('badge-jump');
+      const badgeDash = document.getElementById('badge-dash');
+      const overlay = document.getElementById('game-overlay');
+      const overlayTitle = document.getElementById('overlay-title');
+      const overlaySub = document.getElementById('overlay-sub');
+      const btnRestart = document.getElementById('btn-restart');
+
+      let state = ChasmCrawler.createState(Date.now() % 100000);
+      let fxBeams = [];
+
+      function triggerAction(act) {
+        if (ChasmCrawler.isOver(state)) return;
+        const legals = ChasmCrawler.legalActions(state);
+        if (!legals.includes(act)) return;
+
+        const p = state.player;
+        if (act === 'fire') {
+          fxBeams.push({ x1: p.x, y1: p.y - 12, x2: p.x + p.facing * 180, y2: p.y - 12, color: '#38bdf8', life: 6 });
+        } else if (act === 'missile') {
+          fxBeams.push({ x1: p.x, y1: p.y - 12, x2: p.x + p.facing * 140, y2: p.y - 12, color: '#ef4444', life: 10, isMissile: true });
+        } else if (act === 'dash') {
+          fxBeams.push({ x1: p.x, y1: p.y - 12, x2: p.x + p.facing * 50, y2: p.y - 12, color: '#34d399', life: 8 });
+        }
+
+        ChasmCrawler.step(state, act);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (elScore) elScore.textContent = state.scoreVal;
+
+        const p = state.player;
+        if (barHp) barHp.style.width = (p.hp / p.maxHp * 100) + '%';
+        if (elMissiles) elMissiles.textContent = p.missiles;
+
+        if (badgeJump && badgeJump.classList) {
+          if (p.hasDoubleJump) badgeJump.classList.add('active');
+          else badgeJump.classList.remove('active');
+        }
+        if (badgeDash && badgeDash.classList) {
+          if (p.hasPhaseDash) badgeDash.classList.add('active');
+          else badgeDash.classList.remove('active');
+        }
+
+        if (ChasmCrawler.isOver(state)) {
+          if (overlay) {
+            overlay.style.display = 'flex';
+            if (state.won) {
+              if (overlayTitle) { overlayTitle.textContent = 'CORE STABILIZED'; overlayTitle.style.color = '#34d399'; }
+              if (overlaySub) overlaySub.textContent = `Mission Accomplished! Score: ${state.scoreVal}`;
+            } else {
+              if (overlayTitle) { overlayTitle.textContent = 'SIGNAL LOST'; overlayTitle.style.color = '#ef4444'; }
+              if (overlaySub) overlaySub.textContent = `Varia fell in the alien citadel. Score: ${state.scoreVal}`;
+            }
+          }
+        } else {
+          if (overlay) overlay.style.display = 'none';
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 400, 400);
+
+        // Map Sectors Background & Ledges
+        // Sector 1: Landing Bay (x: 20..180, y: 280..380)
+        ctx.fillStyle = '#1e1138';
+        ctx.fillRect(20, 260, 160, 120);
+
+        // Sector 2: Magma Ledge (x: 180..380, y: 280..380)
+        ctx.fillStyle = '#2d111d';
+        ctx.fillRect(180, 260, 200, 120);
+
+        // Sector 3: Ruins Corridor (x: 160..380, y: 120..240)
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(160, 120, 220, 120);
+
+        // Sector 4: Sanctuary Core (x: 20..160, y: 80..240)
+        ctx.fillStyle = '#2a0815';
+        ctx.fillRect(20, 80, 140, 160);
+
+        // Ground Floors
+        ctx.fillStyle = '#4c1d95';
+        ctx.fillRect(20, 360, 360, 20); // Base Ground
+        ctx.fillRect(160, 200, 220, 12); // Sector 3 Floor
+        ctx.fillRect(20, 160, 140, 12); // Sector 4 Floor
+
+        // Red Blast Door
+        const redDoor = state.gates.find(g => g.id === 'door_red');
+        if (redDoor && !redDoor.open) {
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(redDoor.x - 4, 300, 8, 60);
+          ctx.strokeStyle = '#fca5a5';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(redDoor.x - 4, 300, 8, 60);
+        }
+
+        // Laser Security Gate
+        const laser = state.gates.find(g => g.id === 'laser_gate');
+        if (laser && !laser.open) {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(laser.x, 140);
+          ctx.lineTo(laser.x, 200);
+          ctx.stroke();
+        }
+
+        // Upgrades Pedestals
+        for (const up of state.upgrades) {
+          if (!up.collected) {
+            ctx.save();
+            ctx.fillStyle = '#581c87';
+            ctx.fillRect(up.x - 12, up.y + 6, 24, 14);
+
+            if (up.type === 'missile') {
+              ctx.fillStyle = '#ef4444';
+              ctx.beginPath();
+              ctx.arc(up.x, up.y, 8, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (up.type === 'double_jump') {
+              ctx.fillStyle = '#10b981';
+              ctx.beginPath();
+              ctx.arc(up.x, up.y, 8, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.fillStyle = '#38bdf8';
+              ctx.beginPath();
+              ctx.arc(up.x, up.y, 8, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+        }
+
+        // FX Beams
+        const nextBeams = [];
+        for (const bm of fxBeams) {
+          ctx.save();
+          ctx.strokeStyle = bm.color;
+          ctx.lineWidth = bm.isMissile ? 6 : 3;
+          ctx.beginPath();
+          ctx.moveTo(bm.x1, bm.y1);
+          ctx.lineTo(bm.x2, bm.y2);
+          ctx.stroke();
+          ctx.restore();
+          bm.life--;
+          if (bm.life > 0) nextBeams.push(bm);
+        }
+        fxBeams = nextBeams;
+
+        // Enemies
+        for (const e of state.enemies) {
+          ctx.save();
+          if (e.type === 'guardian') {
+            // Core Guardian Boss
+            ctx.fillStyle = '#be123c';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Eye core
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Boss HP Bar
+            ctx.fillStyle = '#450a0a';
+            ctx.fillRect(e.x - 30, e.y - 36, 60, 6);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(e.x - 30, e.y - 36, (e.hp / e.maxHp) * 60, 6);
+          } else if (e.type === 'skitter') {
+            ctx.fillStyle = '#0284c7';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            // Crawler
+            ctx.fillStyle = '#e11d48';
+            ctx.fillRect(e.x - 10, e.y, 20, 10);
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 8, Math.PI, 0);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // Operative (Player)
+        const p = state.player;
+        ctx.save();
+        ctx.fillStyle = '#e11d48';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - 16, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Visor
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(p.x + (p.facing === 1 ? 2 : -8), p.y - 19, 6, 4);
+
+        // Body suit
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(p.x - 8, p.y - 6, 16, 16);
+
+        // Arm Cannon
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(p.x + (p.facing === 1 ? 8 : -14), p.y - 12, 8, 5);
+        ctx.restore();
+
+        if (fxBeams.length > 0) {
+          requestAnimationFrame(render);
+        }
+      }
+
+      // Button listeners
+      const btnLeft = document.getElementById('btn-left');
+      const btnRight = document.getElementById('btn-right');
+      const btnJump = document.getElementById('btn-jump');
+      const btnFire = document.getElementById('btn-fire');
+      const btnMissile = document.getElementById('btn-missile');
+      const btnDash = document.getElementById('btn-dash');
+      const btnRest = document.getElementById('btn-rest');
+
+      if (btnLeft) btnLeft.addEventListener('click', () => triggerAction('move_left'));
+      if (btnRight) btnRight.addEventListener('click', () => triggerAction('move_right'));
+      if (btnJump) btnJump.addEventListener('click', () => triggerAction('jump'));
+      if (btnFire) btnFire.addEventListener('click', () => triggerAction('fire'));
+      if (btnMissile) btnMissile.addEventListener('click', () => triggerAction('missile'));
+      if (btnDash) btnDash.addEventListener('click', () => triggerAction('dash'));
+      if (btnRest) btnRest.addEventListener('click', () => triggerAction('rest'));
+
+      if (btnRestart) {
+        btnRestart.addEventListener('click', () => {
+          state = ChasmCrawler.createState(Date.now() % 100000);
+          updateUI();
+          render();
+        });
+      }
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'arrowleft' || k === 'a') triggerAction('move_left');
+        else if (k === 'arrowright' || k === 'd') triggerAction('move_right');
+        else if (k === 'arrowup' || k === 'w') triggerAction('jump');
+        else if (k === ' ' || k === 'j') triggerAction('fire');
+        else if (k === 'k') triggerAction('missile');
+        else if (k === 'l') triggerAction('dash');
+        else if (k === 'r') triggerAction('rest');
+      });
+
+      // PWA registration
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>
