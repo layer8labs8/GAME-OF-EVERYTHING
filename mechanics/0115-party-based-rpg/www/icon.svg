@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="100" fill="#0d0a0b"/>
+  <circle cx="256" cy="256" r="200" fill="#1f1118" stroke="#8c1538" stroke-width="12"/>
+  <!-- Iron Torch and Eldritch Flame -->
+  <path d="M226 290 L216 430 L296 430 L286 290 Z" fill="#3a2e39" stroke="#685566" stroke-width="6"/>
+  <!-- Flame -->
+  <path d="M256 90 Q296 170 286 230 Q286 280 256 290 Q226 280 226 230 Q216 170 256 90 Z" fill="#e05638" stroke="#f6ad55" stroke-width="6"/>
+  <circle cx="256" cy="220" r="24" fill="#fbd38d"/>
+  <!-- Party Guild Sigil: 4 Gems -->
+  <circle cx="160" cy="180" r="14" fill="#3182ce"/>
+  <circle cx="352" cy="180" r="14" fill="#d69e2e"/>
+  <circle cx="140" cy="320" r="14" fill="#38a169"/>
+  <circle cx="372" cy="320" r="14" fill="#9f7aea"/>
+</svg>

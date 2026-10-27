@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Guild Expedition: Darkest Depths</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#8c1538">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0d0a0b;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: #191216;
+      border-radius: 6px;
+      border: 1px solid #3d232e;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #e05638;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #a08a94;
+    }
+    .stats span {
+      color: #f6ad55;
+      margin-left: 2px;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 560px;
+      aspect-ratio: 16 / 9;
+      background: #140d12;
+      border: 2px solid #3d232e;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      touch-action: none;
+    }
+    .skill-grid {
+      width: 100%;
+      max-width: 560px;
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    button.btn {
+      background: #251820;
+      color: #d1b8c4;
+      border: 1px solid #4a2839;
+      padding: 10px 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.btn:active {
+      background: #3d232e;
+    }
+    button.btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #8c1538;
+      border-color: #b8234e;
+      color: #fff;
+    }
+    button.btn-heal {
+      background: #238636;
+      border-color: #2ea043;
+      color: #fff;
+    }
+    button.btn-buff {
+      background: #6e40c9;
+      border-color: #8957e5;
+      color: #fff;
+    }
+    #log-panel {
+      width: 100%;
+      max-width: 560px;
+      height: 72px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #191216;
+      border: 1px solid #3d232e;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #a08a94;
+    }
+    #log-panel p {
+      margin-bottom: 2px;
+    }
+    #log-panel p:first-child {
+      color: #f6ad55;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔥 Guild Expedition: Darkest Depths</h1>
+    <div class="stats">
+      Room: <span id="val-room">1/4</span> | Score: <span id="val-score">0</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="view" width="560" height="315"></canvas>
+
+    <div class="skill-grid">
+      <button id="btn-action-1" class="btn btn-primary">Primary</button>
+      <button id="btn-action-2" class="btn btn-buff">Support</button>
+      <button id="btn-pass" class="btn">Pass</button>
+      <button id="btn-restart" class="btn">Restart</button>
+    </div>
+
+    <div id="log-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now());
+      const canvas = document.getElementById('view');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      const valRoom = document.getElementById('val-room');
+      const valScore = document.getElementById('val-score');
+      const logPanel = document.getElementById('log-panel');
+
+      const btn1 = document.getElementById('btn-action-1');
+      const btn2 = document.getElementById('btn-action-2');
+      const btnPass = document.getElementById('btn-pass');
+      const btnRestart = document.getElementById('btn-restart');
+
+      function updateUI() {
+        if (valRoom) valRoom.textContent = state.room + '/' + state.maxRooms;
+        if (valScore) valScore.textContent = state.score;
+
+        if (logPanel && state.combatLog) {
+          logPanel.innerHTML = state.combatLog.slice(-5).reverse().map(function(line) {
+            return '<p>' + line + '</p>';
+          }).join('');
+        }
+
+        const legal = legalActions(state);
+        const hero = state.heroes[state.activeHeroIndex];
+
+        // Configure dynamic buttons based on active hero
+        if (hero) {
+          if (btn1) {
+            if (hero.role === 'crusader') {
+              btn1.textContent = 'Smite';
+              btn1.disabled = state.done || !legal.some(function(a) { return a.startsWith('skill:smite:'); });
+            } else if (hero.role === 'highwayman') {
+              btn1.textContent = 'Wicked Slice';
+              btn1.disabled = state.done || !legal.some(function(a) { return a.startsWith('skill:wicked_slice:'); });
+            } else if (hero.role === 'vestal') {
+              btn1.textContent = 'Divine Grace';
+              btn1.disabled = state.done || !legal.some(function(a) { return a.startsWith('heal:divine_grace:'); });
+            } else {
+              btn1.textContent = 'Abyssal Art';
+              btn1.disabled = state.done || !legal.some(function(a) { return a.startsWith('skill:abyssal_artillery:'); });
+            }
+          }
+
+          if (btn2) {
+            if (hero.role === 'crusader') {
+              btn2.textContent = 'Holy Shield';
+              btn2.disabled = state.done || !legal.some(function(a) { return a.startsWith('guard:'); });
+            } else if (hero.role === 'highwayman') {
+              btn2.textContent = 'Pistol Shot';
+              btn2.disabled = state.done || !legal.some(function(a) { return a.startsWith('skill:pistol_shot:'); });
+            } else if (hero.role === 'vestal') {
+              btn2.textContent = 'Sanctuary';
+              btn2.disabled = state.done || !legal.includes('skill:sanctuary');
+            } else {
+              btn2.textContent = 'Wyrd Heal';
+              btn2.disabled = state.done || !legal.some(function(a) { return a.startsWith('heal:wyrd:'); });
+            }
+          }
+        }
+
+        if (btnPass) btnPass.disabled = state.done || !legal.includes('pass');
+
+        render();
+      }
+
+      function render() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 560, 315);
+
+        // Dungeon dungeon chamber backdrop
+        const grad = ctx.createLinearGradient(0, 0, 0, 315);
+        grad.addColorStop(0, '#1c1017');
+        grad.addColorStop(1, '#0b080a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 560, 315);
+
+        // Dungeon Floor
+        ctx.fillStyle = '#21151e';
+        ctx.fillRect(0, 230, 560, 85);
+        ctx.strokeStyle = '#3d232e';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 230);
+        ctx.lineTo(560, 230);
+        ctx.stroke();
+
+        // Atmospheric torchlight flicker
+        ctx.fillStyle = 'rgba(224, 86, 56, 0.08)';
+        ctx.beginPath();
+        ctx.arc(280, 80, 180, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw 4 Heroes (Ranks from left to right: R4 Occultist, R3 Vestal, R2 Highwayman, R1 Crusader)
+        const heroXPositions = [220, 160, 100, 40]; // [Crusader R1, HWM R2, Vestal R3, Occ R4]
+
+        for (let i = 0; i < state.heroes.length; i++) {
+          const h = state.heroes[i];
+          const x = heroXPositions[i];
+          const y = 170;
+
+          // Active hero spotlight
+          if (i === state.activeHeroIndex && !state.done) {
+            ctx.fillStyle = 'rgba(246, 173, 85, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(x + 22, 230, 32, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#f6ad55';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          // Hero Token Box
+          ctx.fillStyle = h.hp > 0 ? '#2d1825' : '#140c11';
+          ctx.fillRect(x, y, 44, 55);
+          ctx.strokeStyle = h.guarded ? '#38a169' : (h.deathsDoor ? '#e53e3e' : '#5a2d44');
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, 44, 55);
+
+          // Hero Icon
+          ctx.font = '22px sans-serif';
+          ctx.textAlign = 'center';
+          const icon = h.role === 'crusader' ? '🛡️' : (h.role === 'highwayman' ? '🗡️' : (h.role === 'vestal' ? '✝️' : '🔮'));
+          ctx.fillText(h.hp > 0 ? icon : '💀', x + 22, y + 36);
+
+          // Afflicted / Virtuous indicator
+          if (h.virtuous) {
+            ctx.font = '10px sans-serif';
+            ctx.fillText('🌟', x + 22, y - 16);
+          } else if (h.afflicted) {
+            ctx.font = '10px sans-serif';
+            ctx.fillText('💥', x + 22, y - 16);
+          }
+
+          // HP Bar
+          drawBar(x, y + 58, 44, 4, h.hp, h.maxHp, '#38a169');
+          // Stress Bar
+          drawBar(x, y + 64, 44, 3, h.stress, 100, '#b83280');
+        }
+
+        // Draw Enemies on Right Side
+        const enemyXPositions = [320, 420];
+
+        for (let i = 0; i < state.enemies.length; i++) {
+          const e = state.enemies[i];
+          const x = enemyXPositions[i];
+          const y = 155;
+
+          if (e.hp <= 0) continue;
+
+          ctx.fillStyle = '#3a1a24';
+          ctx.fillRect(x, y, 60, 70);
+          ctx.strokeStyle = '#e53e3e';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, 60, 70);
+
+          ctx.font = '30px sans-serif';
+          ctx.textAlign = 'center';
+          const eIcon = e.name.includes('Lich') ? '👑' : (e.name.includes('Wraith') ? '👻' : (e.name.includes('Bone') ? '💀' : '👹'));
+          ctx.fillText(eIcon, x + 30, y + 46);
+
+          // Enemy Name
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.fillText(e.name.split(' ')[0], x + 30, y - 6);
+
+          // Enemy HP bar
+          drawBar(x, y + 74, 60, 5, e.hp, e.maxHp, '#e53e3e');
+        }
+
+        // Dungeon room indicator banner
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(200, 10, 160, 24);
+        ctx.fillStyle = '#fbd38d';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Room ' + state.room + ' of ' + state.maxRooms, 280, 26);
+
+        // Victory / Defeat Overlay
+        if (state.done) {
+          ctx.fillStyle = 'rgba(13, 10, 11, 0.88)';
+          ctx.fillRect(0, 0, 560, 315);
+          ctx.fillStyle = state.victory ? '#48bb78' : '#e53e3e';
+          ctx.font = 'bold 28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.victory ? 'DUNGEON CONQUERED!' : 'EXPEDITION LOST', 280, 140);
+          ctx.fillStyle = '#edf2f7';
+          ctx.font = '15px sans-serif';
+          ctx.fillText('Final Expedition Score: ' + state.score, 280, 180);
+        }
+      }
+
+      function drawBar(x, y, w, h, val, max, color) {
+        ctx.fillStyle = '#1a1118';
+        ctx.fillRect(x, y, w, h);
+        const fillW = Math.max(0, Math.min(w, (val / max) * w));
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, fillW, h);
+      }
+
+      function handleAction(type) {
+        if (state.done) return;
+        const legal = legalActions(state);
+        const hero = state.heroes[state.activeHeroIndex];
+        if (!hero) return;
+
+        if (type === 1) {
+          if (hero.role === 'crusader') {
+            const act = legal.find(function(a) { return a.startsWith('skill:smite:'); });
+            if (act) step(state, act);
+          } else if (hero.role === 'highwayman') {
+            const act = legal.find(function(a) { return a.startsWith('skill:wicked_slice:'); });
+            if (act) step(state, act);
+          } else if (hero.role === 'vestal') {
+            const act = legal.find(function(a) { return a.startsWith('heal:divine_grace:'); });
+            if (act) step(state, act);
+          } else {
+            const act = legal.find(function(a) { return a.startsWith('skill:abyssal_artillery:'); });
+            if (act) step(state, act);
+          }
+        } else if (type === 2) {
+          if (hero.role === 'crusader') {
+            const act = legal.find(function(a) { return a.startsWith('guard:'); });
+            if (act) step(state, act);
+          } else if (hero.role === 'highwayman') {
+            const act = legal.find(function(a) { return a.startsWith('skill:pistol_shot:'); });
+            if (act) step(state, act);
+          } else if (hero.role === 'vestal') {
+            if (legal.includes('skill:sanctuary')) step(state, 'skill:sanctuary');
+          } else {
+            const act = legal.find(function(a) { return a.startsWith('heal:wyrd:'); });
+            if (act) step(state, act);
+          }
+        } else if (type === 'pass') {
+          if (legal.includes('pass')) step(state, 'pass');
+        }
+
+        updateUI();
+      }
+
+      if (btn1) btn1.onclick = function() { handleAction(1); };
+      if (btn2) btn2.onclick = function() { handleAction(2); };
+      if (btnPass) btnPass.onclick = function() { handleAction('pass'); };
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now());
+          updateUI();
+        };
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>

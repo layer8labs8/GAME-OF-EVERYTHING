@@ -1,0 +1,12 @@
+{
+  "name": "Guild Expedition: Darkest Depths",
+  "short_name": "GuildExpedition",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0d0a0b",
+  "theme_color": "#8c1538",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
