@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="50%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <rect width="500" height="500" x="6" y="6" rx="90" fill="none" stroke="#6366f1" stroke-width="4" stroke-opacity="0.3"/>
+  <g transform="translate(106, 106)">
+    <!-- Jigsaw piece with tabs and blanks -->
+    <path d="M 40,40 
+             H 120 C 120,10 180,10 180,40 
+             H 260 
+             V 120 C 290,120 290,180 260,180 
+             V 260 
+             H 180 C 180,230 120,230 120,260 
+             H 40 
+             V 180 C 10,180 10,120 40,120 
+             Z" 
+          fill="url(#glass)" 
+          stroke="#e0e7ff" 
+          stroke-width="12" 
+          stroke-linejoin="round"
+          filter="url(#glow)"/>
+    <circle cx="150" cy="150" r="28" fill="#ffffff" fill-opacity="0.25"/>
+  </g>
+</svg>

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stained Glass Jigsaw</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #090d16;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-cyan { color: #38bdf8; }
+    .badge-amber { color: #f59e0b; }
+    .badge-purple { color: #c084fc; }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      background: #0d121f;
+      border: 3px solid #334155;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: block;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+    .btn:active {
+      transform: translateY(2px);
+    }
+    .btn-accent {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      border-color: #8b5cf6;
+      color: #fff;
+    }
+    .footer {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div><span class="badge-purple" id="hud-stage">Stage 1</span>: <span id="hud-theme">Sunset Lighthouse</span></div>
+      <div>Moves: <span class="badge-amber" id="hud-moves">0 / 45</span></div>
+      <div>Score: <span class="badge-cyan" id="hud-score">0</span></div>
+    </div>
+
+    <canvas id="game-canvas" width="600" height="600"></canvas>
+
+    <div class="message-bar" id="message-bar">Assemble interlocking stained-glass pieces into the frame.</div>
+
+    <div class="action-row">
+      <button class="btn" id="btn-clear">Clear Frame</button>
+      <button class="btn btn-accent" id="btn-restart">Restart Mosaic</button>
+    </div>
+
+    <div class="footer">
+      Click tray piece to select &bull; Click frame cell to place &bull; Click placed piece to remove
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('game-canvas');
+      if (!canvas || typeof canvas.getContext !== 'function') return;
+      const ctx = canvas.getContext('2d');
+
+      let currentSeed = Math.floor(Math.random() * 100000) + 1;
+      let state = createState(currentSeed);
+      let selectedPieceId = null;
+
+      function updateHUD() {
+        const hudStage = document.getElementById('hud-stage');
+        const hudTheme = document.getElementById('hud-theme');
+        const hudMoves = document.getElementById('hud-moves');
+        const hudScore = document.getElementById('hud-score');
+        const msgBar = document.getElementById('message-bar');
+
+        if (hudStage) hudStage.textContent = 'Stage ' + state.stage;
+        if (hudTheme) hudTheme.textContent = state.themeName || '';
+        if (hudMoves) hudMoves.textContent = state.stageMoves + ' / ' + state.maxMoves;
+        if (hudScore) hudScore.textContent = score(state);
+        if (msgBar) msgBar.textContent = state.message;
+      }
+
+      function drawEdge(c, x1, y1, x2, y2, type, tabSize) {
+        if (type === 0) {
+          c.lineTo(x2, y2);
+          return;
+        }
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        const ux = dx / len;
+        const uy = dy / len;
+        const nx = -uy * type;
+        const ny = ux * type;
+
+        const p1x = x1 + dx * 0.36;
+        const p1y = y1 + dy * 0.36;
+        const p2x = x1 + dx * 0.64;
+        const p2y = y1 + dy * 0.64;
+
+        c.lineTo(p1x, p1y);
+        c.bezierCurveTo(
+          p1x + nx * tabSize * 0.15 - ux * tabSize * 0.2, p1y + ny * tabSize * 0.15 - uy * tabSize * 0.2,
+          x1 + dx * 0.42 + nx * tabSize * 1.05, y1 + dy * 0.42 + ny * tabSize * 1.05,
+          x1 + dx * 0.50 + nx * tabSize, y1 + dy * 0.50 + ny * tabSize
+        );
+        c.bezierCurveTo(
+          x1 + dx * 0.58 + nx * tabSize * 1.05, y1 + dy * 0.58 + ny * tabSize * 1.05,
+          p2x + nx * tabSize * 0.15 + ux * tabSize * 0.2, p2y + ny * tabSize * 0.15 + uy * tabSize * 0.2,
+          p2x, p2y
+        );
+        c.lineTo(x2, y2);
+      }
+
+      function drawPieceShape(c, x, y, w, h, edges, tabSize) {
+        c.beginPath();
+        c.moveTo(x, y);
+        // Top edge: (x,y) -> (x+w, y)
+        drawEdge(c, x, y, x + w, y, edges.top, tabSize);
+        // Right edge: (x+w, y) -> (x+w, y+h)
+        drawEdge(c, x + w, y, x + w, y + h, edges.right, tabSize);
+        // Bottom edge: (x+w, y+h) -> (x, y+h)
+        drawEdge(c, x + w, y + h, x, y + h, edges.bottom, tabSize);
+        // Left edge: (x, y+h) -> (x, y)
+        drawEdge(c, x, y + h, x, y, edges.left, tabSize);
+        c.closePath();
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        // Frame Area bounds
+        const frameW = 320;
+        const frameH = 320;
+        const frameX = (600 - frameW) / 2;
+        const frameY = 30;
+
+        const cellW = frameW / state.cols;
+        const cellH = frameH / state.rows;
+        const tabSize = Math.min(cellW, cellH) * 0.22;
+
+        // Draw Frame Backing
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(frameX - 6, frameY - 6, frameW + 12, frameH + 12);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(frameX - 6, frameY - 6, frameW + 12, frameH + 12);
+
+        // Grid lines for reference
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        for (let r = 0; r <= state.rows; r++) {
+          ctx.beginPath();
+          ctx.moveTo(frameX, frameY + r * cellH);
+          ctx.lineTo(frameX + frameW, frameY + r * cellH);
+          ctx.stroke();
+        }
+        for (let col = 0; col <= state.cols; col++) {
+          ctx.beginPath();
+          ctx.moveTo(frameX + col * cellW, frameY);
+          ctx.lineTo(frameX + col * cellW, frameY + frameH);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Render placed pieces on the board
+        for (let r = 0; r < state.rows; r++) {
+          for (let c = 0; c < state.cols; c++) {
+            const piece = state.board[r][c];
+            const px = frameX + c * cellW;
+            const py = frameY + r * cellH;
+
+            if (piece) {
+              ctx.save();
+              drawPieceShape(ctx, px, py, cellW, cellH, piece.edges, tabSize);
+              ctx.fillStyle = piece.color;
+              ctx.fill();
+
+              // Glass sheen gradient
+              const grad = ctx.createLinearGradient(px, py, px + cellW, py + cellH);
+              grad.addColorStop(0, 'rgba(255,255,255,0.4)');
+              grad.addColorStop(0.5, 'rgba(255,255,255,0.05)');
+              grad.addColorStop(1, 'rgba(0,0,0,0.3)');
+              ctx.fillStyle = grad;
+              ctx.fill();
+
+              // Lead casing outline
+              ctx.strokeStyle = '#1e293b';
+              ctx.lineWidth = 4;
+              ctx.stroke();
+
+              // Piece ID
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 12px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('#' + (piece.id + 1), px + cellW / 2, py + cellH / 2);
+              ctx.restore();
+            }
+          }
+        }
+
+        // Draw Divider Bar
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(30, 375);
+        ctx.lineTo(570, 375);
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('ARTISAN TRAY (Available Glass Shards)', 35, 395);
+
+        // Render Tray Pieces
+        const trayPieces = state.tray.filter(p => !p.placed);
+        const trayCols = 6;
+        const slotW = 75;
+        const slotH = 75;
+        const trayStartX = (600 - trayCols * slotW) / 2;
+        const trayStartY = 410;
+        const trayTabSize = slotW * 0.16;
+
+        trayPieces.forEach((piece, idx) => {
+          const col = idx % trayCols;
+          const row = Math.floor(idx / trayCols);
+          const px = trayStartX + col * slotW + 12;
+          const py = trayStartY + row * slotH + 10;
+          const size = slotW - 24;
+
+          const isSelected = (selectedPieceId === piece.id);
+
+          ctx.save();
+          drawPieceShape(ctx, px, py, size, size, piece.edges, trayTabSize);
+          ctx.fillStyle = piece.color;
+          ctx.fill();
+
+          // Sheen
+          const grad = ctx.createLinearGradient(px, py, px + size, py + size);
+          grad.addColorStop(0, 'rgba(255,255,255,0.45)');
+          grad.addColorStop(1, 'rgba(0,0,0,0.3)');
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          if (isSelected) {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 4;
+            ctx.shadowColor = '#38bdf8';
+            ctx.shadowBlur = 10;
+          } else {
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+          }
+          ctx.stroke();
+
+          // Piece ID
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('#' + (piece.id + 1), px + size / 2, py + size / 2);
+          ctx.restore();
+        });
+
+        // Overlay game over banner if done
+        if (state.done) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fillRect(0, 0, 600, 600);
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillText('MASTERPIECE COMPLETE!', 300, 270);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('All stained-glass mosaics successfully restored!', 300, 310);
+          } else {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillText('ARTISAN FATIGUE', 300, 270);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('Move limit reached before mosaic was finished.', 300, 310);
+          }
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 18px sans-serif';
+          ctx.fillText('Final Score: ' + score(state), 300, 355);
+          ctx.restore();
+        }
+      }
+
+      function handleCanvasClick(evt) {
+        if (state.done) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = (evt.clientX - rect.left) * scaleX;
+        const cy = (evt.clientY - rect.top) * scaleY;
+
+        const frameW = 320;
+        const frameH = 320;
+        const frameX = (600 - frameW) / 2;
+        const frameY = 30;
+
+        // Check Board Frame Click
+        if (cx >= frameX && cx <= frameX + frameW && cy >= frameY && cy <= frameY + frameH) {
+          const col = Math.floor((cx - frameX) / (frameW / state.cols));
+          const row = Math.floor((cy - frameY) / (frameH / state.rows));
+
+          if (row >= 0 && row < state.rows && col >= 0 && col < state.cols) {
+            if (state.board[row][col] !== null) {
+              // Click placed piece to remove back to tray
+              const act = 'remove:' + row + ',' + col;
+              if (legalActions(state).includes(act)) {
+                step(state, act);
+                selectedPieceId = null;
+                updateHUD();
+                render();
+              }
+            } else if (selectedPieceId !== null) {
+              // Attempt to place selected piece
+              const act = 'place:' + selectedPieceId + ',' + row + ',' + col;
+              if (legalActions(state).includes(act)) {
+                step(state, act);
+                selectedPieceId = null;
+                updateHUD();
+                render();
+              } else {
+                state.message = 'Edges do not interlock with adjacent pieces!';
+                updateHUD();
+              }
+            }
+          }
+          return;
+        }
+
+        // Check Tray Click
+        const trayPieces = state.tray.filter(p => !p.placed);
+        const trayCols = 6;
+        const slotW = 75;
+        const slotH = 75;
+        const trayStartX = (600 - trayCols * slotW) / 2;
+        const trayStartY = 410;
+
+        trayPieces.forEach((piece, idx) => {
+          const c = idx % trayCols;
+          const r = Math.floor(idx / trayCols);
+          const px = trayStartX + c * slotW + 12;
+          const py = trayStartY + r * slotH + 10;
+          const size = slotW - 24;
+
+          if (cx >= px && cx <= px + size && cy >= py && cy <= py + size) {
+            if (selectedPieceId === piece.id) {
+              selectedPieceId = null;
+              state.message = 'Deselected piece #' + (piece.id + 1);
+            } else {
+              selectedPieceId = piece.id;
+              state.message = 'Selected piece #' + (piece.id + 1) + '. Click an open frame slot to place.';
+            }
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      canvas.addEventListener('click', handleCanvasClick);
+      canvas.addEventListener('touchstart', function(e) {
+        if (e.touches && e.touches.length > 0) {
+          handleCanvasClick(e.touches[0]);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      const btnClear = document.getElementById('btn-clear');
+      if (btnClear && btnClear.addEventListener) {
+        btnClear.addEventListener('click', function() {
+          if (!state.done && legalActions(state).includes('clear')) {
+            step(state, 'clear');
+            selectedPieceId = null;
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnRestart = document.getElementById('btn-restart');
+      if (btnRestart && btnRestart.addEventListener) {
+        btnRestart.addEventListener('click', function() {
+          currentSeed = Math.floor(Math.random() * 100000) + 1;
+          state = createState(currentSeed);
+          selectedPieceId = null;
+          updateHUD();
+          render();
+        });
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (state.done) return;
+        if (e.key === 'c' || e.key === 'C') {
+          if (legalActions(state).includes('clear')) {
+            step(state, 'clear');
+            selectedPieceId = null;
+            updateHUD();
+            render();
+          }
+        } else if (e.key === 'r' || e.key === 'R') {
+          state = createState(currentSeed);
+          selectedPieceId = null;
+          updateHUD();
+          render();
+        }
+      });
+
+      updateHUD();
+      render();
+    })();
+  </script>
+</body>
+</html>
