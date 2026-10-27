@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="lacquer" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#451a03" />
+      <stop offset="100%" stop-color="#1c0a00" />
+    </linearGradient>
+    <linearGradient id="salmon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fca5a5" />
+      <stop offset="100%" stop-color="#ef4444" />
+    </linearGradient>
+    <linearGradient id="tamago" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="100%" stop-color="#facc15" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="#1c1917" />
+  <!-- Bento Lacquer Box -->
+  <rect x="64" y="64" width="384" height="384" rx="36" fill="url(#lacquer)" stroke="#b45309" stroke-width="12" />
+  <!-- Internal Compartment Dividers -->
+  <line x1="256" y1="76" x2="256" y2="436" stroke="#78350f" stroke-width="8" />
+  <line x1="76" y1="256" x2="436" y2="256" stroke="#78350f" stroke-width="8" />
+  <!-- Top Left: Triangle Onigiri with Nori -->
+  <polygon points="166,110 220,200 112,200" fill="#ffffff" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.3))" />
+  <rect x="146" y="170" width="40" height="30" fill="#0f172a" rx="4" />
+  <!-- Top Right: Tamagoyaki Egg Slices -->
+  <rect x="286" y="110" width="110" height="50" rx="12" fill="url(#tamago)" />
+  <rect x="286" y="170" width="110" height="50" rx="12" fill="url(#tamago)" />
+  <!-- Bottom Left: Salmon Fillet -->
+  <rect x="100" y="290" width="130" height="110" rx="16" fill="url(#salmon)" />
+  <line x1="120" y1="310" x2="210" y2="340" stroke="#fee2e2" stroke-width="4" stroke-linecap="round" />
+  <line x1="120" y1="340" x2="210" y2="370" stroke="#fee2e2" stroke-width="4" stroke-linecap="round" />
+  <!-- Bottom Right: Edamame & Pickled Plum -->
+  <circle cx="310" cy="320" r="18" fill="#4ade80" />
+  <circle cx="340" cy="340" r="18" fill="#4ade80" />
+  <circle cx="320" cy="370" r="18" fill="#4ade80" />
+  <circle cx="380" cy="370" r="24" fill="#e11d48" />
+</svg>

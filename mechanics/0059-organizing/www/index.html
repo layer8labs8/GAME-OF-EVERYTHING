@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tidy Bento - Organizing Puzzle</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #17120e;
+      color: #fed7aa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 480px;
+      gap: 10px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #271b12;
+      border: 1px solid #78350f;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-orange { color: #f97316; }
+    .badge-amber { color: #fbbf24; }
+    .badge-emerald { color: #34d399; }
+    canvas {
+      width: 100%;
+      max-width: 440px;
+      aspect-ratio: 1;
+      background: #1c140d;
+      border: 3px solid #92400e;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: block;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #fdba74;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn {
+      background: #451a03;
+      color: #ffedd5;
+      border: 1px solid #92400e;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      background: #78350f;
+      border-color: #f97316;
+    }
+    .btn:active {
+      transform: translateY(2px);
+    }
+    .btn-rotate {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: #fff;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 11px;
+      color: #a8a29e;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div class="badge-orange" id="stage-display">BENTO 1/3</div>
+      <div class="badge-amber" id="packed-display">PACKED: 0/9</div>
+      <div class="badge-emerald" id="moves-display">MOVES: 0/50</div>
+      <div id="score-display">PTS 0</div>
+    </div>
+
+    <canvas id="canvas" width="440" height="440"></canvas>
+
+    <div class="message-bar" id="message-display">Select an ingredient from tray below, rotate, and place into bento box.</div>
+
+    <div class="action-row">
+      <button class="btn btn-rotate" id="btn-rotate">ROTATE ↻</button>
+      <button class="btn" id="btn-clear">CLEAR BOX</button>
+      <button class="btn" id="btn-restart">RESTART (R)</button>
+    </div>
+
+    <div class="footer">
+      <span>Tap piece in tray, then tap box to place.</span>
+      <span>Click placed piece to remove.</span>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('canvas');
+      const ctx = (canvas && typeof canvas.getContext === 'function') ? canvas.getContext('2d') : null;
+
+      let state = createState(Math.floor(Math.random() * 100000) + 1);
+      let selectedSlot = 0;
+
+      // Web Audio Synth
+      let audioCtx = null;
+      function getAudio() {
+        if (!audioCtx && typeof AudioContext !== 'undefined') {
+          audioCtx = new AudioContext();
+        }
+        return audioCtx;
+      }
+      function playTone(freq, type, duration, gainVal = 0.08) {
+        try {
+          const actx = getAudio();
+          if (!actx) return;
+          const osc = actx.createOscillator();
+          const gain = actx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, actx.currentTime);
+          gain.gain.setValueAtTime(gainVal, actx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(actx.destination);
+          osc.start();
+          osc.stop(actx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      function playSound(type) {
+        if (type === 'select') playTone(440, 'triangle', 0.05, 0.06);
+        else if (type === 'rotate') playTone(330, 'sine', 0.08, 0.07);
+        else if (type === 'place') {
+          playTone(260, 'sine', 0.08, 0.1);
+          setTimeout(() => playTone(392, 'sine', 0.1, 0.1), 50);
+        } else if (type === 'remove') playTone(200, 'sawtooth', 0.08, 0.06);
+        else if (type === 'win') {
+          playTone(523, 'triangle', 0.15, 0.12);
+          setTimeout(() => playTone(659, 'triangle', 0.15, 0.12), 100);
+          setTimeout(() => playTone(784, 'triangle', 0.25, 0.15), 200);
+        }
+      }
+
+      function updateUI() {
+        const stageEl = document.getElementById('stage-display');
+        const packedEl = document.getElementById('packed-display');
+        const movesEl = document.getElementById('moves-display');
+        const scoreEl = document.getElementById('score-display');
+        const msgEl = document.getElementById('message-display');
+
+        const placedCount = state.tray.filter(t => t.placed).length;
+        if (stageEl) stageEl.textContent = 'BENTO ' + state.stage + '/' + state.maxStages;
+        if (packedEl) packedEl.textContent = 'PACKED: ' + placedCount + '/' + state.tray.length;
+        if (movesEl) movesEl.textContent = 'MOVES: ' + state.stageMoves + '/' + state.maxMoves;
+        if (scoreEl) scoreEl.textContent = 'PTS ' + score(state);
+        if (msgEl) msgEl.textContent = state.message;
+      }
+
+      // Dimensions
+      const BOX_SIZE = 260;
+      const BOX_X = 90;
+      const BOX_Y = 20;
+      const CELL_SIZE = BOX_SIZE / GRID_SIZE; // 65px
+
+      const TRAY_Y = 295;
+      const TRAY_H = 135;
+
+      function render() {
+        if (!ctx) return;
+        const W = canvas.width;
+        const H = canvas.height;
+
+        ctx.fillStyle = '#1c140d';
+        ctx.fillRect(0, 0, W, H);
+
+        // 1. Draw Bento Box Outer Container
+        ctx.fillStyle = '#29180c';
+        ctx.beginPath();
+        ctx.roundRect(BOX_X - 10, BOX_Y - 10, BOX_SIZE + 20, BOX_SIZE + 20, 16);
+        ctx.fill();
+        ctx.strokeStyle = '#92400e';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Bento Grid Compartments
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const cx = BOX_X + x * CELL_SIZE;
+            const cy = BOX_Y + y * CELL_SIZE;
+
+            ctx.fillStyle = ((x + y) % 2 === 0) ? '#382314' : '#311e11';
+            ctx.fillRect(cx, cy, CELL_SIZE, CELL_SIZE);
+            ctx.strokeStyle = '#5a3418';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(cx, cy, CELL_SIZE, CELL_SIZE);
+
+            // Draw placed ingredient
+            const cell = state.grid[y][x];
+            if (cell) {
+              ctx.fillStyle = cell.color;
+              ctx.beginPath();
+              ctx.roundRect(cx + 4, cy + 4, CELL_SIZE - 8, CELL_SIZE - 8, 8);
+              ctx.fill();
+              ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+              ctx.lineWidth = 2;
+              ctx.stroke();
+
+              // Mini label
+              ctx.fillStyle = '#0f172a';
+              ctx.font = 'bold 9px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(cell.name.slice(0, 4), cx + CELL_SIZE / 2, cy + CELL_SIZE / 2);
+            }
+          }
+        }
+
+        // 2. Draw Pantry Tray Area
+        ctx.fillStyle = '#27190f';
+        ctx.beginPath();
+        ctx.roundRect(14, TRAY_Y, W - 28, TRAY_H, 12);
+        ctx.fill();
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#d97706';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('PANTRY TRAY (Tap to select, then place in box above)', 24, TRAY_Y + 8);
+
+        // Draw items in tray
+        const items = state.tray;
+        const slotWidth = (W - 40) / Math.min(items.length, 5);
+        const miniCell = 18;
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const row = Math.floor(i / 5);
+          const col = i % 5;
+          const ix = 24 + col * slotWidth;
+          const iy = TRAY_Y + 28 + row * 48;
+
+          // Slot boundary
+          const isSelected = (selectedSlot === i);
+          ctx.fillStyle = item.placed ? '#1a100a' : (isSelected ? '#451a03' : '#311e11');
+          ctx.beginPath();
+          ctx.roundRect(ix + 2, iy + 2, slotWidth - 4, 44, 8);
+          ctx.fill();
+          ctx.strokeStyle = isSelected ? '#f97316' : (item.placed ? '#442816' : '#78350f');
+          ctx.lineWidth = isSelected ? 2.5 : 1;
+          ctx.stroke();
+
+          if (!item.placed) {
+            // Draw mini polyomino shape
+            ctx.fillStyle = item.color;
+            for (const c of item.cells) {
+              const mx = ix + 12 + c.dx * miniCell;
+              const my = iy + 8 + c.dy * miniCell;
+              ctx.fillRect(mx, my, miniCell - 2, miniCell - 2);
+            }
+          } else {
+            ctx.fillStyle = '#78716c';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('PACKED', ix + slotWidth / 2, iy + 22);
+          }
+        }
+
+        // Overlay on game complete
+        if (state.done) {
+          ctx.fillStyle = 'rgba(23, 18, 14, 0.88)';
+          ctx.fillRect(0, 0, W, H);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 28px sans-serif';
+            ctx.fillText('BENTO MASTERPIECE!', W / 2, H / 2 - 25);
+            ctx.fillStyle = '#ffedd5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('All Lunches Packed to Perfection', W / 2, H / 2 + 10);
+            ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 35);
+          } else {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 28px sans-serif';
+            ctx.fillText('RUSH HOUR OVER', W / 2, H / 2 - 25);
+            ctx.fillStyle = '#ffedd5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('Exceeded move limit', W / 2, H / 2 + 10);
+            ctx.fillText('Press Restart to try again', W / 2, H / 2 + 35);
+          }
+        }
+      }
+
+      function handleCanvasClick(cx, cy) {
+        if (state.done) return;
+
+        // Check Bento Box click
+        if (cx >= BOX_X && cx < BOX_X + BOX_SIZE && cy >= BOX_Y && cy < BOX_Y + BOX_SIZE) {
+          const gx = Math.floor((cx - BOX_X) / CELL_SIZE);
+          const gy = Math.floor((cy - BOX_Y) / CELL_SIZE);
+
+          // If clicked cell is occupied, remove that piece back to tray
+          const cell = state.grid[gy][gx];
+          if (cell) {
+            const act = `remove:${cell.slot}`;
+            if (legalActions(state).includes(act)) {
+              step(state, act);
+              playSound('remove');
+              selectedSlot = cell.slot;
+              updateUI();
+              render();
+              return;
+            }
+          }
+
+          // Otherwise attempt to place currently selected tray item
+          const item = state.tray[selectedSlot];
+          if (item && !item.placed) {
+            const act = `place:${selectedSlot},${gx},${gy}`;
+            if (legalActions(state).includes(act)) {
+              step(state, act);
+              playSound('place');
+              // Auto select next unplaced piece
+              const nextUnplaced = state.tray.findIndex(t => !t.placed);
+              if (nextUnplaced !== -1) selectedSlot = nextUnplaced;
+              updateUI();
+              render();
+              return;
+            }
+          }
+        }
+
+        // Check Pantry Tray click
+        if (cy >= TRAY_Y + 28 && cy < TRAY_Y + TRAY_H) {
+          const items = state.tray;
+          const slotWidth = (canvas.width - 40) / Math.min(items.length, 5);
+          const col = Math.floor((cx - 24) / slotWidth);
+          const row = Math.floor((cy - (TRAY_Y + 28)) / 48);
+          const clickedSlot = row * 5 + col;
+
+          if (clickedSlot >= 0 && clickedSlot < items.length) {
+            selectedSlot = clickedSlot;
+            playSound('select');
+            updateUI();
+            render();
+          }
+        }
+      }
+
+      // Event Listeners
+      if (canvas && typeof canvas.addEventListener === 'function') {
+        canvas.addEventListener('click', (e) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const cx = (e.clientX - rect.left) * scaleX;
+          const cy = (e.clientY - rect.top) * scaleY;
+          handleCanvasClick(cx, cy);
+        });
+      }
+
+      const rotateBtn = document.getElementById('btn-rotate');
+      if (rotateBtn && typeof rotateBtn.addEventListener === 'function') {
+        rotateBtn.addEventListener('click', () => {
+          const item = state.tray[selectedSlot];
+          if (item && !item.placed) {
+            const act = `rotate:${selectedSlot}`;
+            if (legalActions(state).includes(act)) {
+              step(state, act);
+              playSound('rotate');
+              updateUI();
+              render();
+            }
+          }
+        });
+      }
+
+      const clearBtn = document.getElementById('btn-clear');
+      if (clearBtn && typeof clearBtn.addEventListener === 'function') {
+        clearBtn.addEventListener('click', () => {
+          if (legalActions(state).includes('clear')) {
+            step(state, 'clear');
+            playSound('remove');
+            updateUI();
+            render();
+          }
+        });
+      }
+
+      const restartBtn = document.getElementById('btn-restart');
+      if (restartBtn && typeof restartBtn.addEventListener === 'function') {
+        restartBtn.addEventListener('click', () => {
+          state = createState(Math.floor(Math.random() * 100000) + 1);
+          selectedSlot = 0;
+          updateUI();
+          render();
+        });
+      }
+
+      if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'r' || e.key === 'R') {
+            const item = state.tray[selectedSlot];
+            if (item && !item.placed && legalActions(state).includes(`rotate:${selectedSlot}`)) {
+              step(state, `rotate:${selectedSlot}`);
+              playSound('rotate');
+              updateUI();
+              render();
+            }
+          } else if (e.key === 'c' || e.key === 'C') {
+            if (legalActions(state).includes('clear')) {
+              step(state, 'clear');
+              playSound('remove');
+              updateUI();
+              render();
+            }
+          }
+        });
+      }
+
+      // Initial render
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>
