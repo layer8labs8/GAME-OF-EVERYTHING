@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1320" />
+      <stop offset="100%" stop-color="#1c2538" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="laserGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)" stroke="#22d3ee" stroke-width="8"/>
+  <!-- Target Crosshair -->
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#22d3ee" stroke-width="6" stroke-dasharray="16, 12" opacity="0.6"/>
+  <circle cx="256" cy="256" r="80" fill="none" stroke="#ef4444" stroke-width="4" opacity="0.8"/>
+  <line x1="256" y1="60" x2="256" y2="452" stroke="#22d3ee" stroke-width="4" opacity="0.4"/>
+  <line x1="60" y1="256" x2="452" y2="256" stroke="#22d3ee" stroke-width="4" opacity="0.4"/>
+  <!-- Tactical Shield -->
+  <path d="M 256 120 L 360 160 C 360 280 290 360 256 390 C 222 360 152 280 152 160 Z" fill="url(#shieldGrad)" stroke="#60a5fa" stroke-width="8"/>
+  <!-- Crosshair Reticle inside shield -->
+  <circle cx="256" cy="240" r="45" fill="#0f172a" stroke="#f59e0b" stroke-width="6"/>
+  <line x1="256" y1="180" x2="256" y2="300" stroke="#f59e0b" stroke-width="4"/>
+  <line x1="196" y1="240" x2="316" y2="240" stroke="#f59e0b" stroke-width="4"/>
+  <circle cx="256" cy="240" r="12" fill="#ef4444"/>
+</svg>

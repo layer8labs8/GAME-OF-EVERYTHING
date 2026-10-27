@@ -999,9 +999,11 @@
    "id": "0097",
    "slug": "tactical",
    "name": "Tactical",
+   "title": "Tactical Breach",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {

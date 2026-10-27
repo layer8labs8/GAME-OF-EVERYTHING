@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tactical Breach</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #090d16;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .bomb-timer { color: #ef4444; }
+    .swat-status { color: #38bdf8; }
+    .tango-count { color: #f59e0b; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #080f1e;
+      border: 2px solid #1e293b;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+    }
+    #actions-panel {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .panel-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    button {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    button:hover:not(:disabled) {
+      background: #334155;
+      border-color: #64748b;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    button.breach {
+      background: #7c2d12;
+      border-color: #ea580c;
+      color: #ffedd5;
+    }
+    button.engage {
+      background: #881337;
+      border-color: #e11d48;
+      color: #ffe4e6;
+    }
+    button.defuse {
+      background: #064e3b;
+      border-color: #10b981;
+      color: #d1fae5;
+    }
+    button.advance {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #dbeafe;
+    }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #090f1d;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      height: 60px;
+      overflow-y: auto;
+    }
+    #banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #38bdf8;
+      padding: 16px 24px;
+      border-radius: 12px;
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+    #banner h2 { font-size: 20px; margin-bottom: 6px; }
+    #banner p { font-size: 13px; color: #cbd5e1; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge bomb-timer">⏱ DETONATION: <span id="val-bomb">18</span>s</div>
+    <div class="badge swat-status">🛡 SWAT: <span id="val-swat">3/3</span></div>
+    <div class="badge tango-count">🎯 TANGOS: <span id="val-tangos">6</span></div>
+    <button id="btn-reset" style="padding: 4px 8px; font-size: 11px;">Reset</button>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="c" width="480" height="480"></canvas>
+    <div id="banner">
+      <h2 id="banner-title">TACTICAL TRIUMPH</h2>
+      <p id="banner-sub">Chemical explosive defused and compound secured.</p>
+      <button id="btn-restart" style="margin: 0 auto;">Deploy Again</button>
+    </div>
+  </div>
+
+  <div id="actions-panel">
+    <div class="panel-title">Active Operator Selection</div>
+    <div class="action-group">
+      <button id="btn-op-shield">Shield (80 HP)</button>
+      <button id="btn-op-breacher">Breacher (60 HP)</button>
+      <button id="btn-op-scout">Scout (50 HP)</button>
+    </div>
+
+    <div class="panel-title">Tactical Orders</div>
+    <div class="action-group">
+      <button id="btn-breach-flash" class="breach">⚡ Flashbang Breach</button>
+      <button id="btn-breach-charge" class="breach">💥 Charge Breach</button>
+      <button id="btn-breach-pick" class="breach">🗝️ Lockpick Door</button>
+      <button id="btn-advance-target" class="advance">🏃 Advance Room</button>
+      <button id="btn-engage-target" class="engage">🔫 Engage Tango</button>
+      <button id="btn-defuse-bomb" class="defuse">✂️ Defuse Bomb</button>
+      <button id="btn-tactical-wait">⏳ Tactical Wait</button>
+    </div>
+  </div>
+
+  <div id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      const valBomb = document.getElementById('val-bomb');
+      const valSwat = document.getElementById('val-swat');
+      const valTangos = document.getElementById('val-tangos');
+      const logBox = document.getElementById('log-box');
+      const banner = document.getElementById('banner');
+      const bannerTitle = document.getElementById('banner-title');
+      const bannerSub = document.getElementById('banner-sub');
+      const btnReset = document.getElementById('btn-reset');
+      const btnRestart = document.getElementById('btn-restart');
+
+      const btnOpShield = document.getElementById('btn-op-shield');
+      const btnOpBreacher = document.getElementById('btn-op-breacher');
+      const btnOpScout = document.getElementById('btn-op-scout');
+
+      const btnBreachFlash = document.getElementById('btn-breach-flash');
+      const btnBreachCharge = document.getElementById('btn-breach-charge');
+      const btnBreachPick = document.getElementById('btn-breach-pick');
+      const btnAdvance = document.getElementById('btn-advance-target');
+      const btnEngage = document.getElementById('btn-engage-target');
+      const btnDefuse = document.getElementById('btn-defuse-bomb');
+      const btnWait = document.getElementById('btn-tactical-wait');
+
+      let state = createState(Date.now() & 0xffff);
+      let selectedOp = 'shield';
+
+      // Web Audio sound effects
+      function playSfx(type) {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctxA = new AudioContext();
+          const osc = ctxA.createOscillator();
+          const gain = ctxA.createGain();
+          osc.connect(gain);
+          gain.connect(ctxA.destination);
+
+          if (type === 'shot') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(320, ctxA.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, ctxA.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.3, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.12);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.12);
+          } else if (type === 'breach') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(140, ctxA.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(20, ctxA.currentTime + 0.25);
+            gain.gain.setValueAtTime(0.4, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.25);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.25);
+          } else if (type === 'flashbang') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctxA.currentTime);
+            osc.frequency.linearRampToValueAtTime(1400, ctxA.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.25);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.25);
+          } else if (type === 'defuse') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, ctxA.currentTime);
+            osc.frequency.setValueAtTime(659.25, ctxA.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.25);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.25);
+          }
+        } catch(e) {}
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const aliveOps = state.operators ? state.operators.filter(o => o.hp > 0).length : 0;
+        const aliveTangos = state.tangos ? state.tangos.filter(t => t.hp > 0).length : 0;
+
+        if (valBomb) valBomb.textContent = state.bombTimer;
+        if (valSwat && state.operators) valSwat.textContent = aliveOps + '/' + state.operators.length;
+        if (valTangos) valTangos.textContent = aliveTangos;
+
+        if (logBox && state.history) {
+          logBox.innerHTML = state.history.slice(-6).map(h => '<div>&gt; ' + h + '</div>').join('');
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        if (banner) {
+          if (state.done) {
+            banner.style.display = 'block';
+            if (state.winner === 'swat') {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'TACTICAL TRIUMPH';
+                bannerTitle.style.color = '#38bdf8';
+              }
+              if (bannerSub) bannerSub.textContent = 'Hostiles neutralized and chemical bomb defused! (Score: ' + score(state) + ')';
+            } else {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'MISSION FAILED';
+                bannerTitle.style.color = '#ef4444';
+              }
+              if (bannerSub) bannerSub.textContent = state.result === 'detonation' ? 'Explosive device detonated!' : 'SWAT squad was eliminated!';
+            }
+          } else {
+            banner.style.display = 'none';
+          }
+        }
+
+        // Update operator selector buttons
+        if (state.operators) {
+          const opShield = state.operators.find(o => o.id === 'shield');
+          const opBreacher = state.operators.find(o => o.id === 'breacher');
+          const opScout = state.operators.find(o => o.id === 'scout');
+
+          if (btnOpShield && opShield) {
+            btnOpShield.textContent = 'Shield (' + opShield.hp + ' HP, ' + opShield.flashbangs + ' Flash)';
+            btnOpShield.disabled = opShield.hp <= 0;
+            btnOpShield.style.borderColor = selectedOp === 'shield' ? '#38bdf8' : '#334155';
+          }
+          if (btnOpBreacher && opBreacher) {
+            btnOpBreacher.textContent = 'Breacher (' + opBreacher.hp + ' HP, ' + opBreacher.charges + ' Chg)';
+            btnOpBreacher.disabled = opBreacher.hp <= 0;
+            btnOpBreacher.style.borderColor = selectedOp === 'breacher' ? '#38bdf8' : '#334155';
+          }
+          if (btnOpScout && opScout) {
+            btnOpScout.textContent = 'Scout (' + opScout.hp + ' HP, ' + opScout.smokes + ' Smk)';
+            btnOpScout.disabled = opScout.hp <= 0;
+            btnOpScout.style.borderColor = selectedOp === 'scout' ? '#38bdf8' : '#334155';
+          }
+        }
+
+        // Check legal actions
+        const legals = legalActions(state);
+
+        // Flashbang breach
+        const flashAction = legals.find(a => a.startsWith('breach_door:') && a.endsWith(':flashbang'));
+        if (btnBreachFlash) {
+          btnBreachFlash.disabled = !flashAction;
+          if (flashAction) {
+            const did = flashAction.split(':')[1];
+            btnBreachFlash.textContent = '⚡ Flash Door ' + did;
+          } else {
+            btnBreachFlash.textContent = '⚡ Flashbang Breach';
+          }
+        }
+
+        // Charge breach
+        const chargeAction = legals.find(a => a.startsWith('breach_door:') && a.endsWith(':charge'));
+        if (btnBreachCharge) {
+          btnBreachCharge.disabled = !chargeAction;
+          if (chargeAction) {
+            const did = chargeAction.split(':')[1];
+            btnBreachCharge.textContent = '💥 Charge Door ' + did;
+          } else {
+            btnBreachCharge.textContent = '💥 Charge Breach';
+          }
+        }
+
+        // Pick breach
+        const pickAction = legals.find(a => a.startsWith('breach_door:') && a.endsWith(':pick'));
+        if (btnBreachPick) {
+          btnBreachPick.disabled = !pickAction;
+          if (pickAction) {
+            const did = pickAction.split(':')[1];
+            btnBreachPick.textContent = '🗝️ Pick Door ' + did;
+          } else {
+            btnBreachPick.textContent = '🗝️ Pick Breach';
+          }
+        }
+
+        // Advance room for selected operator
+        const advAction = legals.find(a => a.startsWith('advance_room:' + selectedOp + ':')) ||
+                          legals.find(a => a.startsWith('advance_room:'));
+        if (btnAdvance) {
+          btnAdvance.disabled = !advAction;
+          if (advAction) {
+            const parts = advAction.split(':');
+            btnAdvance.textContent = '🏃 Move ' + parts[1] + ' -> R' + parts[2];
+          } else {
+            btnAdvance.textContent = '🏃 Advance Room';
+          }
+        }
+
+        // Engage target
+        const engageAction = legals.find(a => a.startsWith('engage_target:' + selectedOp + ':')) ||
+                             legals.find(a => a.startsWith('engage_target:'));
+        if (btnEngage) {
+          btnEngage.disabled = !engageAction;
+          if (engageAction) {
+            const parts = engageAction.split(':');
+            btnEngage.textContent = '🔫 ' + parts[1] + ' Shoot ' + parts[2];
+          } else {
+            btnEngage.textContent = '🔫 Engage Tango';
+          }
+        }
+
+        // Defuse device
+        const defuseAction = legals.find(a => a.startsWith('defuse_device:'));
+        if (btnDefuse) {
+          btnDefuse.disabled = !defuseAction;
+          btnDefuse.textContent = '✂️ Defuse Device (' + state.defuseProgress + '%)';
+        }
+
+        // Wait
+        if (btnWait) {
+          btnWait.disabled = state.done;
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.fillStyle = '#080f1e';
+        ctx.fillRect(0, 0, 480, 480);
+
+        // Grid lines
+        ctx.strokeStyle = '#111f36';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < 480; x += 30) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 480); ctx.stroke();
+        }
+        for (let y = 0; y < 480; y += 30) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(480, y); ctx.stroke();
+        }
+
+        const ROOM_COORDS = [
+          { id: 0, name: 'R0: Foyer', x: 40, y: 40, w: 180, h: 180 },
+          { id: 1, name: 'R1: Security', x: 260, y: 40, w: 180, h: 180 },
+          { id: 2, name: 'R2: Hallway', x: 40, y: 260, w: 180, h: 180 },
+          { id: 3, name: 'R3: Vault', x: 260, y: 260, w: 180, h: 180 }
+        ];
+
+        // Draw Rooms
+        if (state.rooms) {
+          ROOM_COORDS.forEach(rc => {
+            const roomState = state.rooms[rc.id];
+            if (!roomState) return;
+            if (roomState.breached) {
+              ctx.fillStyle = rc.id === 3 ? '#162238' : '#0f172a';
+              ctx.strokeStyle = roomState.stunned > 0 ? '#facc15' : '#38bdf8';
+            } else {
+              ctx.fillStyle = '#0a0d14';
+              ctx.strokeStyle = '#334155';
+            }
+            ctx.lineWidth = 2;
+            ctx.fillRect(rc.x, rc.y, rc.w, rc.h);
+            ctx.strokeRect(rc.x, rc.y, rc.w, rc.h);
+
+            // Room Title
+            ctx.fillStyle = roomState.breached ? '#94a3b8' : '#475569';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(rc.name, rc.x + 10, rc.y + 20);
+
+            if (!roomState.breached) {
+              ctx.fillStyle = '#64748b';
+              ctx.font = 'italic 12px sans-serif';
+              ctx.fillText('FOG OF WAR (UNBREACHED)', rc.x + 10, rc.y + 90);
+              return;
+            }
+
+            if (roomState.stunned > 0) {
+              ctx.fillStyle = '#facc15';
+              ctx.font = 'bold 10px sans-serif';
+              ctx.fillText('⚡ STUNNED (' + roomState.stunned + 'T)', rc.x + 100, rc.y + 20);
+            }
+
+            // If Room 3: Draw Bomb
+            if (rc.id === 3) {
+              ctx.fillStyle = state.bombDefused ? '#10b981' : '#ef4444';
+              ctx.fillRect(rc.x + rc.w - 55, rc.y + 10, 45, 20);
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 10px monospace';
+              ctx.fillText(state.bombDefused ? 'DEFUSED' : 'BOMB ' + state.bombTimer + 's', rc.x + rc.w - 52, rc.y + 24);
+
+              // Bomb defuse bar
+              if (!state.bombDefused) {
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(rc.x + 10, rc.y + 155, rc.w - 20, 8);
+                ctx.fillStyle = '#10b981';
+                ctx.fillRect(rc.x + 10, rc.y + 155, ((rc.w - 20) * state.defuseProgress) / 100, 8);
+              }
+            }
+
+            // Draw Operatives in this room
+            if (state.operators) {
+              const opsHere = state.operators.filter(o => o.room === rc.id && o.hp > 0);
+              opsHere.forEach((op, idx) => {
+                const ox = rc.x + 20 + (idx * 50);
+                const oy = rc.y + 45;
+
+                ctx.fillStyle = op.id === selectedOp ? '#38bdf8' : '#2563eb';
+                ctx.beginPath();
+                ctx.arc(ox + 16, oy + 16, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = op.id === selectedOp ? '#ffffff' : '#60a5fa';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Label
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.fillText(op.id.substring(0, 2).toUpperCase(), ox + 10, oy + 20);
+
+                // Health bar
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(ox, oy + 32, 32, 4);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(ox, oy + 32, (32 * op.hp) / op.maxHp, 4);
+              });
+            }
+
+            // Draw Tangos in this room
+            if (state.tangos) {
+              const tangosHere = state.tangos.filter(t => t.room === rc.id && t.hp > 0);
+              tangosHere.forEach((tango, idx) => {
+                const tx = rc.x + 20 + (idx * 50);
+                const ty = rc.y + 105;
+
+                ctx.fillStyle = tango.stunned > 0 ? '#ca8a04' : '#b91c1c';
+                ctx.beginPath();
+                ctx.arc(tx + 16, ty + 16, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Label
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillText(tango.id.toUpperCase(), tx + 10, ty + 20);
+
+                // Health bar
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(tx, ty + 32, 32, 4);
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(tx, ty + 32, (32 * tango.hp) / tango.maxHp, 4);
+              });
+            }
+          });
+        }
+
+        // Draw Doors
+        if (state.doors) {
+          const DOORS = [
+            { id: 0, x: 230, y: 110, w: 20, h: 40, vert: true },  // D0 between R0 and R1
+            { id: 1, x: 110, y: 230, w: 40, h: 20, vert: false }, // D1 between R0 and R2
+            { id: 2, x: 330, y: 230, w: 40, h: 20, vert: false }, // D2 between R1 and R3
+            { id: 3, x: 230, y: 330, w: 20, h: 40, vert: true }   // D3 between R2 and R3
+          ];
+
+          DOORS.forEach(d => {
+            const doorState = state.doors[d.id];
+            if (!doorState) return;
+            ctx.fillStyle = doorState.open ? '#059669' : '#dc2626';
+            ctx.fillRect(d.x, d.y, d.w, d.h);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(d.x, d.y, d.w, d.h);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText('D' + d.id, d.x + (d.vert ? 3 : 12), d.y + (d.vert ? 24 : 14));
+          });
+        }
+      }
+
+      function executeAction(act) {
+        if (!act) return;
+        try {
+          if (act.includes('engage_target')) playSfx('shot');
+          else if (act.includes('breach_door')) {
+            if (act.includes('flashbang')) playSfx('flashbang');
+            else playSfx('breach');
+          } else if (act.includes('defuse_device')) playSfx('defuse');
+
+          step(state, act);
+          updateUI();
+          draw();
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      if (btnOpShield) btnOpShield.onclick = function() { selectedOp = 'shield'; updateUI(); draw(); };
+      if (btnOpBreacher) btnOpBreacher.onclick = function() { selectedOp = 'breacher'; updateUI(); draw(); };
+      if (btnOpScout) btnOpScout.onclick = function() { selectedOp = 'scout'; updateUI(); draw(); };
+
+      if (btnBreachFlash) {
+        btnBreachFlash.onclick = function() {
+          const legals = legalActions(state);
+          const act = legals.find(a => a.startsWith('breach_door:') && a.endsWith(':flashbang'));
+          executeAction(act);
+        };
+      }
+
+      if (btnBreachCharge) {
+        btnBreachCharge.onclick = function() {
+          const legals = legalActions(state);
+          const act = legals.find(a => a.startsWith('breach_door:') && a.endsWith(':charge'));
+          executeAction(act);
+        };
+      }
+
+      if (btnBreachPick) {
+        btnBreachPick.onclick = function() {
+          const legals = legalActions(state);
+          const act = legals.find(a => a.startsWith('breach_door:') && a.endsWith(':pick'));
+          executeAction(act);
+        };
+      }
+
+      if (btnAdvance) {
+        btnAdvance.onclick = function() {
+          const legals = legalActions(state);
+          const act = legals.find(a => a.startsWith('advance_room:' + selectedOp + ':')) ||
+                      legals.find(a => a.startsWith('advance_room:'));
+          executeAction(act);
+        };
+      }
+
+      if (btnEngage) {
+        btnEngage.onclick = function() {
+          const legals = legalActions(state);
+          const act = legals.find(a => a.startsWith('engage_target:' + selectedOp + ':')) ||
+                      legals.find(a => a.startsWith('engage_target:'));
+          executeAction(act);
+        };
+      }
+
+      if (btnDefuse) {
+        btnDefuse.onclick = function() {
+          const legals = legalActions(state);
+          const act = legals.find(a => a.startsWith('defuse_device:'));
+          executeAction(act);
+        };
+      }
+
+      if (btnWait) {
+        btnWait.onclick = function() {
+          executeAction('wait');
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          updateUI();
+          draw();
+        };
+      }
+
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          updateUI();
+          draw();
+        };
+      }
+
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>
