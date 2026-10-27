@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cyber Breach - Hacking Puzzle</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #020617;
+      color: #6ee7b7;
+      font-family: "Courier New", Courier, monospace, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 500px;
+      gap: 10px;
+    }
+    .terminal-hdr {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #03140e;
+      border: 1px solid #059669;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+    }
+    .badge-emerald { color: #10b981; }
+    .badge-red { color: #f43f5e; }
+    .badge-cyan { color: #38bdf8; }
+    
+    .panel-split {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+    }
+    canvas {
+      width: 100%;
+      max-width: 320px;
+      aspect-ratio: 1;
+      background: #021a12;
+      border: 2px solid #059669;
+      border-radius: 10px;
+      cursor: pointer;
+      display: block;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+    }
+    .side-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .buffer-box {
+      background: #03140e;
+      border: 1px solid #059669;
+      border-radius: 6px;
+      padding: 8px;
+    }
+    .buffer-title {
+      font-size: 11px;
+      color: #34d399;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    .buffer-slots {
+      display: flex;
+      gap: 4px;
+    }
+    .slot {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #047857;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      color: #6ee7b7;
+      background: #021a12;
+    }
+    .daemon-list {
+      background: #03140e;
+      border: 1px solid #059669;
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .daemon-row {
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      background: #022419;
+      border-left: 3px solid #059669;
+    }
+    .daemon-row.uploaded {
+      background: #064e3b;
+      border-left-color: #34d399;
+      color: #a7f3d0;
+    }
+    .daemon-seq {
+      display: flex;
+      gap: 4px;
+      margin-top: 2px;
+      font-weight: bold;
+    }
+    .msg-bar {
+      font-size: 12px;
+      color: #34d399;
+      text-align: center;
+      min-height: 18px;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 11px;
+      color: #047857;
+      align-items: center;
+    }
+    .btn-sm {
+      background: transparent;
+      border: 1px solid #059669;
+      color: #6ee7b7;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="terminal-hdr">
+      <div class="badge-emerald" id="stage-display">TIER 1/3</div>
+      <div class="badge-red" id="lockouts-display">LOCKOUT: 0/3</div>
+      <div class="badge-cyan" id="axis-display">LINE: ROW 0</div>
+      <div id="score-display">PTS 0</div>
+    </div>
+
+    <div class="panel-split">
+      <canvas id="canvas" width="320" height="320"></canvas>
+
+      <div class="side-info">
+        <!-- Buffer Box -->
+        <div class="buffer-box">
+          <div class="buffer-title">BUFFER MEMORY [5 MAX]</div>
+          <div class="buffer-slots" id="buffer-slots">
+            <div class="slot">-</div>
+            <div class="slot">-</div>
+            <div class="slot">-</div>
+            <div class="slot">-</div>
+            <div class="slot">-</div>
+          </div>
+        </div>
+
+        <!-- Target Daemons -->
+        <div class="daemon-list" id="daemon-list">
+          <div class="buffer-title">TARGET DAEMONS</div>
+          <!-- Populated by script -->
+        </div>
+      </div>
+    </div>
+
+    <div class="msg-bar" id="msg-display">Select hex byte from active row to initiate buffer sequence.</div>
+
+    <div class="footer">
+      <span>Rows & Cols alternate on each selection.</span>
+      <button class="btn-sm" id="btn-restart">RESTART</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('canvas');
+      const ctx = (canvas && typeof canvas.getContext === 'function') ? canvas.getContext('2d') : null;
+
+      let state = createState(Math.floor(Math.random() * 100000) + 1);
+
+      // Web Audio Synth
+      let audioCtx = null;
+      function getAudio() {
+        if (!audioCtx && typeof AudioContext !== 'undefined') {
+          audioCtx = new AudioContext();
+        }
+        return audioCtx;
+      }
+      function playTone(freq, type, duration, gainVal = 0.08) {
+        try {
+          const actx = getAudio();
+          if (!actx) return;
+          const osc = actx.createOscillator();
+          const gain = actx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, actx.currentTime);
+          gain.gain.setValueAtTime(gainVal, actx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(actx.destination);
+          osc.start();
+          osc.stop(actx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      function playSound(type) {
+        if (type === 'click') playTone(800, 'square', 0.04, 0.05);
+        else if (type === 'daemon') {
+          playTone(523, 'sine', 0.1, 0.1);
+          setTimeout(() => playTone(659, 'sine', 0.1, 0.1), 70);
+          setTimeout(() => playTone(784, 'sine', 0.15, 0.12), 140);
+        } else if (type === 'fail') playTone(150, 'sawtooth', 0.2, 0.15);
+        else if (type === 'win') {
+          playTone(440, 'triangle', 0.15, 0.12);
+          setTimeout(() => playTone(554, 'triangle', 0.15, 0.12), 100);
+          setTimeout(() => playTone(659, 'triangle', 0.15, 0.12), 200);
+          setTimeout(() => playTone(880, 'triangle', 0.3, 0.15), 300);
+        }
+      }
+
+      function updateUI() {
+        const stageEl = document.getElementById('stage-display');
+        const lockoutsEl = document.getElementById('lockouts-display');
+        const axisEl = document.getElementById('axis-display');
+        const scoreEl = document.getElementById('score-display');
+        const msgEl = document.getElementById('msg-display');
+
+        if (stageEl) stageEl.textContent = 'TIER ' + state.stage + '/' + state.maxStages;
+        if (lockoutsEl) lockoutsEl.textContent = 'LOCKOUT: ' + state.lockouts + '/' + state.maxLockouts;
+        if (axisEl) axisEl.textContent = 'LINE: ' + state.axis.toUpperCase() + ' ' + state.activeLine;
+        if (scoreEl) scoreEl.textContent = 'PTS ' + score(state);
+        if (msgEl) msgEl.textContent = state.message;
+
+        // Update Buffer Slots
+        const bufferSlotsEl = document.getElementById('buffer-slots');
+        if (bufferSlotsEl) {
+          const slots = (typeof bufferSlotsEl.querySelectorAll === 'function')
+            ? bufferSlotsEl.querySelectorAll('.slot')
+            : [];
+          for (let i = 0; i < slots.length; i++) {
+            if (i < state.buffer.length) {
+              slots[i].textContent = state.buffer[i];
+              slots[i].style.color = '#34d399';
+              slots[i].style.borderColor = '#10b981';
+            } else {
+              slots[i].textContent = '-';
+              slots[i].style.color = '#047857';
+              slots[i].style.borderColor = '#047857';
+            }
+          }
+        }
+
+        // Update Daemons List
+        const daemonListEl = document.getElementById('daemon-list');
+        if (daemonListEl) {
+          let html = '<div class="buffer-title">TARGET DAEMONS</div>';
+          for (const d of state.daemons) {
+            const cls = d.uploaded ? 'daemon-row uploaded' : 'daemon-row';
+            const statusText = d.uploaded ? '[UPLOADED ✓]' : `[+${d.reward} PTS]`;
+            const seqStr = d.sequence.join(' ');
+            html += `<div class="${cls}">
+              <div style="display:flex;justify-content:space-between;"><span>${d.name}</span><span>${statusText}</span></div>
+              <div class="daemon-seq">${seqStr}</div>
+            </div>`;
+          }
+          daemonListEl.innerHTML = html;
+        }
+      }
+
+      function render() {
+        if (!ctx) return;
+        const W = canvas.width;
+        const H = canvas.height;
+        const cellSize = W / GRID_SIZE; // 64px
+
+        ctx.fillStyle = '#021a12';
+        ctx.fillRect(0, 0, W, H);
+
+        // Active line highlight beam
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+        if (state.axis === 'row') {
+          ctx.fillRect(0, state.activeLine * cellSize, W, cellSize);
+        } else {
+          ctx.fillRect(state.activeLine * cellSize, 0, cellSize, H);
+        }
+
+        // Draw Matrix Cells
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const px = c * cellSize;
+            const py = r * cellSize;
+            const isUsed = state.used[r][c];
+            const byte = state.matrix[r][c];
+
+            const isSelectable = (state.axis === 'row' && r === state.activeLine && !isUsed) ||
+                                 (state.axis === 'col' && c === state.activeLine && !isUsed);
+
+            // Cell border
+            ctx.strokeStyle = isSelectable ? '#10b981' : '#047857';
+            ctx.lineWidth = isSelectable ? 2 : 1;
+            ctx.strokeRect(px + 4, py + 4, cellSize - 8, cellSize - 8);
+
+            // Cell background
+            if (isUsed) {
+              ctx.fillStyle = '#01100b';
+              ctx.fillRect(px + 5, py + 5, cellSize - 10, cellSize - 10);
+            } else if (isSelectable) {
+              ctx.fillStyle = '#043424';
+              ctx.fillRect(px + 5, py + 5, cellSize - 10, cellSize - 10);
+            }
+
+            // Cell text
+            ctx.font = 'bold 18px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            if (isUsed) {
+              ctx.fillStyle = '#044c35';
+              ctx.fillText('--', px + cellSize / 2, py + cellSize / 2);
+            } else if (isSelectable) {
+              ctx.fillStyle = '#6ee7b7';
+              ctx.fillText(byte, px + cellSize / 2, py + cellSize / 2);
+            } else {
+              ctx.fillStyle = '#059669';
+              ctx.fillText(byte, px + cellSize / 2, py + cellSize / 2);
+            }
+          }
+        }
+
+        // Overlay on game complete
+        if (state.done) {
+          ctx.fillStyle = 'rgba(2, 26, 18, 0.9)';
+          ctx.fillRect(0, 0, W, H);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 22px monospace';
+            ctx.fillText('ACCESS GRANTED!', W / 2, H / 2 - 25);
+            ctx.fillStyle = '#a7f3d0';
+            ctx.font = '13px monospace';
+            ctx.fillText('All ICE Defeated', W / 2, H / 2 + 5);
+            ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 25);
+          } else {
+            ctx.fillStyle = '#f43f5e';
+            ctx.font = 'bold 22px monospace';
+            ctx.fillText('NETWORK LOCKOUT', W / 2, H / 2 - 25);
+            ctx.fillStyle = '#fecdd3';
+            ctx.font = '13px monospace';
+            ctx.fillText('Trace Completed', W / 2, H / 2 + 5);
+            ctx.fillText('Press Restart to retry', W / 2, H / 2 + 25);
+          }
+        }
+      }
+
+      function handleCellClick(cx, cy) {
+        if (state.done) return;
+        const cellSize = canvas.width / GRID_SIZE;
+        const c = Math.floor(cx / cellSize);
+        const r = Math.floor(cy / cellSize);
+
+        const act = `pick:${r},${c}`;
+        if (legalActions(state).includes(act)) {
+          const prevUploaded = state.daemons.filter(d => d.uploaded).length;
+          const prevStage = state.stage;
+          const prevLockouts = state.lockouts;
+
+          step(state, act);
+
+          if (state.stage > prevStage || state.won) playSound('win');
+          else if (state.lockouts > prevLockouts) playSound('fail');
+          else if (state.daemons.filter(d => d.uploaded).length > prevUploaded) playSound('daemon');
+          else playSound('click');
+
+          updateUI();
+          render();
+        }
+      }
+
+      // Event Listeners
+      if (canvas && typeof canvas.addEventListener === 'function') {
+        canvas.addEventListener('click', (e) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const cx = (e.clientX - rect.left) * scaleX;
+          const cy = (e.clientY - rect.top) * scaleY;
+          handleCellClick(cx, cy);
+        });
+      }
+
+      const restartBtn = document.getElementById('btn-restart');
+      if (restartBtn && typeof restartBtn.addEventListener === 'function') {
+        restartBtn.addEventListener('click', () => {
+          state = createState(Math.floor(Math.random() * 100000) + 1);
+          updateUI();
+          render();
+        });
+      }
+
+      if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'r' || e.key === 'R') {
+            state = createState(Math.floor(Math.random() * 100000) + 1);
+            updateUI();
+            render();
+          }
+        });
+      }
+
+      // Initial render
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>

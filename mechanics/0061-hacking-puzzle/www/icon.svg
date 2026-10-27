@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#022c22" />
+      <stop offset="100%" stop-color="#064e3b" />
+    </linearGradient>
+    <linearGradient id="cyberGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6ee7b7" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="#020617" />
+  <!-- Terminal Border -->
+  <rect x="64" y="64" width="384" height="384" rx="28" fill="#030712" stroke="url(#cyberGreen)" stroke-width="10" />
+  <!-- Terminal Header -->
+  <line x1="64" y1="130" x2="448" y2="130" stroke="#047857" stroke-width="6" />
+  <circle cx="100" cy="98" r="8" fill="#ef4444" />
+  <circle cx="125" cy="98" r="8" fill="#f59e0b" />
+  <circle cx="150" cy="98" r="8" fill="#10b981" />
+  <!-- Hex Matrix Code Text -->
+  <text x="120" y="210" fill="#10b981" font-size="36" font-family="monospace" font-weight="bold">1C  BD  55</text>
+  <text x="120" y="270" fill="#34d399" font-size="36" font-family="monospace" font-weight="bold">E9  7A  FF</text>
+  <text x="120" y="330" fill="#059669" font-size="36" font-family="monospace" font-weight="bold">55  1C  E9</text>
+  <!-- Cyber Breach Cursor Target -->
+  <rect x="250" y="170" width="70" height="50" rx="8" fill="none" stroke="#6ee7b7" stroke-width="6" stroke-dasharray="8 4" />
+  <!-- Unlocked Lock Indicator -->
+  <path d="M350 370 V340 A20 20 0 0 1 390 340 V360 M340 370 H400 V410 H340 Z" fill="none" stroke="#6ee7b7" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
