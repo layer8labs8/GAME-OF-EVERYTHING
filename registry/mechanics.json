@@ -640,9 +640,10 @@
       "slug": "pinball",
       "name": "Pinball",
       "family": "Puzzle",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0063",

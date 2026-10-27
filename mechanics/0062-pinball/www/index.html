@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Neon Pinball - Arcade Pinball</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #06020c;
+      color: #f472b6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      gap: 10px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #140722;
+      border: 1px solid #701a75;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(236, 72, 153, 0.2);
+    }
+    .badge-pink { color: #f472b6; }
+    .badge-cyan { color: #38bdf8; }
+    .badge-gold { color: #fbbf24; }
+    canvas {
+      width: 100%;
+      max-width: 320px;
+      aspect-ratio: 300 / 500;
+      background: #0a0314;
+      border: 3px solid #86198f;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(134, 25, 143, 0.4);
+      display: block;
+    }
+    .flipper-controls {
+      display: flex;
+      width: 100%;
+      max-width: 320px;
+      gap: 10px;
+    }
+    .btn-flipper {
+      flex: 1;
+      height: 56px;
+      background: linear-gradient(180deg, #be185d, #831843);
+      color: #fdf2f8;
+      border: 2px solid #f472b6;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(244, 114, 182, 0.3);
+      transition: all 0.05s;
+    }
+    .btn-flipper:active {
+      background: #ec4899;
+      transform: translateY(2px);
+    }
+    .btn-launch {
+      width: 100%;
+      max-width: 320px;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+    }
+    .btn-launch:disabled {
+      background: #334155;
+      color: #64748b;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #c084fc;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 320px;
+      font-size: 11px;
+      color: #a855f7;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div class="badge-pink" id="balls-display">BALLS: 3</div>
+      <div class="badge-cyan" id="mult-display">MULT: 1X</div>
+      <div class="badge-gold" id="score-display">PTS 0</div>
+    </div>
+
+    <!-- Pinball Canvas -->
+    <canvas id="canvas" width="300" height="500"></canvas>
+
+    <button class="btn-launch" id="btn-launch">PULL PLUNGER (LAUNCH)</button>
+
+    <div class="flipper-controls">
+      <button class="btn-flipper" id="btn-flip-left">◀ FLIP L</button>
+      <button class="btn-flipper" id="btn-flip-right">FLIP R ▶</button>
+    </div>
+
+    <div class="message-bar" id="message-display">Launch ball into table! Use Left & Right flippers to rack up score.</div>
+
+    <div class="footer">
+      <span>A/D, Left/Right, Space</span>
+      <button style="background:transparent;border:1px solid #701a75;color:#c084fc;padding:4px 8px;border-radius:4px;cursor:pointer;" id="btn-restart">Restart</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('canvas');
+      const ctx = (canvas && typeof canvas.getContext === 'function') ? canvas.getContext('2d') : null;
+
+      let state = createState(Math.floor(Math.random() * 100000) + 1);
+
+      // Web Audio Synth
+      let audioCtx = null;
+      function getAudio() {
+        if (!audioCtx && typeof AudioContext !== 'undefined') {
+          audioCtx = new AudioContext();
+        }
+        return audioCtx;
+      }
+      function playTone(freq, type, duration, gainVal = 0.08) {
+        try {
+          const actx = getAudio();
+          if (!actx) return;
+          const osc = actx.createOscillator();
+          const gain = actx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, actx.currentTime);
+          gain.gain.setValueAtTime(gainVal, actx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(actx.destination);
+          osc.start();
+          osc.stop(actx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      function playSound(type) {
+        if (type === 'launch') playTone(180, 'triangle', 0.2, 0.15);
+        else if (type === 'flipper') playTone(300, 'square', 0.05, 0.08);
+        else if (type === 'bumper') {
+          playTone(600, 'sine', 0.08, 0.12);
+          setTimeout(() => playTone(900, 'sine', 0.1, 0.1), 50);
+        } else if (type === 'drain') playTone(120, 'sawtooth', 0.25, 0.15);
+      }
+
+      function updateUI() {
+        const ballsEl = document.getElementById('balls-display');
+        const multEl = document.getElementById('mult-display');
+        const scoreEl = document.getElementById('score-display');
+        const msgEl = document.getElementById('message-display');
+        const launchBtn = document.getElementById('btn-launch');
+
+        if (ballsEl) ballsEl.textContent = 'BALLS: ' + state.ballsLeft;
+        if (multEl) multEl.textContent = 'MULT: ' + state.multiplier + 'X';
+        if (scoreEl) scoreEl.textContent = 'PTS ' + score(state);
+        if (msgEl) msgEl.textContent = state.message;
+
+        if (launchBtn) {
+          launchBtn.disabled = !legalActions(state).includes('launch');
+        }
+      }
+
+      function render() {
+        if (!ctx) return;
+        const W = canvas.width;
+        const H = canvas.height;
+
+        ctx.fillStyle = '#0a0314';
+        ctx.fillRect(0, 0, W, H);
+
+        // Synthwave Background Grid Lines
+        ctx.strokeStyle = '#1b082e';
+        ctx.lineWidth = 1;
+        for (let x = 30; x < W - 30; x += 30) {
+          ctx.beginPath();
+          ctx.moveTo(x, 30);
+          ctx.lineTo(x, H - 30);
+          ctx.stroke();
+        }
+
+        // Table Borders
+        ctx.strokeStyle = '#86198f';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(20, 25, 260, 465);
+
+        // Plunger Lane Divider
+        ctx.strokeStyle = '#701a75';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(270, 200);
+        ctx.lineTo(270, 480);
+        ctx.stroke();
+
+        // Top Rollovers
+        for (const r of state.rollovers) {
+          ctx.fillStyle = r.lit ? '#facc15' : '#3b0764';
+          ctx.beginPath();
+          ctx.arc(r.x, r.y, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = r.lit ? '#fef08a' : '#a855f7';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Bumpers
+        for (const bmp of state.bumpers) {
+          ctx.fillStyle = '#083344';
+          ctx.beginPath();
+          ctx.arc(bmp.x, bmp.y, bmp.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#06b6d4';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          // Inner core
+          ctx.fillStyle = '#67e8f9';
+          ctx.beginPath();
+          ctx.arc(bmp.x, bmp.y, 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Slingshots
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 3;
+        ctx.fillStyle = '#4c0519';
+        // Left
+        ctx.beginPath();
+        ctx.moveTo(45, 360);
+        ctx.lineTo(75, 400);
+        ctx.lineTo(45, 400);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        // Right
+        ctx.beginPath();
+        ctx.moveTo(255, 360);
+        ctx.lineTo(225, 400);
+        ctx.lineTo(255, 400);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Left Flipper
+        const lAngle = (state.leftFlipperTimer > 0) ? -0.4 : 0.4;
+        ctx.save();
+        ctx.translate(85, 440);
+        ctx.rotate(lAngle);
+        ctx.fillStyle = '#ec4899';
+        ctx.beginPath();
+        ctx.roundRect(0, -6, 50, 12, 6);
+        ctx.fill();
+        ctx.restore();
+
+        // Right Flipper
+        const rAngle = (state.rightFlipperTimer > 0) ? 0.4 : -0.4;
+        ctx.save();
+        ctx.translate(215, 440);
+        ctx.rotate(rAngle);
+        ctx.fillStyle = '#ec4899';
+        ctx.beginPath();
+        ctx.roundRect(-50, -6, 50, 12, 6);
+        ctx.fill();
+        ctx.restore();
+
+        // Pinball Ball
+        const b = state.ball;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Overlay on game over
+        if (state.done) {
+          ctx.fillStyle = 'rgba(10, 3, 20, 0.88)';
+          ctx.fillRect(0, 0, W, H);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = state.won ? '#34d399' : '#f43f5e';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText(state.won ? 'HIGH SCORE VICTORY!' : 'GAME OVER', W / 2, H / 2 - 20);
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = '14px sans-serif';
+          ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 10);
+          ctx.fillText('Press Restart to play again', W / 2, H / 2 + 35);
+        }
+      }
+
+      function handleAction(act) {
+        if (state.done) return;
+        const leg = legalActions(state);
+        if (!leg.includes(act)) return;
+
+        const prevBalls = state.ballsLeft;
+        const prevScore = state.scoreVal;
+
+        step(state, act);
+
+        if (state.ballsLeft < prevBalls) playSound('drain');
+        else if (act === 'launch') playSound('launch');
+        else if (act.startsWith('flip')) playSound('flipper');
+        else if (state.scoreVal > prevScore) playSound('bumper');
+
+        updateUI();
+        render();
+      }
+
+      // Physics loop ticker (lets physics play out automatically if in motion)
+      setInterval(() => {
+        if (!state.done && !state.inPlunger) {
+          step(state, 'wait');
+          updateUI();
+          render();
+        }
+      }, 50);
+
+      // Event Listeners
+      const launchBtn = document.getElementById('btn-launch');
+      if (launchBtn && typeof launchBtn.addEventListener === 'function') {
+        launchBtn.addEventListener('click', () => handleAction('launch'));
+      }
+
+      const flipLeftBtn = document.getElementById('btn-flip-left');
+      if (flipLeftBtn && typeof flipLeftBtn.addEventListener === 'function') {
+        flipLeftBtn.addEventListener('click', () => handleAction('flip_left'));
+      }
+
+      const flipRightBtn = document.getElementById('btn-flip-right');
+      if (flipRightBtn && typeof flipRightBtn.addEventListener === 'function') {
+        flipRightBtn.addEventListener('click', () => handleAction('flip_right'));
+      }
+
+      const restartBtn = document.getElementById('btn-restart');
+      if (restartBtn && typeof restartBtn.addEventListener === 'function') {
+        restartBtn.addEventListener('click', () => {
+          state = createState(Math.floor(Math.random() * 100000) + 1);
+          updateUI();
+          render();
+        });
+      }
+
+      if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') handleAction('flip_left');
+          else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') handleAction('flip_right');
+          else if (e.code === 'Space' || e.key === 'ArrowDown' || e.key === 's') handleAction('launch');
+          else if (e.key === 'ArrowUp' || e.key === 'w') handleAction('nudge');
+          else if (e.key === 'r' || e.key === 'R') {
+            state = createState(Math.floor(Math.random() * 100000) + 1);
+            updateUI();
+            render();
+          }
+        });
+      }
+
+      // Initial render
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>

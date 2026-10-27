@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#180b2b" />
+      <stop offset="100%" stop-color="#070210" />
+    </linearGradient>
+    <linearGradient id="neonPink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f472b6" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+    <radialGradient id="chromeBall" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="60%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#334155" />
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)" />
+  <!-- Table Bezel -->
+  <rect x="76" y="56" width="360" height="400" rx="40" fill="#0d041c" stroke="#8b5cf6" stroke-width="10" />
+  <!-- Bumpers -->
+  <circle cx="190" cy="160" r="34" fill="#06b6d4" stroke="#67e8f9" stroke-width="8" filter="drop-shadow(0 0 12px #06b6d4)" />
+  <circle cx="320" cy="160" r="34" fill="#06b6d4" stroke="#67e8f9" stroke-width="8" filter="drop-shadow(0 0 12px #06b6d4)" />
+  <circle cx="256" cy="240" r="34" fill="#f59e0b" stroke="#fde047" stroke-width="8" filter="drop-shadow(0 0 12px #f59e0b)" />
+  <!-- Left Flipper -->
+  <polygon points="150,380 230,410 226,424 146,396" fill="url(#neonPink)" rx="8" />
+  <circle cx="150" cy="388" r="14" fill="#f43f5e" />
+  <!-- Right Flipper -->
+  <polygon points="362,380 282,410 286,424 366,396" fill="url(#neonPink)" rx="8" />
+  <circle cx="362" cy="388" r="14" fill="#f43f5e" />
+  <!-- Chrome Ball -->
+  <circle cx="240" cy="330" r="22" fill="url(#chromeBall)" filter="drop-shadow(0 6px 12px rgba(0,0,0,0.6))" />
+</svg>
