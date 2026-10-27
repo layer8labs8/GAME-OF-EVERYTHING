@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="128" fill="#0f172a"/>
+  <!-- Mystic Rune Circle -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#334155" stroke-width="8"/>
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#1e293b" stroke-width="12"/>
+  <!-- Central Glowing Hexagon -->
+  <polygon points="256,196 308,226 308,286 256,316 204,286 204,226" fill="#f59e0b" stroke="#fbbf24" stroke-width="6"/>
+  <!-- Center letter -->
+  <text x="256" y="272" font-family="Georgia, serif" font-size="56" font-weight="bold" fill="#78350f" text-anchor="middle">S</text>
+  <!-- Sparkles -->
+  <circle cx="256" cy="110" r="14" fill="#38bdf8"/>
+  <circle cx="380" cy="190" r="14" fill="#38bdf8"/>
+  <circle cx="380" cy="320" r="14" fill="#38bdf8"/>
+  <circle cx="256" cy="400" r="14" fill="#38bdf8"/>
+  <circle cx="132" cy="320" r="14" fill="#38bdf8"/>
+  <circle cx="132" cy="190" r="14" fill="#38bdf8"/>
+</svg>

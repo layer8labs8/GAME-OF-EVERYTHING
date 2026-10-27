@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rune Scribe</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: Georgia, serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .hud-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #fbbf24;
+      letter-spacing: 1px;
+    }
+    .hud-stats {
+      display: flex;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .stat-pill {
+      background: #334155;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #475569;
+      color: #f1f5f9;
+    }
+
+    #gameCanvas {
+      background: #090d16;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      max-width: 100%;
+      touch-action: none;
+      cursor: pointer;
+    }
+
+    .transcription-box {
+      width: 100%;
+      max-width: 500px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 48px;
+    }
+    .spell-input {
+      font-size: 24px;
+      font-weight: bold;
+      color: #f8fafc;
+      letter-spacing: 3px;
+    }
+    .spell-input .center-char {
+      color: #fbbf24;
+    }
+
+    .btn-row {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .action-btn {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s;
+    }
+    .action-btn:hover { background: #334155; }
+    .action-btn.primary {
+      background: #d97706;
+      border-color: #f59e0b;
+      color: #ffffff;
+    }
+    .action-btn.primary:hover { background: #b45309; }
+
+    .rank-bar {
+      width: 100%;
+      max-width: 500px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-top: 8px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .progress-track {
+      flex: 1;
+      height: 8px;
+      background: #0f172a;
+      border-radius: 4px;
+      margin: 0 12px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #f59e0b;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .words-tray {
+      width: 100%;
+      max-width: 500px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .words-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .word-chip {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .word-chip.pangram {
+      border-color: #f59e0b;
+      color: #fbbf24;
+      background: #451a03;
+    }
+
+    #overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.92);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hud-title">Rune Scribe</div>
+    <div class="hud-stats">
+      <span class="stat-pill">Ink (Turns): <strong id="turnsEl">30</strong></span>
+      <span class="stat-pill">Spells: <strong id="spellsEl">0</strong></span>
+      <span class="stat-pill">Score: <strong id="scoreEl">0</strong></span>
+    </div>
+  </header>
+
+  <div style="position: relative; width: 440px; max-width: 100%;">
+    <canvas id="gameCanvas" width="440" height="400"></canvas>
+    <div id="overlay">
+      <h2 id="overlayTitle" style="font-size: 32px; color: #fbbf24; margin-bottom: 12px;">ARCHMAGE ACHIEVED!</h2>
+      <p id="overlayDesc" style="color: #cbd5e1; margin-bottom: 24px;">Ancient lexicon mastered successfully!</p>
+      <button class="action-btn primary" id="playAgainBtn" style="max-width: 200px; padding: 12px 24px;">Next Circle</button>
+    </div>
+  </div>
+
+  <div class="transcription-box">
+    <div class="spell-input" id="spellInput">TAP RUNES</div>
+    <div style="font-size: 13px; color: #94a3b8;" id="feedbackEl">Min 4 letters</div>
+  </div>
+
+  <div class="btn-row">
+    <button class="action-btn" id="deleteBtn">Delete</button>
+    <button class="action-btn" id="shuffleBtn">Shuffle ⟲</button>
+    <button class="action-btn primary" id="submitBtn">Cast Spell ↵</button>
+  </div>
+
+  <div class="rank-bar">
+    <span style="color: #94a3b8;">Rank: <strong id="rankEl" style="color: #fbbf24;">Beginner</strong></span>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <span style="color: #94a3b8;">Goal: <strong>100 pts</strong></span>
+  </div>
+
+  <div class="words-tray">
+    <div style="color: #94a3b8;">Discovered Spells:</div>
+    <div class="words-list" id="wordsList">
+      <span style="color: #64748b; font-style: italic;">None yet</span>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(1);
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas ? canvas.getContext("2d") : null;
+
+    let audioCtx = null;
+    function playTone(freq, type = 'sine', duration = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    // Geometry of 7 hexagons in a flower hive
+    const CENTER = { x: 220, y: 200 };
+    const HEX_RADIUS = 50;
+    const HEX_DISTANCE = 88;
+
+    function getHexCenters() {
+      const centers = [];
+      // 0: Center
+      centers.push({ x: CENTER.x, y: CENTER.y, isCenter: true });
+      // 1..6: 6 surrounding hexes
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i - Math.PI / 6;
+        centers.push({
+          x: CENTER.x + Math.cos(angle) * HEX_DISTANCE,
+          y: CENTER.y + Math.sin(angle) * HEX_DISTANCE,
+          isCenter: false,
+          outerIdx: i
+        });
+      }
+      return centers;
+    }
+
+    function drawHexagon(cx, cy, radius, fillStyle, strokeStyle) {
+      if (!ctx) return;
+      ctx.save();
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i + Math.PI / 6;
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = strokeStyle;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function updateUI() {
+      const turnsEl = document.getElementById("turnsEl");
+      if (turnsEl) turnsEl.textContent = state.turnsLeft;
+      const spellsEl = document.getElementById("spellsEl");
+      if (spellsEl) spellsEl.textContent = state.foundWords.length;
+      const scoreEl = document.getElementById("scoreEl");
+      if (scoreEl) scoreEl.textContent = state.score;
+
+      const rankEl = document.getElementById("rankEl");
+      if (rankEl) rankEl.textContent = getRank(state.score);
+
+      const fill = document.getElementById("progressFill");
+      if (fill) fill.style.width = Math.min(100, (state.score / TARGET_SCORE) * 100) + "%";
+
+      const spellInput = document.getElementById("spellInput");
+      if (spellInput) {
+        if (!state.currentInput) {
+          spellInput.textContent = "TAP RUNES";
+          spellInput.style.color = "#64748b";
+        } else {
+          spellInput.style.color = "#f8fafc";
+          let html = "";
+          for (let i = 0; i < state.currentInput.length; i++) {
+            const ch = state.currentInput[i];
+            if (ch === state.centerLetter) {
+              html += `<span class="center-char">${ch}</span>`;
+            } else {
+              html += `<span>${ch}</span>`;
+            }
+          }
+          spellInput.innerHTML = html;
+        }
+      }
+
+      const feedback = document.getElementById("feedbackEl");
+      if (feedback && state.lastResult) {
+        feedback.textContent = state.lastResult.message;
+        feedback.style.color = state.lastResult.success ? "#34d399" : "#f87171";
+      }
+
+      // Found Words Chips
+      const listEl = document.getElementById("wordsList");
+      if (listEl) {
+        if (state.foundWords.length === 0) {
+          listEl.innerHTML = '<span style="color: #64748b; font-style: italic;">None yet</span>';
+        } else {
+          let html = "";
+          state.foundWords.forEach(w => {
+            const isPang = isPangram(w, state.allLetters);
+            const cls = isPang ? "word-chip pangram" : "word-chip";
+            html += `<span class="${cls}">${w}</span>`;
+          });
+          listEl.innerHTML = html;
+        }
+      }
+
+      if (state.done) {
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "flex";
+        const title = document.getElementById("overlayTitle");
+        const desc = document.getElementById("overlayDesc");
+        if (title && desc) {
+          if (state.won) {
+            title.textContent = "ARCHMAGE ACHIEVED!";
+            title.style.color = "#fbbf24";
+            desc.textContent = `Target reached with ${score(state)} total points!`;
+            playTone(659, 'triangle', 0.35);
+          } else {
+            title.textContent = "INK RUN DRY";
+            title.style.color = "#f87171";
+            desc.textContent = `Turns exhausted. Scored ${state.score} of ${TARGET_SCORE}.`;
+            playTone(180, 'sawtooth', 0.35);
+          }
+        }
+      }
+    }
+
+    function render() {
+      if (!ctx || !canvas) return;
+      ctx.fillStyle = "#090d16";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const centers = getHexCenters();
+
+      // Draw Center Hex
+      const c = centers[0];
+      drawHexagon(c.x, c.y, HEX_RADIUS, "#d97706", "#f59e0b");
+      ctx.fillStyle = "#fef3c7";
+      ctx.font = "bold 38px Georgia, serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(state.centerLetter, c.x, c.y + 2);
+
+      // Draw 6 Outer Hexes
+      for (let i = 1; i <= 6; i++) {
+        const h = centers[i];
+        const letter = state.outerLetters[i - 1];
+        drawHexagon(h.x, h.y, HEX_RADIUS, "#1e293b", "#475569");
+        ctx.fillStyle = "#f8fafc";
+        ctx.font = "bold 34px Georgia, serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(letter, h.x, h.y + 2);
+      }
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        const res = step(state, action);
+        if (action.startsWith("add_letter:")) {
+          playTone(440, 'sine', 0.05);
+        } else if (action === "submit" || action.startsWith("submit_word:")) {
+          if (res.reward > 0) {
+            playTone(523, 'triangle', 0.15);
+          } else {
+            playTone(200, 'sawtooth', 0.1);
+          }
+        }
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    if (canvas) {
+      canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+        const centers = getHexCenters();
+        for (let i = 0; i < centers.length; i++) {
+          const h = centers[i];
+          const dist = Math.hypot(h.x - clickX, h.y - clickY);
+          if (dist <= HEX_RADIUS) {
+            const letter = (i === 0) ? state.centerLetter : state.outerLetters[i - 1];
+            doAction(`add_letter:${letter}`);
+            break;
+          }
+        }
+      });
+    }
+
+    const deleteBtn = document.getElementById("deleteBtn");
+    if (deleteBtn && typeof deleteBtn.addEventListener === 'function') {
+      deleteBtn.addEventListener("click", () => doAction("delete_letter"));
+    }
+
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    if (shuffleBtn && typeof shuffleBtn.addEventListener === 'function') {
+      shuffleBtn.addEventListener("click", () => doAction("shuffle"));
+    }
+
+    const submitBtn = document.getElementById("submitBtn");
+    if (submitBtn && typeof submitBtn.addEventListener === 'function') {
+      submitBtn.addEventListener("click", () => doAction("submit"));
+    }
+
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    if (playAgainBtn && typeof playAgainBtn.addEventListener === 'function') {
+      playAgainBtn.addEventListener("click", () => {
+        state = createState(state.seed + 1);
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "none";
+        updateUI();
+        render();
+      });
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace") {
+        doAction("delete_letter");
+      } else if (e.key === "Enter") {
+        doAction("submit");
+      } else if (e.code === "Space") {
+        e.preventDefault();
+        doAction("shuffle");
+      } else {
+        const upper = e.key.toUpperCase();
+        if (state.allLetters.includes(upper)) {
+          doAction(`add_letter:${upper}`);
+        }
+      }
+    });
+
+    updateUI();
+    render();
+  </script>
+</body>
+</html>
