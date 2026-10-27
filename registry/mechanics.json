@@ -1704,9 +1704,11 @@
       "slug": "pet-care",
       "name": "Pet Care",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "classic"
+      "status": "playable",
+      "bot": true,
+      "source": "classic",
+      "title": "Paws & Whiskers",
+      "levels": "endless"
     },
     {
       "id": "0162",

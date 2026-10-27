@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Paws & Whiskers - Pet Care</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #022c22;
+      color: #f0fdf4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 14px;
+      background: #064e3b;
+      border-radius: 8px;
+      border: 1px solid #10b981;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #6ee7b7;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      background: #064e3b;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #10b981;
+      font-size: 0.72rem;
+    }
+    .hud-box {
+      background: #022c22;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #059669;
+    }
+    .hud-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    .text-emerald { color: #34d399; }
+    .text-amber { color: #f59e0b; }
+    .text-cyan { color: #38bdf8; }
+    .text-rose { color: #f43f5e; }
+    .text-gold { color: #fbbf24; }
+
+    #canvas-container {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      background: #064e3b;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #10b981;
+      aspect-ratio: 16 / 10;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .status-banner {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      padding: 6px 12px;
+      background: #064e3b;
+      border-left: 4px solid #10b981;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .pets-cards-container {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .pet-card {
+      background: #064e3b;
+      border: 1px solid #10b981;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.72rem;
+    }
+    .pet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .vitals-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      text-align: center;
+      font-size: 0.65rem;
+    }
+    .vital-box {
+      background: #022c22;
+      border-radius: 4px;
+      padding: 4px;
+    }
+
+    .controls-grid {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    button {
+      background: #064e3b;
+      border: 1px solid #10b981;
+      color: #f0fdf4;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+    button:hover:not(:disabled) {
+      background: #059669;
+      border-color: #34d399;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      opacity: 0.35;
+      border-color: #047857;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #059669;
+      border-color: #34d399;
+    }
+    button.btn-gold {
+      background: #d97706;
+      border-color: #fbbf24;
+      grid-column: span 2;
+    }
+    button.btn-blue {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    .btn-sub {
+      font-size: 0.62rem;
+      font-weight: normal;
+      color: #a7f3d0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🐾 Paws & Whiskers</h1>
+    <div style="font-size: 0.72rem; color: #a7f3d0;">
+      Turn: <span id="hdr-turn" class="text-cyan">0</span>/120 | Rating: <span id="hdr-rep" class="text-gold">80%</span>
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div style="color: #a7f3d0;">Sanctuary Funds</div>
+      <div id="hud-funds" class="hud-val text-gold">$350</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a7f3d0;">Adoptions</div>
+      <div id="hud-adoptions" class="hud-val text-emerald">0 / 8</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a7f3d0;">Kibble Food</div>
+      <div id="hud-kibble" class="hud-val text-amber">5 bags</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a7f3d0;">Bath Soap</div>
+      <div id="hud-shampoo" class="hud-val text-cyan">4 pots</div>
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="520" height="325"></canvas>
+  </div>
+
+  <div id="status-banner" class="status-banner">
+    Paws & Whiskers Sanctuary doors open! Care for your rescue companions.
+  </div>
+
+  <div id="pets-container" class="pets-cards-container">
+    <!-- Pet cards injected by JS -->
+  </div>
+
+  <div id="controls" class="controls-grid">
+    <!-- Controls injected by JS -->
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Date.now() % 1000000));
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function renderScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Sunny outdoor yard
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 130);
+      skyGrad.addColorStop(0, '#38bdf8');
+      skyGrad.addColorStop(1, '#bae6fd');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, 520, 130);
+
+      // Sun
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(440, 40, 24, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Green grass play field
+      const lawnGrad = ctx.createLinearGradient(0, 130, 0, 325);
+      lawnGrad.addColorStop(0, '#10b981');
+      lawnGrad.addColorStop(1, '#047857');
+      ctx.fillStyle = lawnGrad;
+      ctx.fillRect(0, 130, 520, 195);
+
+      // White picket fence
+      ctx.fillStyle = '#f8fafc';
+      for (let x = 10; x < 510; x += 32) {
+        ctx.fillRect(x, 105, 12, 45);
+        ctx.beginPath();
+        ctx.moveTo(x, 105); ctx.lineTo(x + 6, 95); ctx.lineTo(x + 12, 105);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.fillRect(0, 120, 520, 6);
+      ctx.fillRect(0, 138, 520, 6);
+
+      // Render animals in yard
+      const petCoords = [
+        { x: 130, y: 220, color: '#f59e0b' },
+        { x: 260, y: 210, color: '#f87171' },
+        { x: 390, y: 230, color: '#e2e8f0' }
+      ];
+
+      for (let i = 0; i < state.pets.length; i++) {
+        const p = state.pets[i];
+        const coord = petCoords[i % petCoords.length];
+        const px = coord.x;
+        const py = coord.y;
+
+        // Shadow
+        ctx.fillStyle = 'rgba(2, 44, 34, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(px, py + 16, 22, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pet Body
+        ctx.fillStyle = coord.color;
+        ctx.beginPath();
+        ctx.ellipse(px, py, 20, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pet Head
+        ctx.beginPath();
+        ctx.arc(px + 14, py - 10, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ears
+        ctx.beginPath();
+        ctx.arc(px + 10, py - 18, 5, 0, Math.PI * 2);
+        ctx.arc(px + 18, py - 18, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Happy Face
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(px + 16, py - 10, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Name tag
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.name, px, py + 30);
+
+        // Love Heart bubble if happy
+        if (p.happiness >= 75) {
+          ctx.fillStyle = '#f43f5e';
+          ctx.beginPath();
+          ctx.arc(px + 22, py - 26, 4, 0, Math.PI * 2);
+          ctx.arc(px + 28, py - 26, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('hdr-turn').textContent = state.turns;
+      document.getElementById('hdr-rep').textContent = state.reputation + '%';
+
+      document.getElementById('hud-funds').textContent = '$' + state.funds;
+      document.getElementById('hud-adoptions').textContent = state.adoptions + ' / 8';
+      document.getElementById('hud-kibble').textContent = state.supplies.kibble + ' bags';
+      document.getElementById('hud-shampoo').textContent = state.supplies.shampoo + ' pots';
+      document.getElementById('status-banner').textContent = state.gameMessage;
+
+      // Render Individual Pet Cards
+      let pCardsHtml = '';
+      for (const p of state.pets) {
+        const readyForAdopt = p.hunger >= 75 && p.happiness >= 75 && p.hygiene >= 75 && p.health >= 75;
+        pCardsHtml += `
+          <div class="pet-card">
+            <div class="pet-header">
+              <div>
+                <span style="font-weight: bold; font-size: 0.85rem; color: #6ee7b7;">${p.name}</span>
+                <span style="color: #cbd5e1; font-size: 0.7rem; margin-left: 6px;">[${p.species}]</span>
+              </div>
+              <div style="font-weight: bold; color: ${readyForAdopt ? '#10b981' : '#f59e0b'};">
+                ${readyForAdopt ? '⭐ Ready for Adoption!' : 'In Sanctuary Care'}
+              </div>
+            </div>
+            <div class="vitals-grid">
+              <div class="vital-box">
+                <div style="color: #94a3b8;">Hunger</div>
+                <div style="font-weight: bold; color: ${p.hunger > 50 ? '#34d399' : '#f43f5e'};">${p.hunger}%</div>
+              </div>
+              <div class="vital-box">
+                <div style="color: #94a3b8;">Happiness</div>
+                <div style="font-weight: bold; color: ${p.happiness > 50 ? '#fbbf24' : '#f43f5e'};">${p.happiness}%</div>
+              </div>
+              <div class="vital-box">
+                <div style="color: #94a3b8;">Hygiene</div>
+                <div style="font-weight: bold; color: ${p.hygiene > 50 ? '#38bdf8' : '#f43f5e'};">${p.hygiene}%</div>
+              </div>
+              <div class="vital-box">
+                <div style="color: #94a3b8;">Health</div>
+                <div style="font-weight: bold; color: ${p.health > 50 ? '#34d399' : '#f43f5e'};">${p.health}%</div>
+              </div>
+              <div class="vital-box">
+                <div style="color: #94a3b8;">Energy</div>
+                <div style="font-weight: bold; color: ${p.energy > 40 ? '#fbbf24' : '#f43f5e'};">${p.energy}%</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      document.getElementById('pets-container').innerHTML = pCardsHtml;
+
+      // Render Controls
+      const legal = legalActions(state);
+      let ctrlHtml = '';
+
+      if (isOver(state)) {
+        ctrlHtml = `
+          <button class="btn-primary" style="grid-column: span 2; padding: 14px;" onclick="window.resetGame()">
+            🔄 Open New Sanctuary Rescue Season
+          </button>
+        `;
+      } else {
+        ctrlHtml += `
+          <button class="btn-primary" onclick="window.doAction('action:cuddle_all_pets')">
+            ❤️ Cuddle All Pets
+            <span class="btn-sub">+8 Happiness to all companions</span>
+          </button>
+          <button ${legal.includes('action:restock_sanctuary_supplies') ? '' : 'disabled'} onclick="window.doAction('action:restock_sanctuary_supplies')">
+            🛒 Restock Supplies ($50)
+            <span class="btn-sub">+4 Kibble, +3 Soap, +3 Treats</span>
+          </button>
+        `;
+
+        if (legal.includes('action:accept_rescue_pet')) {
+          ctrlHtml += `
+            <button class="btn-blue" style="grid-column: span 2;" onclick="window.doAction('action:accept_rescue_pet')">
+              🏡 Welcome New Rescue Animal
+              <span class="btn-sub">Open kennel for new companion</span>
+            </button>
+          `;
+        }
+
+        for (const p of state.pets) {
+          if (legal.includes('action:feed_pet:' + p.id)) {
+            ctrlHtml += `
+              <button onclick="window.doAction('action:feed_pet:${p.id}')">
+                🍖 Feed ${p.name}
+                <span class="btn-sub">+35 Hunger, -1 Kibble</span>
+              </button>
+            `;
+          }
+
+          if (legal.includes('action:groom_and_bath:' + p.id)) {
+            ctrlHtml += `
+              <button onclick="window.doAction('action:groom_and_bath:${p.id}')">
+                🛁 Bath & Brush ${p.name}
+                <span class="btn-sub">+40 Hygiene, -1 Soap</span>
+              </button>
+            `;
+          }
+
+          if (legal.includes('action:play_and_cuddle:' + p.id)) {
+            ctrlHtml += `
+              <button onclick="window.doAction('action:play_and_cuddle:${p.id}')">
+                🎾 Play Fetch with ${p.name}
+                <span class="btn-sub">+30 Happiness, -12 Energy</span>
+              </button>
+            `;
+          }
+
+          if (legal.includes('action:tuck_in_for_nap:' + p.id)) {
+            ctrlHtml += `
+              <button onclick="window.doAction('action:tuck_in_for_nap:${p.id}')">
+                💤 Bed Nap for ${p.name}
+                <span class="btn-sub">+45 Rest Energy</span>
+              </button>
+            `;
+          }
+
+          if (legal.includes('action:vet_wellness_check:' + p.id)) {
+            ctrlHtml += `
+              <button onclick="window.doAction('action:vet_wellness_check:${p.id}')">
+                🩺 Vet Checkup: ${p.name} ($35)
+                <span class="btn-sub">+30 Health Vitality</span>
+              </button>
+            `;
+          }
+
+          if (legal.includes('action:process_adoption:' + p.id)) {
+            ctrlHtml += `
+              <button class="btn-gold" onclick="window.doAction('action:process_adoption:${p.id}')">
+                🌟 Finalize Forever Adoption for ${p.name}!
+                <span class="btn-sub">Earn $260 adoption grant + 6% Reputation</span>
+              </button>
+            `;
+          }
+        }
+      }
+
+      document.getElementById('controls').innerHTML = ctrlHtml;
+      renderScene();
+    }
+
+    window.doAction = function(act) {
+      try {
+        step(state, act);
+        updateUI();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    window.resetGame = function() {
+      state = createState(Math.floor(Date.now() % 1000000));
+      updateUI();
+    };
+
+    updateUI();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
