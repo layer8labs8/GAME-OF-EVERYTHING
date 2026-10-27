@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Classic Chess</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #181512;
+      --panel: #26211c;
+      --panel-border: #3d352e;
+      --text: #f5efe6;
+      --text-muted: #a89f91;
+      --accent: #d4a373;
+      --light-sq: #f0d9b5;
+      --dark-sq: #b58863;
+      --select-sq: rgba(246, 246, 105, 0.55);
+      --move-dot: rgba(46, 125, 50, 0.65);
+      --capture-ring: rgba(183, 28, 28, 0.7);
+      --check-sq: rgba(211, 47, 47, 0.65);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      background: #383028;
+      border: 1px solid #4d4338;
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #4a4035;
+      border-color: var(--accent);
+    }
+    main {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 14px;
+      gap: 10px;
+    }
+    .tray {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: #201b17;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+      min-height: 38px;
+    }
+    .tray-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .tray-pieces {
+      font-size: 1.25rem;
+      letter-spacing: 2px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+    }
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1 / 1;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      border-radius: 6px;
+      overflow: hidden;
+      border: 3px solid #3d352e;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+    .status-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: var(--panel);
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+      font-size: 0.9rem;
+    }
+    .status-msg {
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .score-badge {
+      font-weight: 700;
+      background: #383028;
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid #4d4338;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icon.svg" alt="Classic Chess Logo">
+      <h1>Classic Chess</h1>
+    </div>
+    <div class="controls">
+      <button id="btn-restart">New Game</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="tray" id="black-tray">
+      <span class="tray-label">Black Captures:</span>
+      <span class="tray-pieces" id="black-captures"></span>
+    </div>
+
+    <div class="board-container">
+      <canvas id="chessCanvas" width="800" height="800"></canvas>
+    </div>
+
+    <div class="tray" id="white-tray">
+      <span class="tray-label">White Captures:</span>
+      <span class="tray-pieces" id="white-captures"></span>
+    </div>
+
+    <div class="status-bar">
+      <span class="status-msg" id="status-text">Your turn (White)</span>
+      <span class="score-badge" id="score-text">Score: 0</span>
+    </div>
+  </main>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('chessCanvas');
+      const ctx = canvas.getContext('2d');
+      const statusText = document.getElementById('status-text');
+      const scoreText = document.getElementById('score-text');
+      const whiteCapturesEl = document.getElementById('white-captures');
+      const blackCapturesEl = document.getElementById('black-captures');
+      const btnRestart = document.getElementById('btn-restart');
+
+      const UNICODE_PIECES = {
+        wK: '♔', wQ: '♕', wR: '♖', wB: '♗', wN: '♘', wP: '♙',
+        bK: '♚', bQ: '♛', bR: '♜', bB: '♝', bN: '♞', bP: '♟'
+      };
+
+      let state = null;
+      let selectedSquare = null; // { r, c }
+      let candidateMoves = []; // array of move strings
+
+      function initGame() {
+        const seed = Math.floor(Date.now() % 1000000) || 12345;
+        state = chessLogic.createState(seed);
+        selectedSquare = null;
+        candidateMoves = [];
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        scoreText.textContent = 'Score: ' + chessLogic.score(state);
+
+        whiteCapturesEl.textContent = state.stats.whiteCaptures.map(p => UNICODE_PIECES[p] || p).join(' ');
+        blackCapturesEl.textContent = state.stats.blackCaptures.map(p => UNICODE_PIECES[p] || p).join(' ');
+
+        if (state.gameOver) {
+          if (state.winner === 'w') {
+            statusText.textContent = '🏆 Checkmate! White Victory!';
+            statusText.style.color = '#4ade80';
+          } else if (state.winner === 'b') {
+            statusText.textContent = '💀 Checkmate! Black Wins.';
+            statusText.style.color = '#f87171';
+          } else {
+            statusText.textContent = '🤝 Stalemate / Draw';
+            statusText.style.color = '#fbbf24';
+          }
+        } else if (state.inCheck.w) {
+          statusText.textContent = '⚠️ Check! Protect your King!';
+          statusText.style.color = '#f87171';
+        } else {
+          statusText.textContent = 'Your turn (White)';
+          statusText.style.color = 'var(--accent)';
+        }
+      }
+
+      function render() {
+        const size = canvas.width;
+        const sqSize = size / 8;
+
+        ctx.clearRect(0, 0, size, size);
+
+        // 1. Draw 8x8 Board
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const isLight = (r + c) % 2 === 0;
+            ctx.fillStyle = isLight ? '#f0d9b5' : '#b58863';
+            ctx.fillRect(c * sqSize, r * sqSize, sqSize, sqSize);
+
+            // Coordinates notation
+            ctx.fillStyle = isLight ? '#b58863' : '#f0d9b5';
+            ctx.font = '600 13px sans-serif';
+            if (c === 0) {
+              ctx.fillText(8 - r, 4, r * sqSize + 16);
+            }
+            if (r === 7) {
+              ctx.fillText(String.fromCharCode(97 + c), (c + 1) * sqSize - 14, size - 4);
+            }
+          }
+        }
+
+        // 2. Highlight King in check
+        if (state.inCheck.w) {
+          const king = findKing(state.board, 'w');
+          if (king) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+            ctx.fillRect(king.c * sqSize, king.r * sqSize, sqSize, sqSize);
+          }
+        }
+        if (state.inCheck.b) {
+          const king = findKing(state.board, 'b');
+          if (king) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+            ctx.fillRect(king.c * sqSize, king.r * sqSize, sqSize, sqSize);
+          }
+        }
+
+        // 3. Highlight selected square
+        if (selectedSquare) {
+          ctx.fillStyle = 'rgba(246, 246, 105, 0.55)';
+          ctx.fillRect(selectedSquare.c * sqSize, selectedSquare.r * sqSize, sqSize, sqSize);
+        }
+
+        // 4. Highlight candidate move targets
+        if (candidateMoves.length > 0) {
+          for (let i = 0; i < candidateMoves.length; i++) {
+            const m = candidateMoves[i];
+            const toPart = m.split('-')[1].split('=')[0];
+            const toCoord = chessLogic.sqToCoord(toPart);
+            const targetPiece = state.board[toCoord.r][toCoord.c];
+
+            const centerX = toCoord.c * sqSize + sqSize / 2;
+            const centerY = toCoord.r * sqSize + sqSize / 2;
+
+            if (targetPiece || (toCoord.r === state.epSquare?.r && toCoord.c === state.epSquare?.c)) {
+              // Capture ring
+              ctx.strokeStyle = 'rgba(185, 28, 28, 0.75)';
+              ctx.lineWidth = 5;
+              ctx.beginPath();
+              ctx.arc(centerX, centerY, sqSize * 0.42, 0, Math.PI * 2);
+              ctx.stroke();
+            } else {
+              // Move destination dot
+              ctx.fillStyle = 'rgba(34, 197, 94, 0.65)';
+              ctx.beginPath();
+              ctx.arc(centerX, centerY, sqSize * 0.16, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+
+        // 5. Draw Pieces
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '64px "Segoe UI Symbol", "Apple Color Emoji", sans-serif';
+
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const piece = state.board[r][c];
+            if (!piece) continue;
+
+            const x = c * sqSize + sqSize / 2;
+            const y = r * sqSize + sqSize / 2 + 3;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.fillText(UNICODE_PIECES[piece], x + 2, y + 2);
+
+            // Piece color
+            if (piece[0] === 'w') {
+              ctx.fillStyle = '#ffffff';
+              ctx.strokeStyle = '#1a1815';
+              ctx.lineWidth = 1.5;
+              ctx.strokeText(UNICODE_PIECES[piece], x, y);
+              ctx.fillText(UNICODE_PIECES[piece], x, y);
+            } else {
+              ctx.fillStyle = '#1e1b18';
+              ctx.strokeStyle = '#78716c';
+              ctx.lineWidth = 1;
+              ctx.strokeText(UNICODE_PIECES[piece], x, y);
+              ctx.fillText(UNICODE_PIECES[piece], x, y);
+            }
+          }
+        }
+      }
+
+      function findKing(board, side) {
+        const target = side + 'K';
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (board[r][c] === target) return { r, c };
+          }
+        }
+        return null;
+      }
+
+      function handlePointer(clientX, clientY) {
+        if (!state || state.gameOver) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (clientX - rect.left) * scaleX;
+        const y = (clientY - rect.top) * scaleY;
+
+        const sqSize = canvas.width / 8;
+        const c = Math.floor(x / sqSize);
+        const r = Math.floor(y / sqSize);
+
+        if (r < 0 || r >= 8 || c < 0 || c >= 8) return;
+
+        const allLegal = chessLogic.legalActions(state);
+        const clickedSq = chessLogic.coordToSq(r, c);
+
+        // Check if clicked square is one of the candidate moves
+        if (selectedSquare && candidateMoves.length > 0) {
+          const movePrefix = chessLogic.coordToSq(selectedSquare.r, selectedSquare.c) + '-' + clickedSq;
+          const matchedMove = candidateMoves.find(m => m.startsWith(movePrefix));
+
+          if (matchedMove) {
+            try {
+              chessLogic.step(state, matchedMove);
+              selectedSquare = null;
+              candidateMoves = [];
+              updateUI();
+              render();
+              return;
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        }
+
+        // If clicked on own piece (White), select it
+        const piece = state.board[r][c];
+        if (piece && piece[0] === 'w') {
+          selectedSquare = { r, c };
+          const fromSq = chessLogic.coordToSq(r, c);
+          candidateMoves = allLegal.filter(m => m.startsWith(fromSq + '-'));
+        } else {
+          selectedSquare = null;
+          candidateMoves = [];
+        }
+
+        render();
+      }
+
+      canvas.addEventListener('click', (e) => {
+        handlePointer(e.clientX, e.clientY);
+      });
+
+      btnRestart.addEventListener('click', () => {
+        initGame();
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>
