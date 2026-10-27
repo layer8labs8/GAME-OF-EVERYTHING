@@ -1,0 +1,12 @@
+{
+  "name": "Stellar Reactor: Sci-Fi Idler",
+  "short_name": "ReactorIdle",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#030712",
+  "theme_color": "#06b6d4",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

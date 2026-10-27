@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stellar Reactor - Sci-Fi Idler</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #020617;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #082f49;
+      border: 1px solid #0284c7;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #0369a1;
+      color: #e0f2fe;
+      font-weight: 600;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4/3;
+      background: #030712;
+      border: 2px solid #0369a1;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.2);
+    }
+    .resources-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .res-card {
+      background: #0b192c;
+      border: 1px solid #1e3a5f;
+      padding: 4px 6px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .res-title {
+      font-size: 0.62rem;
+      color: #7dd3fc;
+      text-transform: uppercase;
+    }
+    .res-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+    .log-box {
+      background: #09182a;
+      border: 1px solid #0284c7;
+      border-left: 4px solid #38bdf8;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: #e2e8f0;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .btn {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      color: #f1f5f9;
+      padding: 8px 6px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .btn:hover {
+      background: #1e293b;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .btn-pulse {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #f0f9ff;
+    }
+    .btn-pulse:hover {
+      background: #0284c7;
+    }
+    .btn-cool {
+      border-color: #06b6d4;
+      color: #67e8f9;
+    }
+    .btn-cool:hover {
+      background: #083344;
+    }
+    .btn-overclock {
+      border-color: #ea580c;
+      color: #fdba74;
+    }
+    .btn-overclock:hover {
+      background: #431407;
+    }
+    .btn-prestige {
+      background: #4c1d95;
+      border-color: #a855f7;
+      color: #f3e8ff;
+    }
+    .btn-prestige:hover {
+      background: #6b21a8;
+      border-color: #c084fc;
+    }
+    .btn-gold {
+      background: #78350f;
+      border-color: #d97706;
+      color: #fde68a;
+    }
+    .btn-gold:hover {
+      background: #b45309;
+    }
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚛️ Stellar Reactor</h1>
+    <div>
+      <span id="turn-badge" class="badge">CYCLE 0 / 120</span>
+      <span id="score-badge" class="badge" style="background:#0284c7; color:#f0f9ff;">0 PTS</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+
+    <div class="resources-grid">
+      <div class="res-card">
+        <div class="res-title">Energy</div>
+        <div id="val-energy" class="res-val" style="color: #38bdf8;">25</div>
+      </div>
+      <div class="res-card">
+        <div class="res-title">Neutrons</div>
+        <div id="val-neutrons" class="res-val" style="color: #a855f7;">0</div>
+      </div>
+      <div class="res-card">
+        <div class="res-title">Dark Matter</div>
+        <div id="val-dm" class="res-val" style="color: #c084fc;">0 (1.0x)</div>
+      </div>
+      <div class="res-card">
+        <div class="res-title">Core Temp</div>
+        <div id="val-temp" class="res-val" style="color: #22c55e;">20%</div>
+      </div>
+    </div>
+
+    <div id="game-log" class="log-box">
+      Stellar fusion containment online. Construct solenoids and manage core temperature.
+    </div>
+
+    <div id="actions-panel" class="actions-grid">
+      <!-- Injected dynamically -->
+    </div>
+
+    <div class="footer-bar">
+      <div id="modules-summary" style="font-size:0.7rem; color:#7dd3fc;">Modules: 0 Solenoid | 0 Injector | 0 Tokamak</div>
+      <button id="bot-toggle-btn" class="btn" style="padding: 4px 10px; font-size: 0.68rem;" onclick="window.toggleBot()">BOT: OFF</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now ? Date.now() : 12345);
+    let botRunning = false;
+    let botInterval = null;
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'pulse') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(220, t);
+          osc.frequency.exponentialRampToValueAtTime(80, t + 0.12);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+          osc.start(t);
+          osc.stop(t + 0.15);
+        } else if (type === 'cool') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(600, t);
+          osc.frequency.exponentialRampToValueAtTime(150, t + 0.25);
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+          osc.start(t);
+          osc.stop(t + 0.3);
+        } else if (type === 'prestige') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(100, t);
+          osc.frequency.linearRampToValueAtTime(400, t + 0.3);
+          gain.gain.setValueAtTime(0.4, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+          osc.start(t);
+          osc.stop(t + 0.4);
+        } else if (type === 'buy') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, t);
+          osc.frequency.setValueAtTime(659.25, t + 0.08);
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+          osc.start(t);
+          osc.stop(t + 0.2);
+        }
+      } catch (e) {}
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let plasmaAngle = 0;
+
+    function render() {
+      // Status badges
+      document.getElementById('turn-badge').textContent = 'CYCLE ' + state.turns + ' / ' + state.maxTurns;
+      document.getElementById('score-badge').textContent = score(state) + ' PTS';
+      document.getElementById('game-log').textContent = state.gameMessage;
+
+      document.getElementById('val-energy').textContent = state.energy.toLocaleString();
+      document.getElementById('val-neutrons').textContent = state.neutrons.toLocaleString();
+      document.getElementById('val-dm').textContent = state.darkMatter + ' (' + (1 + state.darkMatter * 0.5).toFixed(1) + 'x)';
+
+      const tEl = document.getElementById('val-temp');
+      tEl.textContent = state.coreTemp + '% ' + (state.coreTemp > 90 ? '[CRITICAL]' : (state.coreTemp >= 50 ? '[SUPERCRITICAL]' : ''));
+      tEl.style.color = state.coreTemp > 90 ? '#ef4444' : (state.coreTemp >= 50 ? '#f59e0b' : '#22c55e');
+
+      const g = state.generators;
+      document.getElementById('modules-summary').textContent =
+        'Solenoids: ' + g.solenoid + ' | Injectors: ' + g.injector + ' | Tokamaks: ' + g.tokamak +
+        ' | Antimatter: ' + g.antimatterCore + ' | Dyson Relays: ' + g.dysonRelay;
+
+      // Canvas Torus Rendering
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, w, h);
+
+      // Rotating magnetic field rings
+      plasmaAngle += 0.03;
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Heat glow background
+      const heatR = 60 + state.coreTemp * 1.2;
+      const heatGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, heatR);
+      heatGrad.addColorStop(0, state.coreTemp > 85 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(56, 189, 248, 0.4)');
+      heatGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = heatGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, heatR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Outer Toroidal ring
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 14;
+      ctx.beginPath();
+      ctx.arc(0, 0, 140, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Inner Magnetic Coils
+      ctx.strokeStyle = state.overclockTurns > 0 ? '#f97316' : '#38bdf8';
+      ctx.lineWidth = 6;
+      ctx.setLineDash([16, 14]);
+      ctx.beginPath();
+      ctx.arc(0, 0, 120, plasmaAngle, plasmaAngle + Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Radiant Core
+      const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 50);
+      coreGrad.addColorStop(0, '#ffffff');
+      coreGrad.addColorStop(0.5, state.coreTemp > 85 ? '#ef4444' : '#06b6d4');
+      coreGrad.addColorStop(1, '#0369a1');
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, 50, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pulsing center spark
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 16 + Math.sin(plasmaAngle * 3) * 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+
+      // Overclock status badge on canvas
+      if (state.overclockTurns > 0) {
+        ctx.fillStyle = '#ea580c';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('PLASMA OVERCLOCK ACTIVE (' + state.overclockTurns + ' CYCLES)', cx, 36);
+      }
+
+      // Game Over Screen
+      if (isOver(state)) {
+        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(state.victory ? 'STELLAR IGNITION ACHIEVED!' : 'CONTAINMENT BREACH - MELTDOWN', cx, cy - 20);
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Final Power Harvest Score: ' + score(state), cx, cy + 15);
+      }
+
+      updateActions();
+    }
+
+    function updateActions() {
+      const panel = document.getElementById('actions-panel');
+      if (isOver(state)) {
+        panel.innerHTML = '<button class="btn btn-gold" onclick="window.restartGame()">RESTART CONTAINMENT</button>';
+        return;
+      }
+
+      const actions = legalActions(state);
+      let html = '';
+
+      for (const act of actions) {
+        let cls = 'btn';
+        let label = act;
+        let sub = '';
+
+        if (act === 'action:pulse_reactor_core') {
+          cls += ' btn-pulse';
+          label = '⚡ Pulse Reactor Core';
+          sub = 'Manual Plasma Tap';
+        } else if (act === 'action:cycle_cryo_coolant') {
+          cls += ' btn-cool';
+          label = '❄️ Cycle Cryo Coolant';
+          sub = '-35% Core Heat';
+        } else if (act === 'action:engage_plasma_overclock') {
+          cls += ' btn-overclock';
+          label = '🔥 Plasma Overdrive';
+          sub = '2x Yield for 4 Turns';
+        } else if (act === 'action:quantum_overdrive_prestige') {
+          cls += ' btn-prestige';
+          label = '🌌 Quantum Collapse';
+          sub = '+1 Dark Matter Shard';
+        } else if (act === 'action:achieve_stellar_ignition') {
+          cls += ' btn-gold';
+          label = '🌟 Ignite Dyson Sphere!';
+          sub = 'Stellar Victory';
+        } else if (act.startsWith('action:purchase_generator:')) {
+          const type = act.split(':')[2];
+          const cost = getGeneratorCost(type, state.generators[type]);
+          label = '+1 ' + type.toUpperCase();
+          sub = cost.energy + ' Energy' + (cost.neutrons > 0 ? ', ' + cost.neutrons + ' Neutrons' : '');
+        }
+
+        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
+      }
+
+      panel.innerHTML = html;
+    }
+
+    window.triggerAction = function(act) {
+      if (isOver(state)) return;
+      if (act.includes('pulse')) playSfx('pulse');
+      else if (act.includes('cool')) playSfx('cool');
+      else if (act.includes('prestige') || act.includes('ignition')) playSfx('prestige');
+      else if (act.includes('purchase')) playSfx('buy');
+
+      step(state, act);
+      render();
+    };
+
+    window.restartGame = function() {
+      state = createState(Date.now ? Date.now() : 12345);
+      render();
+    };
+
+    window.toggleBot = function() {
+      botRunning = !botRunning;
+      document.getElementById('bot-toggle-btn').textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
+      document.getElementById('bot-toggle-btn').style.background = botRunning ? '#0284c7' : '#0f172a';
+
+      if (botRunning) {
+        botInterval = setInterval(() => {
+          if (isOver(state)) {
+            state = createState(Date.now ? Date.now() : 9999);
+            render();
+            return;
+          }
+          const acts = legalActions(state);
+          if (acts.length > 0) {
+            let choice = acts[0];
+            if (acts.includes('action:achieve_stellar_ignition')) choice = 'action:achieve_stellar_ignition';
+            else if (acts.includes('action:quantum_overdrive_prestige') && state.neutrons >= 120) choice = 'action:quantum_overdrive_prestige';
+            else if (state.coreTemp > 80 && acts.includes('action:cycle_cryo_coolant')) choice = 'action:cycle_cryo_coolant';
+            else if (acts.includes('action:purchase_generator:dysonRelay')) choice = 'action:purchase_generator:dysonRelay';
+            else if (acts.includes('action:purchase_generator:antimatterCore')) choice = 'action:purchase_generator:antimatterCore';
+            else if (acts.includes('action:purchase_generator:tokamak')) choice = 'action:purchase_generator:tokamak';
+            else if (acts.includes('action:purchase_generator:injector')) choice = 'action:purchase_generator:injector';
+            else if (acts.includes('action:purchase_generator:solenoid')) choice = 'action:purchase_generator:solenoid';
+            else if (acts.includes('action:engage_plasma_overclock') && state.coreTemp < 50) choice = 'action:engage_plasma_overclock';
+            else choice = 'action:pulse_reactor_core';
+            window.triggerAction(choice);
+          }
+        }, 300);
+      } else {
+        clearInterval(botInterval);
+      }
+    };
+
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

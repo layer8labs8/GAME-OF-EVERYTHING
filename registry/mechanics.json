@@ -1770,9 +1770,11 @@
       "slug": "idler",
       "name": "Idler",
       "family": "Idle",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Stellar Reactor",
+      "levels": "endless"
     },
     {
       "id": "0168",
