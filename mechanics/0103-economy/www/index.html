@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tycoon Economy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #090e17;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111a2e;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      margin-bottom: 8px;
+      font-size: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .cash-val { color: #22c55e; }
+    .net-val { color: #38bdf8; }
+    .qtr-val { color: #facc15; }
+    .stock-val { color: #eab308; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #0c1322;
+      border: 2px solid #1e293b;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+    }
+    #actions-panel {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    button {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      padding: 6px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover:not(:disabled) {
+      background: #334155;
+      border-color: #64748b;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    button.build {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #dbeafe;
+    }
+    button.sell {
+      background: #14532d;
+      border-color: #22c55e;
+      color: #dcfce7;
+    }
+    button.process {
+      background: #78350f;
+      border-color: #f59e0b;
+      color: #fef08a;
+    }
+    button.finance {
+      background: #581c87;
+      border-color: #a855f7;
+      color: #f3e8ff;
+    }
+    button.quarter {
+      background: #881337;
+      border-color: #f43f5e;
+      color: #ffe4e6;
+    }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #090e17;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      height: 54px;
+      overflow-y: auto;
+    }
+    #banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #38bdf8;
+      padding: 16px 24px;
+      border-radius: 12px;
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+    #banner h2 { font-size: 20px; margin-bottom: 6px; }
+    #banner p { font-size: 12px; color: #cbd5e1; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge cash-val">💵 <span id="val-cash">$600</span></div>
+    <div class="badge net-val">📊 NET: <span id="val-net">$1,200</span></div>
+    <div class="badge qtr-val">📅 <span id="val-qtr">Q1/20</span></div>
+    <div class="badge stock-val">📈 <span id="val-stock">$12.0</span></div>
+    <button id="btn-reset" style="padding: 4px 8px; font-size: 11px;">Reset</button>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="c" width="480" height="480"></canvas>
+    <div id="banner">
+      <h2 id="banner-title">INDUSTRIAL HEGEMONY</h2>
+      <p id="banner-sub">Corporate empire has achieved market domination.</p>
+      <button id="btn-restart" class="build" style="margin: 0 auto;">New Venture</button>
+    </div>
+  </div>
+
+  <div id="actions-panel">
+    <div class="panel-title">Industrial Expansion (Build)</div>
+    <div class="action-group">
+      <button id="btn-b-coal" class="build">⛏️ Coal Mine ($150)</button>
+      <button id="btn-b-iron" class="build">🏭 Iron Mine ($200)</button>
+      <button id="btn-b-farm" class="build">🌾 Farm ($120)</button>
+      <button id="btn-b-steel" class="build">🔩 Steel Mill ($300)</button>
+      <button id="btn-b-tech" class="build">💻 Tech Lab ($450)</button>
+    </div>
+
+    <div class="panel-title" style="margin-top: 4px;">Manufacturing & Exchange</div>
+    <div class="action-group">
+      <button id="btn-p-steel" class="process">⚙️ Forge Steel (5c+5i)</button>
+      <button id="btn-p-tech" class="process">🔬 Tech (4s)</button>
+      <button id="btn-s-coal" class="sell">💰 Sell Coal (10)</button>
+      <button id="btn-s-iron" class="sell">💰 Sell Iron (10)</button>
+      <button id="btn-s-steel" class="sell">💰 Sell Steel (5)</button>
+      <button id="btn-s-tech" class="sell">💰 Sell Tech (5)</button>
+    </div>
+
+    <div class="panel-title" style="margin-top: 4px;">Corporate Finance</div>
+    <div class="action-group">
+      <button id="btn-loan" class="finance">🏦 +$500 Loan</button>
+      <button id="btn-repay" class="finance">💳 Repay $500</button>
+      <button id="btn-dividend" class="finance">💎 $150 Dividend</button>
+      <button id="btn-next-qtr" class="quarter">⏩ Next Quarter</button>
+    </div>
+  </div>
+
+  <div id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      const valCash = document.getElementById('val-cash');
+      const valNet = document.getElementById('val-net');
+      const valQtr = document.getElementById('val-qtr');
+      const valStock = document.getElementById('val-stock');
+      const logBox = document.getElementById('log-box');
+      const banner = document.getElementById('banner');
+      const bannerTitle = document.getElementById('banner-title');
+      const bannerSub = document.getElementById('banner-sub');
+      const btnReset = document.getElementById('btn-reset');
+      const btnRestart = document.getElementById('btn-restart');
+
+      const btnBCoal = document.getElementById('btn-b-coal');
+      const btnBIron = document.getElementById('btn-b-iron');
+      const btnBFarm = document.getElementById('btn-b-farm');
+      const btnBSteel = document.getElementById('btn-b-steel');
+      const btnBTech = document.getElementById('btn-b-tech');
+
+      const btnPSteel = document.getElementById('btn-p-steel');
+      const btnPTech = document.getElementById('btn-p-tech');
+
+      const btnSCoal = document.getElementById('btn-s-coal');
+      const btnSIron = document.getElementById('btn-s-iron');
+      const btnSSteel = document.getElementById('btn-s-steel');
+      const btnSTech = document.getElementById('btn-s-tech');
+
+      const btnLoan = document.getElementById('btn-loan');
+      const btnRepay = document.getElementById('btn-repay');
+      const btnDividend = document.getElementById('btn-dividend');
+      const btnNextQtr = document.getElementById('btn-next-qtr');
+
+      let state = createState(Date.now() & 0xffff);
+
+      // Web Audio sound effects
+      function playSfx(type) {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctxA = new AudioContext();
+          const osc = ctxA.createOscillator();
+          const gain = ctxA.createGain();
+          osc.connect(gain);
+          gain.connect(ctxA.destination);
+
+          if (type === 'cash') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(659.25, ctxA.currentTime);
+            osc.frequency.setValueAtTime(880, ctxA.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.25);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.25);
+          } else if (type === 'build') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(180, ctxA.currentTime);
+            osc.frequency.setValueAtTime(320, ctxA.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.2);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.2);
+          } else if (type === 'process') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(240, ctxA.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(80, ctxA.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.25, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.2);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.2);
+          }
+        } catch(e) {}
+      }
+
+      function calcNetWorth() {
+        if (!state) return 0;
+        let invVal = 0;
+        for (const c in state.inventory) {
+          invVal += state.inventory[c] * (state.prices[c] || 10);
+        }
+        let facVal = 0;
+        for (const f in state.facilities) {
+          facVal += state.facilities[f].count * FACILITY_SPECS[f].cost;
+        }
+        return state.cash - state.debt + invVal + facVal;
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const nw = calcNetWorth();
+
+        if (valCash) {
+          valCash.textContent = '$' + state.cash + (state.debt > 0 ? ' (Debt: $' + state.debt + ')' : '');
+          valCash.style.color = state.cash < 0 ? '#ef4444' : '#22c55e';
+        }
+        if (valNet) valNet.textContent = '$' + nw;
+        if (valQtr) valQtr.textContent = 'Q' + state.quarter + '/' + state.maxQuarters;
+        if (valStock) valStock.textContent = '$' + state.stockPrice.toFixed(1);
+
+        if (logBox && state.history) {
+          logBox.innerHTML = state.history.slice(-5).map(h => '<div>&gt; ' + h + '</div>').join('');
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        if (banner) {
+          if (state.done) {
+            banner.style.display = 'block';
+            if (state.winner === 'player') {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'INDUSTRIAL HEGEMONY';
+                bannerTitle.style.color = '#38bdf8';
+              }
+              if (bannerSub) bannerSub.textContent = 'Conglomerate achieved global market dominance! (Score: ' + score(state) + ')';
+            } else {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'CORPORATE BANKRUPTCY';
+                bannerTitle.style.color = '#ef4444';
+              }
+              if (bannerSub) bannerSub.textContent = 'Credit dried up and assets were liquidated.';
+            }
+          } else {
+            banner.style.display = 'none';
+          }
+        }
+
+        const legals = legalActions(state);
+
+        // Build buttons
+        if (btnBCoal) btnBCoal.disabled = !legals.includes('build:coal_mine');
+        if (btnBIron) btnBIron.disabled = !legals.includes('build:iron_mine');
+        if (btnBFarm) btnBFarm.disabled = !legals.includes('build:grain_farm');
+        if (btnBSteel) btnBSteel.disabled = !legals.includes('build:steel_mill');
+        if (btnBTech) btnBTech.disabled = !legals.includes('build:tech_lab');
+
+        // Process buttons
+        if (btnPSteel) btnPSteel.disabled = !legals.includes('process:steel_mill');
+        if (btnPTech) btnPTech.disabled = !legals.includes('process:tech_lab');
+
+        // Sell buttons
+        if (btnSCoal) {
+          const canSell = legals.includes('sell:coal:10') || legals.includes('sell:coal:5');
+          btnSCoal.disabled = !canSell;
+          btnSCoal.textContent = '💰 Sell Coal ($' + state.prices.coal + ')';
+        }
+        if (btnSIron) {
+          const canSell = legals.includes('sell:iron:10') || legals.includes('sell:iron:5');
+          btnSIron.disabled = !canSell;
+          btnSIron.textContent = '💰 Sell Iron ($' + state.prices.iron + ')';
+        }
+        if (btnSSteel) {
+          const canSell = legals.includes('sell:steel:5') || legals.includes('sell:steel:10');
+          btnSSteel.disabled = !canSell;
+          btnSSteel.textContent = '💰 Sell Steel ($' + state.prices.steel + ')';
+        }
+        if (btnSTech) {
+          const canSell = legals.includes('sell:electronics:5');
+          btnSTech.disabled = !canSell;
+          btnSTech.textContent = '💰 Sell Tech ($' + state.prices.electronics + ')';
+        }
+
+        // Finance buttons
+        if (btnLoan) btnLoan.disabled = !legals.includes('take_loan');
+        if (btnRepay) btnRepay.disabled = !legals.includes('repay_loan');
+        if (btnDividend) btnDividend.disabled = !legals.includes('issue_dividend');
+        if (btnNextQtr) btnNextQtr.disabled = state.done;
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.fillStyle = '#0c1322';
+        ctx.fillRect(0, 0, 480, 480);
+
+        // Header Section: Macro Economy Banner
+        ctx.fillStyle = '#111a2e';
+        ctx.fillRect(15, 15, 450, 45);
+        ctx.strokeStyle = '#1e293b';
+        ctx.strokeRect(15, 15, 450, 45);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('MACRO CYCLE: ' + state.cycle.toUpperCase(), 30, 42);
+
+        let cycleColor = '#22c55e';
+        if (state.cycle === 'recession') cycleColor = '#ef4444';
+        else if (state.cycle === 'stable') cycleColor = '#facc15';
+
+        ctx.fillStyle = cycleColor;
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(state.cycle === 'boom' ? '+30% DEMAND' : (state.cycle === 'recession' ? '-25% DEMAND' : 'NORMAL MARKET'), 320, 42);
+
+        // Panel 1: Commodity Exchange Market Board
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(15, 75, 450, 160);
+        ctx.strokeStyle = '#1e293b';
+        ctx.strokeRect(15, 75, 450, 160);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('GLOBAL COMMODITY EXCHANGE (SPOT PRICES & INVENTORY)', 25, 95);
+
+        const commodities = [
+          { key: 'coal', name: 'Coal', icon: '⛏️' },
+          { key: 'iron', name: 'Iron', icon: '🏭' },
+          { key: 'grain', name: 'Grain', icon: '🌾' },
+          { key: 'steel', name: 'Steel', icon: '🔩' },
+          { key: 'rations', name: 'Rations', icon: '🥫' },
+          { key: 'electronics', name: 'Tech Units', icon: '💻' }
+        ];
+
+        commodities.forEach((c, idx) => {
+          const col = idx % 2;
+          const row = Math.floor(idx / 2);
+          const x = 25 + col * 220;
+          const y = 120 + row * 36;
+
+          const price = state.prices[c.key] || 10;
+          const stock = state.inventory[c.key] || 0;
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(c.icon + ' ' + c.name, x, y);
+
+          ctx.fillStyle = '#22c55e';
+          ctx.font = 'bold 11px monospace';
+          ctx.fillText('$' + price + '/u', x + 90, y);
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '11px monospace';
+          ctx.fillText('Own: ' + stock, x + 150, y);
+        });
+
+        // Panel 2: Corporate Industrial Assets
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(15, 250, 450, 215);
+        ctx.strokeStyle = '#1e293b';
+        ctx.strokeRect(15, 250, 450, 215);
+
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('CORPORATE INDUSTRIAL ASSETS & REVENUE GENERATORS', 25, 270);
+
+        const facilities = [
+          { key: 'coal_mine', name: 'Coal Mines', icon: '⛏️' },
+          { key: 'iron_mine', name: 'Iron Foundries', icon: '🏭' },
+          { key: 'grain_farm', name: 'Agrigrounds', icon: '🌾' },
+          { key: 'steel_mill', name: 'Bessemer Mills', icon: '🔩' },
+          { key: 'cannery', name: 'Canning Plants', icon: '🥫' },
+          { key: 'tech_lab', name: 'Assembly Labs', icon: '💻' }
+        ];
+
+        facilities.forEach((f, idx) => {
+          const col = idx % 2;
+          const row = Math.floor(idx / 2);
+          const x = 25 + col * 220;
+          const y = 300 + row * 45;
+
+          const fac = state.facilities[f.key];
+          const count = fac ? fac.count : 0;
+          const tier = fac ? fac.tier : 1;
+
+          ctx.fillStyle = count > 0 ? '#38bdf8' : '#64748b';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.fillText(f.icon + ' ' + f.name, x, y);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '11px monospace';
+          ctx.fillText('Units: ' + count + (count > 0 ? ' [T' + tier + ']' : ''), x + 115, y);
+
+          // Status bar
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(x, y + 8, 190, 4);
+          ctx.fillStyle = count > 0 ? '#38bdf8' : '#334155';
+          ctx.fillRect(x, y + 8, (190 * Math.min(4, count)) / 4, 4);
+        });
+      }
+
+      function executeAction(act) {
+        if (!act) return;
+        try {
+          if (act.includes('sell:')) playSfx('cash');
+          else if (act.includes('build:')) playSfx('build');
+          else if (act.includes('process:')) playSfx('process');
+          else playSfx('cash');
+
+          step(state, act);
+          updateUI();
+          draw();
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      if (btnBCoal) btnBCoal.onclick = function() { executeAction('build:coal_mine'); };
+      if (btnBIron) btnBIron.onclick = function() { executeAction('build:iron_mine'); };
+      if (btnBFarm) btnBFarm.onclick = function() { executeAction('build:grain_farm'); };
+      if (btnBSteel) btnBSteel.onclick = function() { executeAction('build:steel_mill'); };
+      if (btnBTech) btnBTech.onclick = function() { executeAction('build:tech_lab'); };
+
+      if (btnPSteel) btnPSteel.onclick = function() { executeAction('process:steel_mill'); };
+      if (btnPTech) btnPTech.onclick = function() { executeAction('process:tech_lab'); };
+
+      if (btnSCoal) {
+        btnSCoal.onclick = function() {
+          const act = legalActions(state).find(a => a.startsWith('sell:coal:'));
+          executeAction(act);
+        };
+      }
+
+      if (btnSIron) {
+        btnSIron.onclick = function() {
+          const act = legalActions(state).find(a => a.startsWith('sell:iron:'));
+          executeAction(act);
+        };
+      }
+
+      if (btnSSteel) {
+        btnSSteel.onclick = function() {
+          const act = legalActions(state).find(a => a.startsWith('sell:steel:'));
+          executeAction(act);
+        };
+      }
+
+      if (btnSTech) {
+        btnSTech.onclick = function() {
+          const act = legalActions(state).find(a => a.startsWith('sell:electronics:'));
+          executeAction(act);
+        };
+      }
+
+      if (btnLoan) btnLoan.onclick = function() { executeAction('take_loan'); };
+      if (btnRepay) btnRepay.onclick = function() { executeAction('repay_loan'); };
+      if (btnDividend) btnDividend.onclick = function() { executeAction('issue_dividend'); };
+      if (btnNextQtr) btnNextQtr.onclick = function() { executeAction('next_quarter'); };
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          updateUI();
+          draw();
+        };
+      }
+
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          updateUI();
+          draw();
+        };
+      }
+
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>

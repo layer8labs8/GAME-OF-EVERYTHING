@@ -1065,9 +1065,11 @@
    "id": "0103",
    "slug": "economy",
    "name": "Economy",
+   "title": "Tycoon Economy",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#09101d" />
+      <stop offset="100%" stop-color="#1b2a4a" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#facc15" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+    <linearGradient id="chartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22c55e" />
+      <stop offset="100%" stop-color="#15803d" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)" stroke="#22c55e" stroke-width="8"/>
+  <!-- Industrial Factory Silhouette -->
+  <polygon points="100,380 100,240 150,280 150,240 200,280 200,380" fill="#334155" opacity="0.8"/>
+  <rect x="220" y="210" width="40" height="170" fill="#475569"/>
+  <!-- Rising Stock Chart Line -->
+  <polyline points="80,360 180,300 280,320 380,180 440,130" fill="none" stroke="url(#chartGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Chart Area Glow -->
+  <polygon points="80,360 180,300 280,320 380,180 440,130 440,420 80,420" fill="url(#chartGrad)" opacity="0.15"/>
+  <!-- Golden Dollar Coin -->
+  <circle cx="380" cy="180" r="36" fill="url(#goldGrad)" stroke="#ffffff" stroke-width="4"/>
+  <text x="380" y="194" font-size="40" font-family="sans-serif" font-weight="bold" fill="#0f172a" text-anchor="middle">$</text>
+</svg>

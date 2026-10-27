@@ -1,0 +1,12 @@
+{
+  "name": "Tycoon Economy",
+  "short_name": "Economy",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0d131f",
+  "theme_color": "#0d131f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
