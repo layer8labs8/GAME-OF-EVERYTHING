@@ -1,0 +1,12 @@
+{
+  "name": "Shadow Council",
+  "short_name": "Shadow Council",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#120e18",
+  "theme_color": "#120e18",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

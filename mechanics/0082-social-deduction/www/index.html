@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Shadow Council</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0c0814;
+      --panel: #171124;
+      --panel-border: #312547;
+      --text: #f3f0f8;
+      --text-muted: #9e93b3;
+      --crimson: #e11d48;
+      --gold: #f59e0b;
+      --loyal: #38bdf8;
+      --saboteur: #f43f5e;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    main {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+    .phase-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1e162f;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 0.88rem;
+    }
+    .phase-badge {
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      background: #312547;
+      color: var(--gold);
+    }
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid var(--panel-border);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+    .dossier-card {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 70px;
+    }
+    .dossier-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .testimonies-list {
+      font-size: 0.76rem;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .action-panel {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      flex: 1;
+      background: #251b38;
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #362852;
+      border-color: var(--gold);
+    }
+    .btn-primary {
+      background: #4c1d95;
+      border-color: #7c3aed;
+    }
+    .btn-primary:hover {
+      background: #5b21b6;
+    }
+    .log-feed {
+      width: 100%;
+      background: #08050e;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      height: 38px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icon.svg" alt="Shadow Council Logo">
+      <h1>Shadow Council</h1>
+    </div>
+    <button id="btn-restart" style="flex: 0; padding: 4px 10px; font-size: 0.8rem;">Restart</button>
+  </header>
+
+  <main>
+    <div class="phase-bar">
+      <span>Day <b id="day-num">1</b>: <span id="alive-tally">5/5 Councilors</span></span>
+      <span class="phase-badge" id="phase-badge">Night Phase</span>
+    </div>
+
+    <div class="board-container">
+      <canvas id="councilCanvas" width="600" height="600"></canvas>
+    </div>
+
+    <div class="dossier-card">
+      <div class="dossier-title">
+        <span>Investigation Dossier</span>
+        <span id="selected-info">Tap a councilor to inspect or accuse</span>
+      </div>
+      <div class="testimonies-list" id="testimonies-list">
+        <div>Night falls over Blackwood Manor. Choose a member to secretly investigate.</div>
+      </div>
+    </div>
+
+    <div class="action-panel">
+      <button class="btn-primary" id="btn-action">Inspect Member</button>
+      <button id="btn-secondary">Pass / Skip</button>
+    </div>
+
+    <div class="log-feed" id="log-feed">
+      <div>A dark storm gathers. 2 Saboteurs hide among the council.</div>
+    </div>
+  </main>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('councilCanvas');
+      const ctx = canvas.getContext('2d');
+      const dayNum = document.getElementById('day-num');
+      const aliveTally = document.getElementById('alive-tally');
+      const phaseBadge = document.getElementById('phase-badge');
+      const selectedInfo = document.getElementById('selected-info');
+      const testimoniesList = document.getElementById('testimonies-list');
+      const btnAction = document.getElementById('btn-action');
+      const btnSecondary = document.getElementById('btn-secondary');
+      const btnRestart = document.getElementById('btn-restart');
+      const logFeed = document.getElementById('log-feed');
+
+      const AVATARS = {
+        p0: '🕵️‍♂️', m1: '🩺', m2: '👒', m3: '👮‍♂️', m4: '📜'
+      };
+
+      // Relative coordinates of 5 seats around round table
+      const SEAT_POS = [
+        { id: 'p0', x: 0.50, y: 0.84 }, // Player (Bottom center)
+        { id: 'm1', x: 0.18, y: 0.58 }, // Bottom-Left
+        { id: 'm2', x: 0.26, y: 0.24 }, // Top-Left
+        { id: 'm3', x: 0.74, y: 0.24 }, // Top-Right
+        { id: 'm4', x: 0.82, y: 0.58 }, // Bottom-Right
+      ];
+
+      let state = null;
+      let selectedMemberId = null;
+
+      function initGame() {
+        const seed = Math.floor(Date.now() % 1000000) || 12345;
+        state = socialDeductionLogic.createState(seed);
+        selectedMemberId = null;
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        dayNum.textContent = state.day;
+        const living = Object.values(state.members).filter(m => m.alive).length;
+        aliveTally.textContent = `${living}/5 Councilors`;
+
+        if (state.phase === 'night') {
+          phaseBadge.textContent = '🌙 Night Phase';
+          phaseBadge.style.color = '#38bdf8';
+          btnAction.textContent = selectedMemberId ? `Inspect ${state.members[selectedMemberId].name}` : 'Inspect Councilor';
+          btnSecondary.textContent = 'Pass Night';
+        } else if (state.phase === 'day') {
+          phaseBadge.textContent = '☀️ Day Hearing';
+          phaseBadge.style.color = '#fbbf24';
+          btnAction.textContent = 'Convene Voting Tribunal';
+          btnSecondary.style.display = 'none';
+        } else if (state.phase === 'voting') {
+          phaseBadge.textContent = '⚖️ Voting Tribunal';
+          phaseBadge.style.color = '#f43f5e';
+          btnAction.textContent = selectedMemberId ? `Vote to Exile ${state.members[selectedMemberId].name}` : 'Select Accused';
+          btnSecondary.textContent = 'Skip Vote';
+          btnSecondary.style.display = 'block';
+        }
+
+        if (selectedMemberId && state.members[selectedMemberId]) {
+          const m = state.members[selectedMemberId];
+          const inspectedRole = state.inspected[m.id];
+          let statusStr = m.alive ? 'Alive' : 'Deceased';
+          if (inspectedRole) statusStr += ` (${inspectedRole.toUpperCase()})`;
+          selectedInfo.textContent = `${m.name} - ${statusStr}`;
+        } else {
+          selectedInfo.textContent = 'Tap a councilor to inspect or accuse';
+        }
+
+        // Testimonies
+        if (state.testimonies.length > 0 && state.phase !== 'night') {
+          testimoniesList.innerHTML = state.testimonies.map(t => `<div>${t}</div>`).join('');
+        } else if (state.phase === 'night') {
+          testimoniesList.innerHTML = '<div>Night has fallen. Choose a councilor to inspect their true loyalty.</div>';
+        }
+
+        // Log feed
+        if (state.log.length > 0) {
+          const recent = state.log.slice(-2);
+          logFeed.innerHTML = recent.map(msg => `<div>${msg}</div>`).reverse().join('');
+        }
+
+        if (state.gameOver) {
+          btnAction.textContent = state.winner === 'loyalist' ? '🏆 Victory! (Restart)' : '💀 Defeat! (Restart)';
+          btnAction.style.background = state.winner === 'loyalist' ? '#10b981' : '#e11d48';
+          btnSecondary.style.display = 'none';
+        }
+      }
+
+      function render() {
+        const size = canvas.width;
+        ctx.clearRect(0, 0, size, size);
+
+        // 1. Victorian Chamber Background
+        const grad = ctx.createRadialGradient(size / 2, size / 2, 40, size / 2, size / 2, size * 0.7);
+        grad.addColorStop(0, '#1c132b');
+        grad.addColorStop(1, '#08050e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+
+        // 2. Round Mahogany Table
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2 - 10, size * 0.28, 0, Math.PI * 2);
+        ctx.fillStyle = '#2b1b17';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#452b24';
+        ctx.stroke();
+
+        // Pentagram / Occult circle on table
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2 - 10, size * 0.22, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.15)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 3. Draw Councilors around table
+        for (let i = 0; i < SEAT_POS.length; i++) {
+          const seat = SEAT_POS[i];
+          const m = state.members[seat.id];
+          const cx = seat.x * size;
+          const cy = seat.y * size;
+
+          const isSelected = selectedMemberId === seat.id;
+          const inspectedRole = state.inspected[m.id];
+
+          // Seat highlight / circle
+          ctx.beginPath();
+          ctx.arc(cx, cy, 38, 0, Math.PI * 2);
+          ctx.fillStyle = m.alive ? (m.id === 'p0' ? '#1e293b' : '#1f1633') : '#18181b';
+          ctx.fill();
+
+          ctx.lineWidth = isSelected ? 4 : 2;
+          if (isSelected) {
+            ctx.strokeStyle = '#f59e0b';
+          } else if (inspectedRole === 'saboteur') {
+            ctx.strokeStyle = '#f43f5e';
+          } else if (inspectedRole === 'loyalist') {
+            ctx.strokeStyle = '#38bdf8';
+          } else {
+            ctx.strokeStyle = '#3b2d54';
+          }
+          ctx.stroke();
+
+          // Avatar Icon
+          ctx.font = '36px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (!m.alive) {
+            ctx.fillText('💀', cx, cy - 2);
+          } else {
+            ctx.fillText(AVATARS[m.id] || '👤', cx, cy - 2);
+          }
+
+          // Name tag
+          ctx.fillStyle = m.alive ? '#f3f0f8' : '#71717a';
+          ctx.font = '700 12px sans-serif';
+          ctx.fillText(m.name.split(' ')[0], cx, cy + 46);
+
+          // Votes badge during voting
+          if (state.phase === 'voting' && m.votes > 0) {
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.arc(cx + 26, cy - 26, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '700 11px sans-serif';
+            ctx.fillText(m.votes, cx + 26, cy - 26);
+          }
+        }
+      }
+
+      // Tap selection
+      canvas.addEventListener('click', (e) => {
+        if (!state || state.gameOver) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const scale = canvas.width / rect.width;
+        const x = (e.clientX - rect.left) * scale;
+        const y = (e.clientY - rect.top) * scale;
+        const size = canvas.width;
+
+        for (let i = 0; i < SEAT_POS.length; i++) {
+          const seat = SEAT_POS[i];
+          const cx = seat.x * size;
+          const cy = seat.y * size;
+          const dist = Math.hypot(x - cx, y - cy);
+          if (dist <= 42) {
+            // Cannot inspect or vote oneself
+            if (seat.id !== 'p0') {
+              selectedMemberId = seat.id;
+              updateUI();
+              render();
+            }
+            return;
+          }
+        }
+      });
+
+      btnAction.addEventListener('click', () => {
+        if (!state) return;
+        if (state.gameOver) {
+          initGame();
+          return;
+        }
+
+        const legal = socialDeductionLogic.legalActions(state);
+
+        if (state.phase === 'night') {
+          if (selectedMemberId) {
+            const act = `inspect:${selectedMemberId}`;
+            if (legal.includes(act)) {
+              socialDeductionLogic.step(state, act);
+              selectedMemberId = null;
+              updateUI();
+              render();
+            }
+          }
+        } else if (state.phase === 'day') {
+          if (legal.includes('begin_vote')) {
+            socialDeductionLogic.step(state, 'begin_vote');
+            updateUI();
+            render();
+          }
+        } else if (state.phase === 'voting') {
+          if (selectedMemberId) {
+            const act = `vote:${selectedMemberId}`;
+            if (legal.includes(act)) {
+              socialDeductionLogic.step(state, act);
+              selectedMemberId = null;
+              updateUI();
+              render();
+            }
+          }
+        }
+      });
+
+      btnSecondary.addEventListener('click', () => {
+        if (!state || state.gameOver) return;
+        const legal = socialDeductionLogic.legalActions(state);
+
+        if (state.phase === 'night') {
+          if (legal.includes('pass')) {
+            socialDeductionLogic.step(state, 'pass');
+            selectedMemberId = null;
+            updateUI();
+            render();
+          }
+        } else if (state.phase === 'voting') {
+          if (legal.includes('skip_vote')) {
+            socialDeductionLogic.step(state, 'skip_vote');
+            selectedMemberId = null;
+            updateUI();
+            render();
+          }
+        }
+      });
+
+      btnRestart.addEventListener('click', () => {
+        initGame();
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>

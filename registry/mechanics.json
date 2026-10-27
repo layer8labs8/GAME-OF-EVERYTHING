@@ -848,8 +848,9 @@
    "slug": "social-deduction",
    "name": "Social Deduction",
    "family": "Cards & Board",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {
