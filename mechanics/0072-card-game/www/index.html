@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Duel of Eights - Card Game</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #022c22;
+      color: #ecfdf5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #064e3b;
+      border: 1px solid #047857;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-gold { color: #fbbf24; }
+    .badge-emerald { color: #34d399; }
+    .badge-red { color: #f87171; }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      background: radial-gradient(circle at center, #065f46 0%, #064e3b 60%, #022c22 100%);
+      border: 4px solid #047857;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: block;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #a7f3d0;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn {
+      background: #065f46;
+      color: #ecfdf5;
+      border: 1px solid #10b981;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      background: #047857;
+      border-color: #34d399;
+    }
+    .btn:active {
+      transform: translateY(2px);
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      border-color: #fbbf24;
+      color: #fff;
+    }
+    .footer {
+      font-size: 11px;
+      color: #6ee7b7;
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div>Round: <span class="badge-gold" id="hud-round">1 / 3</span></div>
+      <div>You: <span class="badge-emerald" id="hud-player-score">0</span> | Opp: <span class="badge-red" id="hud-opp-score">0</span></div>
+      <div>Target: <span class="badge-gold">100</span></div>
+    </div>
+
+    <canvas id="game-canvas" width="600" height="600"></canvas>
+
+    <div class="message-bar" id="message-bar">Match suit or rank. Eights are wild!</div>
+
+    <div class="action-row">
+      <button class="btn" id="btn-draw">Draw Card</button>
+      <button class="btn" id="btn-pass">Pass Turn</button>
+      <button class="btn btn-gold" id="btn-restart">New Match</button>
+    </div>
+
+    <div class="footer">
+      Click highlighted card to play &bull; Click 8 to choose suit &bull; Click Draw pile to take card
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('game-canvas');
+      if (!canvas || typeof canvas.getContext !== 'function') return;
+      const ctx = canvas.getContext('2d');
+
+      let currentSeed = Math.floor(Math.random() * 100000) + 1;
+      let state = createState(currentSeed);
+
+      // Pending suit selection state for 8s
+      let pendingEightCardId = null;
+
+      const SUIT_SYMBOLS = { S: '♠', H: '♥', D: '♦', C: '♣' };
+      const SUIT_COLORS = { S: '#0f172a', H: '#dc2626', D: '#dc2626', C: '#0f172a' };
+      const SUIT_NAMES = { S: 'Spades', H: 'Hearts', D: 'Diamonds', C: 'Clubs' };
+
+      function updateHUD() {
+        const hudRound = document.getElementById('hud-round');
+        const hudPlayerScore = document.getElementById('hud-player-score');
+        const hudOppScore = document.getElementById('hud-opp-score');
+        const msgBar = document.getElementById('message-bar');
+
+        if (hudRound) hudRound.textContent = state.round + ' / ' + state.maxRounds;
+        if (hudPlayerScore) hudPlayerScore.textContent = state.playerScore;
+        if (hudOppScore) hudOppScore.textContent = state.opponentScore;
+        if (msgBar) msgBar.textContent = state.message;
+      }
+
+      function drawPlayingCard(c, x, y, w, h, card, isPlayable, isFaceDown) {
+        c.save();
+        // Drop shadow
+        c.shadowColor = 'rgba(0,0,0,0.5)';
+        c.shadowBlur = isPlayable ? 14 : 8;
+        c.shadowOffsetY = 4;
+
+        if (isFaceDown) {
+          // Card back
+          c.fillStyle = '#1e293b';
+          c.beginPath();
+          c.roundRect(x, y, w, h, 8);
+          c.fill();
+          c.strokeStyle = '#475569';
+          c.lineWidth = 2;
+          c.stroke();
+
+          // Pattern
+          c.fillStyle = '#0f172a';
+          c.fillRect(x + 6, y + 6, w - 12, h - 12);
+          c.strokeStyle = '#38bdf8';
+          c.lineWidth = 1;
+          c.strokeRect(x + 10, y + 10, w - 20, h - 20);
+          c.restore();
+          return;
+        }
+
+        // Face up card
+        c.fillStyle = '#ffffff';
+        c.beginPath();
+        c.roundRect(x, y, w, h, 8);
+        c.fill();
+
+        if (isPlayable) {
+          c.strokeStyle = '#fbbf24';
+          c.lineWidth = 3.5;
+        } else {
+          c.strokeStyle = '#cbd5e1';
+          c.lineWidth = 1.5;
+        }
+        c.stroke();
+        c.shadowColor = 'transparent';
+
+        const sColor = SUIT_COLORS[card.suit] || '#0f172a';
+        const sSymbol = SUIT_SYMBOLS[card.suit] || card.suit;
+
+        // Top-left rank & suit
+        c.fillStyle = sColor;
+        c.font = 'bold ' + Math.floor(h * 0.18) + 'px serif';
+        c.textAlign = 'left';
+        c.textBaseline = 'top';
+        c.fillText(card.rank, x + 6, y + 6);
+
+        c.font = Math.floor(h * 0.16) + 'px serif';
+        c.fillText(sSymbol, x + 6, y + h * 0.22);
+
+        // Center big symbol
+        c.font = Math.floor(h * 0.38) + 'px serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(sSymbol, x + w / 2, y + h / 2 + 4);
+
+        // Bottom-right inverted
+        c.save();
+        c.translate(x + w - 6, y + h - 6);
+        c.rotate(Math.PI);
+        c.font = 'bold ' + Math.floor(h * 0.18) + 'px serif';
+        c.textAlign = 'left';
+        c.textBaseline = 'top';
+        c.fillText(card.rank, 0, 0);
+        c.restore();
+
+        c.restore();
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        // Table Border Accent
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(20, 20, 560, 560, 24);
+        ctx.stroke();
+
+        // 1. OPPONENT HAND (Top)
+        const oppCount = state.opponentHand.length;
+        const oppCardW = 60;
+        const oppCardH = 85;
+        const oppSpacing = Math.min(oppCardW * 0.7, (500 - oppCardW) / Math.max(oppCount - 1, 1));
+        const oppStartX = (600 - ((oppCount - 1) * oppSpacing + oppCardW)) / 2;
+
+        for (let i = 0; i < oppCount; i++) {
+          const x = oppStartX + i * oppSpacing;
+          const y = 35;
+          drawPlayingCard(ctx, x, y, oppCardW, oppCardH, null, false, true);
+        }
+
+        ctx.fillStyle = '#a7f3d0';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('OPPONENT (' + oppCount + ' cards)', 300, 135);
+
+        // 2. CENTER TABLE: Stock Deck & Discard Pile
+        const cardW = 85;
+        const cardH = 120;
+
+        // Draw Pile (Left of center)
+        const deckX = 180;
+        const deckY = 190;
+        if (state.deck.length > 0) {
+          // Draw subtle stack depth
+          for (let d = Math.min(state.deck.length, 3); d > 0; d--) {
+            drawPlayingCard(ctx, deckX - d * 2, deckY - d * 2, cardW, cardH, null, false, true);
+          }
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('DECK (' + state.deck.length + ')', deckX + cardW / 2, deckY + cardH + 18);
+        } else {
+          ctx.strokeStyle = '#047857';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(deckX, deckY, cardW, cardH);
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#6ee7b7';
+          ctx.font = '11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('Empty', deckX + cardW / 2, deckY + cardH / 2);
+        }
+
+        // Discard Pile (Right of center)
+        const discardX = 335;
+        const discardY = 190;
+        if (state.topCard) {
+          drawPlayingCard(ctx, discardX, discardY, cardW, cardH, state.topCard, false, false);
+
+          // Active Suit Badge
+          const sSymbol = SUIT_SYMBOLS[state.activeSuit] || state.activeSuit;
+          const sColor = SUIT_COLORS[state.activeSuit] || '#ffffff';
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.roundRect(discardX + cardW / 2 - 40, discardY + cardH + 6, 80, 24, 6);
+          ctx.fill();
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.fillStyle = sColor;
+          ctx.font = 'bold 14px serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(sSymbol + ' ' + SUIT_NAMES[state.activeSuit], discardX + cardW / 2, discardY + cardH + 18);
+        }
+
+        // 3. PLAYER HAND (Bottom)
+        const pCount = state.playerHand.length;
+        const pCardW = 76;
+        const pCardH = 108;
+        const pSpacing = Math.min(pCardW * 0.75, (540 - pCardW) / Math.max(pCount - 1, 1));
+        const pStartX = (600 - ((pCount - 1) * pSpacing + pCardW)) / 2;
+
+        const legals = legalActions(state);
+
+        state.playerHand.forEach((card, idx) => {
+          const x = pStartX + idx * pSpacing;
+          const isCardPlayable = legals.some(a => a.startsWith('play:' + card.id));
+          const y = isCardPlayable ? 435 : 455;
+          drawPlayingCard(ctx, x, y, pCardW, pCardH, card, isCardPlayable, false);
+        });
+
+        ctx.fillStyle = '#ecfdf5';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('YOUR HAND (' + pCount + ' cards)', 300, 580);
+
+        // 4. WILD EIGHT SUIT SELECTOR OVERLAY
+        if (pendingEightCardId) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(6, 78, 59, 0.9)';
+          ctx.fillRect(80, 150, 440, 240);
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(80, 150, 440, 240);
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('CHOOSE NEW ACTIVE SUIT', 300, 195);
+
+          const suits = ['S', 'H', 'D', 'C'];
+          suits.forEach((s, idx) => {
+            const bx = 115 + idx * 95;
+            const by = 230;
+            const bw = 85;
+            const bh = 95;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(bx, by, bw, bh, 8);
+            ctx.fill();
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = SUIT_COLORS[s];
+            ctx.font = 'bold 44px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(SUIT_SYMBOLS[s], bx + bw / 2, by + bh / 2 - 8);
+
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(SUIT_NAMES[s], bx + bw / 2, by + bh - 18);
+          });
+          ctx.restore();
+        }
+
+        // 5. GAME OVER OVERLAY
+        if (state.done) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(2, 44, 34, 0.92)';
+          ctx.fillRect(0, 0, 600, 600);
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          if (state.won) {
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('MATCH VICTORY!', 300, 260);
+            ctx.fillStyle = '#ecfdf5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('You outplayed the opponent in Duel of Eights!', 300, 305);
+          } else {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('MATCH DEFEAT', 300, 260);
+            ctx.fillStyle = '#ecfdf5';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('Opponent held the edge this match.', 300, 305);
+          }
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.fillText('Final: You ' + state.playerScore + ' - ' + state.opponentScore + ' Opponent', 300, 355);
+          ctx.restore();
+        }
+      }
+
+      function handleCanvasClick(evt) {
+        if (state.done) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = (evt.clientX - rect.left) * scaleX;
+        const cy = (evt.clientY - rect.top) * scaleY;
+
+        // If choosing suit for Eight
+        if (pendingEightCardId) {
+          const suits = ['S', 'H', 'D', 'C'];
+          suits.forEach((s, idx) => {
+            const bx = 115 + idx * 95;
+            const by = 230;
+            const bw = 85;
+            const bh = 95;
+            if (cx >= bx && cx <= bx + bw && cy >= by && cy <= by + bh) {
+              const act = 'play:' + pendingEightCardId + ',' + s;
+              if (legalActions(state).includes(act)) {
+                step(state, act);
+                pendingEightCardId = null;
+                updateHUD();
+                render();
+              }
+            }
+          });
+          return;
+        }
+
+        // Click Draw Deck
+        const deckX = 180;
+        const deckY = 190;
+        const cardW = 85;
+        const cardH = 120;
+        if (cx >= deckX && cx <= deckX + cardW && cy >= deckY && cy <= deckY + cardH) {
+          if (legalActions(state).includes('draw')) {
+            step(state, 'draw');
+            updateHUD();
+            render();
+          }
+          return;
+        }
+
+        // Click Player Cards
+        const pCount = state.playerHand.length;
+        const pCardW = 76;
+        const pCardH = 108;
+        const pSpacing = Math.min(pCardW * 0.75, (540 - pCardW) / Math.max(pCount - 1, 1));
+        const pStartX = (600 - ((pCount - 1) * pSpacing + pCardW)) / 2;
+        const legals = legalActions(state);
+
+        // Scan from rightmost (top) card to leftmost
+        for (let idx = pCount - 1; idx >= 0; idx--) {
+          const card = state.playerHand[idx];
+          const x = pStartX + idx * pSpacing;
+          const isCardPlayable = legals.some(a => a.startsWith('play:' + card.id));
+          const y = isCardPlayable ? 435 : 455;
+
+          if (cx >= x && cx <= x + pCardW && cy >= y && cy <= y + pCardH) {
+            if (card.rank === '8') {
+              // Open suit selector
+              pendingEightCardId = card.id;
+              render();
+            } else {
+              const act = 'play:' + card.id;
+              if (legals.includes(act)) {
+                step(state, act);
+                updateHUD();
+                render();
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      canvas.addEventListener('click', handleCanvasClick);
+      canvas.addEventListener('touchstart', function(e) {
+        if (e.touches && e.touches.length > 0) {
+          handleCanvasClick(e.touches[0]);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      const btnDraw = document.getElementById('btn-draw');
+      if (btnDraw && btnDraw.addEventListener) {
+        btnDraw.addEventListener('click', function() {
+          if (!state.done && legalActions(state).includes('draw')) {
+            step(state, 'draw');
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnPass = document.getElementById('btn-pass');
+      if (btnPass && btnPass.addEventListener) {
+        btnPass.addEventListener('click', function() {
+          if (!state.done && legalActions(state).includes('pass')) {
+            step(state, 'pass');
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnRestart = document.getElementById('btn-restart');
+      if (btnRestart && btnRestart.addEventListener) {
+        btnRestart.addEventListener('click', function() {
+          currentSeed = Math.floor(Math.random() * 100000) + 1;
+          state = createState(currentSeed);
+          pendingEightCardId = null;
+          updateHUD();
+          render();
+        });
+      }
+
+      updateHUD();
+      render();
+    })();
+  </script>
+</body>
+</html>

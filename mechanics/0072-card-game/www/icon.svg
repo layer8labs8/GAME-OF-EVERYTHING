@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="felt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b"/>
+      <stop offset="100%" stop-color="#022c22"/>
+    </linearGradient>
+    <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#felt)"/>
+  <rect width="500" height="500" x="6" y="6" rx="90" fill="none" stroke="#10b981" stroke-width="4" stroke-opacity="0.3"/>
+  <g transform="translate(146, 76)">
+    <!-- Back card tilted -->
+    <rect x="-30" y="30" width="220" height="320" rx="16" fill="#1e293b" stroke="#334155" stroke-width="6" transform="rotate(-12, 80, 190)" filter="url(#shadow)"/>
+    <!-- Front Card: 8 of Spades -->
+    <rect x="0" y="0" width="220" height="320" rx="16" fill="url(#cardBg)" stroke="#cbd5e1" stroke-width="4" filter="url(#shadow)"/>
+    <!-- Corner text -->
+    <text x="24" y="44" fill="#0f172a" font-size="36" font-weight="900" font-family="serif">8</text>
+    <text x="24" y="80" fill="#0f172a" font-size="28" font-family="serif">♠</text>
+
+    <!-- Center Giant 8 and Spade -->
+    <text x="110" y="175" fill="#0f172a" font-size="80" font-weight="900" font-family="serif" text-anchor="middle">8</text>
+    <text x="110" y="240" fill="#ef4444" font-size="52" font-family="serif" text-anchor="middle">♥</text>
+  </g>
+</svg>
