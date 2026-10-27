@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Miniature Workshop - Hobby Sim</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #18181b;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 14px;
+      background: #27272a;
+      border-radius: 8px;
+      border: 1px solid #3f3f46;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      background: #27272a;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #3f3f46;
+      font-size: 0.72rem;
+    }
+    .hud-box {
+      background: #18181b;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid #3f3f46;
+    }
+    .hud-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+    .text-emerald { color: #10b981; }
+    .text-amber { color: #f59e0b; }
+    .text-cyan { color: #06b6d4; }
+    .text-gold { color: #fbbf24; }
+    .text-purple { color: #c084fc; }
+
+    #canvas-container {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      background: #09090b;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #3f3f46;
+      aspect-ratio: 16 / 10;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .status-banner {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      padding: 6px 12px;
+      background: #27272a;
+      border-left: 4px solid #10b981;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .model-info-panel {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 6px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .controls-grid {
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    button {
+      background: #27272a;
+      border: 1px solid #10b981;
+      color: #f4f4f5;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+    }
+    button:hover:not(:disabled) {
+      background: #059669;
+      border-color: #34d399;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    button:disabled {
+      opacity: 0.35;
+      border-color: #52525b;
+      cursor: not-allowed;
+    }
+    button.btn-primary {
+      background: #047857;
+      border-color: #34d399;
+    }
+    button.btn-amber {
+      background: #b45309;
+      border-color: #f59e0b;
+    }
+    button.btn-gold {
+      background: #a16207;
+      border-color: #fbbf24;
+      grid-column: span 2;
+    }
+    .btn-sub {
+      font-size: 0.62rem;
+      font-weight: normal;
+      color: #d4d4d8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🖌️ Miniature Workshop</h1>
+    <div style="font-size: 0.72rem; color: #a1a1aa;">
+      Turn: <span id="hdr-turn" class="text-cyan">0</span>/120 | Acclaim: <span id="hdr-acclaim" class="text-gold">0</span>
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div style="color: #a1a1aa;">Focus</div>
+      <div id="hud-focus" class="hud-val text-cyan">90%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a1a1aa;">Inspiration</div>
+      <div id="hud-insp" class="hud-val text-purple">70%</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a1a1aa;">Hobby Coins</div>
+      <div id="hud-coins" class="hud-val text-amber">$140</div>
+    </div>
+    <div class="hud-box">
+      <div style="color: #a1a1aa;">Medals</div>
+      <div id="hud-medals" class="hud-val text-gold">🥇0 🥈0</div>
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="520" height="325"></canvas>
+  </div>
+
+  <div id="status-banner" class="status-banner">
+    Welcome to your Miniature Workshop! Unbox a fresh model kit on your cutting mat.
+  </div>
+
+  <div class="model-info-panel">
+    <div>
+      <span id="model-name" style="font-weight: bold; color: #34d399;">No Active Kit</span>
+      <span id="model-genre" style="color: #a1a1aa; font-size: 0.68rem; margin-left: 6px;"></span>
+    </div>
+    <div>
+      Stage: <span id="model-stage" style="color: #38bdf8; font-weight: bold;">Unboxed</span> | 
+      Craftsmanship: <span id="model-quality" style="color: #fbbf24; font-weight: bold;">50%</span>
+    </div>
+  </div>
+
+  <div id="controls" class="controls-grid">
+    <!-- Buttons dynamically injected -->
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Date.now() % 1000000));
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const STAGE_NAMES = [
+      '0: Snipping Parts',
+      '1: Sanding & Trimming',
+      '2: Assembly & Gluing',
+      '3: Basecoat & Shading',
+      '4: Highlighting & Detailing'
+    ];
+
+    function renderScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Workbench table background
+      ctx.fillStyle = '#292524';
+      ctx.fillRect(0, 0, 520, 325);
+
+      // Green self-healing cutting mat with grid
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(40, 20, 440, 240);
+      ctx.strokeStyle = '#047857';
+      ctx.lineWidth = 1;
+      for (let x = 40; x <= 480; x += 30) {
+        ctx.beginPath();
+        ctx.moveTo(x, 20);
+        ctx.lineTo(x, 260);
+        ctx.stroke();
+      }
+      for (let y = 20; y <= 260; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(40, y);
+        ctx.lineTo(480, y);
+        ctx.stroke();
+      }
+
+      // Cutting mat border
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(40, 20, 440, 240);
+
+      // Model visualization on cutting mat
+      if (state.currentModel) {
+        const m = state.currentModel;
+        const cx = 260;
+        const cy = 135;
+
+        if (m.stage === 0) {
+          // Sprue frame with unclipped runner pieces
+          ctx.strokeStyle = '#64748b';
+          ctx.lineWidth = 6;
+          ctx.strokeRect(cx - 90, cy - 65, 180, 130);
+          ctx.beginPath();
+          ctx.moveTo(cx - 90, cy); ctx.lineTo(cx + 90, cy);
+          ctx.moveTo(cx, cy - 65); ctx.lineTo(cx, cy + 65);
+          ctx.stroke();
+          // Parts attached to runners
+          ctx.fillStyle = '#94a3b8';
+          for (let p = 0; p < m.partsRemaining; p++) {
+            const px = cx - 50 + (p % 2) * 100;
+            const py = cy - 35 + Math.floor(p / 2) * 70;
+            ctx.fillRect(px - 14, py - 14, 28, 28);
+          }
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(`Parts on Runner: ${m.partsRemaining}`, cx - 55, cy + 85);
+        } else if (m.stage === 1) {
+          // Loose parts with nub marks
+          ctx.fillStyle = '#64748b';
+          ctx.fillRect(cx - 40, cy - 30, 80, 50); // Torso
+          ctx.fillRect(cx - 65, cy - 20, 20, 40); // Arm L
+          ctx.fillRect(cx + 45, cy - 20, 20, 40); // Arm R
+          // Red nub spots
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(cx - 38, cy - 15, 3, 0, Math.PI * 2);
+          ctx.arc(cx + 38, cy - 15, 3, 0, Math.PI * 2);
+          ctx.arc(cx, cy + 20, 3, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (m.stage === 2) {
+          // Assembled gray plastic skeleton
+          ctx.fillStyle = '#475569';
+          ctx.beginPath();
+          ctx.arc(cx, cy + 45, 45, 0, Math.PI * 2); // Base
+          ctx.fill();
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(cx - 22, cy - 30, 44, 55); // Body
+          ctx.fillRect(cx - 14, cy - 50, 28, 20); // Head
+          ctx.fillRect(cx - 36, cy - 20, 14, 40); // Arm L
+          ctx.fillRect(cx + 22, cy - 20, 14, 40); // Arm R
+        } else if (m.stage === 3) {
+          // Basecoated & shaded miniature
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.arc(cx, cy + 45, 45, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#0284c7'; // Blue basecoat
+          ctx.fillRect(cx - 22, cy - 30, 44, 55);
+          ctx.fillStyle = '#f59e0b'; // Gold trim
+          ctx.fillRect(cx - 14, cy - 50, 28, 20);
+          ctx.fillStyle = '#0369a1';
+          ctx.fillRect(cx - 36, cy - 20, 14, 40);
+          ctx.fillRect(cx + 22, cy - 20, 14, 40);
+        } else if (m.stage === 4) {
+          // Finished masterpiece with highlight glow & textured base
+          ctx.fillStyle = '#78350f';
+          ctx.beginPath();
+          ctx.arc(cx, cy + 45, 48, 0, Math.PI * 2); // Scenic base
+          ctx.fill();
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Shining Mech/Miniature
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(cx - 22, cy - 30, 44, 55);
+          ctx.strokeStyle = '#7dd3fc'; // Edge highlights!
+          ctx.lineWidth = 2;
+          ctx.strokeRect(cx - 22, cy - 30, 44, 55);
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillRect(cx - 14, cy - 50, 28, 20);
+          ctx.strokeStyle = '#fef08a';
+          ctx.strokeRect(cx - 14, cy - 50, 28, 20);
+
+          ctx.fillStyle = '#0369a1';
+          ctx.fillRect(cx - 36, cy - 20, 14, 40);
+          ctx.fillRect(cx + 22, cy - 20, 14, 40);
+
+          // Star gleam
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx - 18, cy - 26, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = '#a1a1aa';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Cutting Mat Empty — Ready to Unbox Next Kit', 110, 140);
+      }
+
+      // Workshop Supply Tray at bottom
+      ctx.fillStyle = 'rgba(24, 24, 27, 0.9)';
+      ctx.fillRect(10, 275, 500, 40);
+      ctx.strokeStyle = '#3f3f46';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(10, 275, 500, 40);
+
+      ctx.fillStyle = '#e4e4e7';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(`🧪 Cement: ${state.supplies.plasticCement}`, 30, 300);
+      ctx.fillText(`🪚 Sanding: ${state.supplies.sandingPads}`, 145, 300);
+      ctx.fillText(`🎨 Paint Pots: ${state.supplies.paintPots}`, 260, 300);
+      ctx.fillText(`📦 Done: ${state.completedModels} / 5`, 385, 300);
+    }
+
+    function updateUI() {
+      document.getElementById('hdr-turn').textContent = state.turns;
+      document.getElementById('hdr-acclaim').textContent = state.acclaim;
+      document.getElementById('hud-focus').textContent = state.focus + '%';
+      document.getElementById('hud-insp').textContent = state.inspiration + '%';
+      document.getElementById('hud-coins').textContent = '$' + state.coins;
+      document.getElementById('hud-medals').textContent = `🥇${state.medals.gold} 🥈${state.medals.silver} 🥉${state.medals.bronze}`;
+      document.getElementById('status-banner').textContent = state.gameMessage;
+
+      if (state.currentModel) {
+        document.getElementById('model-name').textContent = state.currentModel.name;
+        document.getElementById('model-genre').textContent = `[${state.currentModel.genre}]`;
+        document.getElementById('model-stage').textContent = STAGE_NAMES[state.currentModel.stage] || 'Complete';
+        document.getElementById('model-quality').textContent = state.currentModel.craftsmanship + '%';
+      } else {
+        document.getElementById('model-name').textContent = 'No Active Kit';
+        document.getElementById('model-genre').textContent = '';
+        document.getElementById('model-stage').textContent = 'Mat Empty';
+        document.getElementById('model-quality').textContent = '-';
+      }
+
+      const legal = legalActions(state);
+      let ctrlHtml = '';
+
+      if (isOver(state)) {
+        ctrlHtml = `
+          <button class="btn-primary" style="grid-column: span 2; padding: 14px;" onclick="window.resetGame()">
+            🔄 Open New Miniature Workshop Season
+          </button>
+        `;
+      } else {
+        // Utility buttons
+        ctrlHtml += `
+          <button ${legal.includes('action:sip_herbal_tea') ? '' : 'disabled'} onclick="window.doAction('action:sip_herbal_tea')">
+            🍵 Sip Herbal Tea
+            <span class="btn-sub">+35 Focus, +20 Inspiration</span>
+          </button>
+          <button ${legal.includes('action:restock_hobby_supplies') ? '' : 'disabled'} onclick="window.doAction('action:restock_hobby_supplies')">
+            🛒 Restock Supplies ($40)
+            <span class="btn-sub">+3 Cement, Sandpaper, Paints</span>
+          </button>
+        `;
+
+        if (legal.includes('action:unbox_next_kit')) {
+          ctrlHtml += `
+            <button class="btn-primary" style="grid-column: span 2;" onclick="window.doAction('action:unbox_next_kit')">
+              📦 Unbox Next Miniature Kit
+              <span class="btn-sub">Open runners and instructions</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:snip_runner_parts')) {
+          ctrlHtml += `
+            <button class="btn-primary" style="grid-column: span 2;" onclick="window.doAction('action:snip_runner_parts')">
+              ✂️ Snip Parts from Sprue
+              <span class="btn-sub">-10 Focus, clean cut</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:sand_nub_marks')) {
+          ctrlHtml += `
+            <button class="btn-primary" onclick="window.doAction('action:sand_nub_marks')">
+              🪚 Sand Nub Marks
+              <span class="btn-sub">+15 Craftsmanship, -1 Pad</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:skip_to_assembly')) {
+          ctrlHtml += `
+            <button onclick="window.doAction('action:skip_to_assembly')">
+              ⏩ Skip to Assembly
+              <span class="btn-sub">Assemble directly</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:cement_subassembly')) {
+          ctrlHtml += `
+            <button class="btn-primary" style="grid-column: span 2;" onclick="window.doAction('action:cement_subassembly')">
+              🧪 Cement Sub-Assemblies
+              <span class="btn-sub">+10 Craftsmanship, -1 Cement</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:apply_base_and_shade')) {
+          ctrlHtml += `
+            <button class="btn-primary" style="grid-column: span 2;" onclick="window.doAction('action:apply_base_and_shade')">
+              🎨 Apply Basecoat & Shade Wash
+              <span class="btn-sub">+15 Craftsmanship, -1 Paint Pot</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:edge_highlight_details')) {
+          ctrlHtml += `
+            <button class="btn-amber" onclick="window.doAction('action:edge_highlight_details')">
+              ✨ Edge-Highlight & Detailing
+              <span class="btn-sub">+15 Craftsmanship, -15 Insp</span>
+            </button>
+          `;
+        }
+
+        if (legal.includes('action:enter_exhibition')) {
+          ctrlHtml += `
+            <button class="btn-gold" onclick="window.doAction('action:enter_exhibition')">
+              🏆 Enter Miniature into Exhibition!
+              <span class="btn-sub">Judged for Medals & Acclaim</span>
+            </button>
+          `;
+        }
+      }
+
+      document.getElementById('controls').innerHTML = ctrlHtml;
+      renderScene();
+    }
+
+    window.doAction = function(act) {
+      try {
+        step(state, act);
+        updateUI();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    window.resetGame = function() {
+      state = createState(Math.floor(Date.now() % 1000000));
+      updateUI();
+    };
+
+    updateUI();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

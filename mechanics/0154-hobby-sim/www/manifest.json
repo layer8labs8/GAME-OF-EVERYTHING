@@ -1,0 +1,12 @@
+{
+  "name": "Miniature Workshop: Hobby Sim",
+  "short_name": "MiniWorkshop",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#1c1917",
+  "theme_color": "#10b981",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

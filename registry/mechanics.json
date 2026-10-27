@@ -1627,9 +1627,11 @@
       "slug": "hobby-sim",
       "name": "Hobby Sim",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Miniature Workshop",
+      "levels": "endless"
     },
     {
       "id": "0155",
