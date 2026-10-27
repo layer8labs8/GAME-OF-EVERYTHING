@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Void Breach - Action Roguelike</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#7928ca">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b0d13;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #141824;
+      border-radius: 8px;
+      border: 1px solid #23293e;
+    }
+    h1 {
+      font-size: 1.1rem;
+      color: #00f2fe;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 440px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #141824;
+      border: 1px solid #23293e;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .hud-label {
+      color: #94a3b8;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.85rem;
+    }
+    .val-hp { color: #f43f5e; }
+    .val-stamina { color: #38bdf8; }
+    .val-ammo { color: #facc15; }
+    .val-score { color: #a855f7; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1 / 1;
+      background: #080a0f;
+      border: 2px solid #23293e;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 242, 254, 0.1);
+      touch-action: none;
+    }
+    .control-panel {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mode-switch {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: #141824;
+      border: 1px solid #23293e;
+      color: #94a3b8;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+    }
+    .mode-btn.active {
+      background: #7928ca;
+      border-color: #a855f7;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(121, 40, 202, 0.4);
+    }
+    .dpad-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+    .pad-btn {
+      background: #1a2035;
+      border: 1px solid #2e3856;
+      color: #ffffff;
+      padding: 10px 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    .pad-btn:active {
+      background: #2a3454;
+      transform: scale(0.96);
+    }
+    .quick-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 8px;
+      background: #23293e;
+      border: 1px solid #3b4568;
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .action-btn:active {
+      background: #323b59;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      background: #0f121d;
+      border: 1px solid #1b2135;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 0.7rem;
+      min-height: 48px;
+      max-height: 52px;
+      overflow-y: hidden;
+      color: #94a3b8;
+    }
+    .log-box p {
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .log-box p:last-child {
+      color: #38bdf8;
+      font-weight: bold;
+    }
+
+    /* Modal dialogs */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(11, 13, 19, 0.92);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      border-radius: 8px;
+      z-index: 50;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-card {
+      background: #141824;
+      border: 2px solid #7928ca;
+      border-radius: 12px;
+      padding: 14px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    }
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #00f2fe;
+      margin-bottom: 6px;
+    }
+    .perk-options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 10px 0;
+    }
+    .perk-card {
+      background: #1b2135;
+      border: 1px solid #2e3856;
+      border-radius: 8px;
+      padding: 8px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .perk-card:hover {
+      border-color: #00f2fe;
+      background: #232a42;
+    }
+    .perk-card h4 {
+      color: #ffffff;
+      font-size: 0.85rem;
+      margin-bottom: 2px;
+    }
+    .perk-card p {
+      font-size: 0.7rem;
+      color: #94a3b8;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #7928ca, #00f2fe);
+      border: none;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>⚡</span> VOID BREACH</h1>
+    <span style="font-size: 0.75rem; color: #a855f7; font-weight: bold;" id="wave-badge">WAVE 1 / 4</span>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Health</div>
+      <div class="hud-val val-hp" id="val-hp">100 / 100</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Stamina</div>
+      <div class="hud-val val-stamina" id="val-stamina">30 / 30</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Ammo</div>
+      <div class="hud-val val-ammo" id="val-ammo">6 / 6</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Score</div>
+      <div class="hud-val val-score" id="val-score">0</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="arena-canvas" width="400" height="400"></canvas>
+
+    <!-- Perk Modal -->
+    <div class="modal-overlay" id="perk-modal">
+      <div class="modal-card">
+        <div class="modal-title">AUGMENTATION PROTOCOL</div>
+        <div style="font-size: 0.75rem; color: #94a3b8;">Wave Cleared! Assimilate alien technology:</div>
+        <div class="perk-options" id="perk-list"></div>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="gameover-modal">
+      <div class="modal-card">
+        <div class="modal-title" id="gameover-title">MISSION OVER</div>
+        <p style="font-size: 0.8rem; color: #94a3b8; margin: 8px 0;" id="gameover-desc">You succumbed to the void swarm.</p>
+        <div style="font-size: 1rem; color: #facc15; font-weight: bold; margin-bottom: 10px;" id="gameover-score">Final Score: 0</div>
+        <button class="btn-primary" id="btn-restart">REDEPLOY</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="control-panel">
+    <div class="mode-switch">
+      <button class="mode-btn active" id="btn-mode-move">MOVE (WASD)</button>
+      <button class="mode-btn" id="btn-mode-shoot">SHOOT (Arrows)</button>
+      <button class="mode-btn" id="btn-mode-dash">DASH (Shift)</button>
+    </div>
+
+    <div class="dpad-container">
+      <div></div>
+      <button class="pad-btn" id="btn-up">▲</button>
+      <div></div>
+      <button class="pad-btn" id="btn-left">◀</button>
+      <button class="pad-btn" id="btn-center" style="font-size: 0.7rem; color: #94a3b8;">WAIT</button>
+      <button class="pad-btn" id="btn-right">▶</button>
+      <div></div>
+      <button class="pad-btn" id="btn-down">▼</button>
+      <div></div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="action-btn" id="btn-reload">RELOAD (R)</button>
+      <button class="action-btn" id="btn-bot-step" style="border-color: #7928ca; color: #c084fc;">AI MOVE</button>
+    </div>
+  </div>
+
+  <div class="log-box" id="log-box">
+    <p>Breach detected. Eliminate all hostiles.</p>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Math.random() * 1000000));
+    let currentMode = 'move'; // 'move', 'shoot', 'dash'
+    const canvas = document.getElementById('arena-canvas');
+    const ctx = canvas.getContext('2d');
+    const TILE_SIZE = 50; // 8 x 50 = 400
+
+    const PERK_INFO = {
+      triple_shot: { title: 'Triple Shot', desc: 'Fires a 3-bolt spread plasma discharge.' },
+      homing: { title: 'Homing Bullets', desc: 'Projectiles track towards closest hostiles.' },
+      explosive: { title: 'Explosive Rounds', desc: 'Rounds blast in an area of effect.' }
+    };
+
+    function getModePrefix() {
+      return currentMode;
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('btn-mode-move').className = 'mode-btn' + (mode === 'move' ? ' active' : '');
+      document.getElementById('btn-mode-shoot').className = 'mode-btn' + (mode === 'shoot' ? ' active' : '');
+      document.getElementById('btn-mode-dash').className = 'mode-btn' + (mode === 'dash' ? ' active' : '');
+    }
+
+    function executeAction(act) {
+      if (isOver(state)) return;
+      const legals = legalActions(state);
+      if (!legals.includes(act)) return;
+
+      step(state, act);
+      render();
+    }
+
+    function render() {
+      // HUD
+      const p = state.player;
+      document.getElementById('val-hp').textContent = p.hp + ' / ' + p.maxHp;
+      document.getElementById('val-stamina').textContent = p.stamina + ' / ' + p.maxStamina;
+      document.getElementById('val-ammo').textContent = p.ammo + ' / ' + p.maxAmmo;
+      document.getElementById('val-score').textContent = state.score;
+      document.getElementById('wave-badge').textContent = 'WAVE ' + state.wave + ' / ' + state.maxWaves;
+
+      // Log
+      const logBox = document.getElementById('log-box');
+      const recent = (state.combatLog || []).slice(-3);
+      logBox.innerHTML = recent.map(line => '<p>' + line + '</p>').join('');
+
+      // Canvas
+      ctx.clearRect(0, 0, 400, 400);
+
+      // Grid background
+      ctx.strokeStyle = '#161b2c';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 8; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * TILE_SIZE, 0);
+        ctx.lineTo(i * TILE_SIZE, 400);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i * TILE_SIZE);
+        ctx.lineTo(400, i * TILE_SIZE);
+        ctx.stroke();
+      }
+
+      // Bullets
+      if (state.bullets && Array.isArray(state.bullets)) {
+        for (const b of state.bullets) {
+          const bx = b.x * TILE_SIZE + TILE_SIZE / 2;
+          const by = b.y * TILE_SIZE + TILE_SIZE / 2;
+          ctx.fillStyle = b.fromPlayer ? '#00f2fe' : '#f43f5e';
+          ctx.beginPath();
+          ctx.arc(bx, by, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Enemies
+      if (state.enemies && Array.isArray(state.enemies)) {
+        for (const e of state.enemies) {
+          if (e.hp <= 0) continue;
+          const ex = e.x * TILE_SIZE;
+          const ey = e.y * TILE_SIZE;
+
+          ctx.save();
+          if (e.type === 'boss') {
+            ctx.fillStyle = '#9333ea';
+            ctx.strokeStyle = '#c084fc';
+          } else if (e.type === 'spitter') {
+            ctx.fillStyle = '#dc2626';
+            ctx.strokeStyle = '#f87171';
+          } else {
+            ctx.fillStyle = '#ea580c';
+            ctx.strokeStyle = '#fb923c';
+          }
+
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.fillRect(ex + 8, ey + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+          ctx.strokeRect(ex + 8, ey + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+
+          // HP bar
+          const hpPct = Math.max(0, e.hp / e.maxHp);
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(ex + 8, ey + 3, TILE_SIZE - 16, 3);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(ex + 8, ey + 3, (TILE_SIZE - 16) * hpPct, 3);
+          ctx.restore();
+        }
+      }
+
+      // Player
+      const px = p.x * TILE_SIZE;
+      const py = p.y * TILE_SIZE;
+
+      ctx.save();
+      ctx.fillStyle = p.isInvulnerable ? '#38bdf8' : '#0284c7';
+      ctx.strokeStyle = '#00f2fe';
+      ctx.lineWidth = 2;
+      ctx.fillRect(px + 8, py + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+      ctx.strokeRect(px + 8, py + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+
+      // Gun indicator
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Modals
+      const perkModal = document.getElementById('perk-modal');
+      const gameoverModal = document.getElementById('gameover-modal');
+
+      if (state.perkPending && !isOver(state)) {
+        perkModal.className = 'modal-overlay active';
+        const list = document.getElementById('perk-list');
+        const perks = ['triple_shot', 'homing', 'explosive'].filter(pk => !state.player.perks.includes(pk));
+        list.innerHTML = perks.map(pk => {
+          const info = PERK_INFO[pk];
+          return '<div class="perk-card" data-act="choose_perk:' + pk + '">' +
+            '<h4>' + info.title + '</h4>' +
+            '<p>' + info.desc + '</p>' +
+          '</div>';
+        }).join('');
+        list.querySelectorAll('.perk-card').forEach(card => {
+          card.onclick = () => {
+            executeAction(card.getAttribute('data-act'));
+          };
+        });
+      } else {
+        perkModal.className = 'modal-overlay';
+      }
+
+      if (isOver(state)) {
+        gameoverModal.className = 'modal-overlay active';
+        const title = document.getElementById('gameover-title');
+        const desc = document.getElementById('gameover-desc');
+        const sc = document.getElementById('gameover-score');
+        sc.textContent = 'Final Score: ' + state.score;
+
+        if (state.victory) {
+          title.textContent = 'BREACH SEALED!';
+          title.style.color = '#4ade80';
+          desc.textContent = 'Void Overlord neutralized. Sector extracted successfully!';
+        } else {
+          title.textContent = 'KIA IN ACTION';
+          title.style.color = '#f43f5e';
+          desc.textContent = state.player.hp <= 0 ? 'Your vital signs flatlined in the void.' : 'Tactical extraction timeframe expired.';
+        }
+      } else if (!state.perkPending) {
+        gameoverModal.className = 'modal-overlay';
+      }
+    }
+
+    // Touch & button controls
+    document.getElementById('btn-mode-move').onclick = () => setMode('move');
+    document.getElementById('btn-mode-shoot').onclick = () => setMode('shoot');
+    document.getElementById('btn-mode-dash').onclick = () => setMode('dash');
+
+    document.getElementById('btn-up').onclick = () => executeAction(getModePrefix() + ':up');
+    document.getElementById('btn-down').onclick = () => executeAction(getModePrefix() + ':down');
+    document.getElementById('btn-left').onclick = () => executeAction(getModePrefix() + ':left');
+    document.getElementById('btn-right').onclick = () => executeAction(getModePrefix() + ':right');
+    document.getElementById('btn-center').onclick = () => executeAction('wait');
+    document.getElementById('btn-reload').onclick = () => executeAction('reload');
+
+    document.getElementById('btn-bot-step').onclick = () => {
+      const legals = legalActions(state);
+      if (legals.length > 0) {
+        const shootAct = legals.find(a => a.startsWith('shoot:'));
+        const act = shootAct || legals[Math.floor(Math.random() * legals.length)];
+        executeAction(act);
+      }
+    };
+
+    document.getElementById('btn-restart').onclick = () => {
+      state = createState(Math.floor(Math.random() * 1000000));
+      render();
+    };
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      if (isOver(state)) return;
+      const key = e.key.toLowerCase();
+
+      if (e.shiftKey) {
+        if (key === 'arrowup' || key === 'w') { executeAction('dash:up'); e.preventDefault(); }
+        else if (key === 'arrowdown' || key === 's') { executeAction('dash:down'); e.preventDefault(); }
+        else if (key === 'arrowleft' || key === 'a') { executeAction('dash:left'); e.preventDefault(); }
+        else if (key === 'arrowright' || key === 'd') { executeAction('dash:right'); e.preventDefault(); }
+        return;
+      }
+
+      if (key === 'w') executeAction('move:up');
+      else if (key === 's') executeAction('move:down');
+      else if (key === 'a') executeAction('move:left');
+      else if (key === 'd') executeAction('move:right');
+      else if (key === 'arrowup') executeAction('shoot:up');
+      else if (key === 'arrowdown') executeAction('shoot:down');
+      else if (key === 'arrowleft') executeAction('shoot:left');
+      else if (key === 'arrowright') executeAction('shoot:right');
+      else if (key === 'r') executeAction('reload');
+      else if (key === ' ') executeAction('wait');
+      else if (key === '1' && state.perkPending) executeAction('choose_perk:triple_shot');
+      else if (key === '2' && state.perkPending) executeAction('choose_perk:homing');
+      else if (key === '3' && state.perkPending) executeAction('choose_perk:explosive');
+    });
+
+    render();
+  </script>
+</body>
+</html>
