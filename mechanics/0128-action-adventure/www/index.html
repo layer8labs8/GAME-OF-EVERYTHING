@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sunken Spire - Action-Adventure</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #061912;
+      color: #ecfdf5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #064e3b;
+      border-radius: 8px;
+      border: 1px solid #10b981;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 440px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #064e3b;
+      border: 1px solid #047857;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .hud-label {
+      color: #a7f3d0;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.85rem;
+    }
+    .val-hp { color: #f87171; }
+    .val-tools { color: #38bdf8; }
+    .val-keys { color: #facc15; }
+    .val-score { color: #c084fc; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1 / 1;
+      background: #021a11;
+      border: 2px solid #10b981;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+      touch-action: none;
+    }
+    .mode-switch {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .mode-btn {
+      flex: 1;
+      min-width: 70px;
+      padding: 6px 2px;
+      background: #064e3b;
+      border: 1px solid #047857;
+      color: #a7f3d0;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+    }
+    .mode-btn.active {
+      background: #059669;
+      border-color: #34d399;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+
+    .control-panel {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dpad-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+    .pad-btn {
+      background: #064e3b;
+      border: 1px solid #10b981;
+      color: #34d399;
+      padding: 10px 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    .pad-btn:active {
+      background: #047857;
+      transform: scale(0.96);
+    }
+    .quick-actions {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: #064e3b;
+      border: 1px solid #047857;
+      color: #a7f3d0;
+      font-size: 0.75rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .action-btn:active {
+      background: #047857;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      background: #021a11;
+      border: 1px solid #064e3b;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 0.7rem;
+      min-height: 48px;
+      max-height: 52px;
+      overflow-y: hidden;
+      color: #a7f3d0;
+    }
+    .log-box p {
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .log-box p:last-child {
+      color: #34d399;
+      font-weight: bold;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 26, 17, 0.94);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      border-radius: 8px;
+      z-index: 50;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-card {
+      background: #064e3b;
+      border: 2px solid #10b981;
+      border-radius: 12px;
+      padding: 18px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #34d399;
+      margin-bottom: 4px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #059669, #10b981);
+      border: none;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>🗡️</span> SUNKEN SPIRE</h1>
+    <span style="font-size: 0.75rem; color: #34d399; font-weight: bold;" id="wing-badge">WING 1 / 3</span>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Health</div>
+      <div class="hud-val val-hp" id="val-hp">30 / 30</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Tools</div>
+      <div class="hud-val val-tools" id="val-tools">🗡️ 🪃</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Keys</div>
+      <div class="hud-val val-keys" id="val-keys">0 🗝️</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Score</div>
+      <div class="hud-val val-score" id="val-score">0</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="spire-canvas" width="400" height="400"></canvas>
+
+    <!-- Game Over / Victory Modal -->
+    <div class="modal-overlay" id="quest-modal">
+      <div class="modal-card">
+        <div class="modal-title" id="quest-title">QUEST CONCLUDED</div>
+        <p style="font-size: 0.8rem; color: #d1fae5; margin: 8px 0;" id="quest-desc"></p>
+        <div style="font-size: 1rem; color: #facc15; font-weight: bold; margin-bottom: 8px;" id="quest-score">Score: 0</div>
+        <button class="btn-primary" id="btn-restart">BEGIN EXPEDITION</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mode-switch">
+    <button class="mode-btn active" id="btn-mode-move">SWORD (1)</button>
+    <button class="mode-btn" id="btn-mode-boomerang">BOOMERANG (2)</button>
+    <button class="mode-btn" id="btn-mode-bomb">BOMB (3)</button>
+    <button class="mode-btn" id="btn-mode-hookshot">HOOKSHOT (4)</button>
+    <button class="mode-btn" id="btn-mode-unlock">UNLOCK (5)</button>
+  </div>
+
+  <div class="control-panel">
+    <div class="dpad-container">
+      <div></div>
+      <button class="pad-btn" id="btn-up">▲</button>
+      <div></div>
+      <button class="pad-btn" id="btn-left">◀</button>
+      <button class="pad-btn" id="btn-wait" style="font-size: 0.65rem; color: #a7f3d0;">WAIT</button>
+      <button class="pad-btn" id="btn-right">▶</button>
+      <div></div>
+      <button class="pad-btn" id="btn-down">▼</button>
+      <div></div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="action-btn" id="btn-action-wait">REST (Z)</button>
+      <button class="action-btn" id="btn-bot" style="border-color: #10b981; color: #34d399;">AI STEP</button>
+    </div>
+  </div>
+
+  <div class="log-box" id="log-box">
+    <p>Entered the Sunken Spire. Seek the Solar Relic.</p>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Math.random() * 1000000));
+    let currentMode = 'move'; // 'move', 'boomerang', 'bomb', 'hookshot', 'unlock'
+    const canvas = document.getElementById('spire-canvas');
+    const ctx = canvas.getContext('2d');
+    const TILE_SIZE = 40; // 10 x 40 = 400
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('btn-mode-move').className = 'mode-btn' + (mode === 'move' ? ' active' : '');
+      document.getElementById('btn-mode-boomerang').className = 'mode-btn' + (mode === 'boomerang' ? ' active' : '');
+      document.getElementById('btn-mode-bomb').className = 'mode-btn' + (mode === 'bomb' ? ' active' : '');
+      document.getElementById('btn-mode-hookshot').className = 'mode-btn' + (mode === 'hookshot' ? ' active' : '');
+      document.getElementById('btn-mode-unlock').className = 'mode-btn' + (mode === 'unlock' ? ' active' : '');
+    }
+
+    function executeAction(act) {
+      if (isOver(state)) return;
+      const legals = legalActions(state);
+      if (!legals.includes(act)) return;
+
+      step(state, act);
+      render();
+    }
+
+    function handleDirection(dir) {
+      if (currentMode === 'move') {
+        executeAction('move:' + dir);
+      } else if (currentMode === 'boomerang') {
+        executeAction('throw_boomerang:' + dir);
+      } else if (currentMode === 'bomb') {
+        executeAction('place_bomb:' + dir);
+      } else if (currentMode === 'hookshot') {
+        executeAction('hookshot:' + dir);
+      } else if (currentMode === 'unlock') {
+        executeAction('unlock:' + dir);
+      }
+    }
+
+    function render() {
+      const p = state.player;
+
+      // HUD
+      const WING_NAMES = [
+        '',
+        'WING 1: SUN COURTYARD',
+        'WING 2: FIRE FOUNDRY',
+        'WING 3: SUNKEN VAULT'
+      ];
+      document.getElementById('wing-badge').textContent = WING_NAMES[state.wing] || ('WING ' + state.wing);
+      document.getElementById('val-hp').textContent = p.hp + ' / ' + p.maxHp;
+
+      let toolIcons = '🗡️';
+      if (p.tools.includes('boomerang')) toolIcons += ' 🪃';
+      if (p.tools.includes('bombs')) toolIcons += ' 💣' + p.bombsCount;
+      if (p.tools.includes('hookshot')) toolIcons += ' ⚓';
+      document.getElementById('val-tools').textContent = toolIcons;
+
+      let keyStr = p.keys + ' 🗝️';
+      if (p.hasMasterKey) keyStr += ' 👑';
+      document.getElementById('val-keys').textContent = keyStr;
+      document.getElementById('val-score').textContent = state.score;
+
+      // Log
+      const logBox = document.getElementById('log-box');
+      const recent = (state.combatLog || []).slice(-3);
+      logBox.innerHTML = recent.map(line => '<p>' + line + '</p>').join('');
+
+      // Canvas
+      ctx.fillStyle = '#021a11';
+      ctx.fillRect(0, 0, 400, 400);
+
+      // Render dungeon tiles
+      for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 10; x++) {
+          const rx = x * TILE_SIZE;
+          const ry = y * TILE_SIZE;
+          const char = state.map[y][x];
+
+          if (char === '#') {
+            ctx.fillStyle = '#064e3b';
+            ctx.fillRect(rx + 1, ry + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+            ctx.strokeStyle = '#047857';
+            ctx.strokeRect(rx + 1, ry + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+          } else if (char === '~') {
+            // Water/chasm
+            ctx.fillStyle = '#0369a1';
+            ctx.fillRect(rx, ry, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = '16px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('≈', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+          } else {
+            ctx.fillStyle = '#062d1f';
+            ctx.fillRect(rx, ry, TILE_SIZE, TILE_SIZE);
+
+            if (char === 'G') {
+              // Barrier gate
+              ctx.fillStyle = '#f59e0b';
+              ctx.font = 'bold 20px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('▥', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === '*') {
+              // Crystal switch
+              ctx.fillStyle = '#38bdf8';
+              ctx.font = 'bold 22px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('✦', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'C') {
+              // Cracked wall
+              ctx.fillStyle = '#78350f';
+              ctx.fillRect(rx + 2, ry + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+              ctx.fillStyle = '#d97706';
+              ctx.font = 'bold 16px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('░', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'P') {
+              // Hookshot post
+              ctx.fillStyle = '#b45309';
+              ctx.beginPath();
+              ctx.arc(rx + TILE_SIZE / 2, ry + TILE_SIZE / 2, 8, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (char === 'D') {
+              // Locked door
+              ctx.fillStyle = '#facc15';
+              ctx.font = 'bold 20px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('🔒', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'X') {
+              // Boss door
+              ctx.fillStyle = '#ef4444';
+              ctx.font = 'bold 22px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('👑', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'k') {
+              // Small key
+              ctx.fillStyle = '#fbbf24';
+              ctx.font = '18px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('🗝️', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'B') {
+              // Master key
+              ctx.fillStyle = '#f59e0b';
+              ctx.font = 'bold 20px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('🔑', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'H') {
+              // Heart container
+              ctx.fillStyle = '#f43f5e';
+              ctx.font = 'bold 18px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('❤️', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'R') {
+              // Solar Relic
+              ctx.fillStyle = '#fbbf24';
+              ctx.font = 'bold 24px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('☀️', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            }
+          }
+        }
+      }
+
+      // Enemies
+      for (const e of state.enemies) {
+        if (e.hp <= 0) continue;
+        const ex = e.x * TILE_SIZE;
+        const ey = e.y * TILE_SIZE;
+
+        ctx.save();
+        if (e.type === 'boss') {
+          ctx.fillStyle = '#991b1b';
+          ctx.strokeStyle = '#f43f5e';
+        } else if (e.type === 'minotaur') {
+          ctx.fillStyle = '#b45309';
+          ctx.strokeStyle = '#f59e0b';
+        } else {
+          ctx.fillStyle = '#dc2626';
+          ctx.strokeStyle = '#f87171';
+        }
+
+        ctx.lineWidth = 2;
+        ctx.fillRect(ex + 8, ey + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+        ctx.strokeRect(ex + 8, ey + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+
+        // Stunned indicator
+        if (e.stunned > 0) {
+          ctx.fillStyle = '#facc15';
+          ctx.font = 'bold 12px monospace';
+          ctx.fillText('💫', ex + TILE_SIZE / 2, ey + 4);
+        }
+
+        // HP bar
+        const hpPct = Math.max(0, e.hp / e.maxHp);
+        ctx.fillStyle = '#1f2937';
+        ctx.fillRect(ex + 8, ey + 3, TILE_SIZE - 16, 3);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(ex + 8, ey + 3, (TILE_SIZE - 16) * hpPct, 3);
+        ctx.restore();
+      }
+
+      // Player Hero
+      const px = p.x * TILE_SIZE;
+      const py = p.y * TILE_SIZE;
+      ctx.save();
+      ctx.fillStyle = '#10b981';
+      ctx.strokeStyle = '#6ee7b7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(px + 7, py + 7, TILE_SIZE - 14, TILE_SIZE - 14, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Sword icon
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Modal
+      const modal = document.getElementById('quest-modal');
+      if (isOver(state)) {
+        modal.className = 'modal-overlay active';
+        const title = document.getElementById('quest-title');
+        const desc = document.getElementById('quest-desc');
+        const sc = document.getElementById('quest-score');
+        sc.textContent = 'Final Score: ' + state.score;
+
+        if (state.victory) {
+          title.textContent = 'TRIUMPH OF THE SPIRE!';
+          title.style.color = '#34d399';
+          desc.textContent = 'The Gorgon Titan has fallen! You claimed the ancient Solar Relic and dispelled the sunken curse!';
+        } else {
+          title.textContent = 'QUEST FAILED';
+          title.style.color = '#f87171';
+          desc.textContent = p.hp <= 0 ? 'You collapsed in the depths of the temple.' : 'The ancient mechanism sealed forever.';
+        }
+      } else {
+        modal.className = 'modal-overlay';
+      }
+    }
+
+    // Button event listeners
+    document.getElementById('btn-mode-move').onclick = () => setMode('move');
+    document.getElementById('btn-mode-boomerang').onclick = () => setMode('boomerang');
+    document.getElementById('btn-mode-bomb').onclick = () => setMode('bomb');
+    document.getElementById('btn-mode-hookshot').onclick = () => setMode('hookshot');
+    document.getElementById('btn-mode-unlock').onclick = () => setMode('unlock');
+
+    document.getElementById('btn-up').onclick = () => handleDirection('up');
+    document.getElementById('btn-down').onclick = () => handleDirection('down');
+    document.getElementById('btn-left').onclick = () => handleDirection('left');
+    document.getElementById('btn-right').onclick = () => handleDirection('right');
+    document.getElementById('btn-wait').onclick = () => executeAction('wait');
+    document.getElementById('btn-action-wait').onclick = () => executeAction('wait');
+
+    document.getElementById('btn-bot').onclick = () => {
+      const legals = legalActions(state);
+      if (legals.length > 0) {
+        // Priority: unlock > hookshot > boomerang > bomb > move
+        const unlockAct = legals.find(a => a.startsWith('unlock:'));
+        const hookAct = legals.find(a => a.startsWith('hookshot:'));
+        const act = unlockAct || hookAct || legals.find(a => a.startsWith('move:')) || legals[0];
+        executeAction(act);
+      }
+    };
+
+    document.getElementById('btn-restart').onclick = () => {
+      state = createState(Math.floor(Math.random() * 1000000));
+      render();
+    };
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      if (isOver(state)) return;
+      const key = e.key.toLowerCase();
+
+      if (key === '1') { setMode('move'); return; }
+      if (key === '2') { setMode('boomerang'); return; }
+      if (key === '3') { setMode('bomb'); return; }
+      if (key === '4') { setMode('hookshot'); return; }
+      if (key === '5') { setMode('unlock'); return; }
+
+      if (key === 'arrowup' || key === 'w') { handleDirection('up'); e.preventDefault(); }
+      else if (key === 'arrowdown' || key === 's') { handleDirection('down'); e.preventDefault(); }
+      else if (key === 'arrowleft' || key === 'a') { handleDirection('left'); e.preventDefault(); }
+      else if (key === 'arrowright' || key === 'd') { handleDirection('right'); e.preventDefault(); }
+      else if (key === ' ' || key === 'z') { executeAction('wait'); e.preventDefault(); }
+    });
+
+    render();
+  </script>
+</body>
+</html>

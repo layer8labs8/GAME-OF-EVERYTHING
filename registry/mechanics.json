@@ -1341,9 +1341,11 @@
    "slug": "action-adventure",
    "name": "Action-Adventure",
    "family": "Adventure",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Sunken Spire",
+   "levels": "endless"
   },
   {
    "id": "0129",

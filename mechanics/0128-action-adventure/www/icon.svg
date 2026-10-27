@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="128" fill="#0d1117"/>
+  <rect x="56" y="56" width="400" height="400" rx="36" fill="#064e3b" stroke="#10b981" stroke-width="12"/>
+  <!-- Hylian style shield -->
+  <path d="M256,100 L380,140 L380,280 C380,360 256,420 256,420 C256,420 132,360 132,280 L132,140 Z" fill="#047857" stroke="#34d399" stroke-width="8"/>
+  <!-- Master Sword blade and guard -->
+  <line x1="256" y1="110" x2="256" y2="350" stroke="#f8fafc" stroke-width="14" stroke-linecap="round"/>
+  <line x1="216" y1="170" x2="296" y2="170" stroke="#facc15" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="256" cy="170" r="10" fill="#10b981"/>
+  <!-- Solar Triforce / Emblem -->
+  <polygon points="256,230 236,265 276,265" fill="#facc15"/>
+  <polygon points="236,265 216,300 256,300" fill="#facc15"/>
+  <polygon points="276,265 256,300 296,300" fill="#facc15"/>
+</svg>
