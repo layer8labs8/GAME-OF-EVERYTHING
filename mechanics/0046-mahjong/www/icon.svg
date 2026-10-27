@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="100" fill="#042013" />
+  <circle cx="256" cy="256" r="210" fill="#0d3b24" stroke="#10b981" stroke-width="8"/>
+  <!-- Mahjong Tile Base -->
+  <rect x="140" y="110" width="232" height="292" rx="28" fill="#065f46" />
+  <!-- Ivory Tile Face -->
+  <rect x="150" y="100" width="232" height="292" rx="24" fill="#fdfbf7" stroke="#cbd5e1" stroke-width="4"/>
+  <!-- Classical Red Dragon Character '中' -->
+  <rect x="200" y="180" width="132" height="110" rx="8" fill="none" stroke="#dc2626" stroke-width="22"/>
+  <line x1="266" y1="130" x2="266" y2="360" stroke="#dc2626" stroke-width="22" stroke-linecap="round"/>
+</svg>

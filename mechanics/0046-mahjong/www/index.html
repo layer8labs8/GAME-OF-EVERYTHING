@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mahjong Solitaire</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#062817">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #041a10;
+      color: #d1fae5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #34d399;
+      text-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #a7f3d0;
+    }
+    .hud span { color: #ffffff; }
+    canvas {
+      background: #064e3b;
+      border: 3px solid #042f24;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 0 40px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      display: block;
+      cursor: pointer;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 8px;
+      gap: 8px;
+    }
+    button {
+      background: #065f46;
+      border: 1px solid #10b981;
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px;
+      min-height: 40px;
+      flex: 1;
+      transition: all 0.05s;
+    }
+    button:active { background: #047857; transform: scale(0.96); }
+    #game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(4, 26, 16, 0.92);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 10;
+    }
+    #game-overlay h2 { font-size: 2rem; color: #34d399; }
+  </style>
+</head>
+<body>
+  <div id="game-container" style="position: relative;">
+    <header>
+      <h1>MAHJONG</h1>
+      <div class="hud">
+        <div>TILES: <span id="val-tiles">36</span></div>
+        <div>COMBO: <span id="val-combo">0</span>x</div>
+        <div>SCORE: <span id="val-score">0</span></div>
+      </div>
+    </header>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <div class="controls">
+      <button id="btn-hint">HINT [H]</button>
+      <button id="btn-new">NEW GAME [N]</button>
+    </div>
+
+    <div id="game-overlay">
+      <h2 id="overlay-title">VICTORY</h2>
+      <p id="overlay-sub" style="font-size: 1.1rem; color: #a7f3d0;">All 36 tiles cleared!</p>
+      <button id="btn-restart" style="padding: 10px 24px; font-size: 1rem; max-width: 200px;">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const elTiles = document.getElementById('val-tiles');
+      const elCombo = document.getElementById('val-combo');
+      const elScore = document.getElementById('val-score');
+      const btnHint = document.getElementById('btn-hint');
+      const btnNew = document.getElementById('btn-new');
+      const overlay = document.getElementById('game-overlay');
+      const overlayTitle = document.getElementById('overlay-title');
+      const overlaySub = document.getElementById('overlay-sub');
+      const btnRestart = document.getElementById('btn-restart');
+
+      let state = MahjongSolitaire.createState(Date.now() % 100000);
+      let selectedTileId = null;
+      let hintedPair = null;
+
+      // Layout geometry mapping: x: 1..6, y: 0..3
+      const TILE_W = 44;
+      const TILE_H = 58;
+      const ORIGIN_X = 46;
+      const ORIGIN_Y = 62;
+
+      function getTileScreenRect(t) {
+        const offX = -t.z * 5;
+        const offY = -t.z * 5;
+        const x = ORIGIN_X + (t.x - 1) * 52 + offX;
+        const y = ORIGIN_Y + t.y * 68 + offY;
+        return { x, y, w: TILE_W, h: TILE_H };
+      }
+
+      function updateUI() {
+        if (elTiles) elTiles.textContent = state.tiles.length;
+        if (elCombo) elCombo.textContent = state.combo;
+        if (elScore) elScore.textContent = state.scoreVal;
+
+        if (MahjongSolitaire.isOver(state)) {
+          if (overlay) {
+            overlay.style.display = 'flex';
+            if (state.won) {
+              if (overlayTitle) { overlayTitle.textContent = 'TABLE CLEARED'; overlayTitle.style.color = '#34d399'; }
+              if (overlaySub) overlaySub.textContent = `Masterful play! Score: ${state.scoreVal}`;
+            } else {
+              if (overlayTitle) { overlayTitle.textContent = 'NO MATCHES LEFT'; overlayTitle.style.color = '#f87171'; }
+              if (overlaySub) overlaySub.textContent = `Remaining tiles: ${state.tiles.length}. Score: ${state.scoreVal}`;
+            }
+          }
+        } else {
+          if (overlay) overlay.style.display = 'none';
+        }
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 400, 400);
+
+        // Sort tiles from tier 0 to tier 2 for natural stacking
+        const sorted = state.tiles.slice().sort((a, b) => {
+          if (a.z !== b.z) return a.z - b.z;
+          if (a.y !== b.y) return a.y - b.y;
+          return a.x - b.x;
+        });
+
+        for (const t of sorted) {
+          const rect = getTileScreenRect(t);
+          const isFree = MahjongSolitaire.isTileFree(t, state.tiles);
+          const isSelected = selectedTileId === t.id;
+          const isHinted = hintedPair && (hintedPair.t1 === t.id || hintedPair.t2 === t.id);
+
+          ctx.save();
+          // Drop shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+          ctx.fillRect(rect.x + 4, rect.y + 4, rect.w, rect.h);
+
+          // Tile base edge (green jade/bone backing)
+          ctx.fillStyle = isSelected ? '#b45309' : '#064e3b';
+          ctx.fillRect(rect.x + 2, rect.y + 2, rect.w, rect.h);
+
+          // Tile front face (ivory)
+          if (!isFree) {
+            ctx.fillStyle = '#cbd5e1'; // Shaded if blocked
+          } else if (isSelected) {
+            ctx.fillStyle = '#fef08a'; // Golden highlight
+          } else if (isHinted) {
+            ctx.fillStyle = '#bbf7d0'; // Soft green pulse
+          } else {
+            ctx.fillStyle = '#f8fafc'; // Clean ivory
+          }
+          ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+
+          // Border stroke
+          ctx.strokeStyle = isSelected ? '#f59e0b' : isHinted ? '#10b981' : '#94a3b8';
+          ctx.lineWidth = isSelected || isHinted ? 2.5 : 1.2;
+          ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+
+          // Tile Glyph / Label
+          ctx.font = 'bold 15px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          if (t.type.endsWith('B')) {
+            ctx.fillStyle = isFree ? '#15803d' : '#64748b'; // Bamboo
+            ctx.fillText(t.type, rect.x + rect.w / 2, rect.y + rect.h / 2);
+          } else if (t.type.endsWith('C')) {
+            ctx.fillStyle = isFree ? '#b91c1c' : '#64748b'; // Characters
+            ctx.fillText(t.type, rect.x + rect.w / 2, rect.y + rect.h / 2);
+          } else if (t.type.endsWith('D')) {
+            ctx.fillStyle = isFree ? '#1d4ed8' : '#64748b'; // Dots
+            ctx.fillText(t.type, rect.x + rect.w / 2, rect.y + rect.h / 2);
+          } else if (t.type === 'DR') {
+            ctx.fillStyle = isFree ? '#dc2626' : '#64748b'; // Red Dragon
+            ctx.fillText('中', rect.x + rect.w / 2, rect.y + rect.h / 2);
+          } else if (t.type === 'DG') {
+            ctx.fillStyle = isFree ? '#16a34a' : '#64748b'; // Green Dragon
+            ctx.fillText('發', rect.x + rect.w / 2, rect.y + rect.h / 2);
+          } else {
+            ctx.fillStyle = '#334155';
+            ctx.fillText(t.type, rect.x + rect.w / 2, rect.y + rect.h / 2);
+          }
+
+          ctx.restore();
+        }
+      }
+
+      function handleTileClick(clickX, clickY) {
+        if (MahjongSolitaire.isOver(state)) return;
+
+        // Search in reverse draw order (highest tier first)
+        const sorted = state.tiles.slice().sort((a, b) => {
+          if (b.z !== a.z) return b.z - a.z;
+          return b.id - a.id;
+        });
+
+        let clicked = null;
+        for (const t of sorted) {
+          const r = getTileScreenRect(t);
+          if (clickX >= r.x && clickX <= r.x + r.w && clickY >= r.y && clickY <= r.y + r.h) {
+            if (MahjongSolitaire.isTileFree(t, state.tiles)) {
+              clicked = t;
+              break;
+            }
+          }
+        }
+
+        if (!clicked) {
+          selectedTileId = null;
+          render();
+          return;
+        }
+
+        if (selectedTileId === null) {
+          selectedTileId = clicked.id;
+          hintedPair = null;
+        } else if (selectedTileId === clicked.id) {
+          selectedTileId = null; // Deselect
+        } else {
+          // Attempt match between selectedTile and clicked
+          const first = Math.min(selectedTileId, clicked.id);
+          const second = Math.max(selectedTileId, clicked.id);
+          const act = `match_${first}_${second}`;
+          const legals = MahjongSolitaire.legalActions(state);
+
+          if (legals.includes(act)) {
+            MahjongSolitaire.step(state, act);
+            selectedTileId = null;
+            hintedPair = null;
+            updateUI();
+          } else {
+            selectedTileId = clicked.id; // Switch selection
+          }
+        }
+        render();
+      }
+
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = 400 / rect.width;
+        const scaleY = 400 / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        handleTileClick(x, y);
+      });
+
+      if (btnHint) {
+        btnHint.addEventListener('click', () => {
+          const legals = MahjongSolitaire.legalActions(state);
+          if (legals.length > 0) {
+            const parts = legals[0].split('_');
+            hintedPair = { t1: parseInt(parts[1], 10), t2: parseInt(parts[2], 10) };
+            render();
+          }
+        });
+      }
+
+      function startNewGame() {
+        state = MahjongSolitaire.createState(Date.now() % 100000);
+        selectedTileId = null;
+        hintedPair = null;
+        updateUI();
+        render();
+      }
+
+      if (btnNew) btnNew.addEventListener('click', startNewGame);
+      if (btnRestart) btnRestart.addEventListener('click', startNewGame);
+
+      window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'h' && btnHint) btnHint.click();
+        if (k === 'n') startNewGame();
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>
