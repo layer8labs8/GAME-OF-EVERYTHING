@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lemming Brigade</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #1e293b;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .stat-badge {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .badge {
+      background: #334155;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge.green { color: #34d399; }
+    .badge.red { color: #f87171; }
+    .badge.yellow { color: #fbbf24; }
+    .badge.cyan { color: #38bdf8; }
+
+    #gameCanvas {
+      background: #090d16;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      max-width: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .toolbar {
+      width: 100%;
+      max-width: 800px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .tool-btn {
+      background: #1e293b;
+      border: 2px solid #475569;
+      border-radius: 6px;
+      color: #f1f5f9;
+      padding: 8px 4px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+    .tool-btn:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+    .tool-btn.active {
+      background: #047857;
+      border-color: #34d399;
+      box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+    }
+    .tool-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: #334155;
+    }
+    .tool-count {
+      font-size: 11px;
+      color: #fbbf24;
+    }
+
+    .controls-row {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .ctrl-btn {
+      flex: 1;
+      background: #334155;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .ctrl-btn:hover { background: #475569; }
+    .ctrl-btn.primary { background: #2563eb; border-color: #3b82f6; }
+    .ctrl-btn.danger { background: #dc2626; border-color: #ef4444; }
+
+    #overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div><strong id="levelTitle">The Gentle Descent</strong></div>
+    <div class="stat-badge">
+      <span class="badge green">Saved: <span id="savedCount">0</span>/<span id="quotaCount">4</span></span>
+      <span class="badge red">Lost: <span id="deadCount">0</span></span>
+      <span class="badge yellow">Turn: <span id="turnCount">0</span></span>
+      <span class="badge cyan">Score: <span id="scoreCount">0</span></span>
+    </div>
+  </header>
+
+  <div style="position: relative; width: 800px; max-width: 100%;">
+    <canvas id="gameCanvas" width="800" height="480"></canvas>
+    <div id="overlay">
+      <h2 id="overlayTitle" style="font-size: 32px; margin-bottom: 12px;">VICTORY!</h2>
+      <p id="overlayDesc" style="color: #94a3b8; margin-bottom: 20px;">Brigade rescued successfully!</p>
+      <button class="ctrl-btn primary" id="playAgainBtn" style="padding: 12px 24px; font-size: 16px;">Next Cavern</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="tool-btn active" id="btn-floater" data-role="floater">
+      <span>☂ Floater</span>
+      <span class="tool-count" id="count-floater">2</span>
+    </button>
+    <button class="tool-btn" id="btn-blocker" data-role="blocker">
+      <span>🛑 Blocker</span>
+      <span class="tool-count" id="count-blocker">2</span>
+    </button>
+    <button class="tool-btn" id="btn-builder" data-role="builder">
+      <span>🪜 Builder</span>
+      <span class="tool-count" id="count-builder">4</span>
+    </button>
+    <button class="tool-btn" id="btn-digger" data-role="digger">
+      <span>⛏ Digger</span>
+      <span class="tool-count" id="count-digger">2</span>
+    </button>
+    <button class="tool-btn" id="btn-miner" data-role="miner">
+      <span>⛏ Miner</span>
+      <span class="tool-count" id="count-miner">2</span>
+    </button>
+    <button class="tool-btn" id="btn-bomber" data-role="bomber">
+      <span>💣 Bomber</span>
+      <span class="tool-count" id="count-bomber">2</span>
+    </button>
+  </div>
+
+  <div class="controls-row">
+    <button class="ctrl-btn" id="stepBtn">Step (Space)</button>
+    <button class="ctrl-btn" id="speedBtn">Speed: 1x</button>
+    <button class="ctrl-btn" id="autoBtn">Play / Pause</button>
+    <button class="ctrl-btn danger" id="restartBtn">Restart Level</button>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(1);
+    let selectedRole = "floater";
+    let speed = 1;
+    let autoPlaying = true;
+    let timerId = null;
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas ? canvas.getContext("2d") : null;
+    const TILE_SIZE = 40;
+
+    let audioCtx = null;
+    function playBeep(freq, type = 'sine', duration = 0.1) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function selectRole(role) {
+      selectedRole = role;
+      const buttons = document.querySelectorAll(".tool-btn");
+      if (buttons && buttons.length) {
+        buttons.forEach(b => {
+          if (b.classList) {
+            if (b.getAttribute("data-role") === role) {
+              b.classList.add("active");
+            } else {
+              b.classList.remove("active");
+            }
+          }
+        });
+      }
+    }
+
+    function updateUI() {
+      const titleEl = document.getElementById("levelTitle");
+      if (titleEl) titleEl.textContent = state.levelName;
+      const sEl = document.getElementById("savedCount");
+      if (sEl) sEl.textContent = state.savedCount;
+      const qEl = document.getElementById("quotaCount");
+      if (qEl) qEl.textContent = state.quota;
+      const dEl = document.getElementById("deadCount");
+      if (dEl) dEl.textContent = state.deadCount;
+      const tEl = document.getElementById("turnCount");
+      if (tEl) tEl.textContent = state.turn;
+      const scEl = document.getElementById("scoreCount");
+      if (scEl) scEl.textContent = score(state);
+
+      const roles = ["floater", "blocker", "builder", "digger", "miner", "bomber"];
+      roles.forEach(r => {
+        const count = state.inventory[r] || 0;
+        const countEl = document.getElementById("count-" + r);
+        if (countEl) countEl.textContent = count;
+        const btn = document.getElementById("btn-" + r);
+        if (btn) btn.disabled = (count <= 0);
+      });
+
+      if (state.done) {
+        autoPlaying = false;
+        if (timerId) clearInterval(timerId);
+        timerId = null;
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "flex";
+        const title = document.getElementById("overlayTitle");
+        const desc = document.getElementById("overlayDesc");
+        if (title && desc) {
+          if (state.won) {
+            title.textContent = "VICTORY!";
+            title.style.color = "#34d399";
+            desc.textContent = `Rescued ${state.savedCount} minions with score ${score(state)}!`;
+            playBeep(523, 'triangle', 0.3);
+          } else {
+            title.textContent = "MISSION FAILED";
+            title.style.color = "#f87171";
+            desc.textContent = `Only ${state.savedCount} saved. Quota of ${state.quota} was required.`;
+            playBeep(180, 'sawtooth', 0.4);
+          }
+        }
+      }
+    }
+
+    function render() {
+      if (!ctx || !canvas) return;
+      ctx.fillStyle = "#090d16";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let y = 0; y < state.height; y++) {
+        for (let x = 0; x < state.width; x++) {
+          const tile = state.grid[y][x];
+          const px = x * TILE_SIZE;
+          const py = y * TILE_SIZE;
+
+          if (tile === 'B') {
+            ctx.fillStyle = "#334155";
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            ctx.strokeStyle = "#475569";
+            ctx.strokeRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+            ctx.fillStyle = "#94a3b8";
+            ctx.fillRect(px + 4, py + 4, 3, 3);
+            ctx.fillRect(px + TILE_SIZE - 7, py + 4, 3, 3);
+            ctx.fillRect(px + 4, py + TILE_SIZE - 7, 3, 3);
+            ctx.fillRect(px + TILE_SIZE - 7, py + TILE_SIZE - 7, 3, 3);
+          } else if (tile === '#') {
+            ctx.fillStyle = "#78350f";
+            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = "#92400e";
+            ctx.fillRect(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+          } else if (tile === '_') {
+            ctx.fillStyle = "#d97706";
+            ctx.fillRect(px, py + TILE_SIZE - 10, TILE_SIZE, 10);
+            ctx.strokeStyle = "#f59e0b";
+            ctx.strokeRect(px, py + TILE_SIZE - 10, TILE_SIZE, 10);
+          } else if (tile === 'X') {
+            ctx.fillStyle = "#b91c1c";
+            ctx.fillRect(px, py + TILE_SIZE - 6, TILE_SIZE, 6);
+            ctx.fillStyle = "#ef4444";
+            for (let i = 0; i < 4; i++) {
+              ctx.beginPath();
+              ctx.moveTo(px + i * 10, py + TILE_SIZE);
+              ctx.lineTo(px + i * 10 + 5, py + TILE_SIZE - 16);
+              ctx.lineTo(px + i * 10 + 10, py + TILE_SIZE);
+              ctx.fill();
+            }
+          }
+        }
+      }
+
+      // Spawn Portal
+      const spx = state.spawnX * TILE_SIZE + TILE_SIZE / 2;
+      const spy = state.spawnY * TILE_SIZE;
+      ctx.fillStyle = "#f59e0b";
+      ctx.fillRect(spx - 14, spy, 28, 6);
+
+      // Exit Door
+      const ex = state.exitX * TILE_SIZE + TILE_SIZE / 2;
+      const ey = state.exitY * TILE_SIZE + TILE_SIZE / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ex, ey, 18, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(6, 182, 212, 0.4)";
+      ctx.fill();
+      ctx.strokeStyle = "#38bdf8";
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(ex, ey, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "#38bdf8";
+      ctx.fill();
+      ctx.restore();
+
+      // Minions
+      state.minions.forEach(m => {
+        if (m.status !== "active") return;
+
+        const mx = m.x * TILE_SIZE + TILE_SIZE / 2;
+        const my = m.y * TILE_SIZE + TILE_SIZE / 2;
+
+        ctx.save();
+
+        if (m.isFloater && m.fallDistance > 0) {
+          ctx.beginPath();
+          ctx.arc(mx, my - 22, 14, Math.PI, 0);
+          ctx.fillStyle = "#ec4899";
+          ctx.fill();
+          ctx.strokeStyle = "#f472b6";
+          ctx.stroke();
+        }
+
+        if (m.bombCountdown > 0) {
+          ctx.fillStyle = "#ef4444";
+          ctx.font = "bold 14px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(m.bombCountdown, mx, my - 24);
+        }
+
+        ctx.fillStyle = (m.role === "blocker") ? "#dc2626" : "#2563eb";
+        ctx.fillRect(mx - 6, my - 6, 12, 14);
+
+        ctx.fillStyle = "#10b981";
+        ctx.beginPath();
+        ctx.arc(mx, my - 9, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+
+    function doStep(action = "wait") {
+      if (state.done) return;
+      try {
+        const res = step(state, action);
+        if (action !== "wait") {
+          playBeep(440, 'triangle', 0.08);
+        }
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    if (canvas) {
+      canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+        let targetMinion = null;
+        let minDist = 32;
+
+        state.minions.forEach(m => {
+          if (m.status !== "active") return;
+          const mx = m.x * TILE_SIZE + TILE_SIZE / 2;
+          const my = m.y * TILE_SIZE + TILE_SIZE / 2;
+          const dist = Math.hypot(mx - clickX, my - clickY);
+          if (dist < minDist) {
+            minDist = dist;
+            targetMinion = m;
+          }
+        });
+
+        if (targetMinion && selectedRole && state.inventory[selectedRole] > 0) {
+          const actionStr = `${selectedRole}:${targetMinion.id}`;
+          const legal = legalActions(state);
+          if (legal.includes(actionStr)) {
+            doStep(actionStr);
+          }
+        }
+      });
+    }
+
+    const toolButtons = document.querySelectorAll(".tool-btn");
+    if (toolButtons && toolButtons.length) {
+      toolButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const role = btn.getAttribute("data-role");
+          if (role) selectRole(role);
+        });
+      });
+    }
+
+    const stepBtn = document.getElementById("stepBtn");
+    if (stepBtn) stepBtn.addEventListener("click", () => doStep("wait"));
+
+    const speedBtn = document.getElementById("speedBtn");
+    if (speedBtn) {
+      speedBtn.addEventListener("click", () => {
+        if (speed === 1) speed = 2;
+        else if (speed === 2) speed = 4;
+        else speed = 1;
+        speedBtn.textContent = `Speed: ${speed}x`;
+        restartLoop();
+      });
+    }
+
+    const autoBtn = document.getElementById("autoBtn");
+    if (autoBtn) {
+      autoBtn.addEventListener("click", () => {
+        autoPlaying = !autoPlaying;
+        autoBtn.textContent = autoPlaying ? "Pause" : "Play";
+        restartLoop();
+      });
+    }
+
+    function restartLoop() {
+      if (timerId) clearInterval(timerId);
+      timerId = null;
+      if (autoPlaying && !state.done) {
+        timerId = setInterval(() => doStep("wait"), 600 / speed);
+      }
+    }
+
+    const restartBtn = document.getElementById("restartBtn");
+    if (restartBtn) {
+      restartBtn.addEventListener("click", () => {
+        state = createState(state.seed);
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "none";
+        autoPlaying = true;
+        updateUI();
+        render();
+        restartLoop();
+      });
+    }
+
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    if (playAgainBtn) {
+      playAgainBtn.addEventListener("click", () => {
+        state = createState(state.seed + 1);
+        const overlay = document.getElementById("overlay");
+        if (overlay) overlay.style.display = "none";
+        autoPlaying = true;
+        updateUI();
+        render();
+        restartLoop();
+      });
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        doStep("wait");
+      } else if (e.key === "1") {
+        selectRole("floater");
+      } else if (e.key === "2") {
+        selectRole("blocker");
+      } else if (e.key === "3") {
+        selectRole("builder");
+      } else if (e.key === "4") {
+        selectRole("digger");
+      } else if (e.key === "5") {
+        selectRole("miner");
+      } else if (e.key === "6") {
+        selectRole("bomber");
+      }
+    });
+
+    updateUI();
+    render();
+    restartLoop();
+  </script>
+</body>
+</html>
