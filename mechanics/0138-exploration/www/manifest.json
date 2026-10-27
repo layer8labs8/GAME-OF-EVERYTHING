@@ -1,0 +1,12 @@
+{
+  "name": "Abyssal Horizons: Deep Sea Exploration",
+  "short_name": "AbyssalHorizons",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#0284c7",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

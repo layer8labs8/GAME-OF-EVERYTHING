@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Abyssal Horizons - Exploration</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0284c7">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #020617;
+      color: #f0f9ff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #082f49;
+      border-radius: 8px;
+      border: 1px solid #0284c7;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #0f172a;
+      border: 1px solid #0369a1;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #7dd3fc;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-pos { color: #facc15; }
+    .val-bat { color: #38bdf8; }
+    .val-map { color: #4ade80; }
+    .val-sc { color: #a78bfa; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 1 / 1;
+      background: #030712;
+      border: 2px solid #0284c7;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.25);
+      touch-action: none;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 460px;
+      background: #090e17;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      margin-top: 6px;
+      padding: 6px 8px;
+      height: 75px;
+      overflow-y: auto;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.72rem;
+      color: #bae6fd;
+    }
+    .log-line { margin-bottom: 2px; }
+    .log-alert { color: #f43f5e; font-weight: bold; }
+    .log-discovery { color: #facc15; font-weight: bold; }
+    .log-win { color: #4ade80; font-weight: bold; }
+
+    .actions-grid {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+    }
+    .btn-act {
+      background: #0f172a;
+      color: #f0f9ff;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 8px 6px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .btn-act:hover {
+      background: #1e293b;
+      border-color: #64748b;
+    }
+    .btn-act:active {
+      transform: scale(0.97);
+    }
+    .btn-nav {
+      background: #075985;
+      border-color: #0284c7;
+    }
+    .btn-nav:hover { background: #0369a1; }
+    .btn-sonar {
+      background: #065f46;
+      border-color: #10b981;
+    }
+    .btn-sonar:hover { background: #047857; }
+    .btn-vent {
+      background: #854d0e;
+      border-color: #f59e0b;
+    }
+    .btn-vent:hover { background: #a16207; }
+    .btn-monolith {
+      background: #701a75;
+      border-color: #d946ef;
+      grid-column: span 2;
+      font-weight: bold;
+      font-size: 0.82rem;
+      padding: 10px;
+    }
+    .btn-monolith:hover { background: #86198f; }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 6, 23, 0.94);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      z-index: 10;
+    }
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .win-title { color: #38bdf8; text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+    .lose-title { color: #f43f5e; text-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🌊 Abyssal Horizons</h1>
+    <div style="font-size:0.75rem; color:#bae6fd;" id="turn-counter">Turn: 0/150</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Position</div>
+      <div class="hud-val val-pos" id="hud-pos">(0, 0)</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Battery</div>
+      <div class="hud-val val-bat" id="hud-bat">60/60</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Charted</div>
+      <div class="hud-val val-map" id="hud-map">1 / 36</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Specimens</div>
+      <div class="hud-val val-sc" id="hud-specimens">0 Logs</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="game-canvas" width="460" height="460"></canvas>
+
+    <div class="log-box" id="log-box"></div>
+
+    <div class="actions-grid" id="actions-grid"></div>
+
+    <div id="end-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-title" id="modal-title">MISSION COMPLETE</div>
+      <p id="modal-desc" style="font-size:0.85rem; margin-bottom:12px; color:#cbd5e1;"></p>
+      <button class="btn-act" onclick="window.restartGame()" style="padding:10px 24px; font-size:0.9rem; font-weight:bold;">Launch Submersible</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      function init() {
+        state = createState(Date.now ? Date.now() : 1);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(act) {
+        if (!state || state.done) return;
+        try {
+          step(state, act);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // HUD Updates
+        const pEl = document.getElementById('hud-pos');
+        if (pEl) pEl.textContent = '(' + state.x + ', ' + state.y + ')';
+
+        const bEl = document.getElementById('hud-bat');
+        if (bEl) bEl.textContent = state.battery + '/' + state.maxBattery;
+
+        const mEl = document.getElementById('hud-map');
+        const chartedCount = Object.keys(state.charted).length;
+        if (mEl) mEl.textContent = chartedCount + ' / 36';
+
+        const spEl = document.getElementById('hud-specimens');
+        if (spEl) spEl.textContent = state.specimensCount + ' Logs';
+
+        const tEl = document.getElementById('turn-counter');
+        if (tEl) tEl.textContent = 'Turn: ' + state.turns + '/' + state.maxTurns;
+
+        // 6x6 Grid Ocean Map on Canvas
+        if (ctx) {
+          ctx.clearRect(0, 0, 460, 460);
+
+          const cellSize = 420 / GRID_SIZE; // 70px
+          const offsetX = 20;
+          const offsetY = 20;
+
+          // Ocean Grid Border
+          ctx.strokeStyle = '#0284c7';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(offsetX, offsetY, 420, 420);
+
+          for (let y = 0; y < GRID_SIZE; y++) {
+            for (let x = 0; x < GRID_SIZE; x++) {
+              const cx = offsetX + x * cellSize;
+              const cy = offsetY + y * cellSize;
+              const k = x + ',' + y;
+              const isCharted = !!state.charted[k];
+              const isCurrent = (x === state.x && y === state.y);
+
+              if (!isCharted) {
+                // Dense Fog of War
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(cx, cy, cellSize, cellSize);
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(cx, cy, cellSize, cellSize);
+
+                // Mysterious sonar ripples on unrevealed tiles
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.arc(cx + cellSize / 2, cy + cellSize / 2, 2, 0, Math.PI * 2);
+                ctx.fill();
+              } else {
+                // Revealed Sector Tile
+                const sector = state.grid[y][x];
+
+                // Base sector background
+                if (sector === SECTOR_TYPES.VENT) ctx.fillStyle = '#451a03';
+                else if (sector === SECTOR_TYPES.REEF) ctx.fillStyle = '#064e3b';
+                else if (sector === SECTOR_TYPES.GALLEON) ctx.fillStyle = '#1e1b4b';
+                else if (sector === SECTOR_TYPES.MONOLITH) ctx.fillStyle = '#4a044e';
+                else ctx.fillStyle = '#082f49';
+
+                ctx.fillRect(cx, cy, cellSize, cellSize);
+                ctx.strokeStyle = '#0369a1';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(cx, cy, cellSize, cellSize);
+
+                // Sector Feature Icons / Badges
+                ctx.font = 'bold 18px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                if (sector === SECTOR_TYPES.VENT) {
+                  ctx.fillStyle = '#f59e0b';
+                  ctx.fillText('♨️', cx + cellSize / 2, cy + cellSize / 2);
+                } else if (sector === SECTOR_TYPES.REEF) {
+                  ctx.fillStyle = '#34d399';
+                  ctx.fillText('🪸', cx + cellSize / 2, cy + cellSize / 2);
+                } else if (sector === SECTOR_TYPES.GALLEON) {
+                  ctx.fillStyle = '#a78bfa';
+                  ctx.fillText('⚓', cx + cellSize / 2, cy + cellSize / 2);
+                } else if (sector === SECTOR_TYPES.MONOLITH) {
+                  ctx.fillStyle = '#f43f5e';
+                  ctx.fillText('💠', cx + cellSize / 2, cy + cellSize / 2);
+                }
+              }
+
+              // Submersible Location Indicator
+              if (isCurrent) {
+                ctx.strokeStyle = '#facc15';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(cx + 3, cy + 3, cellSize - 6, cellSize - 6);
+
+                // Yellow Submersible Icon
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(cx + cellSize / 2, cy + cellSize / 2, 12, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#0284c7';
+                ctx.beginPath();
+                ctx.arc(cx + cellSize / 2, cy + cellSize / 2, 5, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            }
+          }
+          ctx.textAlign = 'start';
+          ctx.textBaseline = 'alphabetic';
+        }
+
+        // Log Rendering
+        const logBox = document.getElementById('log-box');
+        if (logBox) {
+          let html = '';
+          for (let i = 0; i < state.log.length; i++) {
+            const line = state.log[i];
+            let cls = 'log-line';
+            if (line.includes('COMPLETE') || line.includes('APEX')) cls += ' log-win';
+            else if (line.includes('drained') || line.includes('Warning')) cls += ' log-alert';
+            else if (line.includes('Charted') || line.includes('Survey')) cls += ' log-discovery';
+            html += '<div class="' + cls + '">' + escapeHtml(line) + '</div>';
+          }
+          logBox.innerHTML = html;
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        // Actions Grid
+        const actionsEl = document.getElementById('actions-grid');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act.startsWith('move:')) cls += ' btn-nav';
+            else if (act === 'action:sonar_pulse') cls += ' btn-sonar';
+            else if (act === 'action:harness_vent' || act === 'action:survey_specimen') cls += ' btn-vent';
+            else if (act === 'action:survey_monolith') cls += ' btn-monolith';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'MONOLITH SURVEYED!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'You unraveled the deep-sea mystery and mapped the Primordial Monolith! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'EXPEDITION LOST';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Battery depleted or mission bounds exceeded in the abyss. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'move:north') return '⬆️ Move North (2b)';
+        if (act === 'move:south') return '⬇️ Move South (2b)';
+        if (act === 'move:east') return '➡️ Move East (2b)';
+        if (act === 'move:west') return '⬅️ Move West (2b)';
+        if (act === 'action:sonar_pulse') return '📡 Sonar Pulse (5b)';
+        if (act === 'action:harness_vent') return '♨️ Harness Vent (+30b)';
+        if (act === 'action:survey_specimen') return '🔬 Survey Specimen';
+        if (act === 'action:survey_monolith') return '💠 SURVEY PRIMORDIAL MONOLITH';
+        if (act === 'action:emergency_drift') return '🔋 Emergency Drift (+5b)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      // Keyboard support
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        if (e.key === 'ArrowUp' || e.key === 'w') window.executeAction('move:north');
+        else if (e.key === 'ArrowDown' || e.key === 's') window.executeAction('move:south');
+        else if (e.key === 'ArrowRight' || e.key === 'd') window.executeAction('move:east');
+        else if (e.key === 'ArrowLeft' || e.key === 'a') window.executeAction('move:west');
+        else if (e.key === ' ' || e.key === 'Spacebar') window.executeAction('action:sonar_pulse');
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

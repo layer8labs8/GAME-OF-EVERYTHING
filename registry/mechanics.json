@@ -1451,9 +1451,11 @@
    "slug": "exploration",
    "name": "Exploration",
    "family": "Adventure",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Abyssal Horizons",
+   "levels": "endless"
   },
   {
    "id": "0139",
