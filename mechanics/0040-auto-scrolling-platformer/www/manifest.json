@@ -1,0 +1,12 @@
+{
+  "name": "Magma Surge",
+  "short_name": "MagmaSurge",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#1c0a06",
+  "theme_color": "#1c0a06",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

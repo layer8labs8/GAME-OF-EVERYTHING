@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Magma Surge - Auto-Scrolling Platformer</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1c0a06">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #1c0a06;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(35, 15, 10, 0.9);
+      border-bottom: 1px solid #451a03;
+    }
+    .title-group h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f97316;
+      letter-spacing: 0.5px;
+    }
+    .title-group .sub {
+      font-size: 0.72rem;
+      color: #fed7aa;
+    }
+    .score-badge {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #facc15;
+    }
+    .hud-bar {
+      width: 100%;
+      max-width: 480px;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #231109;
+      border-bottom: 1px solid #451a03;
+      font-size: 0.78rem;
+    }
+    .hud-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .hud-stat .label {
+      font-size: 0.65rem;
+      color: #a8a29e;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .bar-bg {
+      width: 80px;
+      height: 6px;
+      background: #292524;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      transition: width 0.15s ease;
+    }
+    .fill-stamina { background: #38bdf8; }
+    .fill-lava { background: #ea580c; }
+    #gameCanvas {
+      background: #120603;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      display: block;
+      border-bottom: 1px solid #451a03;
+    }
+    .event-ticker {
+      width: 100%;
+      max-width: 480px;
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      color: #f97316;
+      background: #170904;
+      border-bottom: 1px solid #451a03;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .controls-panel {
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #1c0a06;
+      flex-grow: 1;
+    }
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .dpad-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      flex-grow: 1;
+    }
+    .btn-act {
+      background: #292524;
+      border: 1px solid #44403c;
+      color: #f8fafc;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      padding: 10px 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      transition: background 0.1s;
+    }
+    .btn-act:active {
+      background: #ea580c;
+      color: white;
+    }
+    .btn-jump {
+      background: #ea580c;
+      border-color: #f97316;
+      color: white;
+    }
+    .btn-grapple {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: white;
+    }
+    .btn-kick {
+      background: #d97706;
+      border-color: #f59e0b;
+      color: white;
+    }
+    .bottom-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .btn-tool {
+      background: #292524;
+      color: #a8a29e;
+      border: 1px solid #44403c;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(18, 6, 3, 0.9);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-box {
+      background: #231109;
+      border: 1px solid #ea580c;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(234, 88, 12, 0.2);
+    }
+    .modal-box h2 {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+    .modal-box.win h2 {
+      color: #38bdf8;
+    }
+    .modal-box.lose h2 {
+      color: #ef4444;
+    }
+    .modal-box p {
+      color: #a8a29e;
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+    }
+    .modal-box .btn-modal {
+      background: #ea580c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-group">
+      <h1>Magma Surge</h1>
+      <div class="sub">Caldera Shaft Escape</div>
+    </div>
+    <div class="score-badge" id="scoreDisp">0 PTS</div>
+  </header>
+
+  <div class="hud-bar">
+    <div class="hud-stat">
+      <span class="label" id="altLabel">Height: 0m</span>
+      <div style="font-weight: 700; color: #f97316;" id="altDisp">0 / 500m</div>
+    </div>
+    <div class="hud-stat">
+      <span class="label">Stamina</span>
+      <div class="bar-bg"><div class="bar-fill fill-stamina" id="staminaFill" style="width: 100%;"></div></div>
+    </div>
+    <div class="hud-stat">
+      <span class="label" id="lavaDistLabel">Lava Gap: 5m</span>
+      <div class="bar-bg"><div class="bar-fill fill-lava" id="lavaFill" style="width: 10%;"></div></div>
+    </div>
+    <div style="font-weight: 600; color: #38bdf8;" id="grappleDisp">Grapple: 4</div>
+  </div>
+
+  <canvas id="gameCanvas" width="480" height="480"></canvas>
+
+  <div class="event-ticker" id="eventTicker">CALDERA TREMOR: Molten lava begins rising from the abyss!</div>
+
+  <div class="controls-panel">
+    <div class="control-row">
+      <div class="dpad-btns">
+        <button class="btn-act" id="btnLeft" style="width: 52px;">&larr;</button>
+        <button class="btn-act" id="btnRight" style="width: 52px;">&rarr;</button>
+      </div>
+      <div class="action-grid">
+        <button class="btn-act btn-jump" id="btnJump">Jump</button>
+        <button class="btn-act btn-grapple" id="btnGrapple">Grapple</button>
+        <button class="btn-act btn-kick" id="btnKick">Wall Kick</button>
+      </div>
+    </div>
+    <div class="bottom-row">
+      <button class="btn-tool" id="btnDashL">Dash &larr;</button>
+      <button class="btn-tool" id="btnDashR">Dash &rarr;</button>
+      <button class="btn-tool" id="btnRest">Rest (R)</button>
+      <button class="btn-tool" id="btnReset">Restart (Esc)</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="endModal">
+    <div class="modal-box" id="modalBox">
+      <h2 id="modalTitle">Victory!</h2>
+      <p id="modalMsg">Caldera Rim Reached.</p>
+      <button class="btn-modal" id="modalBtn">Replay Ascent</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      let state = null;
+
+      function initGame() {
+        state = MagmaSurge.createState(Date.now() & 0xffff);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const scoreDisp = document.getElementById('scoreDisp');
+        if (scoreDisp) scoreDisp.textContent = state.scoreVal + ' PTS';
+
+        const altDisp = document.getElementById('altDisp');
+        if (altDisp) altDisp.textContent = state.player.y + ' / 500m';
+
+        const staminaFill = document.getElementById('staminaFill');
+        if (staminaFill) staminaFill.style.width = Math.max(0, Math.min(100, state.player.stamina)) + '%';
+
+        const lavaGap = Math.max(0, state.player.y - state.scrollY);
+        const lavaDistLabel = document.getElementById('lavaDistLabel');
+        if (lavaDistLabel) lavaDistLabel.textContent = 'Lava Gap: ' + lavaGap + 'm';
+
+        const lavaFill = document.getElementById('lavaFill');
+        if (lavaFill) lavaFill.style.width = Math.max(0, Math.min(100, 100 - lavaGap * 3)) + '%';
+
+        const grappleDisp = document.getElementById('grappleDisp');
+        if (grappleDisp) grappleDisp.textContent = 'Grapple: ' + state.player.grapples;
+
+        const eventTicker = document.getElementById('eventTicker');
+        if (eventTicker && state.lastEvent) eventTicker.textContent = state.lastEvent;
+
+        // Modals
+        const modal = document.getElementById('endModal');
+        const modalBox = document.getElementById('modalBox');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMsg = document.getElementById('modalMsg');
+        const modalBtn = document.getElementById('modalBtn');
+
+        if (state.won) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('lose');
+            modalBox.classList.add('win');
+          }
+          if (modalTitle) modalTitle.textContent = 'ESCAPED THE CALDERA!';
+          if (modalMsg) modalMsg.textContent = 'Evacuation Chopper Secured! Final Score: ' + state.scoreVal + ' | Height: ' + state.player.y + 'm';
+          if (modalBtn) modalBtn.onclick = () => {
+            if (modal && modal.classList) modal.classList.remove('active');
+            initGame();
+          };
+        } else if (state.lost) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('win');
+            modalBox.classList.add('lose');
+          }
+          if (modalTitle) modalTitle.textContent = 'CONSUMED BY LAVA';
+          if (modalMsg) modalMsg.textContent = state.player.y <= state.scrollY ? 'The rising magma surge engulfed you.' : 'Shaft collapsed from volcanic eruption.';
+          if (modalBtn) modalBtn.onclick = () => {
+            if (modal && modal.classList) modal.classList.remove('active');
+            initGame();
+          };
+        } else {
+          if (modal && modal.classList) modal.classList.remove('active');
+        }
+      }
+
+      function handleAction(action) {
+        if (!state || state.won || state.lost) return;
+        const legal = MagmaSurge.legalActions(state);
+        if (!legal.includes(action)) return;
+
+        MagmaSurge.step(state, action);
+        updateUI();
+        render();
+      }
+
+      function render() {
+        if (!ctx || !state) return;
+        const w = canvas.width;
+        const h = canvas.height;
+        const scaleX = w / MagmaSurge.SHAFT_WIDTH;
+        const scaleY = 14;
+
+        // Vertical Camera tracking player elevation
+        const camY = state.player.y * scaleY - h * 0.6;
+
+        ctx.fillStyle = '#120603';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.translate(0, camY);
+
+        // 1. Draw Volcanic Basalt Walls
+        ctx.fillStyle = '#292524';
+        ctx.fillRect(0, -600 * scaleY, 4 * scaleX, 1200 * scaleY);
+        ctx.fillRect((MagmaSurge.SHAFT_WIDTH - 4) * scaleX, -600 * scaleY, 4 * scaleX, 1200 * scaleY);
+
+        // 2. Draw Platforms
+        for (let i = 0; i < state.platforms.length; i++) {
+          const p = state.platforms[i];
+          const px = p.x1 * scaleX;
+          const pw = (p.x2 - p.x1) * scaleX;
+          const py = -p.y * scaleY;
+
+          if (p.type === 'vent') {
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(px, py, pw, 8);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(px, py - 4, pw, 4);
+          } else if (p.type === 'crumbling') {
+            ctx.fillStyle = '#ca8a04';
+            ctx.fillRect(px, py, pw, 8);
+          } else {
+            ctx.fillStyle = '#44403c';
+            ctx.fillRect(px, py, pw, 8);
+            ctx.fillStyle = '#78716c';
+            ctx.fillRect(px, py, pw, 2);
+          }
+        }
+
+        // 3. Draw Obsidian Crystals
+        for (let i = 0; i < state.crystals.length; i++) {
+          const c = state.crystals[i];
+          if (!c.collected) {
+            const cx = c.x * scaleX;
+            const cy = -c.y * scaleY;
+            ctx.fillStyle = '#a855f7';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 6);
+            ctx.lineTo(cx + 4, cy);
+            ctx.lineTo(cx, cy + 6);
+            ctx.lineTo(cx - 4, cy);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+
+        // 4. Draw Rising Molten Lava
+        const lavaScreenY = -state.scrollY * scaleY;
+        const lavaGrad = ctx.createLinearGradient(0, lavaScreenY, 0, lavaScreenY + 200);
+        lavaGrad.addColorStop(0, '#fde047');
+        lavaGrad.addColorStop(0.3, '#ea580c');
+        lavaGrad.addColorStop(1, '#7f1d1d');
+
+        ctx.fillStyle = lavaGrad;
+        ctx.fillRect(0, lavaScreenY, w, 500);
+
+        // 5. Draw Player Explorer
+        const px = state.player.x * scaleX;
+        const py = -state.player.y * scaleY;
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(px, py - 8, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(px - 5, py, 10, 12);
+
+        // Wall slide indicator
+        if (state.player.wallSliding) {
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(px, py, 12, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+
+      // Action Handlers
+      const btnLeft = document.getElementById('btnLeft');
+      if (btnLeft) btnLeft.onclick = () => handleAction('move_left');
+
+      const btnRight = document.getElementById('btnRight');
+      if (btnRight) btnRight.onclick = () => handleAction('move_right');
+
+      const btnJump = document.getElementById('btnJump');
+      if (btnJump) btnJump.onclick = () => handleAction('jump');
+
+      const btnGrapple = document.getElementById('btnGrapple');
+      if (btnGrapple) btnGrapple.onclick = () => handleAction('grapple_up');
+
+      const btnKick = document.getElementById('btnKick');
+      if (btnKick) btnKick.onclick = () => handleAction('wall_kick');
+
+      const btnDashL = document.getElementById('btnDashL');
+      if (btnDashL) btnDashL.onclick = () => handleAction('dash_left');
+
+      const btnDashR = document.getElementById('btnDashR');
+      if (btnDashR) btnDashR.onclick = () => handleAction('dash_right');
+
+      const btnRest = document.getElementById('btnRest');
+      if (btnRest) btnRest.onclick = () => handleAction('rest');
+
+      const btnReset = document.getElementById('btnReset');
+      if (btnReset) btnReset.onclick = initGame;
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          e.preventDefault();
+          handleAction('move_left');
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          handleAction('move_right');
+        } else if (e.key === ' ' || e.key === 'w' || e.key === 'W') {
+          e.preventDefault();
+          handleAction('jump');
+        } else if (e.key === 'ArrowUp' || e.key === 'g' || e.key === 'G') {
+          e.preventDefault();
+          handleAction('grapple_up');
+        } else if (e.key === 'Shift') {
+          e.preventDefault();
+          handleAction('wall_kick');
+        } else if (e.key === 'q' || e.key === 'Q') {
+          e.preventDefault();
+          handleAction('dash_left');
+        } else if (e.key === 'e' || e.key === 'E') {
+          e.preventDefault();
+          handleAction('dash_right');
+        } else if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          handleAction('rest');
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          initGame();
+        }
+      });
+
+      // PWA service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch(() => {});
+        });
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>

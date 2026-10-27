@@ -415,8 +415,9 @@
       "slug": "auto-scrolling-platformer",
       "name": "Auto-Scrolling Platformer",
       "family": "Platformer",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "endless",
       "source": "classic"
     },
     {
