@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Relic Rush - Collectathon</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#081326">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #081326;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom: 1px solid #1e293b;
+    }
+    .title-group h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #facc15;
+      letter-spacing: 0.5px;
+    }
+    .title-group .sub {
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+    .score-badge {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .hud-bar {
+      width: 100%;
+      max-width: 480px;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      font-size: 0.8rem;
+    }
+    .relic-slots {
+      display: flex;
+      gap: 5px;
+    }
+    .relic-star {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: #64748b;
+    }
+    .relic-star.obtained {
+      background: #eab308;
+      color: #000;
+      box-shadow: 0 0 6px rgba(234, 179, 8, 0.8);
+      font-weight: 700;
+    }
+    .stamina-container {
+      width: 80px;
+      height: 8px;
+      background: #334155;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .stamina-fill {
+      height: 100%;
+      background: #22c55e;
+      transition: width 0.15s ease;
+    }
+    #gameCanvas {
+      background: #0b192e;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      display: block;
+      border-bottom: 1px solid #1e293b;
+    }
+    .event-ticker {
+      width: 100%;
+      max-width: 480px;
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      color: #facc15;
+      background: #0b1528;
+      border-bottom: 1px solid #1e293b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .controls-panel {
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #081326;
+      flex-grow: 1;
+    }
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .dpad-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      flex-grow: 1;
+    }
+    .btn-act {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      padding: 10px 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      transition: background 0.1s;
+    }
+    .btn-act:active {
+      background: #0284c7;
+      color: white;
+    }
+    .btn-jump {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    .btn-interact {
+      background: #eab308;
+      border-color: #facc15;
+      color: #0f172a;
+    }
+    .btn-glide {
+      background: #6366f1;
+      border-color: #818cf8;
+    }
+    .btn-pound {
+      background: #dc2626;
+      border-color: #f87171;
+    }
+    .bottom-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .btn-tool {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(3, 7, 18, 0.88);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-box {
+      background: #0f172a;
+      border: 1px solid #facc15;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(250, 204, 21, 0.2);
+    }
+    .modal-box h2 {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+    .modal-box.win h2 {
+      color: #facc15;
+    }
+    .modal-box.lose h2 {
+      color: #f43f5e;
+    }
+    .modal-box p {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+    }
+    .modal-box .btn-modal {
+      background: #eab308;
+      color: #0f172a;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-group">
+      <h1>Relic Rush</h1>
+      <div class="sub">Celestial Sky Citadel</div>
+    </div>
+    <div class="score-badge" id="scoreDisp">0 PTS</div>
+  </header>
+
+  <div class="hud-bar">
+    <div class="relic-slots" id="relicSlots">
+      <div class="relic-star">&#9733;</div>
+      <div class="relic-star">&#9733;</div>
+      <div class="relic-star">&#9733;</div>
+      <div class="relic-star">&#9733;</div>
+      <div class="relic-star">&#9733;</div>
+    </div>
+    <div style="font-weight: 600; color: #38bdf8;" id="gemDisp">Gems: 0 / 40</div>
+    <div class="stamina-container">
+      <div class="stamina-fill" id="staminaFill" style="width: 100%;"></div>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas" width="480" height="480"></canvas>
+
+  <div class="event-ticker" id="eventTicker">Arrived at the Floating Citadel. 5 Celestial Relics await!</div>
+
+  <div class="controls-panel">
+    <div class="control-row">
+      <div class="dpad-btns">
+        <button class="btn-act" id="btnLeft" style="width: 54px;">&larr;</button>
+        <button class="btn-act" id="btnRight" style="width: 54px;">&rarr;</button>
+      </div>
+      <div class="action-grid">
+        <button class="btn-act btn-jump" id="btnJump">Jump</button>
+        <button class="btn-act btn-interact" id="btnInteract">Act (E)</button>
+        <button class="btn-act btn-glide" id="btnGlide">Glide</button>
+      </div>
+    </div>
+    <div class="bottom-row">
+      <button class="btn-tool btn-pound" id="btnPound">Pound (S)</button>
+      <button class="btn-tool" id="btnRest">Rest (R)</button>
+      <button class="btn-tool" id="btnReset">Restart (Esc)</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="endModal">
+    <div class="modal-box" id="modalBox">
+      <h2 id="modalTitle">Victory!</h2>
+      <p id="modalMsg">All Relics restored.</p>
+      <button class="btn-modal" id="modalBtn">Replay Expedition</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      let state = null;
+
+      function initGame() {
+        state = RelicRush.createState(12345);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const scoreDisp = document.getElementById('scoreDisp');
+        if (scoreDisp) scoreDisp.textContent = state.scoreVal + ' PTS';
+
+        const gemDisp = document.getElementById('gemDisp');
+        if (gemDisp) gemDisp.textContent = 'Gems: ' + state.gemsCollected + ' / ' + state.totalGems;
+
+        const staminaFill = document.getElementById('staminaFill');
+        if (staminaFill) staminaFill.style.width = Math.max(0, Math.min(100, state.player.stamina)) + '%';
+
+        const eventTicker = document.getElementById('eventTicker');
+        if (eventTicker && state.lastEvent) eventTicker.textContent = state.lastEvent;
+
+        // Relic Stars
+        const relicSlots = document.getElementById('relicSlots');
+        if (relicSlots) {
+          let html = '';
+          for (let i = 0; i < 5; i++) {
+            const has = state.relics[i] && state.relics[i].collected;
+            html += '<div class="relic-star' + (has ? ' obtained' : '') + '">&#9733;</div>';
+          }
+          relicSlots.innerHTML = html;
+        }
+
+        // Modals
+        const modal = document.getElementById('endModal');
+        const modalBox = document.getElementById('modalBox');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMsg = document.getElementById('modalMsg');
+        const modalBtn = document.getElementById('modalBtn');
+
+        if (state.won) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('lose');
+            modalBox.classList.add('win');
+          }
+          if (modalTitle) modalTitle.textContent = 'CITADEL RESTORED!';
+          if (modalMsg) modalMsg.textContent = 'Found all 5 Relics and ' + state.gemsCollected + ' Gems! Score: ' + state.scoreVal;
+          if (modalBtn) modalBtn.onclick = () => {
+            if (modal && modal.classList) modal.classList.remove('active');
+            initGame();
+          };
+        } else if (state.lost) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('win');
+            modalBox.classList.add('lose');
+          }
+          if (modalTitle) modalTitle.textContent = 'EXPEDITION OVER';
+          if (modalMsg) modalMsg.textContent = state.player.hp <= 0 ? 'Fell into the void too many times.' : 'Expedition timed out.';
+          if (modalBtn) modalBtn.onclick = () => {
+            if (modal && modal.classList) modal.classList.remove('active');
+            initGame();
+          };
+        } else {
+          if (modal && modal.classList) modal.classList.remove('active');
+        }
+      }
+
+      function handleAction(action) {
+        if (!state || state.won || state.lost) return;
+        const legal = RelicRush.legalActions(state);
+        if (!legal.includes(action)) return;
+
+        RelicRush.step(state, action);
+        updateUI();
+        render();
+      }
+
+      function render() {
+        if (!ctx || !state) return;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // Camera tracking player horizontally and vertically
+        const camX = state.player.x * 12 - w / 2;
+        const camY = (14 - state.player.y) * 28 - h / 2;
+
+        ctx.fillStyle = '#081326';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.translate(-camX, -camY);
+
+        // 1. Draw Floating Platforms
+        for (let i = 0; i < RelicRush.PLATFORMS.length; i++) {
+          const plat = RelicRush.PLATFORMS[i];
+          const px = plat.x1 * 12;
+          const pw = (plat.x2 - plat.x1) * 12;
+          const py = (14 - plat.y) * 28;
+
+          // Grass surface
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(px, py, pw, 6);
+
+          // Island earthen underbelly
+          ctx.fillStyle = '#78350f';
+          ctx.beginPath();
+          ctx.moveTo(px, py + 6);
+          ctx.lineTo(px + pw, py + 6);
+          ctx.lineTo(px + pw * 0.7, py + 36);
+          ctx.lineTo(px + pw * 0.3, py + 36);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // 2. Draw Shrines
+        // Ground pound shrine at x=5, y=3
+        const s1x = 5 * 12;
+        const s1y = (14 - 3) * 28 - 20;
+        ctx.fillStyle = state.player.abilities.groundPound ? '#475569' : '#dc2626';
+        ctx.fillRect(s1x - 8, s1y, 16, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('P', s1x - 3, s1y + 14);
+
+        // Glide shrine at x=14, y=5
+        const s2x = 14 * 12;
+        const s2y = (14 - 5) * 28 - 20;
+        ctx.fillStyle = state.player.abilities.glide ? '#475569' : '#6366f1';
+        ctx.fillRect(s2x - 8, s2y, 16, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('G', s2x - 4, s2y + 14);
+
+        // Stone chest at x=14, y=1
+        const cx = 14 * 12;
+        const cy = (14 - 1) * 28 - 14;
+        ctx.fillStyle = state.chestSmashed ? '#334155' : '#ca8a04';
+        ctx.fillRect(cx - 8, cy, 16, 14);
+
+        // Tribute Gate at x=25, y=2
+        const gx = 25 * 12;
+        const gy = (14 - 2) * 28 - 36;
+        ctx.fillStyle = state.tributeGateOpen ? 'rgba(56, 189, 248, 0.2)' : '#0284c7';
+        ctx.fillRect(gx - 4, gy, 8, 36);
+
+        // Celestial Beacon at x=36, y=12
+        const bx = 36 * 12;
+        const by = (14 - 12) * 28 - 24;
+        ctx.fillStyle = state.relicsCollected >= 5 ? '#facc15' : '#475569';
+        ctx.beginPath();
+        ctx.arc(bx, by, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Draw Sky Gems
+        for (let i = 0; i < state.gems.length; i++) {
+          const g = state.gems[i];
+          if (!g.collected) {
+            const gx = g.x * 12;
+            const gy = (14 - g.y) * 28 - 10;
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.moveTo(gx, gy - 6);
+            ctx.lineTo(gx + 5, gy);
+            ctx.lineTo(gx, gy + 6);
+            ctx.lineTo(gx - 5, gy);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+
+        // 4. Draw Celestial Relics
+        for (let i = 0; i < state.relics.length; i++) {
+          const r = state.relics[i];
+          if (!r.collected && !r.insideChest) {
+            const rx = r.x * 12;
+            const ry = (14 - r.y) * 28 - 14;
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(rx, ry, 8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // 5. Draw Explorer Character
+        const ex = state.player.x * 12;
+        const ey = (14 - state.player.y) * 28 - 16;
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(ex, ey - 6, 8, 0, Math.PI * 2); // head
+        ctx.fill();
+
+        ctx.fillStyle = '#eab308'; // backpack
+        ctx.fillRect(ex - 6, ey, 12, 14);
+
+        if (!state.player.onGround && state.player.abilities.glide) {
+          // Glider wings
+          ctx.strokeStyle = '#818cf8';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(ex - 16, ey);
+          ctx.lineTo(ex + 16, ey);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+
+      // Action Handlers
+      const btnLeft = document.getElementById('btnLeft');
+      if (btnLeft) btnLeft.onclick = () => handleAction('move_left');
+
+      const btnRight = document.getElementById('btnRight');
+      if (btnRight) btnRight.onclick = () => handleAction('move_right');
+
+      const btnJump = document.getElementById('btnJump');
+      if (btnJump) btnJump.onclick = () => {
+        if (state && !state.player.onGround) handleAction('double_jump');
+        else handleAction('jump');
+      };
+
+      const btnInteract = document.getElementById('btnInteract');
+      if (btnInteract) btnInteract.onclick = () => handleAction('interact');
+
+      const btnGlide = document.getElementById('btnGlide');
+      if (btnGlide) btnGlide.onclick = () => handleAction('glide');
+
+      const btnPound = document.getElementById('btnPound');
+      if (btnPound) btnPound.onclick = () => handleAction('ground_pound');
+
+      const btnRest = document.getElementById('btnRest');
+      if (btnRest) btnRest.onclick = () => handleAction('rest');
+
+      const btnReset = document.getElementById('btnReset');
+      if (btnReset) btnReset.onclick = initGame;
+
+      // Keyboard Controls
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          e.preventDefault();
+          handleAction('move_left');
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          handleAction('move_right');
+        } else if (e.key === ' ' || e.key === 'w' || e.key === 'W') {
+          e.preventDefault();
+          if (state && !state.player.onGround) handleAction('double_jump');
+          else handleAction('jump');
+        } else if (e.key === 'e' || e.key === 'E') {
+          e.preventDefault();
+          handleAction('interact');
+        } else if (e.key === 'g' || e.key === 'G') {
+          e.preventDefault();
+          handleAction('glide');
+        } else if (e.key === 's' || e.key === 'S') {
+          e.preventDefault();
+          handleAction('ground_pound');
+        } else if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          handleAction('rest');
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          initGame();
+        }
+      });
+
+      // PWA service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch(() => {});
+        });
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>

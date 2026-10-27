@@ -385,8 +385,9 @@
       "slug": "collectathon",
       "name": "Collectathon",
       "family": "Platformer",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "endless",
       "source": "steam-tag"
     },
     {
