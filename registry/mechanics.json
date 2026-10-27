@@ -1352,9 +1352,11 @@
    "slug": "point-and-click",
    "name": "Point and Click",
    "family": "Adventure",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Blackwood Manor",
+   "levels": "endless"
   },
   {
    "id": "0130",

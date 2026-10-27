@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Blackwood Manor - Point and Click</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#8b5cf6">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b0914;
+      color: #ede9fe;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 460px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #1e1b4b;
+      border-radius: 8px;
+      border: 1px solid #6366f1;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #a78bfa;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 460px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #1e1b4b;
+      border: 1px solid #4338ca;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .hud-label {
+      color: #c7d2fe;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.85rem;
+    }
+    .val-room { color: #facc15; }
+    .val-items { color: #38bdf8; }
+    .val-score { color: #c084fc; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 460px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 440px;
+      aspect-ratio: 16 / 9;
+      background: #06040d;
+      border: 2px solid #6366f1;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
+      touch-action: none;
+    }
+    .inventory-bar {
+      width: 100%;
+      max-width: 440px;
+      margin-top: 6px;
+      background: #13112c;
+      border: 1px solid #3730a3;
+      border-radius: 6px;
+      padding: 6px;
+    }
+    .inv-title {
+      font-size: 0.65rem;
+      color: #a78bfa;
+      text-transform: uppercase;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .inv-tray {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .inv-chip {
+      background: #2e1065;
+      border: 1px solid #7c3aed;
+      color: #ddd6fe;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .action-panel {
+      width: 100%;
+      max-width: 440px;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .action-header {
+      font-size: 0.65rem;
+      color: #a78bfa;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .action-btn {
+      background: #1e1b4b;
+      border: 1px solid #4338ca;
+      color: #e0e7ff;
+      padding: 8px 6px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .action-btn:active {
+      background: #312e81;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 440px;
+      margin-top: 6px;
+      background: #090714;
+      border: 1px solid #2e1065;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: Georgia, serif;
+      font-size: 0.75rem;
+      min-height: 52px;
+      max-height: 58px;
+      overflow-y: hidden;
+      color: #c4b5fd;
+      line-height: 1.3;
+    }
+    .log-box p {
+      margin-bottom: 2px;
+    }
+    .log-box p:last-child {
+      color: #facc15;
+      font-weight: bold;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(11, 9, 20, 0.95);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      border-radius: 8px;
+      z-index: 50;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-card {
+      background: #1e1b4b;
+      border: 2px solid #8b5cf6;
+      border-radius: 12px;
+      padding: 18px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+    }
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #c084fc;
+      margin-bottom: 4px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      border: none;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>🕯️</span> BLACKWOOD MANOR</h1>
+    <span style="font-size: 0.75rem; color: #a78bfa; font-weight: bold;" id="step-badge">TURN 0 / 150</span>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Current Room</div>
+      <div class="hud-val val-room" id="val-room">FOYER</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Possessions</div>
+      <div class="hud-val val-items" id="val-items">0 ITEMS</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Score</div>
+      <div class="hud-val val-score" id="val-score">0</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="manor-canvas" width="440" height="248"></canvas>
+
+    <!-- Victory / Defeat Modal -->
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-card">
+        <div class="modal-title" id="end-title">CASE RESOLVED</div>
+        <p style="font-size: 0.8rem; color: #ddd6fe; margin: 8px 0;" id="end-desc"></p>
+        <div style="font-size: 1rem; color: #facc15; font-weight: bold; margin-bottom: 8px;" id="end-score">Score: 0</div>
+        <button class="btn-primary" id="btn-restart">INVESTIGATE AGAIN</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="inventory-bar">
+    <div class="inv-title">Carried Items</div>
+    <div class="inv-tray" id="inv-tray">
+      <span style="color: #6b7280; font-size: 0.7rem;">Empty pockets</span>
+    </div>
+  </div>
+
+  <div class="action-panel">
+    <div class="action-header">Available Actions (Click to Execute)</div>
+    <div class="action-buttons" id="action-buttons"></div>
+    <button class="action-btn" id="btn-bot" style="margin-top: 4px; border-color: #8b5cf6; color: #c084fc; text-align: center;">AI INVESTIGATE</button>
+  </div>
+
+  <div class="log-box" id="log-box">
+    <p>You enter Blackwood Manor. Rain lashes the glass.</p>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Math.random() * 1000000));
+    const canvas = document.getElementById('manor-canvas');
+    const ctx = canvas.getContext('2d');
+
+    window.executeAction = function(act) {
+      if (isOver(state)) return;
+      const legals = legalActions(state);
+      if (!legals.includes(act)) return;
+
+      step(state, act);
+      render();
+    };
+
+    function formatActionText(act) {
+      if (act.startsWith('look:')) return '🔍 Examine ' + act.split(':')[1].replace(/_/g, ' ');
+      if (act.startsWith('pickup:')) return '✋ Pick up ' + act.split(':')[1].replace(/_/g, ' ');
+      if (act.startsWith('talk:')) return '💬 Speak to ' + act.split(':')[1].replace(/_/g, ' ');
+      if (act.startsWith('use_item:')) {
+        const parts = act.split(':');
+        return '⚙️ Use ' + parts[1].replace(/_/g, ' ') + ' on ' + parts[2].replace(/_/g, ' ');
+      }
+      if (act.startsWith('go:')) return '🚪 Enter ' + act.split(':')[1].toUpperCase();
+      return act;
+    }
+
+    function renderScene() {
+      const room = state.currentRoom;
+      const w = 440;
+      const h = 248;
+
+      ctx.clearRect(0, 0, w, h);
+
+      if (room === 'foyer') {
+        // Victorian Foyer wallpaper
+        ctx.fillStyle = '#1c1917';
+        ctx.fillRect(0, 0, w, h);
+
+        // Floor
+        ctx.fillStyle = '#0f0e0d';
+        ctx.fillRect(0, 160, w, 88);
+
+        // Grandfather clock
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(50, 40, 40, 140);
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(70, 70, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(66, 100, 8, 50);
+
+        // Study door
+        ctx.fillStyle = state.world.study_unlocked ? '#14532d' : '#7f1d1d';
+        ctx.fillRect(180, 50, 80, 120);
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(245, 110, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Coat rack
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(350, 170);
+        ctx.lineTo(350, 60);
+        ctx.stroke();
+        ctx.fillStyle = '#374151';
+        ctx.fillRect(336, 75, 28, 55); // trenchcoat
+      } else if (room === 'study') {
+        // Study wallpaper
+        ctx.fillStyle = '#14281d';
+        ctx.fillRect(0, 0, w, h);
+
+        // Floor
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 160, w, 88);
+
+        // Bookshelf
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(40, 30, 90, 140);
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(46, 50, 12, 30);
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(60, 50, 14, 30);
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(76, 50, 10, 30);
+
+        // Desk
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(260, 110, 120, 60);
+        ctx.fillStyle = '#fef3c7';
+        ctx.fillRect(280, 95, 30, 15); // parchment
+
+        // Butler in chair
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(170, 100, 40, 60);
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(190, 85, 10, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (room === 'laboratory') {
+        // Lab stone walls
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, 160, w, 88);
+
+        // Alembic Still
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(70, 120, 20, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Acid Vat
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(180, 110, 70, 60);
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath();
+        ctx.arc(215, 110, 30, Math.PI, 0);
+        ctx.fill();
+
+        // Safe
+        ctx.fillStyle = state.world.safe_opened ? '#166534' : '#334155';
+        ctx.fillRect(320, 80, 60, 85);
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(350, 122, 6, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Observatory dome
+        ctx.fillStyle = '#05030f';
+        ctx.fillRect(0, 0, w, h);
+
+        // Skylight starfield
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(80, 30, 2, 2);
+        ctx.fillRect(160, 40, 2, 2);
+        ctx.fillRect(240, 25, 2, 2);
+        ctx.fillRect(320, 45, 2, 2);
+        ctx.fillRect(380, 20, 2, 2);
+
+        // Celestial Oculus
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(220, 120, 45, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = state.world.astrolabe_placed ? '#facc15' : '#4c1d95';
+        ctx.beginPath();
+        ctx.arc(220, 120, 20, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Telescope
+        ctx.strokeStyle = '#d97706';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(80, 160);
+        ctx.lineTo(130, 80);
+        ctx.stroke();
+      }
+    }
+
+    function render() {
+      // Top HUD
+      document.getElementById('val-room').textContent = state.currentRoom.toUpperCase();
+      document.getElementById('val-items').textContent = state.inventory.length + ' ITEMS';
+      document.getElementById('val-score').textContent = state.score;
+      document.getElementById('step-badge').textContent = 'TURN ' + state.turns + ' / ' + state.maxTurns;
+
+      // Inventory Tray
+      const tray = document.getElementById('inv-tray');
+      if (state.inventory.length === 0) {
+        tray.innerHTML = '<span style="color: #6b7280; font-size: 0.7rem;">Empty pockets</span>';
+      } else {
+        tray.innerHTML = state.inventory.map(it => {
+          return '<span class="inv-chip">' + it.replace(/_/g, ' ') + '</span>';
+        }).join('');
+      }
+
+      // Action Buttons
+      const legals = legalActions(state);
+      const btnContainer = document.getElementById('action-buttons');
+      btnContainer.innerHTML = legals.map(act => {
+        return '<button class="action-btn" onclick="executeAction(\'' + act + '\')">' + formatActionText(act) + '</button>';
+      }).join('');
+
+      // Narrative Log
+      const logBox = document.getElementById('log-box');
+      const recent = (state.combatLog || []).slice(-2);
+      logBox.innerHTML = recent.map(line => '<p>' + line + '</p>').join('');
+
+      // Scene Graphic
+      renderScene();
+
+      // Modal
+      const modal = document.getElementById('end-modal');
+      if (isOver(state)) {
+        modal.className = 'modal-overlay active';
+        const title = document.getElementById('end-title');
+        const desc = document.getElementById('end-desc');
+        const sc = document.getElementById('end-score');
+        sc.textContent = 'Final Score: ' + state.score;
+
+        if (state.victory) {
+          title.textContent = 'CURSE LIFTED!';
+          title.style.color = '#34d399';
+          desc.textContent = 'The Celestial Oculus shines bright as the Golden Astrolabe clicks into place. Blackwood Manor is saved!';
+        } else {
+          title.textContent = 'MYSTERY LOST';
+          title.style.color = '#f87171';
+          desc.textContent = 'The spectral mists envelop the manor before the celestial alignment could be restored.';
+        }
+      } else {
+        modal.className = 'modal-overlay';
+      }
+    }
+
+    document.getElementById('btn-bot').onclick = () => {
+      const legals = legalActions(state);
+      if (legals.length > 0) {
+        // Priority: victory action > use_item > pickup > talk > go > look
+        const winAct = legals.find(a => a.includes('celestial_oculus'));
+        const useAct = legals.find(a => a.startsWith('use_item:'));
+        const pickAct = legals.find(a => a.startsWith('pickup:'));
+        const talkAct = legals.find(a => a.startsWith('talk:'));
+        const goAct = legals.find(a => a.startsWith('go:'));
+        const act = winAct || useAct || pickAct || talkAct || goAct || legals[0];
+        executeAction(act);
+      }
+    };
+
+    document.getElementById('btn-restart').onclick = () => {
+      state = createState(Math.floor(Math.random() * 1000000));
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>
