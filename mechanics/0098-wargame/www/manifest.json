@@ -1,0 +1,12 @@
+{
+  "name": "Operational Wargame",
+  "short_name": "Wargame",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0f141c",
+  "theme_color": "#0f141c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hex Frontline: Operational Wargame</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #0f141c;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #18202c;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #283548;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .turn-val { color: #facc15; }
+    .blue-val { color: #38bdf8; }
+    .red-val { color: #f87171; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #121924;
+      border: 2px solid #283548;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+      cursor: pointer;
+    }
+    #actions-panel {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .unit-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    button {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover:not(:disabled) {
+      background: #334155;
+      border-color: #64748b;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    button.primary {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #dbeafe;
+    }
+    button.danger {
+      background: #881337;
+      border-color: #e11d48;
+      color: #ffe4e6;
+    }
+    button.success {
+      background: #064e3b;
+      border-color: #10b981;
+      color: #d1fae5;
+    }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #0a0e14;
+      border: 1px solid #1f2937;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      height: 56px;
+      overflow-y: auto;
+    }
+    #banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #38bdf8;
+      padding: 16px 24px;
+      border-radius: 12px;
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+    #banner h2 { font-size: 20px; margin-bottom: 6px; }
+    #banner p { font-size: 12px; color: #cbd5e1; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge turn-val">📅 OPERATIONAL TURN: <span id="val-turn">1/20</span></div>
+    <div class="badge blue-val">🔵 BLUE: <span id="val-blue">29 str</span></div>
+    <div class="badge red-val">🔴 RED: <span id="val-red">29 str</span></div>
+    <button id="btn-reset" style="padding: 4px 8px; font-size: 11px;">Reset</button>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="c" width="480" height="480"></canvas>
+    <div id="banner">
+      <h2 id="banner-title">OPERATIONAL VICTORY</h2>
+      <p id="banner-sub">Strategic objectives achieved and enemy forces eliminated.</p>
+      <button id="btn-restart" class="primary" style="margin: 0 auto;">New Campaign</button>
+    </div>
+  </div>
+
+  <div id="actions-panel">
+    <div class="unit-selector">
+      <button id="btn-u-armor">1st Armor (10)</button>
+      <button id="btn-u-inf">3rd Infantry (8)</button>
+      <button id="btn-u-arty">7th Artillery (6)</button>
+      <button id="btn-u-recon">4th Recon (5)</button>
+    </div>
+
+    <div class="action-group">
+      <button id="btn-act-entrench" class="primary">🛡️ Entrench Position</button>
+      <button id="btn-act-resupply" class="success">📦 Resupply Reinforcements</button>
+      <button id="btn-act-bombard" class="danger">💥 Artillery Bombard</button>
+      <button id="btn-act-endturn" class="primary">⏩ End Operational Phase</button>
+    </div>
+  </div>
+
+  <div id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      const valTurn = document.getElementById('val-turn');
+      const valBlue = document.getElementById('val-blue');
+      const valRed = document.getElementById('val-red');
+      const logBox = document.getElementById('log-box');
+      const banner = document.getElementById('banner');
+      const bannerTitle = document.getElementById('banner-title');
+      const bannerSub = document.getElementById('banner-sub');
+      const btnReset = document.getElementById('btn-reset');
+      const btnRestart = document.getElementById('btn-restart');
+
+      const btnUArmor = document.getElementById('btn-u-armor');
+      const btnUInf = document.getElementById('btn-u-inf');
+      const btnUArty = document.getElementById('btn-u-arty');
+      const btnURecon = document.getElementById('btn-u-recon');
+
+      const btnEntrench = document.getElementById('btn-act-entrench');
+      const btnResupply = document.getElementById('btn-act-resupply');
+      const btnBombard = document.getElementById('btn-act-bombard');
+      const btnEndTurn = document.getElementById('btn-act-endturn');
+
+      let state = createState(Date.now() & 0xffff);
+      let selectedUnitId = 'u_b_armor';
+
+      // Sound FX using Web Audio
+      function playSfx(type) {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctxA = new AudioContext();
+          const osc = ctxA.createOscillator();
+          const gain = ctxA.createGain();
+          osc.connect(gain);
+          gain.connect(ctxA.destination);
+
+          if (type === 'cannon') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(140, ctxA.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(30, ctxA.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.4, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.3);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.3);
+          } else if (type === 'move') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(220, ctxA.currentTime);
+            osc.frequency.linearRampToValueAtTime(110, ctxA.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.15, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.1);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.1);
+          } else if (type === 'chime') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, ctxA.currentTime);
+            osc.frequency.setValueAtTime(659.25, ctxA.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.25);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.25);
+          }
+        } catch(e) {}
+      }
+
+      function getHexCenter(r, c) {
+        const hexRadius = 46;
+        const hexWidth = hexRadius * Math.sqrt(3);
+        const hexHeight = hexRadius * 1.5;
+        const startX = 64;
+        const startY = 64;
+
+        const x = startX + c * hexWidth + ((r % 2 === 1) ? hexWidth / 2 : 0);
+        const y = startY + r * hexHeight;
+        return { x, y, r: hexRadius };
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const blueUnits = state.units ? state.units.filter(u => u.side === 'blue' && u.strength > 0) : [];
+        const redUnits = state.units ? state.units.filter(u => u.side === 'red' && u.strength > 0) : [];
+        const blueStr = blueUnits.reduce((acc, u) => acc + u.strength, 0);
+        const redStr = redUnits.reduce((acc, u) => acc + u.strength, 0);
+
+        if (valTurn) valTurn.textContent = state.turn + '/' + state.maxTurns;
+        if (valBlue) valBlue.textContent = blueStr + ' str';
+        if (valRed) valRed.textContent = redStr + ' str';
+
+        if (logBox && state.history) {
+          logBox.innerHTML = state.history.slice(-5).map(h => '<div>&gt; ' + h + '</div>').join('');
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        if (banner) {
+          if (state.done) {
+            banner.style.display = 'block';
+            if (state.winner === 'blue') {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'DECISIVE VICTORY';
+                bannerTitle.style.color = '#38bdf8';
+              }
+              if (bannerSub) bannerSub.textContent = 'Enemy forces routed and objectives secured! (Score: ' + score(state) + ')';
+            } else {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'OPERATION FAILED';
+                bannerTitle.style.color = '#ef4444';
+              }
+              if (bannerSub) bannerSub.textContent = state.result === 'hq_lost' ? 'Friendly HQ was overrun!' : 'Forces suffered critical casualties!';
+            }
+          } else {
+            banner.style.display = 'none';
+          }
+        }
+
+        // Unit selector buttons
+        if (state.units) {
+          const uArmor = state.units.find(u => u.id === 'u_b_armor');
+          const uInf = state.units.find(u => u.id === 'u_b_inf');
+          const uArty = state.units.find(u => u.id === 'u_b_arty');
+          const uRecon = state.units.find(u => u.id === 'u_b_recon');
+
+          if (btnUArmor && uArmor) {
+            btnUArmor.textContent = '1st Armor (' + uArmor.strength + ') MP:' + uArmor.mp;
+            btnUArmor.disabled = uArmor.strength <= 0;
+            btnUArmor.style.borderColor = selectedUnitId === 'u_b_armor' ? '#38bdf8' : '#334155';
+          }
+          if (btnUInf && uInf) {
+            btnUInf.textContent = '3rd Inf (' + uInf.strength + ') MP:' + uInf.mp;
+            btnUInf.disabled = uInf.strength <= 0;
+            btnUInf.style.borderColor = selectedUnitId === 'u_b_inf' ? '#38bdf8' : '#334155';
+          }
+          if (btnUArty && uArty) {
+            btnUArty.textContent = '7th Arty (' + uArty.strength + ') MP:' + uArty.mp;
+            btnUArty.disabled = uArty.strength <= 0;
+            btnUArty.style.borderColor = selectedUnitId === 'u_b_arty' ? '#38bdf8' : '#334155';
+          }
+          if (btnURecon && uRecon) {
+            btnURecon.textContent = '4th Recon (' + uRecon.strength + ') MP:' + uRecon.mp;
+            btnURecon.disabled = uRecon.strength <= 0;
+            btnURecon.style.borderColor = selectedUnitId === 'u_b_recon' ? '#38bdf8' : '#334155';
+          }
+        }
+
+        // Action buttons
+        const legals = legalActions(state);
+        const selUnit = state.units ? state.units.find(u => u.id === selectedUnitId) : null;
+
+        if (btnEntrench) {
+          btnEntrench.disabled = !legals.includes('entrench:' + selectedUnitId);
+          if (selUnit) btnEntrench.textContent = '🛡️ Dig In (Lv ' + selUnit.entrenched + ')';
+        }
+
+        if (btnResupply) {
+          btnResupply.disabled = !legals.includes('resupply:' + selectedUnitId);
+        }
+
+        if (btnBombard) {
+          const bombardAct = legals.find(a => a.startsWith('bombard:' + selectedUnitId + ':'));
+          btnBombard.disabled = !bombardAct;
+        }
+
+        if (btnEndTurn) {
+          btnEndTurn.disabled = state.done;
+        }
+      }
+
+      function drawHex(x, y, radius, fillColor, strokeColor, lineWidth) {
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i + (Math.PI / 6);
+          const hx = x + radius * Math.cos(angle);
+          const hy = y + radius * Math.sin(angle);
+          if (i === 0) ctx.moveTo(hx, hy);
+          else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.fillStyle = '#0f141c';
+        ctx.fillRect(0, 0, 480, 480);
+
+        const legals = legalActions(state);
+        const selUnit = state.units ? state.units.find(u => u.id === selectedUnitId) : null;
+
+        // Draw 5x5 Hex Grid
+        for (let r = 0; r < 5; r++) {
+          for (let c = 0; c < 5; c++) {
+            const center = getHexCenter(r, c);
+            const terrain = getTerrain(r, c);
+
+            let bg = '#1a222e';
+            let border = '#283548';
+
+            if (terrain.type === 'city') bg = '#312e81';
+            else if (terrain.type === 'forest') bg = '#14532d';
+            else if (terrain.type === 'depot') bg = '#78350f';
+
+            // Check if HQ
+            if (state.hqs) {
+              if (r === state.hqs.blue.r && c === state.hqs.blue.c) border = '#38bdf8';
+              if (r === state.hqs.red.r && c === state.hqs.red.c) border = '#ef4444';
+            }
+
+            // Highlight legal move or attack for selected unit
+            const moveAct = `move:${selectedUnitId}:${r},${c}`;
+            const atkAct = `attack:${selectedUnitId}:${r},${c}`;
+            const bmbAct = `bombard:${selectedUnitId}:${r},${c}`;
+
+            if (legals.includes(moveAct)) {
+              border = '#22c55e';
+            } else if (legals.includes(atkAct)) {
+              border = '#f43f5e';
+            } else if (legals.includes(bmbAct)) {
+              border = '#f59e0b';
+            }
+
+            drawHex(center.x, center.y, center.r - 2, bg, border, (border !== '#283548' ? 3 : 1));
+
+            // Terrain icon / label
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '9px monospace';
+            ctx.textAlign = 'center';
+            if (terrain.type === 'city') ctx.fillText('CITY', center.x, center.y - 18);
+            else if (terrain.type === 'forest') ctx.fillText('WOODS', center.x, center.y - 18);
+            else if (terrain.type === 'depot') ctx.fillText('DEPOT', center.x, center.y - 18);
+
+            // HQ labels
+            if (state.hqs) {
+              if (r === state.hqs.blue.r && c === state.hqs.blue.c) {
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillText('BLUE HQ', center.x, center.y + 24);
+              } else if (r === state.hqs.red.r && c === state.hqs.red.c) {
+                ctx.fillStyle = '#ef4444';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillText('RED HQ', center.x, center.y + 24);
+              }
+            }
+          }
+        }
+
+        // Draw Units
+        if (state.units) {
+          state.units.filter(u => u.strength > 0).forEach(u => {
+            const center = getHexCenter(u.r, u.c);
+            const isBlue = u.side === 'blue';
+            const isSel = isBlue && u.id === selectedUnitId;
+
+            // Unit Counter Box
+            const w = 48;
+            const h = 34;
+            const bx = center.x - w / 2;
+            const by = center.y - h / 2;
+
+            ctx.fillStyle = isBlue ? (isSel ? '#1d4ed8' : '#2563eb') : '#b91c1c';
+            ctx.fillRect(bx, by, w, h);
+            ctx.strokeStyle = isSel ? '#38bdf8' : (isBlue ? '#60a5fa' : '#ef4444');
+            ctx.lineWidth = isSel ? 2 : 1;
+            ctx.strokeRect(bx, by, w, h);
+
+            // NATO Unit Symbol
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            if (u.type === 'armor') {
+              ctx.beginPath();
+              ctx.ellipse(center.x, center.y - 3, 14, 7, 0, 0, Math.PI * 2);
+              ctx.stroke();
+            } else if (u.type === 'infantry') {
+              ctx.beginPath();
+              ctx.moveTo(center.x - 12, center.y - 9); ctx.lineTo(center.x + 12, center.y + 3);
+              ctx.moveTo(center.x + 12, center.y - 9); ctx.lineTo(center.x - 12, center.y + 3);
+              ctx.stroke();
+            } else if (u.type === 'artillery') {
+              ctx.beginPath();
+              ctx.arc(center.x, center.y - 3, 4, 0, Math.PI * 2);
+              ctx.fillStyle = '#ffffff';
+              ctx.fill();
+            } else if (u.type === 'recon') {
+              ctx.beginPath();
+              ctx.moveTo(center.x - 12, center.y + 3); ctx.lineTo(center.x + 12, center.y - 9);
+              ctx.stroke();
+            }
+
+            // Strength Badge
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(u.strength + 's', center.x, center.y + 12);
+
+            // Entrenchment stars
+            if (u.entrenched > 0) {
+              ctx.fillStyle = '#facc15';
+              ctx.font = '8px sans-serif';
+              ctx.fillText('★'.repeat(u.entrenched), center.x, center.y - 12);
+            }
+
+            // Out of supply warning
+            if (!u.inSupply) {
+              ctx.fillStyle = '#ef4444';
+              ctx.font = 'bold 10px sans-serif';
+              ctx.fillText('⚠️', center.x + 18, center.y - 8);
+            }
+          });
+        }
+      }
+
+      function executeAction(act) {
+        if (!act) return;
+        try {
+          if (act.includes('attack:')) playSfx('cannon');
+          else if (act.includes('bombard:')) playSfx('cannon');
+          else if (act.includes('move:')) playSfx('move');
+          else playSfx('chime');
+
+          step(state, act);
+          updateUI();
+          draw();
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      // Unit select click
+      if (btnUArmor) btnUArmor.onclick = function() { selectedUnitId = 'u_b_armor'; updateUI(); draw(); };
+      if (btnUInf) btnUInf.onclick = function() { selectedUnitId = 'u_b_inf'; updateUI(); draw(); };
+      if (btnUArty) btnUArty.onclick = function() { selectedUnitId = 'u_b_arty'; updateUI(); draw(); };
+      if (btnURecon) btnURecon.onclick = function() { selectedUnitId = 'u_b_recon'; updateUI(); draw(); };
+
+      // Hex canvas click
+      if (canvas) {
+        canvas.addEventListener('click', function(e) {
+          if (state.done) return;
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+
+          // Find clicked hex
+          let clickedHex = null;
+          let minDist = 40;
+          for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+              const center = getHexCenter(r, c);
+              const d = Math.hypot(mx - center.x, my - center.y);
+              if (d < minDist) {
+                minDist = d;
+                clickedHex = { r, c };
+              }
+            }
+          }
+
+          if (!clickedHex) return;
+
+          // If clicked a friendly unit, switch selection
+          const friendly = state.units.find(u => u.side === 'blue' && u.strength > 0 && u.r === clickedHex.r && u.c === clickedHex.c);
+          if (friendly) {
+            selectedUnitId = friendly.id;
+            updateUI();
+            draw();
+            return;
+          }
+
+          const legals = legalActions(state);
+          const moveAct = `move:${selectedUnitId}:${clickedHex.r},${clickedHex.c}`;
+          const atkAct = `attack:${selectedUnitId}:${clickedHex.r},${clickedHex.c}`;
+          const bmbAct = `bombard:${selectedUnitId}:${clickedHex.r},${clickedHex.c}`;
+
+          if (legals.includes(moveAct)) {
+            executeAction(moveAct);
+          } else if (legals.includes(atkAct)) {
+            executeAction(atkAct);
+          } else if (legals.includes(bmbAct)) {
+            executeAction(bmbAct);
+          }
+        });
+      }
+
+      if (btnEntrench) {
+        btnEntrench.onclick = function() {
+          executeAction('entrench:' + selectedUnitId);
+        };
+      }
+
+      if (btnResupply) {
+        btnResupply.onclick = function() {
+          executeAction('resupply:' + selectedUnitId);
+        };
+      }
+
+      if (btnBombard) {
+        btnBombard.onclick = function() {
+          const legals = legalActions(state);
+          const bmb = legals.find(a => a.startsWith('bombard:' + selectedUnitId + ':'));
+          executeAction(bmb);
+        };
+      }
+
+      if (btnEndTurn) {
+        btnEndTurn.onclick = function() {
+          executeAction('end_turn');
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedUnitId = 'u_b_armor';
+          updateUI();
+          draw();
+        };
+      }
+
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          selectedUnitId = 'u_b_armor';
+          updateUI();
+          draw();
+        };
+      }
+
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>

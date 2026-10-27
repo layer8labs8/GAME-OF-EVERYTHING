@@ -1010,9 +1010,11 @@
    "id": "0098",
    "slug": "wargame",
    "name": "Wargame",
+   "title": "Operational Wargame",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {
