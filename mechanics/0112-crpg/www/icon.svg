@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0f1d" />
+      <stop offset="50%" stop-color="#181829" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="bookCover" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#78350f" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="page" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fef3c7" />
+      <stop offset="50%" stop-color="#fde68a" />
+      <stop offset="100%" stop-color="#fef3c7" />
+    </linearGradient>
+    <linearGradient id="steel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="50%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="100" fill="url(#bg)" stroke="#ca8a04" stroke-width="8" />
+
+  <!-- Open Grimoire Book Base -->
+  <g filter="url(#glow)">
+    <!-- Leather Binding Outer -->
+    <path d="M 60,330 Q 256,360 452,330 L 460,370 Q 256,400 52,370 Z" fill="url(#bookCover)" stroke="#92400e" stroke-width="3" />
+
+    <!-- Open Parchment Pages Left -->
+    <path d="M 70,330 Q 160,320 250,336 L 250,140 Q 160,120 70,140 Z" fill="url(#page)" stroke="#d97706" stroke-width="2" />
+    <!-- Open Parchment Pages Right -->
+    <path d="M 262,336 Q 352,320 442,330 L 442,140 Q 352,120 262,140 Z" fill="url(#page)" stroke="#d97706" stroke-width="2" />
+
+    <!-- Arcane Script Lines on Pages -->
+    <g stroke="#b45309" stroke-width="2" stroke-linecap="round" opacity="0.6">
+      <line x1="95" y1="170" x2="225" y2="170" />
+      <line x1="95" y1="195" x2="225" y2="195" />
+      <line x1="95" y1="220" x2="225" y2="220" />
+      <line x1="95" y1="245" x2="200" y2="245" />
+
+      <line x1="285" y1="170" x2="415" y2="170" />
+      <line x1="285" y1="195" x2="415" y2="195" />
+      <line x1="285" y1="220" x2="415" y2="220" />
+      <line x1="285" y1="245" x2="380" y2="245" />
+    </g>
+
+    <!-- Glowing Elemental Runes in Grimoire -->
+    <!-- Fire Rune on Left Page -->
+    <polygon points="160,265 170,290 150,290" fill="#ef4444" opacity="0.85" />
+    <circle cx="160" cy="275" r="16" fill="none" stroke="#f97316" stroke-width="2" opacity="0.8" />
+
+    <!-- Lightning Rune on Right Page -->
+    <polygon points="350,260 362,280 354,282 366,305 344,285 352,283" fill="#eab308" opacity="0.85" />
+    <circle cx="350" cy="280" r="16" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.8" />
+  </g>
+
+  <!-- Steel Dagger Across the Spine (Diagonal) -->
+  <g filter="url(#glow)">
+    <!-- Pointed Blade -->
+    <polygon points="256,60 266,280 256,290 246,280" fill="url(#steel)" stroke="#cbd5e1" stroke-width="2" />
+    <line x1="256" y1="70" x2="256" y2="280" stroke="#38bdf8" stroke-width="2" />
+
+    <!-- Steel Crossguard -->
+    <rect x="216" y="284" width="80" height="12" rx="3" fill="#ca8a04" stroke="#78350f" stroke-width="2" />
+    <circle cx="256" cy="290" r="5" fill="#38bdf8" />
+
+    <!-- Hilt & Pommel -->
+    <rect x="250" y="296" width="12" height="40" rx="2" fill="#1e293b" />
+    <circle cx="256" cy="342" r="9" fill="#ca8a04" />
+  </g>
+</svg>

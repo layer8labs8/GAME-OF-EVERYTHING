@@ -1164,9 +1164,11 @@
    "id": "0112",
    "slug": "crpg",
    "name": "CRPG",
+   "title": "Grimoire & Steel",
    "family": "RPG",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {

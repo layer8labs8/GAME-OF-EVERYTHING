@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Grimoire & Steel: CRPG</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #151c2e;
+      border: 1px solid #283553;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      color: #facc15;
+      text-transform: uppercase;
+    }
+    .hud-stat {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      background: #060913;
+      border: 1px solid #1f2b45;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      cursor: pointer;
+    }
+    .controls-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-section {
+      background: #151c2e;
+      border: 1px solid #283553;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .hero-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f1f5f9;
+      padding: 6px 4px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 46px;
+    }
+    .btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #38bdf8;
+    }
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .btn.active-hero {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #f0f9ff;
+    }
+    .btn-fire {
+      background: #451a1a;
+      border-color: #ef4444;
+      color: #fee2e2;
+    }
+    .btn-lightning {
+      background: #422006;
+      border-color: #eab308;
+      color: #fef08a;
+    }
+    .btn-end {
+      background: #065f46;
+      border-color: #10b981;
+      color: #d1fae5;
+      font-weight: 700;
+      padding: 10px;
+      font-size: 0.86rem;
+    }
+    .log-feed {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      max-height: 52px;
+      overflow-y: auto;
+      line-height: 1.3;
+      padding: 4px;
+      background: #080c16;
+      border-radius: 4px;
+      border: 1px solid #1a243a;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Grimoire & Steel</h1>
+    <div class="hud-stat" id="hud-stats">Turn 1 / 35 • Kael: 4 AP • Valeria: 4 AP</div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="view" width="560" height="380"></canvas>
+
+    <div class="controls-panel">
+      <!-- Active Hero Selector -->
+      <div class="panel-section">
+        <div class="hero-tabs">
+          <button id="tab-kael" class="btn active-hero">Kael (Warrior)<br><small id="kael-stat">90 HP • 4 AP</small></button>
+          <button id="tab-valeria" class="btn">Valeria (Sorceress)<br><small id="valeria-stat">65 HP • 4 AP</small></button>
+        </div>
+
+        <!-- Tactical Actions -->
+        <div class="section-title">
+          <span id="target-title">Tactical Action & Targeting</span>
+          <span id="target-subtitle" style="color: #f87171;">Click grid tile to aim spell</span>
+        </div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-move-N" class="btn">Step North<br><small>1-2 AP</small></button>
+          <button id="btn-move-S" class="btn">Step South<br><small>1-2 AP</small></button>
+          <button id="btn-move-W" class="btn">Step West<br><small>1-2 AP</small></button>
+          <button id="btn-move-E" class="btn">Step East<br><small>1-2 AP</small></button>
+        </div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-act-melee" class="btn">Melee Slash<br><small>2 AP • 20 Dmg</small></button>
+          <button id="btn-act-bash" class="btn">Shield Bash<br><small>2 AP • Knockback</small></button>
+          <button id="btn-act-ignite" class="btn btn-fire">Ignite<br><small>3 AP • Fire Puddle</small></button>
+          <button id="btn-act-lightning" class="btn btn-lightning">Chain Shock<br><small>3 AP • Shock Pool</small></button>
+        </div>
+
+        <button id="btn-end-turn" class="btn btn-end" style="width: 100%;">Conclude Orders (End Turn)</button>
+      </div>
+
+      <!-- Action Log -->
+      <div class="panel-section">
+        <div class="section-title">Combat Chronicle</div>
+        <div id="log-feed" class="log-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now() & 0xffff);
+    const canvas = document.getElementById('view');
+    const ctx = canvas.getContext('2d');
+
+    let activeHeroId = 'kael'; // 'kael' | 'valeria'
+    let selectedTile = { r: 3, c: 2 }; // Target for spells/skills
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(freq = 240, type = 'sine', duration = 0.12) {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state !== 'closed') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        }
+      } catch (e) {}
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        step(state, action);
+        if (action.startsWith('slash') || action.startsWith('bash')) playSfx(160, 'sawtooth', 0.15);
+        else if (action.startsWith('ignite')) playSfx(120, 'square', 0.22);
+        else if (action.startsWith('lightning')) playSfx(620, 'triangle', 0.2);
+        else playSfx(330, 'sine', 0.08);
+
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn('Action error:', err);
+      }
+    }
+
+    // Canvas click to select tile
+    canvas.addEventListener('click', (e) => {
+      if (state.done) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mx = (e.clientX - rect.left) * scaleX;
+      const my = (e.clientY - rect.top) * scaleY;
+
+      const ox = 30;
+      const oy = 25;
+      const sz = 55;
+
+      const c = Math.floor((mx - ox) / sz);
+      const r = Math.floor((my - oy) / sz);
+
+      if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
+        selectedTile = { r, c };
+        // If clicked on party member, switch tab
+        const hero = state.party.find(p => p.alive && p.r === r && p.c === c);
+        if (hero) activeHeroId = hero.id;
+
+        playSfx(480, 'sine', 0.05);
+        updateUI();
+        render();
+      }
+    });
+
+    // Tab switching
+    document.getElementById('tab-kael').onclick = () => { activeHeroId = 'kael'; updateUI(); render(); };
+    document.getElementById('tab-valeria').onclick = () => { activeHeroId = 'valeria'; updateUI(); render(); };
+
+    // Move buttons
+    document.getElementById('btn-move-N').onclick = () => moveHero(-1, 0);
+    document.getElementById('btn-move-S').onclick = () => moveHero(1, 0);
+    document.getElementById('btn-move-W').onclick = () => moveHero(0, -1);
+    document.getElementById('btn-move-E').onclick = () => moveHero(0, 1);
+
+    function moveHero(dr, dc) {
+      const hero = state.party.find(p => p.id === activeHeroId);
+      if (hero && hero.alive) {
+        doAction(`move:${hero.id}:${hero.r + dr},${hero.c + dc}`);
+      }
+    }
+
+    // Combat action buttons
+    document.getElementById('btn-act-melee').onclick = () => {
+      const hero = state.party.find(p => p.id === activeHeroId);
+      if (hero && hero.id === 'kael') {
+        const targetIdx = state.enemies.findIndex(e => e.alive && (Math.abs(e.r - hero.r) + Math.abs(e.c - hero.c) === 1));
+        if (targetIdx !== -1) doAction(`slash:${hero.id}:${targetIdx}`);
+      }
+    };
+
+    document.getElementById('btn-act-bash').onclick = () => {
+      const hero = state.party.find(p => p.id === activeHeroId);
+      if (hero && hero.id === 'kael') {
+        const targetIdx = state.enemies.findIndex(e => e.alive && (Math.abs(e.r - hero.r) + Math.abs(e.c - hero.c) === 1));
+        if (targetIdx !== -1) doAction(`bash:${hero.id}:${targetIdx}`);
+      }
+    };
+
+    document.getElementById('btn-act-ignite').onclick = () => {
+      if (selectedTile) doAction(`ignite:valeria:${selectedTile.r},${selectedTile.c}`);
+    };
+
+    document.getElementById('btn-act-lightning').onclick = () => {
+      if (selectedTile) doAction(`lightning:valeria:${selectedTile.r},${selectedTile.c}`);
+    };
+
+    document.getElementById('btn-end-turn').onclick = () => doAction('end_turn');
+
+    function updateUI() {
+      const legals = legalActions(state);
+      const kael = state.party[0];
+      const valeria = state.party[1];
+
+      // HUD Stats
+      const hud = document.getElementById('hud-stats');
+      if (hud) {
+        hud.textContent = `Turn ${state.turn} / ${state.maxTurns} • Kael: ${kael.ap} AP • Valeria: ${valeria.ap} AP`;
+      }
+
+      // Hero tabs
+      const tabK = document.getElementById('tab-kael');
+      const tabV = document.getElementById('tab-valeria');
+      if (tabK && tabK.classList) {
+        if (activeHeroId === 'kael') tabK.classList.add('active-hero');
+        else tabK.classList.remove('active-hero');
+      }
+      if (tabV && tabV.classList) {
+        if (activeHeroId === 'valeria') tabV.classList.add('active-hero');
+        else tabV.classList.remove('active-hero');
+      }
+
+      const kStat = document.getElementById('kael-stat');
+      const vStat = document.getElementById('valeria-stat');
+      if (kStat) kStat.textContent = `${kael.hp}/${kael.maxHp} HP • ${kael.ap} AP`;
+      if (vStat) vStat.textContent = `${valeria.hp}/${valeria.maxHp} HP • ${valeria.ap} AP`;
+
+      // Movement buttons state
+      const hero = state.party.find(p => p.id === activeHeroId);
+      if (hero && hero.alive) {
+        document.getElementById('btn-move-N').disabled = !legals.includes(`move:${hero.id}:${hero.r - 1},${hero.c}`);
+        document.getElementById('btn-move-S').disabled = !legals.includes(`move:${hero.id}:${hero.r + 1},${hero.c}`);
+        document.getElementById('btn-move-W').disabled = !legals.includes(`move:${hero.id}:${hero.r},${hero.c - 1}`);
+        document.getElementById('btn-move-E').disabled = !legals.includes(`move:${hero.id}:${hero.r},${hero.c + 1}`);
+      }
+
+      // Action buttons
+      const bMelee = document.getElementById('btn-act-melee');
+      const bBash = document.getElementById('btn-act-bash');
+      const bIgnite = document.getElementById('btn-act-ignite');
+      const bLightning = document.getElementById('btn-act-lightning');
+
+      if (bMelee) bMelee.disabled = (activeHeroId !== 'kael') || !legals.some(a => a.startsWith('slash:kael:'));
+      if (bBash) bBash.disabled = (activeHeroId !== 'kael') || !legals.some(a => a.startsWith('bash:kael:'));
+      if (bIgnite) bIgnite.disabled = (activeHeroId !== 'valeria') || !selectedTile || !legals.includes(`ignite:valeria:${selectedTile.r},${selectedTile.c}`);
+      if (bLightning) bLightning.disabled = (activeHeroId !== 'valeria') || !selectedTile || !legals.includes(`lightning:valeria:${selectedTile.r},${selectedTile.c}`);
+
+      // History log
+      const logFeed = document.getElementById('log-feed');
+      if (logFeed && state.history.length > 0) {
+        logFeed.innerHTML = state.history.slice(-4).reverse().join('<br>');
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const ox = 30;
+      const oy = 25;
+      const sz = 55;
+
+      // Draw Grid & Surfaces
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const gx = ox + c * sz;
+          const gy = oy + r * sz;
+          const surf = state.surfaces[r][c].surface;
+
+          // Surface colors
+          if (surf === 'fire') ctx.fillStyle = '#7f1d1d';
+          else if (surf === 'electrified') ctx.fillStyle = '#713f12';
+          else if (surf === 'oil') ctx.fillStyle = '#292524';
+          else if (surf === 'water') ctx.fillStyle = '#0c4a6e';
+          else ctx.fillStyle = ((r + c) % 2 === 0) ? '#131e33' : '#0e1626';
+
+          ctx.fillRect(gx, gy, sz, sz);
+          ctx.strokeStyle = 'rgba(71, 85, 105, 0.3)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(gx, gy, sz, sz);
+
+          // Surface icon badge
+          if (surf === 'fire') {
+            ctx.fillStyle = '#ef4444'; ctx.font = '10px sans-serif'; ctx.fillText('🔥 Fire', gx + 4, gy + 12);
+          } else if (surf === 'electrified') {
+            ctx.fillStyle = '#fde047'; ctx.font = '10px sans-serif'; ctx.fillText('⚡ Shock', gx + 4, gy + 12);
+          } else if (surf === 'oil') {
+            ctx.fillStyle = '#a8a29e'; ctx.font = '10px sans-serif'; ctx.fillText('🛢️ Oil', gx + 4, gy + 12);
+          } else if (surf === 'water') {
+            ctx.fillStyle = '#38bdf8'; ctx.font = '10px sans-serif'; ctx.fillText('💧 Water', gx + 4, gy + 12);
+          }
+
+          // Highlight selected tile
+          if (selectedTile && selectedTile.r === r && selectedTile.c === c) {
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(gx + 1, gy + 1, sz - 2, sz - 2);
+          }
+        }
+      }
+
+      // Draw Enemies
+      state.enemies.forEach(e => {
+        if (!e.alive) return;
+        const ex = ox + e.c * sz + sz / 2;
+        const ey = oy + e.r * sz + sz / 2;
+
+        ctx.save();
+        if (e.isBoss) {
+          // Warlord Great Axe
+          ctx.fillStyle = '#991b1b';
+          ctx.fillRect(ex - 15, ey - 15, 30, 30);
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(ex - 15, ey - 15, 30, 30);
+        } else {
+          // Archer
+          ctx.fillStyle = '#7c2d12';
+          ctx.beginPath();
+          ctx.arc(ex, ey, 14, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Enemy HP Bar
+        const hpPct = Math.max(0, e.hp / e.maxHp);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(ex - 16, ey - 22, 32, 4);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(ex - 16, ey - 22, Math.floor(32 * hpPct), 4);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(e.isBoss ? 'Warlord' : 'Archer', ex, ey + 4);
+        ctx.textAlign = 'left';
+
+        ctx.restore();
+      });
+
+      // Draw Party Heroes
+      state.party.forEach(hero => {
+        if (!hero.alive) return;
+        const hx = ox + hero.c * sz + sz / 2;
+        const hy = oy + hero.r * sz + sz / 2;
+        const isSelected = (hero.id === activeHeroId);
+
+        ctx.save();
+        if (isSelected) {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(hx, hy, 20, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        if (hero.id === 'kael') {
+          // Warrior Shield & Plate
+          ctx.fillStyle = '#1d4ed8';
+          ctx.fillRect(hx - 14, hy - 14, 28, 28);
+          ctx.strokeStyle = '#60a5fa';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(hx - 14, hy - 14, 28, 28);
+        } else {
+          // Sorceress Robe & Aura
+          ctx.fillStyle = '#7e22ce';
+          ctx.beginPath();
+          ctx.arc(hx, hy, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // HP Bar
+        const hpPct = Math.max(0, hero.hp / hero.maxHp);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(hx - 16, hy - 22, 32, 4);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(hx - 16, hy - 22, Math.floor(32 * hpPct), 4);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(hero.id === 'kael' ? 'Kael' : 'Valeria', hx, hy + 4);
+        ctx.textAlign = 'left';
+
+        ctx.restore();
+      });
+
+      // Right Tactical Dashboard
+      const dashX = 380;
+      const dashY = 25;
+      const dashW = 160;
+      const dashH = 330;
+
+      ctx.fillStyle = '#111c2e';
+      ctx.fillRect(dashX, dashY, dashW, dashH);
+      ctx.strokeStyle = '#1e3a5f';
+      ctx.strokeRect(dashX, dashY, dashW, dashH);
+
+      ctx.fillStyle = '#facc15';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('CRPG TACTICS', dashX + 12, dashY + 22);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('• Move = 1 AP (Oil = 2 AP)', dashX + 12, dashY + 46);
+      ctx.fillText('• Slash = 2 AP (Range 1)', dashX + 12, dashY + 66);
+      ctx.fillText('• Bash shoves target back', dashX + 12, dashY + 86);
+      ctx.fillText('• Ignite: Oil -> Raging Fire', dashX + 12, dashY + 106);
+      ctx.fillText('• Lightning: Water -> Shock', dashX + 12, dashY + 126);
+      ctx.fillText('• Flank deal +30% critical', dashX + 12, dashY + 146);
+
+      // Living Enemies Counter
+      const livingEnemies = state.enemies.filter(e => e.alive);
+      ctx.fillStyle = '#f87171';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(`Hostiles Left: ${livingEnemies.length}`, dashX + 12, dashY + 180);
+
+      livingEnemies.forEach((e, idx) => {
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillText(`${e.name}: ${e.hp} HP`, dashX + 12, dashY + 200 + idx * 16);
+      });
+
+      // Tactical Score
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`War Score: ${score(state)}`, dashX + 12, dashY + 310);
+
+      // Game Over Screen Overlay
+      if (state.done) {
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.textAlign = 'center';
+        if (state.winner === 'player') {
+          ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('TACTICAL VICTORY!', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Mercenary host broken! Final Score: ${score(state)}`, 280, 195);
+        } else {
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('PARTY DEFEATED', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`The mercenaries overran your lines. Final Score: ${score(state)}`, 280, 195);
+        }
+        ctx.textAlign = 'left';
+      }
+    }
+
+    // Initialize
+    updateUI();
+    render();
+
+    // Register service worker if supported
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
