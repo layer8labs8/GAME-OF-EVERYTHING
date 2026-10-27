@@ -1363,9 +1363,11 @@
    "slug": "visual-novel",
    "name": "Visual Novel",
    "family": "Adventure",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Echoes of Starlight",
+   "levels": "endless"
   },
   {
    "id": "0131",

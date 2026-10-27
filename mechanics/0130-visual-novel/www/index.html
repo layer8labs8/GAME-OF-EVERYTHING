@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Echoes of Starlight - Visual Novel</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ec4899">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0c0814;
+      color: #fdf2f8;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #2b0b38;
+      border-radius: 8px;
+      border: 1px solid #ec4899;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #f472b6;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #23082e;
+      border: 1px solid #701a75;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .hud-label {
+      color: #fbcfe8;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.85rem;
+    }
+    .val-lyra { color: #d946ef; }
+    .val-vance { color: #f59e0b; }
+    .val-aria { color: #38bdf8; }
+    .val-score { color: #f472b6; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 9;
+      background: #05020a;
+      border: 2px solid #a21caf;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(236, 72, 153, 0.25);
+      touch-action: none;
+    }
+
+    .vn-textbox {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      background: rgba(30, 8, 40, 0.95);
+      border: 1px solid #d946ef;
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-height: 90px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .speaker-name {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #f472b6;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .dialogue-text {
+      font-size: 0.85rem;
+      color: #fdf2f8;
+      line-height: 1.4;
+      flex-grow: 1;
+    }
+    .advance-hint {
+      align-self: flex-end;
+      font-size: 0.65rem;
+      color: #fbcfe8;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .choices-container {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .choice-btn {
+      background: #3b0764;
+      border: 1px solid #c084fc;
+      color: #faf5ff;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+    .choice-btn:hover {
+      background: #581c87;
+      border-color: #f472b6;
+    }
+    .choice-btn:active {
+      transform: scale(0.98);
+    }
+
+    .quick-bar {
+      width: 100%;
+      max-width: 460px;
+      margin-top: 6px;
+      display: flex;
+      gap: 4px;
+      justify-content: flex-end;
+    }
+    .tool-btn {
+      background: #1e092b;
+      border: 1px solid #701a75;
+      color: #fbcfe8;
+      font-size: 0.75rem;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Ending modal */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(12, 8, 20, 0.96);
+      backdrop-filter: blur(6px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      border-radius: 8px;
+      z-index: 50;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-card {
+      background: #2b0b38;
+      border: 2px solid #ec4899;
+      border-radius: 12px;
+      padding: 20px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+    }
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #f472b6;
+      margin-bottom: 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #d946ef, #ec4899);
+      border: none;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 8px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>✨</span> ECHOES OF STARLIGHT</h1>
+    <span style="font-size: 0.75rem; color: #f472b6; font-weight: bold;" id="cg-badge">0 / 3 CGs</span>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Lyra 💖</div>
+      <div class="hud-val val-lyra" id="val-lyra">0 pts</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Vance ⚡</div>
+      <div class="hud-val val-vance" id="val-vance">0 pts</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Aria 💠</div>
+      <div class="hud-val val-aria" id="val-aria">0 pts</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Score</div>
+      <div class="hud-val val-score" id="val-score">0</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="vn-canvas" width="460" height="258"></canvas>
+
+    <!-- Ending Modal -->
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-card">
+        <div class="modal-title" id="end-title">JOURNEY CONCLUDED</div>
+        <p style="font-size: 0.85rem; color: #fbcfe8; margin: 10px 0; line-height: 1.4;" id="end-desc"></p>
+        <div style="font-size: 1rem; color: #facc15; font-weight: bold; margin-bottom: 8px;" id="end-score">Score: 0</div>
+        <button class="btn-primary" id="btn-restart">REPLAY TIMELINE</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="vn-textbox" id="vn-textbox">
+    <div class="speaker-name" id="speaker-name">Narrator</div>
+    <div class="dialogue-text" id="dialogue-text">Deep space, Year 3104.</div>
+    <div class="advance-hint" id="advance-hint">▼ Click to continue</div>
+  </div>
+
+  <div class="choices-container" id="choices-container"></div>
+
+  <div class="quick-bar">
+    <button class="tool-btn" id="btn-bot">AI AUTO-PLAY</button>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Math.random() * 1000000));
+    const canvas = document.getElementById('vn-canvas');
+    const ctx = canvas.getContext('2d');
+
+    window.executeAction = function(act) {
+      if (isOver(state)) return;
+      const legals = legalActions(state);
+      if (!legals.includes(act)) return;
+
+      step(state, act);
+      render();
+    };
+
+    function renderSceneGraphic() {
+      const sc = getCurrentScene(state);
+      if (!sc) return;
+
+      const w = 460;
+      const h = 258;
+      ctx.clearRect(0, 0, w, h);
+
+      // Background
+      if (sc.background === 'bridge') {
+        // Starship bridge
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, w, h);
+
+        // Windows viewing space
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(40, 20, 380, 140);
+        // Distant stars
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(80, 40, 2, 2);
+        ctx.fillRect(150, 70, 2, 2);
+        ctx.fillRect(280, 50, 2, 2);
+        ctx.fillRect(360, 90, 2, 2);
+
+        // Bridge consoles
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 160, w, 98);
+        ctx.fillStyle = '#06b6d4';
+        ctx.fillRect(80, 180, 60, 20);
+        ctx.fillRect(320, 180, 60, 20);
+      } else if (sc.background === 'laboratory') {
+        // High tech lab
+        ctx.fillStyle = '#1e1b4b';
+        ctx.fillRect(0, 0, w, h);
+
+        // Core containment column
+        ctx.fillStyle = '#312e81';
+        ctx.fillRect(190, 0, 80, 200);
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(230, 100, 25, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 180, w, 78);
+      } else if (sc.background === 'observatory') {
+        // Celestial dome
+        ctx.fillStyle = '#030712';
+        ctx.fillRect(0, 0, w, h);
+
+        // Glowing nebula ring
+        ctx.strokeStyle = '#d946ef';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(230, 120, 90, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ec4899';
+        ctx.beginPath();
+        ctx.arc(230, 120, 12, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Nebula
+        ctx.fillStyle = '#1f092b';
+        ctx.fillRect(0, 0, w, h);
+
+        // Radiant gas cloud
+        ctx.fillStyle = 'rgba(236, 72, 153, 0.4)';
+        ctx.beginPath();
+        ctx.arc(230, 120, 110, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+        ctx.beginPath();
+        ctx.arc(300, 90, 70, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Character Sprite
+      const speaker = sc.speaker;
+      if (speaker === 'Lyra') {
+        ctx.save();
+        // Hair
+        ctx.fillStyle = '#c084fc';
+        ctx.beginPath();
+        ctx.arc(230, 100, 42, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Face
+        ctx.fillStyle = '#fed7aa';
+        ctx.beginPath();
+        ctx.arc(230, 110, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#a855f7';
+        ctx.beginPath();
+        ctx.arc(220, 108, 4, 0, Math.PI * 2);
+        ctx.arc(240, 108, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Uniform
+        ctx.fillStyle = '#4a044e';
+        ctx.fillRect(195, 140, 70, 118);
+        ctx.restore();
+      } else if (speaker === 'Vance') {
+        ctx.save();
+        // Hair
+        ctx.fillStyle = '#b45309';
+        ctx.beginPath();
+        ctx.arc(230, 96, 40, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Face
+        ctx.fillStyle = '#fed7aa';
+        ctx.beginPath();
+        ctx.arc(230, 108, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pilot jacket
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(195, 138, 70, 120);
+        ctx.restore();
+      } else if (speaker === 'Aria') {
+        ctx.save();
+        // Synthetic silver hair
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(230, 100, 40, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Face
+        ctx.fillStyle = '#f1f5f9';
+        ctx.beginPath();
+        ctx.arc(230, 110, 28, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Azure ocular sensors
+        ctx.fillStyle = '#06b6d4';
+        ctx.beginPath();
+        ctx.arc(220, 108, 4, 0, Math.PI * 2);
+        ctx.arc(240, 108, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cybernetic collar
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(198, 138, 64, 120);
+        ctx.restore();
+      }
+    }
+
+    function render() {
+      const sc = getCurrentScene(state);
+      if (!sc) return;
+
+      // HUD
+      document.getElementById('val-lyra').textContent = state.affinity.lyra + ' pts';
+      document.getElementById('val-vance').textContent = state.affinity.vance + ' pts';
+      document.getElementById('val-aria').textContent = state.affinity.aria + ' pts';
+      document.getElementById('val-score').textContent = state.score;
+      document.getElementById('cg-badge').textContent = state.cgsUnlocked.length + ' / 3 CGs';
+
+      // Textbox
+      document.getElementById('speaker-name').textContent = sc.speaker;
+      document.getElementById('dialogue-text').textContent = sc.text;
+
+      // Advance hint / Choices
+      const choicesContainer = document.getElementById('choices-container');
+      const advanceHint = document.getElementById('advance-hint');
+
+      if (sc.choices && sc.choices.length > 0) {
+        advanceHint.style.display = 'none';
+        choicesContainer.innerHTML = sc.choices.map((c, idx) => {
+          return '<button class="choice-btn" onclick="executeAction(\'choose:' + idx + '\')">' +
+            (idx + 1) + '. ' + c.text +
+          '</button>';
+        }).join('');
+      } else {
+        choicesContainer.innerHTML = '';
+        advanceHint.style.display = isOver(state) ? 'none' : 'block';
+      }
+
+      // Canvas
+      renderSceneGraphic();
+
+      // Modal
+      const modal = document.getElementById('end-modal');
+      if (isOver(state)) {
+        modal.className = 'modal-overlay active';
+        const title = document.getElementById('end-title');
+        const desc = document.getElementById('end-desc');
+        const scEl = document.getElementById('end-score');
+        scEl.textContent = 'Final Score: ' + state.score;
+
+        if (state.victory) {
+          title.textContent = state.ending;
+          title.style.color = '#f472b6';
+          desc.textContent = sc.text;
+        } else {
+          title.textContent = 'MISSION COLLAPSE';
+          title.style.color = '#ef4444';
+          desc.textContent = sc.text;
+        }
+      } else {
+        modal.className = 'modal-overlay';
+      }
+    }
+
+    // Textbox click advances
+    document.getElementById('vn-textbox').onclick = () => {
+      const legals = legalActions(state);
+      if (legals.includes('advance')) {
+        executeAction('advance');
+      }
+    };
+
+    document.getElementById('btn-bot').onclick = () => {
+      const legals = legalActions(state);
+      if (legals.length > 0) {
+        // Choose best option
+        const act = legals.find(a => a.startsWith('choose:')) || 'advance';
+        executeAction(act);
+      }
+    };
+
+    document.getElementById('btn-restart').onclick = () => {
+      state = createState(Math.floor(Math.random() * 1000000));
+      render();
+    };
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      if (isOver(state)) return;
+      const key = e.key;
+      const legals = legalActions(state);
+
+      if (key === ' ' || key === 'Enter') {
+        if (legals.includes('advance')) {
+          executeAction('advance');
+          e.preventDefault();
+        }
+      } else if (key >= '1' && key <= '4') {
+        const choiceIdx = parseInt(key, 10) - 1;
+        const act = 'choose:' + choiceIdx;
+        if (legals.includes(act)) {
+          executeAction(act);
+        }
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
