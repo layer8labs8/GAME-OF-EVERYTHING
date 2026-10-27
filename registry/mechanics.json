@@ -1142,9 +1142,11 @@
    "id": "0110",
    "slug": "action-rpg",
    "name": "Action RPG",
+   "title": "Blade & Spell",
    "family": "RPG",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {

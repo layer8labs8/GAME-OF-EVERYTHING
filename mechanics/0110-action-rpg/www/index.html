@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Blade & Spell: Action RPG</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #151c2e;
+      border: 1px solid #283553;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      color: #38bdf8;
+      text-transform: uppercase;
+    }
+    .hud-stat {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #facc15;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      background: #060913;
+      border: 1px solid #1f2b45;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+    .controls-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-section {
+      background: #151c2e;
+      border: 1px solid #283553;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .dpad-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f1f5f9;
+      padding: 6px 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 46px;
+    }
+    .btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #38bdf8;
+    }
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .btn-slash {
+      background: #831843;
+      border-color: #be185d;
+      color: #fce7f3;
+    }
+    .btn-roll {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #eff6ff;
+    }
+    .btn-spell {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #e0f2fe;
+    }
+    .btn-flask {
+      background: #065f46;
+      border-color: #10b981;
+      color: #d1fae5;
+    }
+    .log-feed {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      max-height: 52px;
+      overflow-y: auto;
+      line-height: 1.3;
+      padding: 4px;
+      background: #080c16;
+      border-radius: 4px;
+      border: 1px solid #1a243a;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Blade & Spell</h1>
+    <div class="hud-stat" id="hud-stats">Wave 1 / 3 • 100 HP • 100 Sta</div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="view" width="560" height="380"></canvas>
+
+    <div class="controls-panel">
+      <!-- Movement Controls -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Directional Maneuvering</span>
+          <span id="heading-stat" style="color: #38bdf8;">Facing: North</span>
+        </div>
+        <div class="dpad-grid">
+          <button id="btn-move-N" class="btn">Move North<br><small>▲ Up</small></button>
+          <button id="btn-move-S" class="btn">Move South<br><small>▼ Down</small></button>
+          <button id="btn-move-W" class="btn">Move West<br><small>◀ Left</small></button>
+          <button id="btn-move-E" class="btn">Move East<br><small>▶ Right</small></button>
+        </div>
+      </div>
+
+      <!-- Action & Skill Execution -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Combat Skills & Spells</span>
+          <span id="combo-stat" style="color: #facc15;">Combo: 0x</span>
+        </div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-slash" class="btn btn-slash">Forward Slash<br><small>15 Sta • 18 Dmg</small></button>
+          <button id="btn-cleave" class="btn btn-slash">Spin Cleave<br><small>35 Sta • 28 Dmg</small></button>
+          <button id="btn-roll" class="btn btn-roll">Dodge Roll<br><small>20 Sta • i-Frames</small></button>
+          <button id="btn-frost" class="btn btn-spell">Frost Nova<br><small>20 MP • Freeze</small></button>
+        </div>
+        <button id="btn-flask" class="btn btn-flask" style="width: 100%;">Quaff Estus Flask (+40 HP)</button>
+      </div>
+
+      <!-- Combat Signals -->
+      <div class="panel-section">
+        <div class="section-title">Dungeon Battle Log</div>
+        <div id="log-feed" class="log-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now() & 0xffff);
+    const canvas = document.getElementById('view');
+    const ctx = canvas.getContext('2d');
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(freq = 240, type = 'sawtooth', duration = 0.1) {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state !== 'closed') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        }
+      } catch (e) {}
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        step(state, action);
+        if (action === 'slash') playSfx(220, 'sawtooth', 0.12);
+        else if (action === 'spin_cleave') playSfx(160, 'sawtooth', 0.2);
+        else if (action.startsWith('dodge_roll')) playSfx(380, 'sine', 0.15);
+        else if (action === 'cast_frost_nova') playSfx(550, 'triangle', 0.22);
+        else if (action === 'heal_flask') playSfx(440, 'sine', 0.18);
+        else playSfx(280, 'sine', 0.06);
+
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn('Action error:', err);
+      }
+    }
+
+    // Attach static buttons
+    document.getElementById('btn-move-N').onclick = () => doAction('move:N');
+    document.getElementById('btn-move-S').onclick = () => doAction('move:S');
+    document.getElementById('btn-move-W').onclick = () => doAction('move:W');
+    document.getElementById('btn-move-E').onclick = () => doAction('move:E');
+
+    document.getElementById('btn-slash').onclick = () => doAction('slash');
+    document.getElementById('btn-cleave').onclick = () => doAction('spin_cleave');
+    document.getElementById('btn-roll').onclick = () => doAction(`dodge_roll:${state.hero.heading}`);
+    document.getElementById('btn-frost').onclick = () => doAction('cast_frost_nova');
+    document.getElementById('btn-flask').onclick = () => doAction('heal_flask');
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      if (state.done) return;
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') doAction('move:N');
+      else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') doAction('move:S');
+      else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') doAction('move:W');
+      else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') doAction('move:E');
+      else if (e.key === ' ') doAction('slash');
+      else if (e.key === 'Shift') doAction(`dodge_roll:${state.hero.heading}`);
+      else if (e.key === 'q' || e.key === 'Q') doAction('cast_frost_nova');
+      else if (e.key === 'e' || e.key === 'E') doAction('heal_flask');
+    });
+
+    function updateUI() {
+      const legals = legalActions(state);
+      const h = state.hero;
+
+      // Header stats
+      const hud = document.getElementById('hud-stats');
+      if (hud) {
+        hud.textContent = `Wave ${state.wave} / ${state.maxWaves} • HP: ${h.hp}/${h.maxHp} • Sta: ${h.stamina} • Mana: ${h.mana}`;
+      }
+
+      const hStat = document.getElementById('heading-stat');
+      if (hStat) hStat.textContent = `Facing: ${h.heading} (Roll: 2-step)`;
+
+      const cStat = document.getElementById('combo-stat');
+      if (cStat) cStat.textContent = `Combo Multiplier: +${h.combo * 2} Dmg`;
+
+      // Buttons
+      ['N', 'S', 'W', 'E'].forEach(d => {
+        const btn = document.getElementById(`btn-move-${d}`);
+        if (btn) btn.disabled = !legals.includes(`move:${d}`);
+      });
+
+      const btnSlash = document.getElementById('btn-slash');
+      const btnCleave = document.getElementById('btn-cleave');
+      const btnRoll = document.getElementById('btn-roll');
+      const btnFrost = document.getElementById('btn-frost');
+      const btnFlask = document.getElementById('btn-flask');
+
+      if (btnSlash) btnSlash.disabled = !legals.includes('slash');
+      if (btnCleave) btnCleave.disabled = !legals.includes('spin_cleave');
+      if (btnRoll) btnRoll.disabled = !legals.includes(`dodge_roll:${h.heading}`);
+      if (btnFrost) btnFrost.disabled = !legals.includes('cast_frost_nova');
+      if (btnFlask) {
+        btnFlask.disabled = !legals.includes('heal_flask');
+        btnFlask.textContent = `Quaff Estus Flask (+40 HP) [${h.flasks} Left]`;
+      }
+
+      // History log
+      const logFeed = document.getElementById('log-feed');
+      if (logFeed && state.history.length > 0) {
+        logFeed.innerHTML = state.history.slice(-4).reverse().join('<br>');
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const h = state.hero;
+      const ox = 30;
+      const oy = 25;
+      const sz = 42;
+
+      // Arena Floor
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(ox, oy, sz * ARENA_SIZE, sz * ARENA_SIZE);
+
+      // Arena Grid lines
+      for (let r = 0; r < ARENA_SIZE; r++) {
+        for (let c = 0; c < ARENA_SIZE; c++) {
+          const gx = ox + c * sz;
+          const gy = oy + r * sz;
+
+          ctx.fillStyle = ((r + c) % 2 === 0) ? '#131e33' : '#0e1626';
+          ctx.fillRect(gx, gy, sz, sz);
+
+          ctx.strokeStyle = 'rgba(71, 85, 105, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(gx, gy, sz, sz);
+        }
+      }
+
+      // Draw Telegraphed Attack Threat Zones (Red Danger Overlays)
+      state.enemies.forEach(e => {
+        if (e.windup) {
+          // Highlight adjacent threat zones
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const tr = e.y + dr;
+              const tc = e.x + dc;
+              if (tr >= 0 && tr < ARENA_SIZE && tc >= 0 && tc < ARENA_SIZE) {
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+                ctx.fillRect(ox + tc * sz, oy + tr * sz, sz, sz);
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(ox + tc * sz + 1, oy + tr * sz + 1, sz - 2, sz - 2);
+              }
+            }
+          }
+        }
+      });
+
+      // Draw Forward Slash Attack Arc for Hero
+      const angles = { N: -Math.PI / 2, E: 0, S: Math.PI / 2, W: Math.PI };
+      const heroCx = ox + h.x * sz + sz / 2;
+      const heroCy = oy + h.y * sz + sz / 2;
+
+      // Draw Enemies
+      state.enemies.forEach(e => {
+        const ex = ox + e.x * sz + sz / 2;
+        const ey = oy + e.y * sz + sz / 2;
+
+        ctx.save();
+        if (e.isBoss) {
+          // Cryptlord Minotaur
+          ctx.fillStyle = '#7f1d1d';
+          ctx.fillRect(ex - 16, ey - 16, 32, 32);
+          ctx.strokeStyle = e.windup ? '#facc15' : '#ef4444';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(ex - 16, ey - 16, 32, 32);
+
+          // Horns
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.moveTo(ex - 12, ey - 16); ctx.lineTo(ex - 18, ey - 26); ctx.lineTo(ex - 8, ey - 16);
+          ctx.moveTo(ex + 12, ey - 16); ctx.lineTo(ex + 18, ey - 26); ctx.lineTo(ex + 8, ey - 16);
+          ctx.fill();
+        } else if (e.name.includes('Cultist')) {
+          ctx.fillStyle = '#6b21a8';
+          ctx.beginPath();
+          ctx.arc(ex, ey, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#c084fc';
+          ctx.stroke();
+        } else {
+          // Grunt
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(ex - 10, ey - 10, 20, 20);
+          ctx.strokeStyle = e.windup ? '#facc15' : '#475569';
+          ctx.strokeRect(ex - 10, ey - 10, 20, 20);
+        }
+
+        // Frozen overlay
+        if (e.frozen) {
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
+          ctx.fillRect(ex - 18, ey - 18, 36, 36);
+        }
+
+        // Enemy HP mini bar
+        const hpPct = Math.max(0, e.hp / e.maxHp);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(ex - 14, ey - 20, 28, 4);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(ex - 14, ey - 20, Math.floor(28 * hpPct), 4);
+
+        ctx.restore();
+      });
+
+      // Draw Hero
+      ctx.save();
+      ctx.translate(heroCx, heroCy);
+      ctx.rotate(angles[h.heading] || 0);
+
+      // Hero Body
+      ctx.fillStyle = h.isInvulnerable ? '#67e8f9' : '#0284c7';
+      ctx.beginPath();
+      ctx.arc(0, 0, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Forward Blade
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(6, 0);
+      ctx.lineTo(20, 0);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Right Tactical HUD Dashboard
+      const dashX = 390;
+      const dashY = 25;
+      const dashW = 150;
+      const dashH = 336;
+
+      ctx.fillStyle = '#111c2e';
+      ctx.fillRect(dashX, dashY, dashW, dashH);
+      ctx.strokeStyle = '#1e3a5f';
+      ctx.strokeRect(dashX, dashY, dashW, dashH);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('HERO METERS', dashX + 12, dashY + 22);
+
+      // Health Bar
+      renderMeter(dashX + 12, dashY + 34, 126, 14, 'Health', h.hp, h.maxHp, '#22c55e');
+
+      // Stamina Bar
+      renderMeter(dashX + 12, dashY + 68, 126, 14, 'Stamina (+15)', h.stamina, h.maxStamina, '#f59e0b');
+
+      // Mana Bar
+      renderMeter(dashX + 12, dashY + 102, 126, 14, 'Mana', h.mana, h.maxMana, '#38bdf8');
+
+      // Tactical Guidance
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('ACTION PROTOCOL', dashX + 12, dashY + 148);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('• Red zones: enemy windup', dashX + 12, dashY + 168);
+      ctx.fillText('• Dodge Roll gives i-frames', dashX + 12, dashY + 186);
+      ctx.fillText('• Slash builds combo multiplier', dashX + 12, dashY + 204);
+      ctx.fillText('• Frost Nova freezes foes', dashX + 12, dashY + 222);
+      ctx.fillText(`• Estus Flasks: ${h.flasks} left`, dashX + 12, dashY + 240);
+
+      // Score
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`Combat Score: ${score(state)}`, dashX + 12, dashY + 310);
+
+      // Game Over Screen Overlay
+      if (state.done) {
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.textAlign = 'center';
+        if (state.winner === 'player') {
+          ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('DUNGEON CLEARED!', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`The Cryptlord Minotaur was slain! Score: ${score(state)}`, 280, 195);
+        } else {
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('YOU DIED', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Fell in Wave ${state.wave}. Final Score: ${score(state)}`, 280, 195);
+        }
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function renderMeter(x, y, w, h, label, val, maxVal, col) {
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(`${label}: ${val}/${maxVal}`, x, y);
+
+      ctx.fillStyle = '#060a12';
+      ctx.fillRect(x, y + 4, w, h);
+      ctx.strokeStyle = '#233554';
+      ctx.strokeRect(x, y + 4, w, h);
+
+      const fillW = Math.max(0, Math.min(w, Math.floor((w * val) / maxVal)));
+      ctx.fillStyle = col;
+      ctx.fillRect(x, y + 4, fillW, h);
+    }
+
+    // Initialize
+    updateUI();
+    render();
+
+    // Register service worker if supported
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
