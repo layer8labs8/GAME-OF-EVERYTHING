@@ -1473,9 +1473,11 @@
    "slug": "simulation",
    "name": "Simulation",
    "family": "Simulation",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Biosphere Genesis",
+   "levels": "endless"
   },
   {
    "id": "0141",
