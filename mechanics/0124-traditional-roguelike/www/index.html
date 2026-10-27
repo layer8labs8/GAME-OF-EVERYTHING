@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rogue's Descent - Traditional Roguelike</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#d97706">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0d0f12;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Courier New", monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #18130e;
+      border-radius: 8px;
+      border: 1px solid #78350f;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 440px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #18130e;
+      border: 1px solid #451a03;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .hud-label {
+      color: #92400e;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #fef3c7;
+      font-size: 0.85rem;
+    }
+    .val-hp { color: #f87171; }
+    .val-hunger { color: #34d399; }
+    .val-floor { color: #fbbf24; }
+    .val-score { color: #60a5fa; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1 / 1;
+      background: #000000;
+      border: 2px solid #78350f;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(217, 119, 6, 0.15);
+      touch-action: none;
+    }
+    .inventory-bar {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: #14110e;
+      border: 1px solid #451a03;
+      border-radius: 6px;
+      padding: 6px;
+    }
+    .inv-title {
+      font-size: 0.65rem;
+      color: #d97706;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .inv-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .inv-chip {
+      background: #271c14;
+      border: 1px solid #78350f;
+      border-radius: 4px;
+      padding: 4px 6px;
+      font-size: 0.7rem;
+      color: #fde68a;
+      cursor: pointer;
+    }
+    .inv-chip:active {
+      background: #451a03;
+    }
+
+    .control-panel {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dpad-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+    .pad-btn {
+      background: #271c14;
+      border: 1px solid #78350f;
+      color: #fbbf24;
+      padding: 10px 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    .pad-btn:active {
+      background: #451a03;
+      transform: scale(0.96);
+    }
+    .quick-actions {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: #1c1917;
+      border: 1px solid #451a03;
+      color: #fde68a;
+      font-size: 0.75rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .action-btn:active {
+      background: #292524;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 6px;
+      background: #090a0c;
+      border: 1px solid #292524;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: "Courier New", monospace;
+      font-size: 0.7rem;
+      min-height: 48px;
+      max-height: 52px;
+      overflow-y: hidden;
+      color: #a8a29e;
+    }
+    .log-box p {
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .log-box p:last-child {
+      color: #fbbf24;
+      font-weight: bold;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(13, 15, 18, 0.94);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      border-radius: 8px;
+      z-index: 50;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-card {
+      background: #18130e;
+      border: 2px solid #d97706;
+      border-radius: 12px;
+      padding: 16px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+    }
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: bold;
+      color: #fbbf24;
+      margin-bottom: 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      border: none;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>🗡️</span> ROGUE'S DESCENT</h1>
+    <span style="font-size: 0.75rem; color: #fbbf24; font-weight: bold;" id="badge-amulet">SEEK AMULET</span>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Dungeon</div>
+      <div class="hud-val val-floor" id="val-floor">Floor 1 / 3</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Health</div>
+      <div class="hud-val val-hp" id="val-hp">50 / 50</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Hunger</div>
+      <div class="hud-val val-hunger" id="val-hunger">100%</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Score</div>
+      <div class="hud-val val-score" id="val-score">0</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="dungeon-canvas" width="400" height="400"></canvas>
+
+    <!-- Game Over / Victory Modal -->
+    <div class="modal-overlay" id="gameover-modal">
+      <div class="modal-card">
+        <div class="modal-title" id="gameover-title">EXPEDITION CONCLUDED</div>
+        <p style="font-size: 0.8rem; color: #d6d3d1; margin: 8px 0;" id="gameover-desc"></p>
+        <div style="font-size: 1rem; color: #f59e0b; font-weight: bold; margin-bottom: 8px;" id="gameover-score">Score: 0</div>
+        <button class="btn-primary" id="btn-restart">DESCEND ANEW</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="inventory-bar">
+    <div class="inv-title">Inventory (Tap to consume/read)</div>
+    <div class="inv-items" id="inv-items">
+      <span style="color: #78716c; font-size: 0.7rem;">Empty pack</span>
+    </div>
+  </div>
+
+  <div class="control-panel">
+    <div class="dpad-container">
+      <div></div>
+      <button class="pad-btn" id="btn-up">▲</button>
+      <div></div>
+      <button class="pad-btn" id="btn-left">◀</button>
+      <button class="pad-btn" id="btn-center" style="font-size: 0.65rem; color: #d97706;">REST</button>
+      <button class="pad-btn" id="btn-right">▶</button>
+      <div></div>
+      <button class="pad-btn" id="btn-down">▼</button>
+      <div></div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="action-btn" id="btn-pickup">GET (G)</button>
+      <button class="action-btn" id="btn-descend">DESCEND (&gt;)</button>
+      <button class="action-btn" id="btn-bot" style="border-color: #d97706; color: #fbbf24;">AI STEP</button>
+    </div>
+  </div>
+
+  <div class="log-box" id="log-box">
+    <p>Seek the Amulet of Yendor in the abyssal depths.</p>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Math.floor(Math.random() * 1000000));
+    const canvas = document.getElementById('dungeon-canvas');
+    const ctx = canvas.getContext('2d');
+    const TILE_SIZE = 40; // 10 x 40 = 400
+
+    function executeAction(act) {
+      if (isOver(state)) return;
+      const legals = legalActions(state);
+      if (!legals.includes(act)) return;
+
+      step(state, act);
+      render();
+    }
+
+    window.useItem = function(act) {
+      executeAction(act);
+    };
+
+    function render() {
+      const p = state.player;
+
+      // Top HUD
+      document.getElementById('val-floor').textContent = 'Floor ' + state.floor + ' / ' + state.maxFloors;
+      document.getElementById('val-hp').textContent = p.hp + ' / ' + p.maxHp;
+      document.getElementById('val-hunger').textContent = p.hunger + '%';
+      if (p.hunger <= 0) {
+        document.getElementById('val-hunger').textContent = 'STARVING!';
+        document.getElementById('val-hunger').style.color = '#ef4444';
+      } else {
+        document.getElementById('val-hunger').style.color = '#34d399';
+      }
+      document.getElementById('val-score').textContent = state.score;
+
+      const amuletBadge = document.getElementById('badge-amulet');
+      if (state.hasAmulet) {
+        amuletBadge.textContent = 'AMULET CLAIMED!';
+        amuletBadge.style.color = '#34d399';
+      } else {
+        amuletBadge.textContent = 'SEEK AMULET';
+        amuletBadge.style.color = '#fbbf24';
+      }
+
+      // Inventory Chips
+      const invContainer = document.getElementById('inv-items');
+      if (p.inventory.length === 0) {
+        invContainer.innerHTML = '<span style="color: #78716c; font-size: 0.7rem;">Empty pack</span>';
+      } else {
+        invContainer.innerHTML = p.inventory.map((it, idx) => {
+          let label = it.name;
+          let act = '';
+          if (it.type === 'food') act = 'eat:' + idx;
+          else if (it.type === 'potion') act = 'quaff:' + idx;
+          else if (it.type === 'scroll') act = 'read:' + idx;
+
+          return '<button class="inv-chip" onclick="useItem(\'' + act + '\')">' + label + '</button>';
+        }).join('');
+      }
+
+      // Combat Log
+      const logBox = document.getElementById('log-box');
+      const recent = (state.combatLog || []).slice(-3);
+      logBox.innerHTML = recent.map(line => '<p>' + line + '</p>').join('');
+
+      // Canvas Rendering
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(0, 0, 400, 400);
+
+      // Render dungeon tiles with Fog of War
+      for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 10; x++) {
+          const isExplored = state.explored[y] && state.explored[y][x];
+          const isVisible = state.visible[y] && state.visible[y][x];
+
+          if (!isExplored) continue; // Pure black unseen
+
+          const rx = x * TILE_SIZE;
+          const ry = y * TILE_SIZE;
+          const char = state.map[y][x];
+
+          if (char === '#') {
+            ctx.fillStyle = isVisible ? '#3f2512' : '#1f130a';
+            ctx.fillRect(rx + 1, ry + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+            ctx.strokeStyle = isVisible ? '#78350f' : '#2d1808';
+            ctx.strokeRect(rx + 1, ry + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+          } else {
+            ctx.fillStyle = isVisible ? '#1c1917' : '#0f0e0d';
+            ctx.fillRect(rx, ry, TILE_SIZE, TILE_SIZE);
+
+            if (char === '>') {
+              ctx.font = 'bold 20px monospace';
+              ctx.fillStyle = isVisible ? '#fbbf24' : '#78350f';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('>', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            } else if (char === 'A') {
+              ctx.font = 'bold 22px monospace';
+              ctx.fillStyle = isVisible ? '#f59e0b' : '#92400e';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('A', rx + TILE_SIZE / 2, ry + TILE_SIZE / 2);
+            }
+          }
+        }
+      }
+
+      // Ground Items (visible in FOV)
+      for (const it of state.items) {
+        if (!state.visible[it.y] || !state.visible[it.y][it.x]) continue;
+        const ix = it.x * TILE_SIZE;
+        const iy = it.y * TILE_SIZE;
+
+        ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        if (it.type === 'food') {
+          ctx.fillStyle = '#a3e635';
+          ctx.fillText('%', ix + TILE_SIZE / 2, iy + TILE_SIZE / 2);
+        } else if (it.type === 'potion') {
+          ctx.fillStyle = it.color === 'crimson' ? '#f87171' : (it.color === 'azure' ? '#38bdf8' : '#4ade80');
+          ctx.fillText('!', ix + TILE_SIZE / 2, iy + TILE_SIZE / 2);
+        } else if (it.type === 'scroll') {
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillText('?', ix + TILE_SIZE / 2, iy + TILE_SIZE / 2);
+        }
+      }
+
+      // Enemies (only if visible)
+      for (const e of state.enemies) {
+        if (e.hp <= 0) continue;
+        if (!state.visible[e.y] || !state.visible[e.y][e.x]) continue;
+
+        const ex = e.x * TILE_SIZE;
+        const ey = e.y * TILE_SIZE;
+
+        ctx.font = 'bold 22px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        if (e.type === 'chimera') {
+          ctx.fillStyle = '#c084fc';
+          ctx.fillText('C', ex + TILE_SIZE / 2, ey + TILE_SIZE / 2);
+        } else if (e.type === 'rat') {
+          ctx.fillStyle = '#ea580c';
+          ctx.fillText('r', ex + TILE_SIZE / 2, ey + TILE_SIZE / 2);
+        } else if (e.type === 'goblin') {
+          ctx.fillStyle = '#eab308';
+          ctx.fillText('g', ex + TILE_SIZE / 2, ey + TILE_SIZE / 2);
+        } else if (e.type === 'skeleton') {
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillText('s', ex + TILE_SIZE / 2, ey + TILE_SIZE / 2);
+        } else {
+          ctx.fillStyle = '#f43f5e';
+          ctx.fillText('o', ex + TILE_SIZE / 2, ey + TILE_SIZE / 2);
+        }
+
+        // Mini HP bar
+        const hpPct = Math.max(0, e.hp / e.maxHp);
+        ctx.fillStyle = '#374151';
+        ctx.fillRect(ex + 6, ey + 2, TILE_SIZE - 12, 3);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(ex + 6, ey + 2, (TILE_SIZE - 12) * hpPct, 3);
+      }
+
+      // Player Hero '@'
+      const px = p.x * TILE_SIZE;
+      const py = p.y * TILE_SIZE;
+      ctx.font = 'bold 24px monospace';
+      ctx.fillStyle = '#fbbf24';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('@', px + TILE_SIZE / 2, py + TILE_SIZE / 2);
+
+      // Game Over / Victory Modal
+      const modal = document.getElementById('gameover-modal');
+      if (isOver(state)) {
+        modal.className = 'modal-overlay active';
+        const title = document.getElementById('gameover-title');
+        const desc = document.getElementById('gameover-desc');
+        const sc = document.getElementById('gameover-score');
+        sc.textContent = 'Final Score: ' + state.score;
+
+        if (state.victory) {
+          title.textContent = 'DESCENT CONQUERED!';
+          title.style.color = '#34d399';
+          desc.textContent = 'The dread Chimera has fallen! You ascend to the surface carrying the mythical Amulet of Yendor!';
+        } else {
+          title.textContent = 'PERMADEATH CLAIMED YOU';
+          title.style.color = '#f87171';
+          desc.textContent = p.hp <= 0 ? 'Your bones bleach in the subterranean corridors.' : 'Dungeon passage caved in.';
+        }
+      } else {
+        modal.className = 'modal-overlay';
+      }
+    }
+
+    // Button controls
+    document.getElementById('btn-up').onclick = () => executeAction('move:up');
+    document.getElementById('btn-down').onclick = () => executeAction('move:down');
+    document.getElementById('btn-left').onclick = () => executeAction('move:left');
+    document.getElementById('btn-right').onclick = () => executeAction('move:right');
+    document.getElementById('btn-center').onclick = () => executeAction('wait');
+
+    document.getElementById('btn-pickup').onclick = () => executeAction('pickup');
+    document.getElementById('btn-descend').onclick = () => executeAction('descend');
+
+    document.getElementById('btn-bot').onclick = () => {
+      const legals = legalActions(state);
+      if (legals.length > 0) {
+        // Priority: descend > pickup > bump attack > eat/quaff if low > move
+        const descendAct = legals.find(a => a === 'descend');
+        const pickupAct = legals.find(a => a === 'pickup');
+        const eatAct = state.player.hunger < 50 ? legals.find(a => a.startsWith('eat:')) : null;
+        const act = descendAct || pickupAct || eatAct || legals[Math.floor(Math.random() * legals.length)];
+        executeAction(act);
+      }
+    };
+
+    document.getElementById('btn-restart').onclick = () => {
+      state = createState(Math.floor(Math.random() * 1000000));
+      render();
+    };
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+      if (isOver(state)) return;
+      const key = e.key.toLowerCase();
+
+      if (key === 'arrowup' || key === 'w') { executeAction('move:up'); e.preventDefault(); }
+      else if (key === 'arrowdown' || key === 's') { executeAction('move:down'); e.preventDefault(); }
+      else if (key === 'arrowleft' || key === 'a') { executeAction('move:left'); e.preventDefault(); }
+      else if (key === 'arrowright' || key === 'd') { executeAction('move:right'); e.preventDefault(); }
+      else if (key === ' ' || key === 'z') { executeAction('wait'); e.preventDefault(); }
+      else if (key === 'g') { executeAction('pickup'); }
+      else if (key === '>' || key === '.') { executeAction('descend'); }
+      else if (key >= '1' && key <= '6') {
+        const idx = parseInt(key, 10) - 1;
+        const item = state.player.inventory[idx];
+        if (item) {
+          if (item.type === 'food') executeAction('eat:' + idx);
+          else if (item.type === 'potion') executeAction('quaff:' + idx);
+          else if (item.type === 'scroll') executeAction('read:' + idx);
+        }
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

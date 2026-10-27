@@ -1297,9 +1297,11 @@
    "slug": "traditional-roguelike",
    "name": "Traditional Roguelike",
    "family": "Roguelike",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Rogue's Descent",
+   "levels": "endless"
   },
   {
    "id": "0125",

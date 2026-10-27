@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="128" fill="#0d1117"/>
+  <rect x="40" y="40" width="432" height="432" rx="32" fill="#18130e" stroke="#d97706" stroke-width="12"/>
+  <!-- Dungeon brick pattern -->
+  <line x1="40" y1="184" x2="472" y2="184" stroke="#451a03" stroke-width="6"/>
+  <line x1="40" y1="328" x2="472" y2="328" stroke="#451a03" stroke-width="6"/>
+  <line x1="256" y1="40" x2="256" y2="184" stroke="#451a03" stroke-width="6"/>
+  <line x1="148" y1="184" x2="148" y2="328" stroke="#451a03" stroke-width="6"/>
+  <line x1="364" y1="184" x2="364" y2="328" stroke="#451a03" stroke-width="6"/>
+  <!-- Classic Roguelike '@' Hero Glyphs -->
+  <circle cx="256" cy="256" r="120" fill="#78350f" opacity="0.4"/>
+  <text x="256" y="325" font-family="Courier New, monospace" font-size="220" font-weight="900" fill="#fbbf24" text-anchor="middle">@</text>
+  <!-- Amulet Sparkle -->
+  <polygon points="256,90 268,125 305,125 275,145 287,180 256,160 225,180 237,145 207,125 244,125" fill="#f59e0b"/>
+</svg>
