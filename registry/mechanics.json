@@ -1109,9 +1109,11 @@
    "id": "0107",
    "slug": "territory-capture",
    "name": "Territory Capture",
+   "title": "Sector Domination",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "classic"
   },
   {

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sector Domination: Territory Capture</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b111e;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #141e33;
+      border: 1px solid #233554;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      color: #60a5fa;
+      text-transform: uppercase;
+    }
+    .hud-stat {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #facc15;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      background: #060b14;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      cursor: pointer;
+    }
+    .controls-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-section {
+      background: #141e33;
+      border: 1px solid #233554;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f1f5f9;
+      padding: 8px 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 48px;
+    }
+    .btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #60a5fa;
+    }
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-deploy {
+      background: #1d4ed8;
+      border-color: #3b82f6;
+    }
+    .btn-attack {
+      background: #991b1b;
+      border-color: #ef4444;
+      color: #fee2e2;
+    }
+    .btn-fortify {
+      background: #854d0e;
+      border-color: #eab308;
+      color: #fef08a;
+    }
+    .btn-end {
+      background: #065f46;
+      border-color: #10b981;
+      color: #d1fae5;
+      font-weight: 700;
+    }
+    .log-feed {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      max-height: 52px;
+      overflow-y: auto;
+      line-height: 1.3;
+      padding: 4px;
+      background: #090e17;
+      border-radius: 4px;
+      border: 1px solid #1e293b;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sector Domination</h1>
+    <div class="hud-stat" id="hud-stats">Turn 1 / 35 • Reserves: 4</div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="view" width="560" height="380"></canvas>
+
+    <div class="controls-panel">
+      <!-- Sector Selection & Directives -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span id="sel-info">Selected Sector: None (Click map to select)</span>
+          <span id="target-info" style="color: #f87171;"></span>
+        </div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-deploy" class="btn btn-deploy">Deploy Reserves<br><small>+2 Troops</small></button>
+          <button id="btn-attack" class="btn btn-attack">Launch Assault<br><small>Advance -> Target</small></button>
+          <button id="btn-fortify" class="btn btn-fortify">Fortify Bastion<br><small>Tier Upgrade</small></button>
+        </div>
+        <button id="btn-end-turn" class="btn btn-end" style="width: 100%;">Conclude Orders (End Turn)</button>
+      </div>
+
+      <!-- Historical Signal Log -->
+      <div class="panel-section">
+        <div class="section-title">Theater Command Log</div>
+        <div id="log-feed" class="log-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now() & 0xffff);
+    const canvas = document.getElementById('view');
+    const ctx = canvas.getContext('2d');
+
+    let selected = null; // { r, c }
+    let target = null;   // { r, c }
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(freq = 240, type = 'square', duration = 0.1) {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state !== 'closed') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        }
+      } catch (e) {}
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        step(state, action);
+        if (action.startsWith('attack')) playSfx(140, 'sawtooth', 0.18);
+        else if (action.startsWith('deploy')) playSfx(380, 'sine', 0.1);
+        else if (action.startsWith('fortify')) playSfx(280, 'triangle', 0.12);
+        else playSfx(200, 'sine', 0.08);
+
+        selected = null;
+        target = null;
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn('Action error:', err);
+      }
+    }
+
+    // Canvas click handling to select and target sectors
+    canvas.addEventListener('click', (e) => {
+      if (state.done) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mx = (e.clientX - rect.left) * scaleX;
+      const my = (e.clientY - rect.top) * scaleY;
+
+      const ox = 30;
+      const oy = 25;
+      const sz = 66;
+
+      const c = Math.floor((mx - ox) / sz);
+      const r = Math.floor((my - oy) / sz);
+
+      if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
+        const cell = state.grid[r][c];
+        if (cell.owner === 'player') {
+          selected = { r, c };
+          target = null;
+        } else if (selected) {
+          // If already selected friendly, clicking adjacent sets target
+          const dr = Math.abs(r - selected.r);
+          const dc = Math.abs(c - selected.c);
+          if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
+            target = { r, c };
+          } else {
+            selected = null;
+            target = null;
+          }
+        }
+        playSfx(440, 'sine', 0.04);
+        updateUI();
+        render();
+      }
+    });
+
+    // Attach static buttons
+    document.getElementById('btn-deploy').onclick = () => {
+      if (selected) doAction(`deploy:${selected.r},${selected.c}`);
+    };
+    document.getElementById('btn-attack').onclick = () => {
+      if (selected && target) doAction(`attack:${selected.r},${selected.c}->${target.r},${target.c}`);
+    };
+    document.getElementById('btn-fortify').onclick = () => {
+      if (selected) doAction(`fortify:${selected.r},${selected.c}`);
+    };
+    document.getElementById('btn-end-turn').onclick = () => doAction('end_turn');
+
+    function updateUI() {
+      const legals = legalActions(state);
+      let pCount = 0;
+      for (let r = 0; r < MAP_ROWS; r++) {
+        for (let c = 0; c < MAP_COLS; c++) {
+          if (state.grid[r][c].owner === 'player') pCount++;
+        }
+      }
+
+      // HUD Stats
+      const hud = document.getElementById('hud-stats');
+      if (hud) {
+        hud.textContent = `Turn ${state.turn} / ${state.maxTurns} • Reserves: ${state.playerReserves} • Sectors: ${pCount}/18`;
+      }
+
+      // Selection info
+      const selInfo = document.getElementById('sel-info');
+      const tgtInfo = document.getElementById('target-info');
+      if (selected && selInfo) {
+        const sec = state.grid[selected.r][selected.c];
+        selInfo.textContent = `Sector (${selected.r}, ${selected.c}): ${sec.troops} Troops • Tier ${sec.fort} Fort`;
+      } else if (selInfo) {
+        selInfo.textContent = 'Selected Sector: None (Click friendly sector to order)';
+      }
+
+      if (target && tgtInfo) {
+        const tSec = state.grid[target.r][target.c];
+        tgtInfo.textContent = `Target -> (${target.r}, ${target.c}) [${tSec.owner.toUpperCase()} ${tSec.troops}T]`;
+      } else if (tgtInfo) {
+        tgtInfo.textContent = '';
+      }
+
+      // Buttons
+      const btnDeploy = document.getElementById('btn-deploy');
+      const btnAttack = document.getElementById('btn-attack');
+      const btnFortify = document.getElementById('btn-fortify');
+      const btnEnd = document.getElementById('btn-end-turn');
+
+      if (btnDeploy) {
+        btnDeploy.disabled = !selected || !legals.includes(`deploy:${selected.r},${selected.c}`);
+      }
+      if (btnAttack) {
+        btnAttack.disabled = !selected || !target || !legals.includes(`attack:${selected.r},${selected.c}->${target.r},${target.c}`);
+      }
+      if (btnFortify) {
+        btnFortify.disabled = !selected || !legals.includes(`fortify:${selected.r},${selected.c}`);
+      }
+      if (btnEnd) {
+        btnEnd.disabled = state.done;
+      }
+
+      // History log
+      const logFeed = document.getElementById('log-feed');
+      if (logFeed && state.history.length > 0) {
+        logFeed.innerHTML = state.history.slice(-4).reverse().join('<br>');
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // War Room Map Backdrop
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bgGrad.addColorStop(0, '#091322');
+      bgGrad.addColorStop(1, '#050a12');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const ox = 30;
+      const oy = 25;
+      const sz = 66;
+
+      // Draw Grid Sectors
+      for (let r = 0; r < MAP_ROWS; r++) {
+        for (let c = 0; c < MAP_COLS; c++) {
+          const sec = state.grid[r][c];
+          const x = ox + c * sz;
+          const y = oy + r * sz;
+
+          // Sector base color
+          if (sec.owner === 'player') ctx.fillStyle = '#1e3a8a';
+          else if (sec.owner === 'enemy') ctx.fillStyle = '#7f1d1d';
+          else ctx.fillStyle = '#1e293b';
+
+          ctx.fillRect(x + 2, y + 2, sz - 4, sz - 4);
+
+          // Border color
+          if (sec.owner === 'player') ctx.strokeStyle = '#3b82f6';
+          else if (sec.owner === 'enemy') ctx.strokeStyle = '#ef4444';
+          else ctx.strokeStyle = '#475569';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + 2, y + 2, sz - 4, sz - 4);
+
+          // Supply depot star badge
+          if (sec.isSupplyDepot) {
+            ctx.fillStyle = '#facc15';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('★ DEPOT', x + 6, y + 14);
+          }
+
+          // Troops Badge in Center
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${sec.troops}`, x + sz / 2, y + sz / 2 + 5);
+
+          // Fortification icons at bottom
+          if (sec.fort > 0) {
+            ctx.fillStyle = '#fde047';
+            ctx.font = '10px sans-serif';
+            ctx.fillText(sec.fort === 2 ? '🏰🏰' : '🏰', x + sz / 2, y + sz - 8);
+          }
+          ctx.textAlign = 'left';
+
+          // Highlight selected sector
+          if (selected && selected.r === r && selected.c === c) {
+            ctx.strokeStyle = '#67e8f9';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x + 1, y + 1, sz - 2, sz - 2);
+          }
+
+          // Highlight target sector
+          if (target && target.r === r && target.c === c) {
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x + 1, y + 1, sz - 2, sz - 2);
+          }
+        }
+      }
+
+      // Right Theater Intel Dashboard
+      const dashX = 380;
+      const dashY = 25;
+      const dashW = 160;
+      const dashH = 330;
+
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(dashX, dashY, dashW, dashH);
+      ctx.strokeStyle = '#1e3a5f';
+      ctx.strokeRect(dashX, dashY, dashW, dashH);
+
+      ctx.fillStyle = '#60a5fa';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('STRATEGIC HEGEMONY', dashX + 12, dashY + 22);
+
+      // Territory counts
+      let pCount = 0;
+      let eCount = 0;
+      let nCount = 0;
+      for (let r = 0; r < MAP_ROWS; r++) {
+        for (let c = 0; c < MAP_COLS; c++) {
+          if (state.grid[r][c].owner === 'player') pCount++;
+          else if (state.grid[r][c].owner === 'enemy') eCount++;
+          else nCount++;
+        }
+      }
+
+      // Hegemony Progress Bar
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(`Friendly Sectors: ${pCount} / 18`, dashX + 12, dashY + 46);
+
+      ctx.fillStyle = '#090e17';
+      ctx.fillRect(dashX + 12, dashY + 54, 136, 12);
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(dashX + 12, dashY + 54, Math.min(136, (136 * pCount) / 18), 12);
+
+      // Intel stats
+      ctx.fillStyle = '#f87171';
+      ctx.fillText(`Enemy Sectors: ${eCount}`, dashX + 12, dashY + 90);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(`Neutral Sectors: ${nCount}`, dashX + 12, dashY + 110);
+
+      ctx.fillStyle = '#facc15';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('COMMAND RULES', dashX + 12, dashY + 148);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('• 18 sectors = Total Victory', dashX + 12, dashY + 168);
+      ctx.fillText('• Supply Depots yield +1 res', dashX + 12, dashY + 186);
+      ctx.fillText('• Bastions buff sector defense', dashX + 12, dashY + 204);
+      ctx.fillText('• 1 troop stays behind on atk', dashX + 12, dashY + 222);
+
+      // Score
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`War Score: ${score(state)}`, dashX + 12, dashY + 305);
+
+      // Game Over Screen Overlay
+      if (state.done) {
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.textAlign = 'center';
+        if (state.winner === 'player') {
+          ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('TERRITORIAL HEGEMONY WON', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Controlled theater of operations! Final Score: ${score(state)}`, 280, 195);
+        } else {
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('THEATER OF OPERATIONS LOST', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Lines breached by enemy forces. Final Score: ${score(state)}`, 280, 195);
+        }
+        ctx.textAlign = 'left';
+      }
+    }
+
+    // Initialize
+    updateUI();
+    render();
+
+    // Register service worker if supported
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
