@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Party Frenzy</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #130f1e;
+      --panel: #1e1730;
+      --panel-border: #3b2c5e;
+      --text: #fdf8f6;
+      --text-muted: #b8a9cf;
+      --gold: #fbbf24;
+      --star: #f59e0b;
+      --accent: #ec4899;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 520px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #f43f5e, #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    main {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+    .leaderboard-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .player-chip {
+      background: #181226;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 4px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 0.75rem;
+    }
+    .player-chip.is-you {
+      border-color: var(--gold);
+      background: #2a1f42;
+    }
+    .chip-name {
+      font-weight: 700;
+    }
+    .chip-stats {
+      font-size: 0.72rem;
+      color: var(--gold);
+    }
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 4 / 3;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid var(--panel-border);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.75);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+    .actions-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    button {
+      background: #271e3d;
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      padding: 10px 8px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #3b2c5e;
+      border-color: var(--gold);
+    }
+    .announcer-bar {
+      width: 100%;
+      background: #0d0a14;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      height: 38px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icon.svg" alt="Party Frenzy Logo">
+      <h1>Party Frenzy</h1>
+    </div>
+    <div style="font-size: 0.82rem; font-weight: 700; color: var(--gold);" id="round-text">Round 1 / 5</div>
+  </header>
+
+  <main>
+    <div class="leaderboard-bar" id="leaderboard">
+      <div class="player-chip is-you" id="chip-p0">
+        <span class="chip-name">You</span>
+        <span class="chip-stats">⭐ 0 | 0🪙</span>
+      </div>
+      <div class="player-chip" id="chip-cpu1">
+        <span class="chip-name">Pip</span>
+        <span class="chip-stats">⭐ 0 | 0🪙</span>
+      </div>
+      <div class="player-chip" id="chip-cpu2">
+        <span class="chip-name">Buzz</span>
+        <span class="chip-stats">⭐ 0 | 0🪙</span>
+      </div>
+      <div class="player-chip" id="chip-cpu3">
+        <span class="chip-name">Rex</span>
+        <span class="chip-stats">⭐ 0 | 0🪙</span>
+      </div>
+    </div>
+
+    <div class="board-container">
+      <canvas id="partyCanvas" width="600" height="450"></canvas>
+    </div>
+
+    <div class="actions-grid" id="actions-grid">
+      <button id="act-btn-0">Option 1</button>
+      <button id="act-btn-1">Option 2</button>
+      <button id="act-btn-2">Option 3</button>
+      <button id="act-btn-3">Option 4</button>
+    </div>
+
+    <div class="announcer-bar" id="announcer-bar">
+      <div>Welcome to Party Frenzy! Compete in 5 rapid mini-games to win the Star Trophy!</div>
+    </div>
+  </main>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('partyCanvas');
+      const ctx = canvas.getContext('2d');
+      const roundText = document.getElementById('round-text');
+      const announcerBar = document.getElementById('announcer-bar');
+      const actionButtons = [
+        document.getElementById('act-btn-0'),
+        document.getElementById('act-btn-1'),
+        document.getElementById('act-btn-2'),
+        document.getElementById('act-btn-3')
+      ];
+
+      let state = null;
+
+      function initGame() {
+        const seed = Math.floor(Date.now() % 1000000) || 12345;
+        state = partyGameLogic.createState(seed);
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        roundText.textContent = state.gameOver ? 'Finished!' : `Round ${state.round} / 5`;
+
+        // Update Leaderboard Chips
+        for (let i = 0; i < state.players.length; i++) {
+          const p = state.players[i];
+          const chip = document.getElementById(`chip-${p.id}`);
+          if (chip) {
+            chip.innerHTML = `
+              <span class="chip-name">${p.name}</span>
+              <span class="chip-stats">⭐ ${p.stars} | ${p.coins}🪙</span>
+            `;
+          }
+        }
+
+        // Announcer log
+        if (state.announcements.length > 0) {
+          const recent = state.announcements.slice(-2);
+          announcerBar.innerHTML = recent.map(msg => `<div>${msg}</div>`).reverse().join('');
+        }
+
+        // Configure static buttons
+        if (state.gameOver) {
+          if (actionButtons[0]) {
+            actionButtons[0].style.display = 'block';
+            actionButtons[0].style.gridColumn = 'span 2';
+            actionButtons[0].textContent = state.winner === 'p0' ? '🏆 Victory! Play Again' : 'Play Again';
+            actionButtons[0].onclick = () => initGame();
+          }
+          for (let b = 1; b < 4; b++) {
+            if (actionButtons[b]) actionButtons[b].style.display = 'none';
+          }
+          return;
+        }
+
+        const legal = partyGameLogic.legalActions(state);
+        const mg = state.miniGame;
+
+        for (let i = 0; i < 4; i++) {
+          const btn = actionButtons[i];
+          if (!btn) continue;
+
+          if (i < legal.length) {
+            btn.style.display = 'block';
+            btn.style.gridColumn = 'span 1';
+            const act = legal[i];
+
+            if (mg.type === 'trivia') {
+              const idx = parseInt(act.split(':')[1], 10);
+              btn.textContent = mg.options[idx] || act;
+            } else if (mg.type === 'balloons') {
+              const idx = parseInt(act.split(':')[1], 10);
+              const b = mg.balloons[idx];
+              btn.textContent = b ? `🎈 ${b.color} (${b.val}p)` : act;
+            } else if (mg.type === 'pattern') {
+              const color = act.split(':')[1];
+              btn.textContent = `🎨 ${color}`;
+            } else if (mg.type === 'target_rush') {
+              const idx = parseInt(act.split(':')[1], 10);
+              const t = mg.targets[idx];
+              btn.textContent = t ? `🎯 ${t.name} (${t.pts}p)` : act;
+            } else if (mg.type === 'grand_dice') {
+              const wager = act.split(':')[1];
+              if (wager === 'safe') btn.textContent = '🎲 Safe Roll (d6)';
+              if (wager === 'risky') btn.textContent = '🎲 High-Roller (d12)';
+              if (wager === 'star_gamble') {
+                btn.textContent = '⭐ Star Gamble!';
+                btn.style.gridColumn = 'span 2';
+              }
+            }
+
+            btn.onclick = () => {
+              partyGameLogic.step(state, act);
+              updateUI();
+              render();
+            };
+          } else {
+            btn.style.display = 'none';
+          }
+        }
+      }
+
+      function render() {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // Carnival Arena Backdrop
+        const bgGrad = ctx.createLinearGradient(0, 0, w, h);
+        bgGrad.addColorStop(0, '#2d124d');
+        bgGrad.addColorStop(1, '#0e0717');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        if (!state) return;
+
+        const mg = state.miniGame;
+        if (state.gameOver) {
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = '700 28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🏆 GRAND FINALE 🏆', w / 2, h * 0.35);
+
+          const winnerObj = state.players.find(p => p.id === state.winner);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '20px sans-serif';
+          ctx.fillText(`Champion: ${winnerObj ? winnerObj.name : 'Unknown'}!`, w / 2, h * 0.52);
+          ctx.font = '16px sans-serif';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(`Your Final Score: ${partyGameLogic.score(state)} Points`, w / 2, h * 0.65);
+          return;
+        }
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '700 22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(mg.title, w / 2, 38);
+
+        if (mg.type === 'trivia') {
+          ctx.fillStyle = '#1e1433';
+          ctx.strokeStyle = '#4c2e85';
+          ctx.lineWidth = 2;
+          ctx.fillRect(40, 80, w - 80, 100);
+          ctx.strokeRect(40, 80, w - 80, 100);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '700 24px sans-serif';
+          ctx.fillText(mg.question, w / 2, 130);
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '14px sans-serif';
+          ctx.fillText('Select your answer below!', w / 2, 220);
+        } else if (mg.type === 'balloons') {
+          for (let i = 0; i < mg.balloons.length; i++) {
+            const b = mg.balloons[i];
+            const bx = 80 + i * 140;
+            const by = 160 + (i % 2 === 0 ? -20 : 20);
+
+            ctx.beginPath();
+            ctx.arc(bx, by, 44, 0, Math.PI * 2);
+            ctx.fillStyle = b.color === 'Gold' ? '#eab308' : b.color === 'Red' ? '#f43f5e' : b.color === 'Blue' ? '#0ea5e9' : '#22c55e';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(bx, by + 44);
+            ctx.lineTo(bx, by + 90);
+            ctx.stroke();
+
+            ctx.fillStyle = '#000000';
+            ctx.font = '700 18px sans-serif';
+            ctx.fillText(`${b.val}p`, bx, by);
+          }
+        } else if (mg.type === 'pattern') {
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '16px sans-serif';
+          ctx.fillText('Target Pattern:', w / 2, 90);
+
+          for (let i = 0; i < mg.sequence.length; i++) {
+            const col = mg.sequence[i];
+            const sx = w / 2 - 80 + i * 80;
+            const sy = 140;
+
+            ctx.beginPath();
+            ctx.arc(sx, sy, 28, 0, Math.PI * 2);
+            ctx.fillStyle = col === 'Red' ? '#f43f5e' : col === 'Blue' ? '#38bdf8' : col === 'Green' ? '#22c55e' : '#fbbf24';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+          }
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Your Progress: ${mg.currentInput.join(' -> ') || '(Empty)'}`, w / 2, 230);
+        } else if (mg.type === 'target_rush') {
+          for (let i = 0; i < mg.targets.length; i++) {
+            const t = mg.targets[i];
+            const tx = 110 + i * 190;
+            const ty = 160;
+
+            ctx.beginPath();
+            ctx.arc(tx, ty, 50, 0, Math.PI * 2);
+            ctx.fillStyle = '#f43f5e';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(tx, ty, 35, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(tx, ty, 20, 0, Math.PI * 2);
+            ctx.fillStyle = '#f43f5e';
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '700 14px sans-serif';
+            ctx.fillText(`${t.pts} pts`, tx, ty + 75);
+          }
+        } else if (mg.type === 'grand_dice') {
+          ctx.fillStyle = '#1e1b4b';
+          ctx.fillRect(80, 80, w - 160, 160);
+          ctx.strokeStyle = '#6366f1';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(80, 80, w - 160, 160);
+
+          ctx.font = '60px sans-serif';
+          ctx.fillText('🎲', w / 2 - 50, 160);
+          ctx.fillText('🎰', w / 2 + 50, 160);
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = '700 16px sans-serif';
+          ctx.fillText('Final Round! Roll or Gamble for the Championship!', w / 2, 215);
+        }
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>
