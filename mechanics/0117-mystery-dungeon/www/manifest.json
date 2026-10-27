@@ -1,0 +1,12 @@
+{
+  "name": "Mystery Labyrinth: Wanderer's Descent",
+  "short_name": "MysteryLabyrinth",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0d1117",
+  "theme_color": "#d29922",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

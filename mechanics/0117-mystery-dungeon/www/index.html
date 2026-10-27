@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mystery Labyrinth: Wanderer's Descent</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#d29922">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+    }
+    h1 {
+      font-size: 1.05rem;
+      color: #d29922;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #8b949e;
+    }
+    .stats span {
+      color: #58a6ff;
+      margin-left: 2px;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      background: #090d13;
+      border: 2px solid #30363d;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      touch-action: none;
+    }
+    .status-bars {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 0.82rem;
+      font-weight: bold;
+    }
+    .bar-pill {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .d-pad {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    button.btn {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 10px 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.btn:active {
+      background: #30363d;
+    }
+    button.btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    button.btn-act {
+      background: #d29922;
+      border-color: #e3b341;
+      color: #000;
+    }
+    button.btn-wait {
+      background: #388bfd;
+      border-color: #58a6ff;
+      color: #fff;
+    }
+    #inventory-bar {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 6px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+    }
+    .inv-item {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #log-panel {
+      width: 100%;
+      max-width: 480px;
+      height: 64px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #8b949e;
+    }
+    #log-panel p {
+      margin-bottom: 2px;
+    }
+    #log-panel p:first-child {
+      color: #d29922;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🧭 Mystery Labyrinth</h1>
+    <div class="stats">
+      Floor: <span id="val-floor">1/4</span> | Score: <span id="val-score">0</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <div class="status-bars">
+      <div class="bar-pill">HP: <span id="val-hp" style="color: #3fb950;">100/100</span></div>
+      <div class="bar-pill">Belly: <span id="val-belly" style="color: #f0883e;">100/100</span></div>
+    </div>
+
+    <canvas id="dungeon" width="480" height="480"></canvas>
+
+    <div id="inventory-bar"></div>
+
+    <div class="d-pad">
+      <div></div>
+      <button id="btn-up" class="btn">▲ UP</button>
+      <div></div>
+      <button id="btn-left" class="btn">◀ LEFT</button>
+      <button id="btn-wait" class="btn btn-wait">WAIT</button>
+      <button id="btn-right" class="btn">RIGHT ▶</button>
+      <div></div>
+      <button id="btn-down" class="btn">▼ DOWN</button>
+      <button id="btn-descend" class="btn btn-act">STAIRS</button>
+    </div>
+
+    <div id="log-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now());
+      const canvas = document.getElementById('dungeon');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      const valFloor = document.getElementById('val-floor');
+      const valScore = document.getElementById('val-score');
+      const valHp = document.getElementById('val-hp');
+      const valBelly = document.getElementById('val-belly');
+      const invBar = document.getElementById('inventory-bar');
+      const logPanel = document.getElementById('log-panel');
+
+      const btnUp = document.getElementById('btn-up');
+      const btnDown = document.getElementById('btn-down');
+      const btnLeft = document.getElementById('btn-left');
+      const btnRight = document.getElementById('btn-right');
+      const btnWait = document.getElementById('btn-wait');
+      const btnDescend = document.getElementById('btn-descend');
+
+      function updateUI() {
+        if (valFloor) valFloor.textContent = state.floor + '/' + state.maxFloors;
+        if (valScore) valScore.textContent = state.score;
+        if (valHp) valHp.textContent = state.player.hp + '/' + state.player.maxHp;
+        if (valBelly) valBelly.textContent = state.player.belly + '/' + state.player.maxBelly;
+
+        if (logPanel && state.combatLog) {
+          logPanel.innerHTML = state.combatLog.slice(-5).reverse().map(function(line) {
+            return '<p>' + line + '</p>';
+          }).join('');
+        }
+
+        const legal = legalActions(state);
+
+        // Update direction buttons text (move or attack)
+        setDirBtn(btnUp, 'up', legal);
+        setDirBtn(btnDown, 'down', legal);
+        setDirBtn(btnLeft, 'left', legal);
+        setDirBtn(btnRight, 'right', legal);
+
+        if (btnWait) btnWait.disabled = state.done || !legal.includes('wait');
+        if (btnDescend) btnDescend.disabled = state.done || !legal.includes('descend');
+
+        // Render inventory pills
+        if (invBar) {
+          invBar.innerHTML = state.player.inventory.map(function(item, idx) {
+            const label = (item === 'apple' ? '🍎 Apple' : (item === 'herb' ? '🌿 Herb' : (item === 'sleep_wand' ? '🪄 Wand' : (item === 'blast_scroll' ? '📜 Scroll' : '👑 Relic'))));
+            return '<button class="inv-item" data-idx="' + idx + '">' + label + '</button>';
+          }).join('');
+
+          const buttons = invBar.querySelectorAll ? invBar.querySelectorAll('button') : [];
+          for (let b = 0; b < buttons.length; b++) {
+            buttons[b].onclick = function() {
+              const idx = this.getAttribute('data-idx');
+              if (legal.includes('use:' + idx)) {
+                step(state, 'use:' + idx);
+                updateUI();
+              }
+            };
+          }
+        }
+
+        render();
+      }
+
+      function setDirBtn(btn, dir, legal) {
+        if (!btn) return;
+        const canMove = legal.includes('move:' + dir);
+        const canAtk = legal.includes('attack:' + dir);
+        btn.disabled = state.done || (!canMove && !canAtk);
+        if (canAtk) {
+          btn.style.background = '#da3633';
+          btn.style.borderColor = '#f85149';
+          btn.textContent = '⚔️ ' + dir.toUpperCase();
+        } else {
+          btn.style.background = '#21262d';
+          btn.style.borderColor = '#30363d';
+          btn.textContent = dir.toUpperCase();
+        }
+      }
+
+      function render() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 480, 480);
+
+        const cellSize = 480 / 8;
+
+        // Draw maze tiles
+        for (let y = 0; y < 8; y++) {
+          for (let x = 0; x < 8; x++) {
+            const isWall = state.grid[y][x] === 1;
+            if (isWall) {
+              ctx.fillStyle = '#21262d';
+              ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+              ctx.strokeStyle = '#30363d';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            } else {
+              ctx.fillStyle = ((x + y) % 2 === 0) ? '#161b22' : '#0d1117';
+              ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+              ctx.strokeStyle = '#1e242c';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            }
+          }
+        }
+
+        // Draw Stairs
+        if (state.floor < state.maxFloors) {
+          const sx = state.stairs.x * cellSize + cellSize / 2;
+          const sy = state.stairs.y * cellSize + cellSize / 2;
+          ctx.fillStyle = '#d29922';
+          ctx.font = '26px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🪜', sx, sy);
+        }
+
+        // Draw Items on floor
+        for (let i = 0; i < state.items.length; i++) {
+          const it = state.items[i];
+          const ix = it.x * cellSize + cellSize / 2;
+          const iy = it.y * cellSize + cellSize / 2;
+          ctx.font = '22px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const icon = it.type === 'apple' ? '🍎' : (it.type === 'herb' ? '🌿' : (it.type === 'sleep_wand' ? '🪄' : (it.type === 'blast_scroll' ? '📜' : '👑')));
+          ctx.fillText(icon, ix, iy);
+        }
+
+        // Draw Monsters
+        for (let i = 0; i < state.monsters.length; i++) {
+          const m = state.monsters[i];
+          if (m.hp <= 0) continue;
+
+          const mx = m.x * cellSize + cellSize / 2;
+          const my = m.y * cellSize + cellSize / 2;
+
+          ctx.beginPath();
+          ctx.arc(mx, my, 22, 0, Math.PI * 2);
+          ctx.fillStyle = m.id === 'boss' ? '#da3633' : '#a371f7';
+          ctx.fill();
+          ctx.strokeStyle = '#f85149';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.font = '20px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const mIcon = m.id === 'boss' ? '🐂' : (m.name.includes('Slime') ? '🟢' : (m.name.includes('Bat') ? '🦇' : '💀'));
+          ctx.fillText(mIcon, mx, my - 2);
+
+          // Sleep zZz
+          if (m.sleep > 0) {
+            ctx.fillStyle = '#58a6ff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('💤', mx + 14, my - 14);
+          }
+
+          // HP bar
+          drawBar(m.x * cellSize + 6, m.y * cellSize + cellSize - 6, cellSize - 12, 3, m.hp, m.maxHp, '#da3633');
+        }
+
+        // Draw Player (The Wanderer)
+        const px = state.player.x * cellSize + cellSize / 2;
+        const py = state.player.y * cellSize + cellSize / 2;
+
+        ctx.beginPath();
+        ctx.arc(px, py, 22, 0, Math.PI * 2);
+        ctx.fillStyle = '#1f6feb';
+        ctx.fill();
+        ctx.strokeStyle = '#d29922';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🤠', px, py - 2);
+
+        // Overlay Game Over
+        if (state.done) {
+          ctx.fillStyle = 'rgba(9, 13, 22, 0.85)';
+          ctx.fillRect(0, 0, 480, 480);
+          ctx.fillStyle = state.victory ? '#3fb950' : '#f85149';
+          ctx.font = 'bold 30px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.victory ? 'LABYRINTH CONQUERED!' : 'YOU COLLAPSED', 240, 220);
+          ctx.fillStyle = '#c9d1d9';
+          ctx.font = '16px sans-serif';
+          ctx.fillText('Final Score: ' + state.score, 240, 260);
+        }
+      }
+
+      function drawBar(x, y, w, h, val, max, color) {
+        ctx.fillStyle = '#21262d';
+        ctx.fillRect(x, y, w, h);
+        const fillW = Math.max(0, Math.min(w, (val / max) * w));
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, fillW, h);
+      }
+
+      function handleDir(dir) {
+        if (state.done) return;
+        const legal = legalActions(state);
+        if (legal.includes('attack:' + dir)) {
+          step(state, 'attack:' + dir);
+        } else if (legal.includes('move:' + dir)) {
+          step(state, 'move:' + dir);
+        }
+        updateUI();
+      }
+
+      if (btnUp) btnUp.onclick = function() { handleDir('up'); };
+      if (btnDown) btnDown.onclick = function() { handleDir('down'); };
+      if (btnLeft) btnLeft.onclick = function() { handleDir('left'); };
+      if (btnRight) btnRight.onclick = function() { handleDir('right'); };
+      if (btnWait) btnWait.onclick = function() {
+        const legal = legalActions(state);
+        if (legal.includes('wait')) {
+          step(state, 'wait');
+          updateUI();
+        }
+      };
+      if (btnDescend) btnDescend.onclick = function() {
+        const legal = legalActions(state);
+        if (legal.includes('descend')) {
+          step(state, 'descend');
+          updateUI();
+        }
+      };
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
