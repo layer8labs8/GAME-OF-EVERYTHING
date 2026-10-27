@@ -1495,9 +1495,11 @@
       "slug": "resource-management",
       "name": "Resource Management",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Star Foundry",
+      "levels": "endless"
     },
     {
       "id": "0143",

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Star Foundry - Resource Management</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b1120;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #1e293b;
+      border-radius: 8px;
+      border: 1px solid #f59e0b;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #94a3b8;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-credits { color: #4ade80; }
+    .val-power { color: #38bdf8; }
+    .val-contracts { color: #fbbf24; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #020617;
+      border: 2px solid #f59e0b;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .res-grid {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .res-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 2px;
+      text-align: center;
+      font-size: 0.68rem;
+    }
+    .res-num {
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: #f1f5f9;
+      margin-top: 2px;
+    }
+
+    .contract-banner {
+      width: 100%;
+      max-width: 480px;
+      background: #1e1b4b;
+      border: 1px solid #818cf8;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+    .contract-reqs {
+      display: flex;
+      gap: 8px;
+      font-weight: 600;
+      color: #c7d2fe;
+      font-size: 0.72rem;
+    }
+    .contract-rew {
+      color: #4ade80;
+      font-weight: bold;
+    }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #334155;
+      color: #f8fafc;
+      border: 1px solid #64748b;
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #475569;
+      transform: translateY(-1px);
+    }
+    .btn-cycle {
+      background: #d97706;
+      border-color: #f59e0b;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 9px 6px;
+    }
+    .btn-cycle:hover { background: #b45309; }
+    .btn-fulfill {
+      background: #059669;
+      border-color: #34d399;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 8px 6px;
+    }
+    .btn-fulfill:hover { background: #047857; }
+    .btn-solar {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #94a3b8;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #fbbf24;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 6, 23, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #f59e0b;
+      border: none;
+      color: #0f172a;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #4ade80; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚡ Star Foundry</h1>
+    <div style="font-size: 0.72rem; color: #fbbf24;" id="header-turn">Cycle 1</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Credits</div>
+      <div class="hud-val val-credits" id="val-credits">$500</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Power Grid</div>
+      <div class="hud-val val-power" id="val-power">+4 MW</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Contracts</div>
+      <div class="hud-val val-contracts" id="val-contracts">0 / 6</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Turn Limit</div>
+      <div class="hud-val" id="val-turn">0 / 120</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="foundry-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">FOUNDRY SUPREMACY</div>
+      <div class="modal-desc" id="modal-desc">Star Foundry completed galactic contracts and built an industrial empire!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Begin New Foundry Expansion</button>
+    </div>
+  </div>
+
+  <div class="section-title">Stockpiled Commodities</div>
+  <div class="res-grid">
+    <div class="res-card">
+      <div style="color: #94a3b8;">🪨 Ore</div>
+      <div class="res-num" id="res-ore">10</div>
+    </div>
+    <div class="res-card">
+      <div style="color: #67e8f9;">💨 Gas</div>
+      <div class="res-num" id="res-gas">10</div>
+    </div>
+    <div class="res-card">
+      <div style="color: #fdba74;">🔩 Alloy</div>
+      <div class="res-num" id="res-alloy">0</div>
+    </div>
+    <div class="res-card">
+      <div style="color: #a7f3d0;">🧪 Polymer</div>
+      <div class="res-num" id="res-polymer">0</div>
+    </div>
+    <div class="res-card">
+      <div style="color: #f472b6;">💾 Circuit</div>
+      <div class="res-num" id="res-circuit">0</div>
+    </div>
+  </div>
+
+  <div class="section-title">Galactic Trade Contract</div>
+  <div class="contract-banner">
+    <div>
+      <div style="font-size: 0.65rem; color: #a5b4fc; margin-bottom: 2px;">ACTIVE QUOTA TARGETS</div>
+      <div class="contract-reqs" id="contract-targets">Loading quota...</div>
+    </div>
+    <div class="contract-rew" id="contract-reward">+$0</div>
+  </div>
+
+  <div class="section-title">Station Directives</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Industrial Logistics Log</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('foundry-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Starfield
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 40; i++) {
+          const sx = (i * 79 + state.turns * 3) % canvas.width;
+          const sy = (i * 47) % canvas.height;
+          ctx.fillRect(sx, sy, 1.2, 1.2);
+        }
+
+        // Supply Pipelines
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 3;
+        // Extraction to Refining
+        ctx.beginPath();
+        ctx.moveTo(70, 70); ctx.lineTo(160, 70);
+        ctx.moveTo(70, 160); ctx.lineTo(160, 160);
+        // Refining to Fabrication
+        ctx.moveTo(220, 70); ctx.lineTo(310, 115);
+        ctx.moveTo(220, 160); ctx.lineTo(310, 115);
+        // Fabrication to Trade Bay
+        ctx.moveTo(370, 115); ctx.lineTo(425, 115);
+        ctx.stroke();
+
+        // Animated resource pulses along pipelines
+        const pulse = (Date.now() / 300) % 1;
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(70 + 90 * pulse, 70, 3, 0, Math.PI * 2);
+        ctx.arc(70 + 90 * pulse, 160, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Facility Modules
+        // 1. Asteroid Mining Rig
+        drawStationNode(ctx, 40, 70, '🪨 Drills', state.facilities.miners, '#94a3b8');
+        // 2. Gas Extraction Rig
+        drawStationNode(ctx, 40, 160, '💨 Rigs', state.facilities.extractors, '#67e8f9');
+        // 3. Smelter
+        drawStationNode(ctx, 190, 70, '🔥 Smelter', state.facilities.smelters, '#fdba74');
+        // 4. Chemical Refinery
+        drawStationNode(ctx, 190, 160, '⚗️ Chem', state.facilities.refineries, '#a7f3d0');
+        // 5. Tech Fabricator
+        drawStationNode(ctx, 340, 115, '⚡ Fab', state.facilities.fabricators, '#f472b6');
+        // 6. Solar Panel Farm
+        drawSolarNode(ctx, 230, 205, state.facilities.solar);
+
+        // Update HUD
+        const headerEl = document.getElementById('header-turn');
+        if (headerEl) headerEl.textContent = 'Cycle ' + state.cycle;
+
+        const credsEl = document.getElementById('val-credits');
+        if (credsEl) credsEl.textContent = '$' + state.credits;
+
+        const power = calculatePower(state);
+        const powerEl = document.getElementById('val-power');
+        if (powerEl) {
+          powerEl.textContent = (power.balance >= 0 ? '+' : '') + power.balance + ' MW';
+          powerEl.style.color = power.balance >= 0 ? '#38bdf8' : '#f87171';
+        }
+
+        const contractsEl = document.getElementById('val-contracts');
+        if (contractsEl) contractsEl.textContent = state.contractsCompleted + ' / 6';
+
+        const turnEl = document.getElementById('val-turn');
+        if (turnEl) turnEl.textContent = state.turns + ' / ' + state.maxTurns;
+
+        // Resource Counts
+        const oreEl = document.getElementById('res-ore');
+        if (oreEl) oreEl.textContent = state.resources.ore;
+
+        const gasEl = document.getElementById('res-gas');
+        if (gasEl) gasEl.textContent = state.resources.gas;
+
+        const alloyEl = document.getElementById('res-alloy');
+        if (alloyEl) alloyEl.textContent = state.resources.alloy;
+
+        const polyEl = document.getElementById('res-polymer');
+        if (polyEl) polyEl.textContent = state.resources.polymer;
+
+        const circEl = document.getElementById('res-circuit');
+        if (circEl) circEl.textContent = state.resources.circuit;
+
+        // Contract Banner
+        const c = state.currentContract;
+        const targetsEl = document.getElementById('contract-targets');
+        if (targetsEl) {
+          targetsEl.innerHTML = '<span>🔩 ' + state.resources.alloy + '/' + c.targetAlloy + '</span>'
+                              + '<span>🧪 ' + state.resources.polymer + '/' + c.targetPolymer + '</span>'
+                              + '<span>💾 ' + state.resources.circuit + '/' + c.targetCircuit + '</span>';
+        }
+        const rewardEl = document.getElementById('contract-reward');
+        if (rewardEl) rewardEl.textContent = 'Reward: +$' + c.rewardCredits;
+
+        // Render Action Buttons
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:cycle_logistics') cls += ' btn-cycle';
+            else if (act === 'action:fulfill_contract') cls += ' btn-fulfill';
+            else if (act === 'action:build_solar') cls += ' btn-solar';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Render Activity Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'FOUNDRY SUPREMACY ACHIEVED!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Fulfilled ' + state.contractsCompleted + ' galactic contracts with $' + state.credits + ' credits! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'FACILITY FORECLOSURE';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Station operations failed to sustain logistics targets. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function drawStationNode(ctx, x, y, label, count, color) {
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x - 28, y - 22, 56, 44, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '9px monospace';
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x, y - 6);
+
+        ctx.font = 'bold 12px monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('x' + count, x, y + 12);
+        ctx.textAlign = 'start';
+      }
+
+      function drawSolarNode(ctx, x, y, count) {
+        ctx.fillStyle = '#082f49';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(x - 55, y - 14, 110, 26, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '10px monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'center';
+        ctx.fillText('☀️ Solar: ' + count + ' (+' + (count * 4) + ' MW)', x, y + 4);
+        ctx.textAlign = 'start';
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:cycle_logistics') return '⚙️ RUN PRODUCTION CYCLE';
+        if (act === 'action:fulfill_contract') return '🚀 DELIVER GALACTIC QUOTA';
+        if (act === 'action:build_miner') return '🪨 Drill ($100)';
+        if (act === 'action:build_extractor') return '💨 Rig ($100)';
+        if (act === 'action:build_smelter') return '🔥 Smelter ($150)';
+        if (act === 'action:build_refinery') return '⚗️ Refinery ($150)';
+        if (act === 'action:build_fabricator') return '⚡ Fabricator ($220)';
+        if (act === 'action:build_solar') return '☀️ Solar Array ($120)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
