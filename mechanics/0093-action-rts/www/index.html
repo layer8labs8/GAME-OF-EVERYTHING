@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Battle Commander: Action RTS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #18181b;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #27272a;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .hp-val { color: #4ade80; }
+    .mana-val { color: #38bdf8; }
+    .core-val { color: #f87171; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #09090b;
+      border: 2px solid #27272a;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+    }
+    #controls {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .action-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #1d4ed8; }
+    button:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
+    #btn-strike { background: #dc2626; }
+    #btn-strike:hover:not(:disabled) { background: #b91c1c; }
+    #btn-shockwave { background: #7c3aed; }
+    #btn-shockwave:hover:not(:disabled) { background: #6d28d9; }
+    #btn-rally { background: #d97706; }
+    #btn-rally:hover:not(:disabled) { background: #b45309; }
+    #btn-rest { background: #059669; }
+    #btn-rest:hover:not(:disabled) { background: #047857; }
+    #btn-tick { background: #0284c7; }
+    #btn-tick:hover:not(:disabled) { background: #0369a1; }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #a1a1aa;
+      background: #18181b;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #27272a;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+    }
+    #game-over-banner {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .victory-bg { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
+    .defeat-bg { background: #4c0519; color: #fda4af; border: 1px solid #f43f5e; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="stat-badge">Tick: <span id="ui-tick" style="color:#f4f4f5;">1/150</span></div>
+    <div class="stat-badge">Hero HP: <span id="ui-hp" class="hp-val">200/200</span></div>
+    <div class="stat-badge">Mana: <span id="ui-mana" class="mana-val">100/100</span></div>
+    <div class="stat-badge">Enemy Core: <span id="ui-ecore" class="core-val">400</span></div>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="480" height="480"></canvas>
+  </div>
+
+  <div id="controls">
+    <div class="action-row">
+      <button id="btn-left">⬅️ Fall Back</button>
+      <button id="btn-right">Advance ➡️</button>
+      <button id="btn-strike">Strike ⚔️</button>
+      <button id="btn-shockwave">Shockwave 💥 (30m)</button>
+      <button id="btn-rally">Rally 🎺 (25m)</button>
+      <button id="btn-rest">Meditate 🧘</button>
+    </div>
+    <div class="action-row">
+      <button id="btn-tick">Pass (+1s)</button>
+      <button id="btn-play">Auto-Push ▶</button>
+      <button id="btn-reset" style="background:#3f3f46;">Restart</button>
+    </div>
+  </div>
+
+  <div id="log-box">Champion summoned to the battle lane. Push with the minion wave.</div>
+  <div id="game-over-banner"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = createState(Date.now() & 0xffff);
+      let autoPlayInterval = null;
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+
+      const uiTick = document.getElementById('ui-tick');
+      const uiHp = document.getElementById('ui-hp');
+      const uiMana = document.getElementById('ui-mana');
+      const uiEcore = document.getElementById('ui-ecore');
+
+      const btnLeft = document.getElementById('btn-left');
+      const btnRight = document.getElementById('btn-right');
+      const btnStrike = document.getElementById('btn-strike');
+      const btnShockwave = document.getElementById('btn-shockwave');
+      const btnRally = document.getElementById('btn-rally');
+      const btnRest = document.getElementById('btn-rest');
+      const btnTick = document.getElementById('btn-tick');
+      const btnPlay = document.getElementById('btn-play');
+      const btnReset = document.getElementById('btn-reset');
+      const logBox = document.getElementById('log-box');
+      const gameOverBanner = document.getElementById('game-over-banner');
+
+      function updateUI() {
+        if (uiTick) uiTick.textContent = state.tick + '/' + state.maxTicks;
+        if (uiHp) uiHp.textContent = state.playerHero.hp + '/' + state.playerHero.maxHp;
+        if (uiMana) uiMana.textContent = state.playerHero.mana + '/' + state.playerHero.maxMana;
+        if (uiEcore) uiEcore.textContent = state.enemyCore.hp + ' HP';
+
+        if (logBox && state.history && state.history.length > 0) {
+          logBox.textContent = state.history[state.history.length - 1];
+        }
+
+        const legals = legalActions(state);
+        if (btnLeft) btnLeft.disabled = !legals.includes('move_left') || state.done;
+        if (btnRight) btnRight.disabled = !legals.includes('move_right') || state.done;
+        if (btnStrike) btnStrike.disabled = !legals.includes('hero_attack') || state.done;
+        if (btnShockwave) btnShockwave.disabled = !legals.includes('ability_shockwave') || state.done;
+        if (btnRally) btnRally.disabled = !legals.includes('ability_rally') || state.done;
+        if (btnRest) btnRest.disabled = !legals.includes('rest_mana') || state.done;
+        if (btnTick) btnTick.disabled = state.done;
+
+        if (state.done) {
+          if (autoPlayInterval) {
+            clearInterval(autoPlayInterval);
+            autoPlayInterval = null;
+            if (btnPlay) btnPlay.textContent = 'Auto-Push ▶';
+          }
+          if (gameOverBanner) {
+            gameOverBanner.style.display = 'block';
+            if (state.winner === 'player') {
+              gameOverBanner.className = 'victory-bg';
+              gameOverBanner.textContent = 'VICTORY! Enemy Ancient Base Core destroyed!';
+            } else {
+              gameOverBanner.className = 'defeat-bg';
+              gameOverBanner.textContent = 'DEFEAT! Your Ancient Core has fallen.';
+            }
+          }
+        } else if (gameOverBanner) {
+          gameOverBanner.style.display = 'none';
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, 480, 480);
+
+        // Lane Highway: 7 Sectors across X
+        const sectorWidth = 480 / 7;
+
+        for (let i = 0; i < 7; i++) {
+          const sx = i * sectorWidth;
+          if (i === 3) {
+            ctx.fillStyle = '#1e293b'; // River center
+          } else if (i < 3) {
+            ctx.fillStyle = '#0f172a'; // Blue territory
+          } else {
+            ctx.fillStyle = '#1c1917'; // Red territory
+          }
+          ctx.fillRect(sx, 120, sectorWidth, 240);
+
+          ctx.strokeStyle = '#27272a';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(sx, 120, sectorWidth, 240);
+
+          // Sector index label
+          ctx.fillStyle = '#52525b';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('P' + i, sx + sectorWidth / 2, 140);
+        }
+
+        // River indicator
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🌊 RIVER', 3 * sectorWidth + sectorWidth / 2, 345);
+
+        // Draw Player Core (Pos 0)
+        ctx.fillStyle = '#1d4ed8';
+        ctx.fillRect(8, 160, sectorWidth - 16, 70);
+        ctx.strokeStyle = '#60a5fa';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(8, 160, sectorWidth - 16, 70);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('BLUE CORE', sectorWidth / 2, 190);
+        ctx.fillText(state.playerCore.hp + ' HP', sectorWidth / 2, 210);
+
+        // Draw Player Tower (Pos 1)
+        if (state.playerTower.alive) {
+          const tx = 1 * sectorWidth + 10;
+          ctx.fillStyle = '#2563eb';
+          ctx.fillRect(tx, 165, sectorWidth - 20, 60);
+          ctx.strokeStyle = '#93c5fd';
+          ctx.strokeRect(tx, 165, sectorWidth - 20, 60);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.fillText('TOWER', tx + (sectorWidth - 20) / 2, 190);
+          ctx.fillText(state.playerTower.hp, tx + (sectorWidth - 20) / 2, 210);
+        }
+
+        // Draw Enemy Tower (Pos 5)
+        if (state.enemyTower.alive) {
+          const tx = 5 * sectorWidth + 10;
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(tx, 165, sectorWidth - 20, 60);
+          ctx.strokeStyle = '#fca5a5';
+          ctx.strokeRect(tx, 165, sectorWidth - 20, 60);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.fillText('TOWER', tx + (sectorWidth - 20) / 2, 190);
+          ctx.fillText(state.enemyTower.hp, tx + (sectorWidth - 20) / 2, 210);
+        }
+
+        // Draw Enemy Core (Pos 6)
+        ctx.fillStyle = '#991b1b';
+        ctx.fillRect(6 * sectorWidth + 8, 160, sectorWidth - 16, 70);
+        ctx.strokeStyle = '#f87171';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(6 * sectorWidth + 8, 160, sectorWidth - 16, 70);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('RED CORE', 6 * sectorWidth + sectorWidth / 2, 190);
+        ctx.fillText(state.enemyCore.hp + ' HP', 6 * sectorWidth + sectorWidth / 2, 210);
+
+        // Draw Minions in Sectors
+        for (let pos = 0; pos <= 6; pos++) {
+          const sx = pos * sectorWidth + sectorWidth / 2;
+          const pMins = state.minions.filter(m => m.team === 'player' && m.pos === pos);
+          const eMins = state.minions.filter(m => m.team === 'enemy' && m.pos === pos);
+
+          if (pMins.length > 0) {
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(sx, 255, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.fillText(pMins.length, sx, 258);
+          }
+
+          if (eMins.length > 0) {
+            ctx.fillStyle = '#f87171';
+            ctx.beginPath();
+            ctx.arc(sx, 285, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.fillText(eMins.length, sx, 288);
+          }
+        }
+
+        // Draw Champions / Heroes
+        // Player Champion
+        if (state.playerHero.alive) {
+          const px = state.playerHero.pos * sectorWidth + sectorWidth / 2;
+          const py = 70;
+
+          ctx.beginPath();
+          ctx.arc(px, py, 22, 0, Math.PI * 2);
+          ctx.fillStyle = '#2563eb';
+          ctx.fill();
+          ctx.strokeStyle = '#60a5fa';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🛡️', px, py + 5);
+
+          // Hero HP Bar
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(px - 22, py - 32, 44, 5);
+          ctx.fillStyle = '#4ade80';
+          ctx.fillRect(px - 22, py - 32, 44 * (state.playerHero.hp / HERO_MAX_HP), 5);
+        }
+
+        // Enemy Champion
+        if (state.enemyHero.alive) {
+          const ex = state.enemyHero.pos * sectorWidth + sectorWidth / 2;
+          const ey = 410;
+
+          ctx.beginPath();
+          ctx.arc(ex, ey, 22, 0, Math.PI * 2);
+          ctx.fillStyle = '#dc2626';
+          ctx.fill();
+          ctx.strokeStyle = '#f87171';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🧙', ex, ey + 5);
+
+          // Enemy Hero HP Bar
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(ex - 22, ey + 28, 44, 5);
+          ctx.fillStyle = '#f87171';
+          ctx.fillRect(ex - 22, ey + 28, 44 * (state.enemyHero.hp / HERO_MAX_HP), 5);
+        }
+      }
+
+      function executeAction(act) {
+        try {
+          step(state, act);
+          updateUI();
+          draw();
+        } catch(e) { console.error(e); }
+      }
+
+      if (btnLeft) btnLeft.onclick = function() { executeAction('move_left'); };
+      if (btnRight) btnRight.onclick = function() { executeAction('move_right'); };
+      if (btnStrike) btnStrike.onclick = function() { executeAction('hero_attack'); };
+      if (btnShockwave) btnShockwave.onclick = function() { executeAction('ability_shockwave'); };
+      if (btnRally) btnRally.onclick = function() { executeAction('ability_rally'); };
+      if (btnRest) btnRest.onclick = function() { executeAction('rest_mana'); };
+      if (btnTick) btnTick.onclick = function() { executeAction('tick'); };
+
+      if (btnPlay) {
+        btnPlay.onclick = function() {
+          if (autoPlayInterval) {
+            clearInterval(autoPlayInterval);
+            autoPlayInterval = null;
+            btnPlay.textContent = 'Auto-Push ▶';
+          } else {
+            autoPlayInterval = setInterval(function() {
+              if (state.done) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+                btnPlay.textContent = 'Auto-Push ▶';
+                return;
+              }
+              executeAction('tick');
+            }, 600);
+            btnPlay.textContent = 'Pause ⏸';
+          }
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          if (autoPlayInterval) {
+            clearInterval(autoPlayInterval);
+            autoPlayInterval = null;
+            if (btnPlay) btnPlay.textContent = 'Auto-Push ▶';
+          }
+          state = createState(Date.now() & 0xffff);
+          updateUI();
+          draw();
+        };
+      }
+
+      // Initial render
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>
