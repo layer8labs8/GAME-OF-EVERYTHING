@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Auto Battler Arena</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --panel: #171f30;
+      --panel-border: #2d3b55;
+      --text: #f3f4f6;
+      --text-muted: #94a3b8;
+      --gold: #fbbf24;
+      --player-hp: #10b981;
+      --enemy-hp: #ef4444;
+      --accent: #6366f1;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 540px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    main {
+      width: 100%;
+      max-width: 540px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 8px;
+    }
+    .status-dashboard {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .hp-card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .hp-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+    }
+    .hp-bar-bg {
+      height: 8px;
+      background: #0f172a;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .hp-bar-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .player-fill { background: var(--player-hp); }
+    .enemy-fill { background: var(--enemy-hp); }
+
+    .economy-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+    }
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 4 / 3;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--panel-border);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+    .shop-section {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .shop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .shop-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .shop-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .shop-card:hover {
+      border-color: var(--gold);
+      background: #273549;
+    }
+    .shop-card.sold {
+      opacity: 0.35;
+      pointer-events: none;
+      background: #0f172a;
+    }
+    .champ-name {
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .champ-cost {
+      font-size: 0.75rem;
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .champ-trait {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: capitalize;
+    }
+    .controls-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.5fr;
+      gap: 6px;
+    }
+    button {
+      background: #1e293b;
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #334155;
+      border-color: var(--accent);
+    }
+    .btn-fight {
+      background: #4f46e5;
+      border-color: #6366f1;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .btn-fight:hover {
+      background: #4338ca;
+    }
+    .log-feed {
+      width: 100%;
+      background: #0b0f19;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      height: 38px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="icon.svg" alt="Auto Battler Arena Logo">
+      <h1>Auto Battler Arena</h1>
+    </div>
+    <div style="font-size: 0.85rem; font-weight: 600;" id="round-indicator">Round 1 / 8</div>
+  </header>
+
+  <main>
+    <div class="status-dashboard">
+      <div class="hp-card">
+        <div class="hp-label">
+          <span style="color: var(--player-hp);">Player Commander</span>
+          <span id="player-hp-num">50 HP</span>
+        </div>
+        <div class="hp-bar-bg">
+          <div class="hp-bar-fill player-fill" id="player-hp-bar" style="width: 100%;"></div>
+        </div>
+      </div>
+      <div class="hp-card">
+        <div class="hp-label">
+          <span style="color: var(--enemy-hp);">Rival Commander</span>
+          <span id="enemy-hp-num">50 HP</span>
+        </div>
+        <div class="hp-bar-bg">
+          <div class="hp-bar-fill enemy-fill" id="enemy-hp-bar" style="width: 100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="economy-bar">
+      <span>Gold: <b style="color: var(--gold);" id="gold-num">5</b> 🪙</span>
+      <span id="level-cap">Level 2 (Cap: 2)</span>
+      <span id="xp-num">XP: 0/8</span>
+    </div>
+
+    <div class="board-container">
+      <canvas id="arenaCanvas" width="600" height="450"></canvas>
+    </div>
+
+    <div class="shop-section">
+      <div class="shop-header">
+        <span>Recruitment Shop</span>
+        <span id="synergies-text">Traits: None</span>
+      </div>
+      <div class="shop-cards" id="shop-cards">
+        <div class="shop-card" id="shop-0"></div>
+        <div class="shop-card" id="shop-1"></div>
+        <div class="shop-card" id="shop-2"></div>
+      </div>
+    </div>
+
+    <div class="controls-bar">
+      <button id="btn-reroll">Reroll (1g)</button>
+      <button id="btn-level">Buy XP (4g)</button>
+      <button class="btn-fight" id="btn-fight">Fight!</button>
+    </div>
+
+    <div class="log-feed" id="log-feed">
+      <div>Recruit champions, merge triples to ★2, and press Fight!</div>
+    </div>
+  </main>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('arenaCanvas');
+      const ctx = canvas.getContext('2d');
+      const playerHpNum = document.getElementById('player-hp-num');
+      const playerHpBar = document.getElementById('player-hp-bar');
+      const enemyHpNum = document.getElementById('enemy-hp-num');
+      const enemyHpBar = document.getElementById('enemy-hp-bar');
+      const goldNum = document.getElementById('gold-num');
+      const levelCap = document.getElementById('level-cap');
+      const xpNum = document.getElementById('xp-num');
+      const roundInd = document.getElementById('round-indicator');
+      const synergiesText = document.getElementById('synergies-text');
+      const logFeed = document.getElementById('log-feed');
+      const btnFight = document.getElementById('btn-fight');
+      const btnReroll = document.getElementById('btn-reroll');
+      const btnLevel = document.getElementById('btn-level');
+
+      const CHAMP_ICONS = {
+        swordsman: '⚔️', archer: '🏹', apprentice: '🔮',
+        guardian: '🛡️', pyromancer: '🔥', shadow_blade: '🗡️',
+        titan: '🗿', archmage: '⚡'
+      };
+
+      let state = null;
+      let selectedBenchIdx = null;
+
+      function initGame() {
+        const seed = Math.floor(Date.now() % 1000000) || 12345;
+        state = autoBattlerLogic.createState(seed);
+        selectedBenchIdx = null;
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        playerHpNum.textContent = state.playerHp + ' HP';
+        playerHpBar.style.width = Math.max(0, (state.playerHp / 50) * 100) + '%';
+
+        enemyHpNum.textContent = state.enemyHp + ' HP';
+        enemyHpBar.style.width = Math.max(0, (state.enemyHp / 50) * 100) + '%';
+
+        goldNum.textContent = state.gold;
+        levelCap.textContent = `Level ${state.level} (Cap: ${state.level})`;
+        xpNum.textContent = `XP: ${state.xp}/${state.level * 4}`;
+        roundInd.textContent = `Round ${state.round} / 8`;
+
+        // Update Synergies
+        const traits = { warrior: 0, mage: 0, assassin: 0 };
+        for (let i = 0; i < state.board.length; i++) {
+          if (state.board[i]) traits[state.board[i].trait]++;
+        }
+        const activeTraits = [];
+        if (traits.warrior >= 2) activeTraits.push(`🛡️ Warrior (${traits.warrior})`);
+        if (traits.mage >= 2) activeTraits.push(`🔮 Mage (${traits.mage})`);
+        if (traits.assassin >= 2) activeTraits.push(`🗡️ Assassin (${traits.assassin})`);
+        synergiesText.textContent = activeTraits.length > 0 ? activeTraits.join(' | ') : 'Traits: None';
+
+        // Update Shop Cards
+        for (let i = 0; i < 3; i++) {
+          const cardEl = document.getElementById(`shop-${i}`);
+          if (!cardEl) continue;
+          const cId = state.shop[i];
+          if (!cId) {
+            if (cardEl.classList) cardEl.classList.add('sold');
+            cardEl.innerHTML = '<div style="font-size:0.75rem; color:#64748b; padding:10px 0;">Purchased</div>';
+          } else {
+            if (cardEl.classList) cardEl.classList.remove('sold');
+            const champ = autoBattlerLogic.CHAMPIONS[cId];
+            cardEl.innerHTML = `
+              <span style="font-size: 1.3rem;">${CHAMP_ICONS[cId] || '♟️'}</span>
+              <div class="champ-name">${champ.name}</div>
+              <div class="champ-cost">${champ.cost} Gold</div>
+              <div class="champ-trait">${champ.trait}</div>
+            `;
+          }
+        }
+
+        // Combat log
+        if (state.combatLog.length > 0) {
+          const recent = state.combatLog.slice(-2);
+          logFeed.innerHTML = recent.map(msg => `<div>${msg}</div>`).reverse().join('');
+        }
+
+        if (state.gameOver) {
+          if (state.winner === 'player') {
+            btnFight.textContent = '🏆 Victory! (Restart)';
+            btnFight.style.background = '#10b981';
+          } else {
+            btnFight.textContent = '💀 Defeat! (Restart)';
+            btnFight.style.background = '#ef4444';
+          }
+        } else {
+          btnFight.textContent = 'Fight!';
+          btnFight.style.background = '#4f46e5';
+        }
+      }
+
+      function render() {
+        const w = canvas.width;
+        const h = canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Background arena
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, w, h);
+
+        // Divider
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.65);
+        ctx.lineTo(w, h * 0.65);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label zones
+        ctx.fillStyle = '#334155';
+        ctx.font = '600 12px sans-serif';
+        ctx.fillText('DEPLOYED SQUAD (Tap to Bench)', 16, 22);
+        ctx.fillText('RESERVE BENCH (Tap to Deploy)', 16, h * 0.65 + 20);
+
+        // 1. Draw Deployed Board Units
+        const boardSlots = state.level;
+        const slotW = (w - 32) / Math.max(3, boardSlots);
+        for (let i = 0; i < boardSlots; i++) {
+          const sx = 16 + i * slotW;
+          const sy = 40;
+          const sw = slotW - 8;
+          const sh = h * 0.5;
+
+          // Slot outline
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(sx, sy, sw, sh);
+
+          const u = state.board[i];
+          if (u) {
+            drawUnit(u, sx + sw / 2, sy + sh / 2, false);
+          } else {
+            ctx.fillStyle = '#1e293b';
+            ctx.font = '24px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('+', sx + sw / 2, sy + sh / 2);
+          }
+        }
+
+        // 2. Draw Reserve Bench Units
+        const benchSlots = 4;
+        const benchSlotW = (w - 32) / benchSlots;
+        for (let i = 0; i < benchSlots; i++) {
+          const bx = 16 + i * benchSlotW;
+          const by = h * 0.65 + 32;
+          const bw = benchSlotW - 8;
+          const bh = h * 0.26;
+
+          const isSelected = selectedBenchIdx === i;
+          ctx.strokeStyle = isSelected ? '#fbbf24' : '#1e293b';
+          ctx.lineWidth = isSelected ? 2 : 1;
+          ctx.strokeRect(bx, by, bw, bh);
+
+          const u = state.bench[i];
+          if (u) {
+            drawUnit(u, bx + bw / 2, by + bh / 2, isSelected);
+          }
+        }
+      }
+
+      function drawUnit(u, cx, cy, isSelected) {
+        // Base ring
+        ctx.beginPath();
+        ctx.arc(cx, cy - 6, 26, 0, Math.PI * 2);
+        ctx.fillStyle = u.star > 1 ? '#4338ca' : '#1e293b';
+        ctx.fill();
+        ctx.lineWidth = isSelected ? 3 : 2;
+        ctx.strokeStyle = u.star > 1 ? '#fbbf24' : '#64748b';
+        ctx.stroke();
+
+        // Icon
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(CHAMP_ICONS[u.champId] || '♟️', cx, cy - 6);
+
+        // Name & Star
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '700 11px sans-serif';
+        ctx.fillText(u.name, cx, cy + 28);
+
+        // Stats
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px sans-serif';
+        ctx.fillText(`${u.hp} HP | ${u.atk} ATK`, cx, cy + 40);
+      }
+
+      // Tap handling
+      canvas.addEventListener('click', (e) => {
+        if (!state || state.gameOver) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // Check bench tap
+        if (y > h * 0.65) {
+          const benchSlots = 4;
+          const benchSlotW = (w - 32) / benchSlots;
+          const bIdx = Math.floor((x - 16) / benchSlotW);
+          if (bIdx >= 0 && bIdx < state.bench.length) {
+            // If already selected, deploy to board if space
+            if (selectedBenchIdx === bIdx) {
+              const legal = autoBattlerLogic.legalActions(state);
+              if (legal.includes(`deploy:${bIdx}`)) {
+                autoBattlerLogic.step(state, `deploy:${bIdx}`);
+                selectedBenchIdx = null;
+              }
+            } else {
+              selectedBenchIdx = bIdx;
+            }
+            updateUI();
+            render();
+            return;
+          }
+        }
+
+        // Check board tap
+        if (y < h * 0.65) {
+          const boardSlots = state.level;
+          const slotW = (w - 32) / Math.max(3, boardSlots);
+          const sIdx = Math.floor((x - 16) / slotW);
+
+          // If bench unit selected and tapped an empty slot, deploy
+          if (selectedBenchIdx !== null) {
+            const legal = autoBattlerLogic.legalActions(state);
+            if (legal.includes(`deploy:${selectedBenchIdx}`)) {
+              autoBattlerLogic.step(state, `deploy:${selectedBenchIdx}`);
+              selectedBenchIdx = null;
+              updateUI();
+              render();
+              return;
+            }
+          }
+
+          // If tapped existing board unit, return to bench
+          if (sIdx >= 0 && sIdx < state.board.length) {
+            const legal = autoBattlerLogic.legalActions(state);
+            if (legal.includes(`bench:${sIdx}`)) {
+              autoBattlerLogic.step(state, `bench:${sIdx}`);
+              selectedBenchIdx = null;
+              updateUI();
+              render();
+              return;
+            }
+          }
+        }
+
+        selectedBenchIdx = null;
+        render();
+      });
+
+      // Shop click handlers
+      for (let i = 0; i < 3; i++) {
+        const card = document.getElementById(`shop-${i}`);
+        if (card) {
+          card.addEventListener('click', () => {
+            if (!state || state.gameOver) return;
+            const act = `buy:${i}`;
+            const legal = autoBattlerLogic.legalActions(state);
+            if (legal.includes(act)) {
+              autoBattlerLogic.step(state, act);
+              updateUI();
+              render();
+            }
+          });
+        }
+      }
+
+      btnReroll.addEventListener('click', () => {
+        if (!state || state.gameOver) return;
+        const legal = autoBattlerLogic.legalActions(state);
+        if (legal.includes('reroll')) {
+          autoBattlerLogic.step(state, 'reroll');
+          updateUI();
+          render();
+        }
+      });
+
+      btnLevel.addEventListener('click', () => {
+        if (!state || state.gameOver) return;
+        const legal = autoBattlerLogic.legalActions(state);
+        if (legal.includes('level_up')) {
+          autoBattlerLogic.step(state, 'level_up');
+          updateUI();
+          render();
+        }
+      });
+
+      btnFight.addEventListener('click', () => {
+        if (!state) return;
+        if (state.gameOver) {
+          initGame();
+          return;
+        }
+        autoBattlerLogic.step(state, 'fight');
+        updateUI();
+        render();
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>
