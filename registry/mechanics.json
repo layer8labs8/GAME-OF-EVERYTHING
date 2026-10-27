@@ -1429,9 +1429,11 @@
    "slug": "walking-simulator",
    "name": "Walking Simulator",
    "family": "Adventure",
-   "status": "idea",
-   "bot": false,
-   "source": "steam-tag"
+   "status": "playable",
+   "bot": true,
+   "source": "steam-tag",
+   "title": "Solitary Echoes",
+   "levels": "endless"
   },
   {
    "id": "0137",
