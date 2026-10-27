@@ -1120,9 +1120,11 @@
    "id": "0108",
    "slug": "lane-defense",
    "name": "Lane Defense",
+   "title": "Lane Bastion",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "classic"
   },
   {
