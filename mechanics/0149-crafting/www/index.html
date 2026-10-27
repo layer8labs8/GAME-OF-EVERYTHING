@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rune & Anvil - Crafting Sim</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0284c7">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b1120;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #0f172a;
+      border-radius: 8px;
+      border: 1px solid #0284c7;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #94a3b8;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-gold { color: #facc15; }
+    .val-level { color: #38bdf8; }
+    .val-deliv { color: #4ade80; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #020617;
+      border: 2px solid #0284c7;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.72rem;
+      color: #93c5fd;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .grid-5 {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .grid-4 {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .mat-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 2px;
+      text-align: center;
+      font-size: 0.65rem;
+    }
+    .mat-num {
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: #ffffff;
+      margin-top: 2px;
+    }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #334155;
+      transform: translateY(-1px);
+    }
+    .btn-sell {
+      background: #15803d;
+      border-color: #22c55e;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 8px 6px;
+    }
+    .btn-sell:hover { background: #16a34a; }
+    .btn-crown {
+      background: #7c2d12;
+      border-color: #ea580c;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      color: #fde047;
+    }
+    .btn-crown:hover { background: #9a3412; }
+    .btn-day {
+      background: #0369a1;
+      border-color: #38bdf8;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 9px 6px;
+    }
+    .btn-day:hover { background: #0284c7; }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #94a3b8;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 6, 23, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #0284c7;
+      border: none;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #4ade80; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔨 Rune & Anvil</h1>
+    <div style="font-size: 0.72rem; color: #38bdf8;" id="header-rank">Forge Level 1</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Forge Day</div>
+      <div class="hud-val" id="val-day">Day 1</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Gold Treasury</div>
+      <div class="hud-val val-gold" id="val-gold">$350</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Forge Rank</div>
+      <div class="hud-val val-level" id="val-rank">Lvl 1</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Items Delivered</div>
+      <div class="hud-val val-deliv" id="val-deliv">0</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="forge-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">CRAFTING SUPREMACY</div>
+      <div class="modal-desc" id="modal-desc">Synthesized the legendary Sovereign Crown and built a royal armory!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Begin New Smithing Dynasty</button>
+    </div>
+  </div>
+
+  <div class="section-title">Raw & Smelted Materials</div>
+  <div class="grid-5">
+    <div class="mat-card">
+      <div style="color: #b45309;">🪵 Timber</div>
+      <div class="mat-num" id="mat-timber">6</div>
+    </div>
+    <div class="mat-card">
+      <div style="color: #94a3b8;">🪨 Ore</div>
+      <div class="mat-num" id="mat-ore">6</div>
+    </div>
+    <div class="mat-card">
+      <div style="color: #f8fafc;">⛓️ Ingot</div>
+      <div class="mat-num" id="mat-ingot">2</div>
+    </div>
+    <div class="mat-card">
+      <div style="color: #38bdf8;">💎 Gems</div>
+      <div class="mat-num" id="mat-gems">1</div>
+    </div>
+    <div class="mat-card">
+      <div style="color: #c084fc;">✨ Dust</div>
+      <div class="mat-num" id="mat-dust">2</div>
+    </div>
+  </div>
+
+  <div class="section-title">Finished Masterwork Armaments</div>
+  <div class="grid-4">
+    <div class="mat-card">
+      <div style="color: #4ade80;">🛡️ Shield ($90)</div>
+      <div class="mat-num" id="craft-shield">0</div>
+    </div>
+    <div class="mat-card">
+      <div style="color: #fb923c;">🪓 Axe ($160)</div>
+      <div class="mat-num" id="craft-axe">0</div>
+    </div>
+    <div class="mat-card">
+      <div style="color: #38bdf8;">⚔️ Runic Blade ($380)</div>
+      <div class="mat-num" id="craft-blade">0</div>
+    </div>
+    <div class="mat-card">
+      <div style="color: #facc15;">👑 Crown ($950)</div>
+      <div class="mat-num" id="craft-crown">0</div>
+    </div>
+  </div>
+
+  <div class="section-title">Smithing Directives</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Artificer Chronicle Log</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('forge-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Stone Forge Hearth (Left)
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(15, 40, 110, 150);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(15, 40, 110, 150);
+
+        // Glowing Furnace opening
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.arc(70, 120, 32, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(70, 125, 20, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#fed7aa';
+        ctx.textAlign = 'center';
+        ctx.fillText('BLAST FORGE', 70, 60);
+
+        // Anvil & Enchanter Table (Center)
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(155, 60, 150, 130);
+        ctx.strokeStyle = '#0284c7';
+        ctx.strokeRect(155, 60, 150, 130);
+
+        // Glowing Rune Circle on Enchanter Table
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(230, 120, 36, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.font = '24px sans-serif';
+        ctx.fillText('⚡⚒️', 230, 128);
+
+        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('RUNIC ANVIL', 230, 78);
+
+        // Armory Display Rack (Right)
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(335, 40, 110, 150);
+        ctx.strokeStyle = '#475569';
+        ctx.strokeRect(335, 40, 110, 150);
+
+        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('ARMORY RACK', 390, 60);
+
+        // Draw crafted item icons on rack
+        let rx = 360;
+        let ry = 85;
+        if (state.crafted.crowns > 0) {
+          ctx.font = '22px sans-serif';
+          ctx.fillText('👑', 390, ry);
+          ry += 28;
+        }
+        if (state.crafted.runicBlades > 0) {
+          ctx.font = '20px sans-serif';
+          ctx.fillText('⚔️', 390, ry);
+          ry += 28;
+        }
+        if (state.crafted.axes > 0) {
+          ctx.font = '18px sans-serif';
+          ctx.fillText('🪓', 390, ry);
+          ry += 26;
+        }
+        if (state.crafted.shields > 0) {
+          ctx.font = '18px sans-serif';
+          ctx.fillText('🛡️', 390, ry);
+        }
+        ctx.textAlign = 'start';
+
+        // Update HUD
+        const headerEl = document.getElementById('header-rank');
+        if (headerEl) headerEl.textContent = 'Forge Level ' + state.forgeLevel;
+
+        const dayEl = document.getElementById('val-day');
+        if (dayEl) dayEl.textContent = 'Day ' + state.day;
+
+        const goldEl = document.getElementById('val-gold');
+        if (goldEl) {
+          goldEl.textContent = '$' + state.gold;
+          goldEl.style.color = state.gold >= 0 ? '#facc15' : '#f87171';
+        }
+
+        const rankEl = document.getElementById('val-rank');
+        if (rankEl) rankEl.textContent = 'Lvl ' + state.forgeLevel;
+
+        const delivEl = document.getElementById('val-deliv');
+        if (delivEl) delivEl.textContent = state.itemsDelivered;
+
+        // Material counts
+        const tEl = document.getElementById('mat-timber');
+        if (tEl) tEl.textContent = state.materials.timber;
+
+        const oEl = document.getElementById('mat-ore');
+        if (oEl) oEl.textContent = state.materials.ore;
+
+        const iEl = document.getElementById('mat-ingot');
+        if (iEl) iEl.textContent = state.materials.ingots;
+
+        const gEl = document.getElementById('mat-gems');
+        if (gEl) gEl.textContent = state.materials.gems;
+
+        const dEl = document.getElementById('mat-dust');
+        if (dEl) dEl.textContent = state.materials.dust;
+
+        // Crafted counts
+        const sEl = document.getElementById('craft-shield');
+        if (sEl) sEl.textContent = state.crafted.shields;
+
+        const aEl = document.getElementById('craft-axe');
+        if (aEl) aEl.textContent = state.crafted.axes;
+
+        const bEl = document.getElementById('craft-blade');
+        if (bEl) bEl.textContent = state.crafted.runicBlades;
+
+        const cEl = document.getElementById('craft-crown');
+        if (cEl) cEl.textContent = state.crafted.crowns;
+
+        // Action Buttons
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:sell_armaments') cls += ' btn-sell';
+            else if (act === 'action:craft_crown') cls += ' btn-crown';
+            else if (act === 'action:advance_day') cls += ' btn-day';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Activity Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'CRAFTING SUPREMACY ATTAINED!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Synthesized the High Sovereign Crown with $' + state.gold + ' gold! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'FORGE CLOSED';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Workshop operations could not be sustained. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:gather_materials') return '🌲 Gather Timber & Ore';
+        if (act === 'action:quarry_gemstones') return '💎 Quarry Gems & Dust';
+        if (act === 'action:smelt_ingot') return '🔥 Smelt Iron Ingot (-2 ore)';
+        if (act === 'action:craft_shield') return '🛡️ Craft Shield (3w/2i)';
+        if (act === 'action:craft_axe') return '🪓 Craft Battleaxe (2w/4i)';
+        if (act === 'action:craft_runic_blade') return '⚔️ Enchant Runic Blade';
+        if (act === 'action:craft_crown') return '👑 CRAFT SOVEREIGN CROWN';
+        if (act === 'action:sell_armaments') return '💰 DELIVER ARMAMENTS TO KNIGHTS';
+        if (act === 'action:upgrade_forge') return '⚒️ Upgrade Anvil ($250)';
+        if (act === 'action:advance_day') return '🌙 CONCLUDE FORGE DAY (Lease)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
