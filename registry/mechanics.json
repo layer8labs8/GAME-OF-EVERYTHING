@@ -788,9 +788,10 @@
       "slug": "trading-card-game",
       "name": "Trading Card Game",
       "family": "Cards & Board",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0077",

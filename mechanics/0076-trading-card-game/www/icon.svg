@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="mana" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <rect width="500" height="500" x="6" y="6" rx="90" fill="none" stroke="#3b82f6" stroke-width="4" stroke-opacity="0.3"/>
+  <g transform="translate(106, 86)">
+    <!-- TCG Card Shield Silhouette -->
+    <rect x="25" y="20" width="250" height="340" rx="18" fill="#1e293b" stroke="#60a5fa" stroke-width="6"/>
+    <rect x="45" y="45" width="210" height="180" rx="10" fill="#090d16" stroke="#3b82f6" stroke-width="2"/>
+
+    <!-- Brilliant Blue Mana Crystal in center -->
+    <polygon points="150,70 200,135 150,200 100,135" fill="url(#mana)" filter="url(#glow)"/>
+    <polygon points="150,70 170,135 150,200 130,135" fill="#93c5fd" fill-opacity="0.6"/>
+
+    <!-- Cost Orb -->
+    <circle cx="45" cy="45" r="24" fill="#3b82f6" stroke="#ffffff" stroke-width="4" filter="url(#glow)"/>
+    <text x="45" y="54" fill="#ffffff" font-size="26" font-weight="900" font-family="sans-serif" text-anchor="middle">5</text>
+
+    <!-- Attack / HP Badges -->
+    <circle cx="40" cy="360" r="22" fill="#eab308" stroke="#78350f" stroke-width="3"/>
+    <text x="40" y="368" fill="#ffffff" font-size="20" font-weight="900" font-family="sans-serif" text-anchor="middle">4</text>
+
+    <circle cx="260" cy="360" r="22" fill="#ef4444" stroke="#7f1d1d" stroke-width="3"/>
+    <text x="260" y="368" fill="#ffffff" font-size="20" font-weight="900" font-family="sans-serif" text-anchor="middle">5</text>
+  </g>
+</svg>

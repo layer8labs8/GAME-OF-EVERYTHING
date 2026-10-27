@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mythic TCG - Aether Duels</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #090a10;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-cyan { color: #38bdf8; }
+    .badge-red { color: #ef4444; }
+    .badge-amber { color: #f59e0b; }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      background: #0a0e1a;
+      border: 3px solid #1e293b;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: block;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #38bdf8;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+    .btn:active {
+      transform: translateY(2px);
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      border-color: #fbbf24;
+      color: #fff;
+    }
+    .footer {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div>Turn: <span class="badge-amber" id="hud-turn">1 / 50</span></div>
+      <div>You: <span class="badge-red" id="hud-player-hp">30</span> HP | Mana: <span class="badge-cyan" id="hud-player-mana">1/1</span></div>
+      <div>Opp: <span class="badge-red" id="hud-opp-hp">30</span> HP</div>
+    </div>
+
+    <canvas id="game-canvas" width="600" height="600"></canvas>
+
+    <div class="message-bar" id="message-bar">Welcome to Mythic TCG. Mana crystals crystalize!</div>
+
+    <div class="action-row">
+      <button class="btn btn-gold" id="btn-end-turn">End Turn</button>
+      <button class="btn" id="btn-restart">New Duel</button>
+    </div>
+
+    <div class="footer">
+      Click card to play &bull; Click minion then target to attack &bull; Taunt protects heroes
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('game-canvas');
+      if (!canvas || typeof canvas.getContext !== 'function') return;
+      const ctx = canvas.getContext('2d');
+
+      let currentSeed = Math.floor(Math.random() * 100000) + 1;
+      let state = createState(currentSeed);
+
+      let selectedMinionId = null;
+      let pendingSpellCardId = null;
+
+      function updateHUD() {
+        const hudTurn = document.getElementById('hud-turn');
+        const hudPlayerHp = document.getElementById('hud-player-hp');
+        const hudPlayerMana = document.getElementById('hud-player-mana');
+        const hudOppHp = document.getElementById('hud-opp-hp');
+        const msgBar = document.getElementById('message-bar');
+
+        if (hudTurn) hudTurn.textContent = state.turn + ' / ' + state.maxTurns;
+        if (hudPlayerHp) hudPlayerHp.textContent = state.player.hp;
+        if (hudPlayerMana) hudPlayerMana.textContent = state.player.mana + '/' + state.player.maxMana;
+        if (hudOppHp) hudOppHp.textContent = state.opp.hp;
+        if (msgBar) msgBar.textContent = state.message;
+      }
+
+      function drawMinionCard(c, x, y, w, h, m, isAttacker, isTarget) {
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,0.5)';
+        c.shadowBlur = (isAttacker || isTarget) ? 12 : 5;
+        c.shadowOffsetY = 3;
+
+        c.fillStyle = m.taunt ? '#334155' : '#1e293b';
+        c.beginPath();
+        c.roundRect(x, y, w, h, 8);
+        c.fill();
+
+        let borderCol = '#475569';
+        if (m.taunt) borderCol = '#cbd5e1';
+        if (isAttacker) borderCol = '#38bdf8';
+        if (isTarget) borderCol = '#ef4444';
+        else if (m.canAttack && !m.hasAttacked) borderCol = '#22c55e';
+
+        c.strokeStyle = borderCol;
+        c.lineWidth = (isAttacker || isTarget || (m.canAttack && !m.hasAttacked)) ? 2.5 : 1.5;
+        c.stroke();
+        c.shadowColor = 'transparent';
+
+        // Minion Name
+        c.fillStyle = '#ffffff';
+        c.font = 'bold 10px sans-serif';
+        c.textAlign = 'center';
+        c.fillText(m.name, x + w / 2, y + 16);
+
+        // Keyword badge
+        if (m.taunt) {
+          c.fillStyle = '#94a3b8';
+          c.font = 'bold 9px sans-serif';
+          c.fillText('TAUNT', x + w / 2, y + 32);
+        } else if (m.charge) {
+          c.fillStyle = '#f59e0b';
+          c.font = 'bold 9px sans-serif';
+          c.fillText('CHARGE', x + w / 2, y + 32);
+        }
+
+        // Attack badge (Bottom-Left)
+        c.fillStyle = '#eab308';
+        c.beginPath();
+        c.arc(x + 12, y + h - 12, 10, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = '#78350f';
+        c.font = 'bold 11px sans-serif';
+        c.textBaseline = 'middle';
+        c.fillText(m.attack.toString(), x + 12, y + h - 12);
+
+        // HP badge (Bottom-Right)
+        c.fillStyle = '#ef4444';
+        c.beginPath();
+        c.arc(x + w - 12, y + h - 12, 10, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = '#ffffff';
+        c.font = 'bold 11px sans-serif';
+        c.fillText(m.hp.toString(), x + w - 12, y + h - 12);
+
+        c.restore();
+      }
+
+      function drawHandCard(c, x, y, w, h, card, isPlayable) {
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,0.5)';
+        c.shadowBlur = isPlayable ? 10 : 4;
+        c.shadowOffsetY = 3;
+
+        let bgGrad = c.createLinearGradient(x, y, x, y + h);
+        let borderCol = '#475569';
+        if (card.type === 'minion') {
+          bgGrad.addColorStop(0, '#1e293b');
+          bgGrad.addColorStop(1, '#0f172a');
+          borderCol = '#3b82f6';
+        } else {
+          bgGrad.addColorStop(0, '#3b0764');
+          bgGrad.addColorStop(1, '#1e1b4b');
+          borderCol = '#a855f7';
+        }
+
+        if (isPlayable) borderCol = '#fbbf24';
+
+        c.fillStyle = bgGrad;
+        c.beginPath();
+        c.roundRect(x, y, w, h, 6);
+        c.fill();
+
+        c.strokeStyle = borderCol;
+        c.lineWidth = isPlayable ? 2.5 : 1;
+        c.stroke();
+        c.shadowColor = 'transparent';
+
+        // Mana Cost badge (top-left)
+        c.fillStyle = '#0284c7';
+        c.beginPath();
+        c.arc(x + 10, y + 10, 8, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = '#ffffff';
+        c.font = 'bold 9px sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(card.cost.toString(), x + 10, y + 10);
+
+        // Card Name
+        c.fillStyle = '#ffffff';
+        c.font = 'bold 9px sans-serif';
+        c.fillText(card.name, x + w / 2 + 4, y + 12);
+
+        // Stats or description
+        c.fillStyle = '#fef08a';
+        c.font = 'bold 11px sans-serif';
+        if (card.type === 'minion') {
+          c.fillText(card.attack + ' / ' + card.hp, x + w / 2, y + 36);
+        } else {
+          let desc = card.name === 'Fireball' ? '6 Dmg' : (card.name === 'Holy Light' ? '+6 HP' : (card.name === 'Flamestrike' ? '4 AoE' : 'Spell'));
+          c.fillText(desc, x + w / 2, y + 36);
+        }
+
+        c.restore();
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        // 1. OPPONENT HERO (Top Center)
+        ctx.save();
+        const oppX = 300;
+        const oppY = 40;
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(oppX, oppY, 26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(state.opp.hp.toString(), oppX, oppY);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('OPPONENT (' + state.opp.hand.length + ' cards in hand)', oppX, oppY + 36);
+        ctx.restore();
+
+        // 2. OPPONENT BATTLEFIELD (y: 100 - 180)
+        const oBoard = state.opp.board || [];
+        const mCardW = 80;
+        const mCardH = 75;
+        const oSpacing = 95;
+        const oStartX = (600 - (oBoard.length * oSpacing - 15)) / 2;
+
+        oBoard.forEach((m, idx) => {
+          const x = oStartX + idx * oSpacing;
+          const y = 105;
+          const isTarget = (selectedMinionId || pendingSpellCardId);
+          drawMinionCard(ctx, x, y, mCardW, mCardH, m, false, isTarget);
+        });
+
+        // 3. BATTLEFIELD DIVIDER
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(30, 205);
+        ctx.lineTo(570, 205);
+        ctx.stroke();
+
+        // 4. PLAYER BATTLEFIELD (y: 220 - 300)
+        const pBoard = state.player.board || [];
+        const pStartX = (600 - (pBoard.length * oSpacing - 15)) / 2;
+
+        pBoard.forEach((m, idx) => {
+          const x = pStartX + idx * oSpacing;
+          const y = 225;
+          const isAttacker = (selectedMinionId === m.id);
+          drawMinionCard(ctx, x, y, mCardW, mCardH, m, isAttacker, false);
+        });
+
+        // 5. PLAYER HERO (y: 330)
+        ctx.save();
+        const pX = 80;
+        const pY = 350;
+
+        ctx.fillStyle = '#3b82f6';
+        ctx.beginPath();
+        ctx.arc(pX, pY, 26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#93c5fd';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(state.player.hp.toString(), pX, pY);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('MANA: ' + state.player.mana + ' / ' + state.player.maxMana, pX, pY + 36);
+        ctx.restore();
+
+        // 6. PLAYER HAND (Bottom y: 440)
+        ctx.strokeStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(30, 420);
+        ctx.lineTo(570, 420);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('YOUR HAND (' + state.player.hand.length + ' cards | Deck: ' + state.player.deck.length + '):', 35, 440);
+
+        const legals = legalActions(state);
+        const hCount = state.player.hand.length;
+        const hCardW = 75;
+        const hCardH = 95;
+        const hSpacing = Math.min(hCardW * 0.9, (550 - hCardW) / Math.max(hCount - 1, 1));
+        const handStartX = (600 - ((hCount - 1) * hSpacing + hCardW)) / 2;
+
+        state.player.hand.forEach((card, idx) => {
+          const x = handStartX + idx * hSpacing;
+          const isPlayable = legals.some(a => a.startsWith('play:' + card.id));
+          const y = isPlayable ? 465 : 485;
+          drawHandCard(ctx, x, y, hCardW, hCardH, card, isPlayable);
+        });
+
+        // 7. GAME OVER OVERLAY
+        if (state.done) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(10, 14, 26, 0.94)';
+          ctx.fillRect(0, 0, 600, 600);
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('CHAMPION VICTORIOUS!', 300, 260);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('You crushed the enemy champion in duel!', 300, 305);
+          } else {
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('DUEL DEFEAT', 300, 260);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('Your champion fell in battle.', 300, 305);
+          }
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.fillText('Final Score: ' + score(state), 300, 355);
+          ctx.restore();
+        }
+      }
+
+      function handleCanvasClick(evt) {
+        if (state.done) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = (evt.clientX - rect.left) * scaleX;
+        const cy = (evt.clientY - rect.top) * scaleY;
+
+        const legals = legalActions(state);
+
+        // 1. Check clicking Opponent Hero (300, 40, r=26)
+        if (Math.hypot(cx - 300, cy - 40) <= 32) {
+          if (pendingSpellCardId) {
+            const act = 'play:' + pendingSpellCardId + ',opp_hero';
+            if (legals.includes(act)) {
+              step(state, act);
+              pendingSpellCardId = null;
+              updateHUD();
+              render();
+              return;
+            }
+          } else if (selectedMinionId) {
+            const act = 'attack:' + selectedMinionId + ',opp_hero';
+            if (legals.includes(act)) {
+              step(state, act);
+              selectedMinionId = null;
+              updateHUD();
+              render();
+              return;
+            }
+          }
+        }
+
+        // 2. Check clicking Opponent Minions (y: 105 - 180)
+        const oBoard = state.opp.board || [];
+        const mCardW = 80;
+        const mCardH = 75;
+        const oSpacing = 95;
+        const oStartX = (600 - (oBoard.length * oSpacing - 15)) / 2;
+
+        for (let idx = 0; idx < oBoard.length; idx++) {
+          const em = oBoard[idx];
+          const x = oStartX + idx * oSpacing;
+          const y = 105;
+          if (cx >= x && cx <= x + mCardW && cy >= y && cy <= y + mCardH) {
+            if (pendingSpellCardId) {
+              const act = 'play:' + pendingSpellCardId + ',' + em.id;
+              if (legals.includes(act)) {
+                step(state, act);
+                pendingSpellCardId = null;
+                updateHUD();
+                render();
+                return;
+              }
+            } else if (selectedMinionId) {
+              const act = 'attack:' + selectedMinionId + ',' + em.id;
+              if (legals.includes(act)) {
+                step(state, act);
+                selectedMinionId = null;
+                updateHUD();
+                render();
+                return;
+              }
+            }
+          }
+        }
+
+        // 3. Check clicking Player Minions (y: 225 - 300)
+        const pBoard = state.player.board || [];
+        const pStartX = (600 - (pBoard.length * oSpacing - 15)) / 2;
+
+        for (let idx = 0; idx < pBoard.length; idx++) {
+          const pm = pBoard[idx];
+          const x = pStartX + idx * oSpacing;
+          const y = 225;
+          if (cx >= x && cx <= x + mCardW && cy >= y && cy <= y + mCardH) {
+            if (pm.canAttack && !pm.hasAttacked) {
+              if (selectedMinionId === pm.id) {
+                selectedMinionId = null;
+                state.message = 'Deselected ' + pm.name;
+              } else {
+                selectedMinionId = pm.id;
+                pendingSpellCardId = null;
+                state.message = 'Selected ' + pm.name + '. Click an enemy minion or face to attack.';
+              }
+              updateHUD();
+              render();
+              return;
+            }
+          }
+        }
+
+        // 4. Check clicking Player Hand Cards
+        const hCount = state.player.hand.length;
+        const hCardW = 75;
+        const hCardH = 95;
+        const hSpacing = Math.min(hCardW * 0.9, (550 - hCardW) / Math.max(hCount - 1, 1));
+        const handStartX = (600 - ((hCount - 1) * hSpacing + hCardW)) / 2;
+
+        for (let idx = hCount - 1; idx >= 0; idx--) {
+          const card = state.player.hand[idx];
+          const x = handStartX + idx * hSpacing;
+          const isPlayable = legals.some(a => a.startsWith('play:' + card.id));
+          const y = isPlayable ? 465 : 485;
+
+          if (cx >= x && cx <= x + hCardW && cy >= y && cy <= y + hCardH) {
+            if (card.target) {
+              // Targeted spell: prime selection
+              pendingSpellCardId = card.id;
+              selectedMinionId = null;
+              state.message = 'Selected ' + card.name + '. Click a target to cast.';
+              updateHUD();
+              render();
+            } else {
+              // Non-targeted spell or minion
+              const act = 'play:' + card.id;
+              if (legals.includes(act)) {
+                step(state, act);
+                selectedMinionId = null;
+                pendingSpellCardId = null;
+                updateHUD();
+                render();
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      canvas.addEventListener('click', handleCanvasClick);
+      canvas.addEventListener('touchstart', function(e) {
+        if (e.touches && e.touches.length > 0) {
+          handleCanvasClick(e.touches[0]);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      const btnEndTurn = document.getElementById('btn-end-turn');
+      if (btnEndTurn && btnEndTurn.addEventListener) {
+        btnEndTurn.addEventListener('click', function() {
+          if (!state.done && legalActions(state).includes('endTurn')) {
+            step(state, 'endTurn');
+            selectedMinionId = null;
+            pendingSpellCardId = null;
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnRestart = document.getElementById('btn-restart');
+      if (btnRestart && btnRestart.addEventListener) {
+        btnRestart.addEventListener('click', function() {
+          currentSeed = Math.floor(Math.random() * 100000) + 1;
+          state = createState(currentSeed);
+          selectedMinionId = null;
+          pendingSpellCardId = null;
+          updateHUD();
+          render();
+        });
+      }
+
+      updateHUD();
+      render();
+    })();
+  </script>
+</body>
+</html>
