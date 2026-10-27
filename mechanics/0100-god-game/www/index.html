@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Divine Dominion: God Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background: #060913;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      margin-bottom: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    .mana-val { color: #38bdf8; }
+    .faith-val { color: #facc15; }
+    .pop-val { color: #4ade80; }
+    #canvas-wrap {
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      background: #090e1a;
+      border: 2px solid #1e293b;
+      border-radius: 12px;
+      display: block;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+      cursor: pointer;
+    }
+    #actions-panel {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    button {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover:not(:disabled) {
+      background: #334155;
+      border-color: #64748b;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    button.miracle {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #dbeafe;
+    }
+    button.lightning {
+      background: #78350f;
+      border-color: #f59e0b;
+      color: #fef08a;
+    }
+    button.crusade {
+      background: #881337;
+      border-color: #f43f5e;
+      color: #ffe4e6;
+    }
+    button.inspire {
+      background: #581c87;
+      border-color: #a855f7;
+      color: #f3e8ff;
+    }
+    button.selected {
+      border-color: #38bdf8;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+    }
+    #log-box {
+      width: 100%;
+      max-width: 480px;
+      margin-top: 8px;
+      background: #090e17;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      height: 56px;
+      overflow-y: auto;
+    }
+    #banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #38bdf8;
+      padding: 16px 24px;
+      border-radius: 12px;
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+    #banner h2 { font-size: 20px; margin-bottom: 6px; }
+    #banner p { font-size: 12px; color: #cbd5e1; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge mana-val">✨ MANA: <span id="val-mana">60/160</span></div>
+    <div class="badge faith-val">☀️ FAITH: <span id="val-faith">40</span></div>
+    <div class="badge pop-val">👥 POP: <span id="val-pop">22</span></div>
+    <button id="btn-reset" style="padding: 4px 8px; font-size: 11px;">Reset</button>
+  </header>
+
+  <div id="canvas-wrap">
+    <canvas id="c" width="480" height="480"></canvas>
+    <div id="banner">
+      <h2 id="banner-title">DIVINE APOTHEOSIS</h2>
+      <p id="banner-sub">The shadow cult has collapsed and light reigns supreme.</p>
+      <button id="btn-restart" class="miracle" style="margin: 0 auto;">Awaken Again</button>
+    </div>
+  </div>
+
+  <div id="actions-panel">
+    <div class="panel-title">Miraculous Interventions</div>
+    <div class="action-group">
+      <button id="btn-mode-rain" class="miracle">🌧️ Rain (15m)</button>
+      <button id="btn-mode-lightning" class="lightning">⚡ Lightning (25m)</button>
+      <button id="btn-mode-raise" class="miracle">⛰️ Raise Land (20m)</button>
+      <button id="btn-inspire-temple" class="inspire">🏛️ Inspire Temple (35m)</button>
+      <button id="btn-holy-crusade" class="crusade">⚔️ Holy Crusade (40m)</button>
+      <button id="btn-celestial-wait">⏳ Pass Turn</button>
+    </div>
+  </div>
+
+  <div id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      const valMana = document.getElementById('val-mana');
+      const valFaith = document.getElementById('val-faith');
+      const valPop = document.getElementById('val-pop');
+      const logBox = document.getElementById('log-box');
+      const banner = document.getElementById('banner');
+      const bannerTitle = document.getElementById('banner-title');
+      const bannerSub = document.getElementById('banner-sub');
+      const btnReset = document.getElementById('btn-reset');
+      const btnRestart = document.getElementById('btn-restart');
+
+      const btnModeRain = document.getElementById('btn-mode-rain');
+      const btnModeLightning = document.getElementById('btn-mode-lightning');
+      const btnModeRaise = document.getElementById('btn-mode-raise');
+      const btnInspire = document.getElementById('btn-inspire-temple');
+      const btnCrusade = document.getElementById('btn-holy-crusade');
+      const btnWait = document.getElementById('btn-celestial-wait');
+
+      let state = createState(Date.now() & 0xffff);
+      let selectedMiracleMode = 'rain'; // 'rain', 'lightning', 'raise'
+
+      // Web Audio sound synthesizer
+      function playSfx(type) {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctxA = new AudioContext();
+          const osc = ctxA.createOscillator();
+          const gain = ctxA.createGain();
+          osc.connect(gain);
+          gain.connect(ctxA.destination);
+
+          if (type === 'thunder') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, ctxA.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(30, ctxA.currentTime + 0.35);
+            gain.gain.setValueAtTime(0.5, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.35);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.35);
+          } else if (type === 'rain') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, ctxA.currentTime);
+            osc.frequency.linearRampToValueAtTime(400, ctxA.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.2);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.2);
+          } else if (type === 'divine') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, ctxA.currentTime);
+            osc.frequency.setValueAtTime(783.99, ctxA.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.3, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.35);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.35);
+          } else if (type === 'crusade') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(220, ctxA.currentTime);
+            osc.frequency.setValueAtTime(330, ctxA.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, ctxA.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.25);
+            osc.start();
+            osc.stop(ctxA.currentTime + 0.25);
+          }
+        } catch(e) {}
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const playerPop = state.settlements ? state.settlements.filter(s => s.owner === 'player').reduce((acc, s) => acc + s.pop, 0) : 0;
+
+        if (valMana) valMana.textContent = state.mana + '/' + state.maxMana;
+        if (valFaith) valFaith.textContent = state.faith;
+        if (valPop) valPop.textContent = playerPop;
+
+        if (logBox && state.history) {
+          logBox.innerHTML = state.history.slice(-5).map(h => '<div>&gt; ' + h + '</div>').join('');
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        if (banner) {
+          if (state.done) {
+            banner.style.display = 'block';
+            if (state.winner === 'player') {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'DIVINE APOTHEOSIS';
+                bannerTitle.style.color = '#38bdf8';
+              }
+              if (bannerSub) bannerSub.textContent = 'The realm has achieved eternal light and transcendence! (Score: ' + score(state) + ')';
+            } else {
+              if (bannerTitle) {
+                bannerTitle.textContent = 'WORLD FORSAKEN';
+                bannerTitle.style.color = '#ef4444';
+              }
+              if (bannerSub) bannerSub.textContent = 'Mortal civilization has fallen into shadow.';
+            }
+          } else {
+            banner.style.display = 'none';
+          }
+        }
+
+        // Miracle mode button highlights
+        if (btnModeRain) {
+          btnModeRain.disabled = state.mana < MIRACLE_COSTS.rain;
+          btnModeRain.style.borderColor = selectedMiracleMode === 'rain' ? '#38bdf8' : '#334155';
+        }
+        if (btnModeLightning) {
+          btnModeLightning.disabled = state.mana < MIRACLE_COSTS.lightning;
+          btnModeLightning.style.borderColor = selectedMiracleMode === 'lightning' ? '#f59e0b' : '#334155';
+        }
+        if (btnModeRaise) {
+          btnModeRaise.disabled = state.mana < MIRACLE_COSTS.raise_land;
+          btnModeRaise.style.borderColor = selectedMiracleMode === 'raise' ? '#38bdf8' : '#334155';
+        }
+
+        // Direct miracle buttons
+        const legals = legalActions(state);
+        if (btnInspire) {
+          btnInspire.disabled = !legals.some(a => a.startsWith('miracle_inspire:'));
+        }
+        if (btnCrusade) {
+          btnCrusade.disabled = !legals.some(a => a.startsWith('miracle_crusade:'));
+        }
+        if (btnWait) {
+          btnWait.disabled = state.done;
+        }
+      }
+
+      function draw() {
+        if (!ctx) return;
+        ctx.fillStyle = '#060913';
+        ctx.fillRect(0, 0, 480, 480);
+
+        const tileSize = 84;
+        const startX = 30;
+        const startY = 30;
+
+        // Draw 5x5 World Grid
+        if (state.grid) {
+          for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+              const tile = state.grid[r][c];
+              const x = startX + c * tileSize;
+              const y = startY + r * tileSize;
+
+              let fill = '#1e293b';
+              let border = '#334155';
+
+              if (tile.type === 'fertile') { fill = '#15803d'; border = '#22c55e'; }
+              else if (tile.type === 'desert') { fill = '#854d0e'; border = '#ca8a04'; }
+              else if (tile.type === 'water') { fill = '#0369a1'; border = '#38bdf8'; }
+              else if (tile.type === 'mountain') { fill = '#475569'; border = '#94a3b8'; }
+
+              ctx.fillStyle = fill;
+              ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+              ctx.strokeStyle = border;
+              ctx.lineWidth = 1;
+              ctx.strokeRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+
+              // Terrain symbol / detail
+              ctx.fillStyle = '#ffffff';
+              ctx.font = '10px monospace';
+              ctx.textAlign = 'center';
+
+              if (tile.type === 'fertile') {
+                ctx.fillText('🌾', x + tileSize / 2, y + 22);
+              } else if (tile.type === 'desert') {
+                ctx.fillText('🏜️', x + tileSize / 2, y + 22);
+              } else if (tile.type === 'water') {
+                ctx.fillText('🌊', x + tileSize / 2, y + 22);
+              } else if (tile.type === 'mountain') {
+                ctx.fillText('⛰️', x + tileSize / 2, y + 22);
+              }
+            }
+          }
+        }
+
+        // Draw Settlements
+        if (state.settlements) {
+          state.settlements.forEach(s => {
+            const x = startX + s.c * tileSize;
+            const y = startY + s.r * tileSize;
+
+            let icon = '🛖';
+            let color = '#94a3b8';
+
+            if (s.owner === 'player') {
+              icon = s.level >= 2 ? '🏛️' : '⛪';
+              color = '#38bdf8';
+            } else if (s.owner === 'rival') {
+              icon = '⛩️';
+              color = '#ef4444';
+            }
+
+            // Settlement Aura
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.2;
+            ctx.beginPath();
+            ctx.arc(x + tileSize / 2, y + tileSize / 2, 28, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            // Settlement Icon
+            ctx.font = '22px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(icon, x + tileSize / 2, y + tileSize / 2 + 6);
+
+            // Pop / Health info
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px sans-serif';
+            if (s.owner === 'rival') {
+              ctx.fillText('HP: ' + s.hp + '/100', x + tileSize / 2, y + tileSize - 8);
+            } else {
+              ctx.fillText(s.pop + ' Pop', x + tileSize / 2, y + tileSize - 8);
+            }
+
+            // Crusaders indicator
+            if (s.crusaders > 0) {
+              ctx.fillStyle = '#facc15';
+              ctx.font = 'bold 9px sans-serif';
+              ctx.fillText('⚔️ ' + s.crusaders, x + tileSize / 2, y + 16);
+            }
+          });
+        }
+      }
+
+      function executeAction(act) {
+        if (!act) return;
+        try {
+          if (act.includes('miracle_lightning:')) playSfx('thunder');
+          else if (act.includes('miracle_rain:')) playSfx('rain');
+          else if (act.includes('miracle_crusade:')) playSfx('crusade');
+          else playSfx('divine');
+
+          step(state, act);
+          updateUI();
+          draw();
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      // Miracle Mode Select
+      if (btnModeRain) btnModeRain.onclick = function() { selectedMiracleMode = 'rain'; updateUI(); };
+      if (btnModeLightning) btnModeLightning.onclick = function() { selectedMiracleMode = 'lightning'; updateUI(); };
+      if (btnModeRaise) btnModeRaise.onclick = function() { selectedMiracleMode = 'raise'; updateUI(); };
+
+      // Canvas click to cast targeted miracles
+      if (canvas) {
+        canvas.addEventListener('click', function(e) {
+          if (state.done) return;
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const mx = (e.clientX - rect.left) * scaleX;
+          const my = (e.clientY - rect.top) * scaleY;
+
+          const tileSize = 84;
+          const startX = 30;
+          const startY = 30;
+
+          const c = Math.floor((mx - startX) / tileSize);
+          const r = Math.floor((my - startY) / tileSize);
+
+          if (r < 0 || r >= 5 || c < 0 || c >= 5) return;
+
+          const legals = legalActions(state);
+          let act = null;
+
+          if (selectedMiracleMode === 'rain') {
+            act = `miracle_rain:${r},${c}`;
+          } else if (selectedMiracleMode === 'lightning') {
+            act = `miracle_lightning:${r},${c}`;
+          } else if (selectedMiracleMode === 'raise') {
+            act = `miracle_raise_land:${r},${c}`;
+          }
+
+          if (act && legals.includes(act)) {
+            executeAction(act);
+          }
+        });
+      }
+
+      if (btnInspire) {
+        btnInspire.onclick = function() {
+          const legals = legalActions(state);
+          const act = legals.find(a => a.startsWith('miracle_inspire:'));
+          executeAction(act);
+        };
+      }
+
+      if (btnCrusade) {
+        btnCrusade.onclick = function() {
+          const legals = legalActions(state);
+          const act = legals.find(a => a.startsWith('miracle_crusade:'));
+          executeAction(act);
+        };
+      }
+
+      if (btnWait) {
+        btnWait.onclick = function() {
+          executeAction('wait');
+        };
+      }
+
+      if (btnReset) {
+        btnReset.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          updateUI();
+          draw();
+        };
+      }
+
+      if (btnRestart) {
+        btnRestart.onclick = function() {
+          state = createState(Date.now() & 0xffff);
+          updateUI();
+          draw();
+        };
+      }
+
+      updateUI();
+      draw();
+    })();
+  </script>
+</body>
+</html>

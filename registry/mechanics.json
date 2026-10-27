@@ -1032,9 +1032,11 @@
    "id": "0100",
    "slug": "god-game",
    "name": "God Game",
+   "title": "Divine Dominion",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {
