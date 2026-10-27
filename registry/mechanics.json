@@ -1594,9 +1594,11 @@
       "slug": "inventory-management",
       "name": "Inventory Management",
       "family": "Simulation",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Grid Hauler",
+      "levels": "endless"
     },
     {
       "id": "0152",

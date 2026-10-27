@@ -1,0 +1,12 @@
+{
+  "name": "Grid Hauler: Inventory Management",
+  "short_name": "GridHauler",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#18181b",
+  "theme_color": "#8b5cf6",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

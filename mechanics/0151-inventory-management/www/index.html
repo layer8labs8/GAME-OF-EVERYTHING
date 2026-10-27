@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Grid Hauler - Inventory Management</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#8b5cf6">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0f0c1b;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #1e1b4b;
+      border-radius: 8px;
+      border: 1px solid #8b5cf6;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #c4b5fd;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #201a3d;
+      border: 1px solid #4338ca;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #a5b4fc;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-gold { color: #facc15; }
+    .val-hp { color: #f87171; }
+    .val-weight { color: #38bdf8; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #090714;
+      border: 2px solid #8b5cf6;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.72rem;
+      color: #c4b5fd;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stats-banner {
+      width: 100%;
+      max-width: 480px;
+      background: #2e1065;
+      border: 1px solid #7c3aed;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #2e1065;
+      color: #f1f5f9;
+      border: 1px solid #6d28d9;
+      border-radius: 6px;
+      padding: 7px 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #4c1d95;
+      transform: translateY(-1px);
+    }
+    .btn-delve {
+      background: #c2410c;
+      border-color: #ea580c;
+      grid-column: span 2;
+      font-size: 0.82rem;
+      padding: 9px 6px;
+      color: #ffffff;
+    }
+    .btn-delve:hover { background: #d97706; }
+    .btn-upg {
+      background: #1e1b4b;
+      border-color: #4338ca;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #090714;
+      border: 1px solid #1e1b4b;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #a5b4fc;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #c4b5fd;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 12, 27, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #8b5cf6;
+      border: none;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #4ade80; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎒 Grid Hauler</h1>
+    <div style="font-size: 0.72rem; color: #c4b5fd;" id="header-grid">4x4 Spatial Pack</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Dungeon Depth</div>
+      <div class="hud-val" id="val-depth">Chamber 1</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Explorer HP</div>
+      <div class="hud-val val-hp" id="val-hp">100 / 100</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Gold Bounty</div>
+      <div class="hud-val val-gold" id="val-gold">$300</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Pack Weight</div>
+      <div class="hud-val val-weight" id="val-weight">7 / 18 kg</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="pack-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">DUNGEON CONQUERED</div>
+      <div class="modal-desc" id="modal-desc">Flawless backpack loadout cleared all dungeon chambers!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Equip New Expedition</button>
+    </div>
+  </div>
+
+  <div class="section-title">Backpack Loadout Combat Stats</div>
+  <div class="stats-banner">
+    <div>
+      <span style="color: #f87171; font-weight: bold; margin-right: 12px;" id="stat-atk">⚔️ Atk: 14</span>
+      <span style="color: #38bdf8; font-weight: bold;" id="stat-def">🛡️ Def: 20</span>
+    </div>
+    <div style="color: #facc15; font-weight: bold;" id="stat-power">Total Loadout: 34 Power</div>
+  </div>
+
+  <div class="section-title">Quartermaster Actions</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Expedition Field Log</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('pack-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#090714';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Backpack Leather Border
+        ctx.fillStyle = '#1e1b4b';
+        ctx.beginPath();
+        ctx.roundRect(15, 15, 230, 200, 10);
+        ctx.fill();
+        ctx.strokeStyle = '#8b5cf6';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Grid Cells rendering
+        const cellSize = 38;
+        const startX = 30;
+        const startY = 28;
+
+        for (let r = 0; r < state.gridRows; r++) {
+          for (let c = 0; c < state.gridCols; c++) {
+            const cx = startX + c * cellSize;
+            const cy = startY + r * cellSize;
+            ctx.fillStyle = '#110e26';
+            ctx.fillRect(cx, cy, cellSize - 2, cellSize - 2);
+            ctx.strokeStyle = '#312e81';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx, cy, cellSize - 2, cellSize - 2);
+          }
+        }
+
+        // Render Items inside Grid
+        for (let i = 0; i < state.items.length; i++) {
+          const it = state.items[i];
+          const ix = startX + it.col * cellSize;
+          const iy = startY + it.row * cellSize;
+          const iw = it.w * cellSize - 2;
+          const ih = it.h * cellSize - 2;
+
+          let col = '#0284c7';
+          let icon = '📦';
+          if (it.type === 'potion') { col = '#e11d48'; icon = '🧪'; }
+          else if (it.type === 'dagger') { col = '#0284c7'; icon = '🗡️'; }
+          else if (it.type === 'shield') { col = '#d97706'; icon = '🛡️'; }
+          else if (it.type === 'mana') { col = '#9333ea'; icon = '💎'; }
+          else if (it.type === 'rations') { col = '#15803d'; icon = '🍞'; }
+
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.roundRect(ix + 1, iy + 1, iw - 2, ih - 2, 4);
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.font = (Math.min(iw, ih) * 0.5) + 'px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(icon, ix + iw / 2, iy + ih / 2 + 5);
+        }
+        ctx.textAlign = 'start';
+
+        // Right Panel: Explorer Status & Chamber Preview
+        ctx.fillStyle = '#1e1b4b';
+        ctx.beginPath();
+        ctx.roundRect(260, 15, 185, 200, 10);
+        ctx.fill();
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#fde047';
+        ctx.fillText('EXPLORER STATUS', 275, 38);
+
+        ctx.font = '24px sans-serif';
+        ctx.fillText('🤺', 275, 75);
+
+        ctx.font = '10px monospace';
+        ctx.fillStyle = '#f87171';
+        ctx.fillText('HP: ' + state.adventurerHp + ' / 100', 315, 62);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('Weight: ' + getTotalWeight(state) + ' / ' + state.maxWeight + ' kg', 315, 78);
+
+        // Monster Threat Preview
+        const threat = 16 + state.chamber * 9;
+        ctx.fillStyle = '#4c0519';
+        ctx.fillRect(275, 95, 155, 55);
+        ctx.strokeStyle = '#f43f5e';
+        ctx.strokeRect(275, 95, 155, 55);
+
+        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#fca5a5';
+        ctx.fillText('CHAMBER #' + state.chamber + ' ENCOUNTER', 283, 112);
+        ctx.font = '11px monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('👹 Threat: ' + threat + ' Power', 283, 130);
+
+        const stats = calculateLoadoutPower(state);
+        ctx.fillStyle = stats.power >= threat ? '#4ade80' : '#f87171';
+        ctx.fillText(stats.power >= threat ? '✓ READY TO DELVE' : '⚠️ VULNERABLE', 283, 144);
+
+        // Update HUD
+        const headerGrid = document.getElementById('header-grid');
+        if (headerGrid) headerGrid.textContent = state.gridRows + 'x' + state.gridCols + ' Spatial Pack';
+
+        const depthEl = document.getElementById('val-depth');
+        if (depthEl) depthEl.textContent = 'Chamber ' + state.chamber;
+
+        const hpEl = document.getElementById('val-hp');
+        if (hpEl) hpEl.textContent = state.adventurerHp + ' / 100';
+
+        const goldEl = document.getElementById('val-gold');
+        if (goldEl) {
+          goldEl.textContent = '$' + state.gold;
+          goldEl.style.color = state.gold >= 0 ? '#facc15' : '#f87171';
+        }
+
+        const weightEl = document.getElementById('val-weight');
+        if (weightEl) weightEl.textContent = getTotalWeight(state) + ' / ' + state.maxWeight + ' kg';
+
+        // Stats Banner
+        const atkEl = document.getElementById('stat-atk');
+        if (atkEl) atkEl.textContent = '⚔️ Atk: ' + stats.totalAtk;
+
+        const defEl = document.getElementById('stat-def');
+        if (defEl) defEl.textContent = '🛡️ Def: ' + stats.totalDef;
+
+        const powEl = document.getElementById('stat-power');
+        if (powEl) powEl.textContent = 'Total Loadout: ' + stats.power + ' Power';
+
+        // Action Buttons
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:delve_encounter') cls += ' btn-delve';
+            else if (act.startsWith('action:expand_') || act.startsWith('action:upgrade_')) cls += ' btn-upg';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Activity Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'DUNGEON CONQUERED!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Cleared ' + state.chambersCleared + ' chambers with $' + state.gold + ' gold! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'EXPEDITION LOST';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Dungeon depths overwhelmed the adventurer loadout. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:delve_encounter') return '⚔️ DELVE CHAMBER ENCOUNTER';
+        if (act === 'action:pack_potion') return '🧪 Pack Potion ($30)';
+        if (act === 'action:pack_dagger') return '🗡️ Pack Dagger (1x2, $60)';
+        if (act === 'action:pack_shield') return '🛡️ Pack Shield (2x2, $100)';
+        if (act === 'action:pack_mana') return '💎 Pack Mana Gem ($50)';
+        if (act === 'action:pack_rations') return '🍞 Pack Rations ($25)';
+        if (act === 'action:expand_grid') return '🎒 Expand Grid (+1 Col/Row, $200)';
+        if (act === 'action:upgrade_straps') return '🪢 Reinforce Straps (+4 kg, $150)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
