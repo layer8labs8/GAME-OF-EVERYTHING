@@ -778,9 +778,10 @@
       "slug": "roguelike-deckbuilder",
       "name": "Roguelike Deckbuilder",
       "family": "Cards & Board",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0076",

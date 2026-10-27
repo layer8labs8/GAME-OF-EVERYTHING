@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Spire Crawl - Roguelike Deckbuilder</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #090d16;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 520px;
+      gap: 8px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-red { color: #ef4444; }
+    .badge-cyan { color: #38bdf8; }
+    .badge-amber { color: #f59e0b; }
+    canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      background: #0b1120;
+      border: 3px solid #1f2937;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      cursor: pointer;
+      display: block;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #fbbf24;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn:hover {
+      background: #334155;
+      border-color: #64748b;
+    }
+    .btn:active {
+      transform: translateY(2px);
+    }
+    .btn-red {
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      border-color: #ef4444;
+      color: #fff;
+    }
+    .footer {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div>Floor: <span class="badge-amber" id="hud-floor">1 / 4</span></div>
+      <div>HP: <span class="badge-red" id="hud-hp">75 / 75</span></div>
+      <div>Energy: <span class="badge-red" id="hud-energy">3 / 3</span> | Block: <span class="badge-cyan" id="hud-block">0</span></div>
+    </div>
+
+    <canvas id="game-canvas" width="600" height="600"></canvas>
+
+    <div class="message-bar" id="message-bar">Spire Crawl begins. Ascend the tower!</div>
+
+    <div class="action-row">
+      <button class="btn btn-red" id="btn-end-turn">End Turn</button>
+      <button class="btn" id="btn-restart">Restart Run</button>
+    </div>
+
+    <div class="footer">
+      Click card in hand to play &bull; Check enemy intent &bull; Click End Turn to pass
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('game-canvas');
+      if (!canvas || typeof canvas.getContext !== 'function') return;
+      const ctx = canvas.getContext('2d');
+
+      let currentSeed = Math.floor(Math.random() * 100000) + 1;
+      let state = createState(currentSeed);
+
+      function updateHUD() {
+        const hudFloor = document.getElementById('hud-floor');
+        const hudHp = document.getElementById('hud-hp');
+        const hudEnergy = document.getElementById('hud-energy');
+        const hudBlock = document.getElementById('hud-block');
+        const msgBar = document.getElementById('message-bar');
+
+        if (hudFloor) hudFloor.textContent = state.floor + ' / ' + state.maxFloors;
+        if (hudHp) hudHp.textContent = state.player.hp + ' / ' + state.player.maxHp;
+        if (hudEnergy) hudEnergy.textContent = state.player.energy + ' / ' + state.player.maxEnergy;
+        if (hudBlock) hudBlock.textContent = state.player.block;
+        if (msgBar) msgBar.textContent = state.message;
+      }
+
+      function drawCard(c, x, y, w, h, card, isPlayable) {
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,0.6)';
+        c.shadowBlur = isPlayable ? 12 : 5;
+        c.shadowOffsetY = 4;
+
+        let bgGrad = c.createLinearGradient(x, y, x, y + h);
+        let borderCol = '#475569';
+
+        if (card.type === 'attack') {
+          bgGrad.addColorStop(0, '#450a0a');
+          bgGrad.addColorStop(1, '#1f1315');
+          borderCol = '#ef4444';
+        } else if (card.type === 'skill') {
+          bgGrad.addColorStop(0, '#082f49');
+          bgGrad.addColorStop(1, '#0f172a');
+          borderCol = '#0ea5e9';
+        } else if (card.type === 'power') {
+          bgGrad.addColorStop(0, '#3b0764');
+          bgGrad.addColorStop(1, '#1e1b4b');
+          borderCol = '#c084fc';
+        }
+
+        if (isPlayable) borderCol = '#f59e0b';
+
+        c.fillStyle = bgGrad;
+        c.beginPath();
+        c.roundRect(x, y, w, h, 8);
+        c.fill();
+
+        c.strokeStyle = borderCol;
+        c.lineWidth = isPlayable ? 2.5 : 1.5;
+        c.stroke();
+        c.shadowColor = 'transparent';
+
+        // Energy Orb in top-left
+        c.fillStyle = '#ef4444';
+        c.beginPath();
+        c.arc(x + 14, y + 14, 10, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = '#ffffff';
+        c.lineWidth = 1;
+        c.stroke();
+        c.fillStyle = '#ffffff';
+        c.font = 'bold 11px sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(card.cost.toString(), x + 14, y + 14);
+
+        // Card Name
+        c.fillStyle = '#ffffff';
+        c.font = 'bold 11px sans-serif';
+        c.textAlign = 'center';
+        c.fillText(card.name, x + w / 2 + 6, y + 16);
+
+        // Card Type banner
+        c.fillStyle = '#94a3b8';
+        c.font = '9px sans-serif';
+        c.fillText(card.type.toUpperCase(), x + w / 2, y + 36);
+
+        // Card Description
+        c.fillStyle = '#f1f5f9';
+        c.font = '10px sans-serif';
+        c.textAlign = 'center';
+        c.fillText(card.desc || '', x + w / 2, y + 68);
+
+        c.restore();
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, 600, 600);
+
+        if (state.mode === 'combat' && state.enemy) {
+          // 1. COMBAT BATTLEFIELD
+          // Player Avatar (Left)
+          ctx.save();
+          const pX = 80;
+          const pY = 120;
+
+          // Hero figure
+          ctx.fillStyle = '#3b82f6';
+          ctx.beginPath();
+          ctx.arc(pX, pY, 28, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#93c5fd';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Sword
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(pX + 20, pY + 10);
+          ctx.lineTo(pX + 50, pY - 20);
+          ctx.stroke();
+
+          // Player Name & HP Bar
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('IRON HERO', pX, pY + 44);
+
+          // HP Bar
+          const barW = 100;
+          const barH = 10;
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(pX - barW / 2, pY + 52, barW, barH);
+          const hpRatio = Math.max(0, state.player.hp / state.player.maxHp);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(pX - barW / 2, pY + 52, barW * hpRatio, barH);
+
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.fillText(state.player.hp + ' / ' + state.player.maxHp, pX, pY + 76);
+
+          // Player Block & Statuses
+          if (state.player.block > 0) {
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('🛡️ ' + state.player.block, pX, pY + 94);
+          }
+          if (state.player.strength > 0) {
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText('⚔️ +' + state.player.strength, pX - 30, pY + 110);
+          }
+          if (state.player.vulnerable > 0) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText('💥 Vuln (' + state.player.vulnerable + ')', pX + 25, pY + 110);
+          }
+          ctx.restore();
+
+          // Enemy Avatar (Right)
+          ctx.save();
+          const eX = 500;
+          const eY = 120;
+
+          // Telegraphed Intent Bubble above enemy
+          const intent = state.enemy.currentIntent;
+          if (intent) {
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.roundRect(eX - 70, eY - 75, 140, 32, 8);
+            ctx.fill();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(intent.desc, eX, eY - 59);
+          }
+
+          // Enemy Figure
+          let eColor = '#8b5cf6';
+          if (state.floor === 3) eColor = '#ea580c';
+          if (state.floor === 4) eColor = '#4c1d95';
+
+          ctx.fillStyle = eColor;
+          ctx.beginPath();
+          ctx.arc(eX, eY, 36, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#f87171';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Monster face
+          ctx.fillStyle = '#fef08a';
+          ctx.beginPath();
+          ctx.arc(eX - 12, eY - 8, 4, 0, Math.PI * 2);
+          ctx.arc(eX + 12, eY - 8, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Monster Name & HP Bar
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(state.enemy.name, eX, eY + 52);
+
+          ctx.fillStyle = '#374151';
+          ctx.fillRect(eX - barW / 2, eY + 60, barW, barH);
+          const eRatio = Math.max(0, state.enemy.hp / state.enemy.maxHp);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(eX - barW / 2, eY + 60, barW * eRatio, barH);
+
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.fillText(state.enemy.hp + ' / ' + state.enemy.maxHp, eX, eY + 84);
+
+          if (state.enemy.block > 0) {
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('🛡️ ' + state.enemy.block, eX, eY + 102);
+          }
+          if (state.enemy.strength > 0) {
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText('⚔️ +' + state.enemy.strength, eX - 30, eY + 118);
+          }
+          if (state.enemy.vulnerable > 0) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText('💥 Vuln (' + state.enemy.vulnerable + ')', eX + 25, eY + 118);
+          }
+          ctx.restore();
+
+          // Middle Bar: Deck and Discard Counts
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(30, 275);
+          ctx.lineTo(570, 275);
+          ctx.stroke();
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('DRAW PILE: ' + state.deck.length + ' cards', 40, 298);
+          ctx.textAlign = 'right';
+          ctx.fillText('DISCARD: ' + state.discard.length + ' cards', 560, 298);
+
+          // Player Hand of Cards
+          const legals = legalActions(state);
+          const hCount = state.hand.length;
+          const cardW = 95;
+          const cardH = 140;
+          const spacing = Math.min(cardW * 0.9, (550 - cardW) / Math.max(hCount - 1, 1));
+          const startX = (600 - ((hCount - 1) * spacing + cardW)) / 2;
+
+          state.hand.forEach((card, idx) => {
+            const x = startX + idx * spacing;
+            const isPlayable = legals.includes('play:' + card.id);
+            const y = isPlayable ? 350 : 380;
+            drawCard(ctx, x, y, cardW, cardH, card, isPlayable);
+          });
+        } else if (state.mode === 'reward') {
+          // 2. REWARD DRAFTING MODAL
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+          ctx.fillRect(40, 80, 520, 440);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(40, 80, 520, 440);
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 22px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('ENCOUNTER VICTORY!', 300, 130);
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '14px sans-serif';
+          ctx.fillText('Choose a card to add to your deck:', 300, 160);
+
+          const rCards = state.rewardCards || [];
+          const rW = 120;
+          const rH = 170;
+          rCards.forEach((name, idx) => {
+            const tmpl = CARD_DATABASE[name];
+            const x = 70 + idx * 165;
+            const y = 200;
+            drawCard(ctx, x, y, rW, rH, tmpl, true);
+          });
+
+          // Skip Button
+          ctx.fillStyle = '#334155';
+          ctx.beginPath();
+          ctx.roundRect(220, 420, 160, 44, 8);
+          ctx.fill();
+          ctx.strokeStyle = '#64748b';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.fillStyle = '#f1f5f9';
+          ctx.font = 'bold 14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Skip Reward', 300, 442);
+        } else if (state.mode === 'campfire') {
+          // 3. CAMPFIRE SITE
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(40, 80, 520, 440);
+          ctx.strokeStyle = '#ea580c';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(40, 80, 520, 440);
+
+          ctx.fillStyle = '#f97316';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('CAMPFIRE REST SITE', 300, 140);
+
+          // Animated flames graphic
+          ctx.fillStyle = '#ea580c';
+          ctx.beginPath();
+          ctx.arc(300, 240, 45, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.arc(300, 245, 25, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Rest Option
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.roundRect(80, 340, 200, 120, 12);
+          ctx.fill();
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#34d399';
+          ctx.font = 'bold 18px sans-serif';
+          ctx.fillText('REST', 180, 380);
+          ctx.fillStyle = '#cbd5e1';
+          ctx.font = '13px sans-serif';
+          ctx.fillText('Heal 25 HP', 180, 410);
+
+          // Smith Option
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.roundRect(320, 340, 200, 120, 12);
+          ctx.fill();
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 18px sans-serif';
+          ctx.fillText('SMITH', 420, 380);
+          ctx.fillStyle = '#cbd5e1';
+          ctx.font = '13px sans-serif';
+          ctx.fillText('Upgrade a Card', 420, 410);
+        }
+
+        // 4. GAME OVER OVERLAY
+        if (state.done) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+          ctx.fillRect(0, 0, 600, 600);
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('SPIRE CONQUERED!', 300, 260);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('The Void Sovereign was defeated!', 300, 305);
+          } else {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 34px sans-serif';
+            ctx.fillText('DEFEATED IN THE SPIRE', 300, 260);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('Fell on Floor ' + state.floor, 300, 305);
+          }
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.fillText('Final Score: ' + score(state), 300, 355);
+          ctx.restore();
+        }
+      }
+
+      function handleCanvasClick(evt) {
+        if (state.done) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = (evt.clientX - rect.left) * scaleX;
+        const cy = (evt.clientY - rect.top) * scaleY;
+
+        if (state.mode === 'combat') {
+          // Check hand cards click
+          const legals = legalActions(state);
+          const hCount = state.hand.length;
+          const cardW = 95;
+          const cardH = 140;
+          const spacing = Math.min(cardW * 0.9, (550 - cardW) / Math.max(hCount - 1, 1));
+          const startX = (600 - ((hCount - 1) * spacing + cardW)) / 2;
+
+          for (let idx = hCount - 1; idx >= 0; idx--) {
+            const card = state.hand[idx];
+            const x = startX + idx * spacing;
+            const isPlayable = legals.includes('play:' + card.id);
+            const y = isPlayable ? 350 : 380;
+
+            if (cx >= x && cx <= x + cardW && cy >= y && cy <= y + cardH) {
+              const act = 'play:' + card.id;
+              if (legals.includes(act)) {
+                step(state, act);
+                updateHUD();
+                render();
+              }
+              break;
+            }
+          }
+        } else if (state.mode === 'reward') {
+          // Check reward cards click
+          const rCards = state.rewardCards || [];
+          const rW = 120;
+          const rH = 170;
+          for (let idx = 0; idx < rCards.length; idx++) {
+            const x = 70 + idx * 165;
+            const y = 200;
+            if (cx >= x && cx <= x + rW && cy >= y && cy <= y + rH) {
+              const act = 'chooseReward:' + rCards[idx];
+              if (legalActions(state).includes(act)) {
+                step(state, act);
+                updateHUD();
+                render();
+              }
+              return;
+            }
+          }
+          // Check skip button
+          if (cx >= 220 && cx <= 380 && cy >= 420 && cy <= 464) {
+            step(state, 'skipReward');
+            updateHUD();
+            render();
+          }
+        } else if (state.mode === 'campfire') {
+          // Rest button (80, 340, 200, 120)
+          if (cx >= 80 && cx <= 280 && cy >= 340 && cy <= 460) {
+            step(state, 'rest');
+            updateHUD();
+            render();
+          }
+          // Smith button (320, 340, 200, 120)
+          else if (cx >= 320 && cx <= 520 && cy >= 340 && cy <= 460) {
+            const acts = legalActions(state).filter(a => a.startsWith('smith:'));
+            if (acts.length > 0) {
+              step(state, acts[0]);
+              updateHUD();
+              render();
+            }
+          }
+        }
+      }
+
+      canvas.addEventListener('click', handleCanvasClick);
+      canvas.addEventListener('touchstart', function(e) {
+        if (e.touches && e.touches.length > 0) {
+          handleCanvasClick(e.touches[0]);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      const btnEndTurn = document.getElementById('btn-end-turn');
+      if (btnEndTurn && btnEndTurn.addEventListener) {
+        btnEndTurn.addEventListener('click', function() {
+          if (!state.done && state.mode === 'combat' && legalActions(state).includes('endTurn')) {
+            step(state, 'endTurn');
+            updateHUD();
+            render();
+          }
+        });
+      }
+
+      const btnRestart = document.getElementById('btn-restart');
+      if (btnRestart && btnRestart.addEventListener) {
+        btnRestart.addEventListener('click', function() {
+          currentSeed = Math.floor(Math.random() * 100000) + 1;
+          state = createState(currentSeed);
+          updateHUD();
+          render();
+        });
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (state.done) return;
+        if (e.key === 'e' || e.key === 'E') {
+          if (state.mode === 'combat' && legalActions(state).includes('endTurn')) {
+            step(state, 'endTurn');
+            updateHUD();
+            render();
+          }
+        }
+      });
+
+      updateHUD();
+      render();
+    })();
+  </script>
+</body>
+</html>
