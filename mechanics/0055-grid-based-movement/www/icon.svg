@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e24" />
+      <stop offset="100%" stop-color="#0a0a0c" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="stone" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#64748b" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)" />
+  <!-- Dungeon Grid Lines -->
+  <path d="M128 64 V448 M256 64 V448 M384 64 V448 M64 128 H448 M64 256 H448 M64 384 H448" stroke="#334155" stroke-width="8" stroke-linecap="round" opacity="0.6" />
+  <!-- Stone Boulder -->
+  <circle cx="192" cy="192" r="56" fill="url(#stone)" stroke="#94a3b8" stroke-width="6" />
+  <!-- Golden Key -->
+  <circle cx="330" cy="230" r="32" fill="none" stroke="url(#gold)" stroke-width="16" />
+  <path d="M330 262 V360 M330 310 H360 M330 340 H354" stroke="url(#gold)" stroke-width="16" stroke-linecap="round" />
+  <!-- Player Crest Indicator -->
+  <circle cx="192" cy="330" r="28" fill="#38bdf8" />
+  <polygon points="192,310 180,345 204,345" fill="#f8fafc" />
+</svg>
