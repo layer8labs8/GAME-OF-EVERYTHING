@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Apex Clinic - Healthcare Management</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #031525;
+      color: #f0fdfa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #082f49;
+      border-radius: 8px;
+      border: 1px solid #0284c7;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #0c4a6e;
+      border: 1px solid #0369a1;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #bae6fd;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-funds { color: #4ade80; }
+    .val-rep { color: #facc15; }
+    .val-hyg { color: #38bdf8; }
+    .val-cured { color: #f472b6; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #041a2f;
+      border: 2px solid #0284c7;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.75rem;
+      color: #7dd3fc;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .queue-container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 6px;
+      min-height: 44px;
+    }
+    .patient-pill {
+      background: #0f2d48;
+      border: 1px solid #0284c7;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 0.68rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .patient-pill.treated {
+      background: #064e3b;
+      border-color: #10b981;
+      opacity: 0.75;
+    }
+    .sev-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .sev-mild { background: #4ade80; }
+    .sev-moderate { background: #facc15; }
+    .sev-severe { background: #f87171; }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #0369a1;
+      color: #ffffff;
+      border: 1px solid #38bdf8;
+      border-radius: 6px;
+      padding: 8px 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #0284c7;
+      transform: translateY(-1px);
+    }
+    .btn-act:active {
+      transform: translateY(0);
+    }
+    .btn-treat {
+      background: #047857;
+      border-color: #34d399;
+      grid-column: span 2;
+      font-size: 0.82rem;
+    }
+    .btn-treat:hover { background: #059669; }
+    .btn-shift {
+      background: #b45309;
+      border-color: #f59e0b;
+      grid-column: span 2;
+    }
+    .btn-shift:hover { background: #d97706; }
+    .btn-clean {
+      background: #0891b2;
+      border-color: #22d3ee;
+    }
+    .btn-hire {
+      background: #4338ca;
+      border-color: #818cf8;
+    }
+    .btn-upg {
+      background: #7c3aed;
+      border-color: #a78bfa;
+    }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #041424;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #94a3b8;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(3, 21, 37, 0.92);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #0284c7;
+      border: none;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #4ade80; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏥 Apex Clinic</h1>
+    <div style="font-size: 0.72rem; color: #bae6fd;">Staff Level <span id="val-skl">1</span></div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Day & Shift</div>
+      <div class="hud-val" id="val-day">Day 1</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Operating Funds</div>
+      <div class="hud-val val-funds" id="val-funds">$800</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Reputation</div>
+      <div class="hud-val val-rep" id="val-rep">75%</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Clinic Hygiene</div>
+      <div class="hud-val val-hyg" id="val-hyg">90%</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="clinic-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">HOSPITAL EXCELLENCE</div>
+      <div class="modal-desc" id="modal-desc">Apex Clinic has attained world-class clinical status!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Begin New Hospital Shift</button>
+    </div>
+  </div>
+
+  <div class="section-title">Inpatient Ward & Admissions (<span id="val-beds">3/6 Beds</span>)</div>
+  <div class="queue-container" id="patient-queue"></div>
+
+  <div class="section-title">Operational Directives</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Hospital Audit Log</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('clinic-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#041a2f';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Floor Grid
+        ctx.strokeStyle = '#082f49';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 30) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 30) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+
+        // Room Partitions
+        // Triage (Left), Operating Theater (Center), Ward Beds (Right)
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, 15, 130, 200);
+        ctx.strokeRect(150, 15, 150, 200);
+        ctx.strokeRect(310, 15, 140, 200);
+
+        // Room Labels
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '10px monospace';
+        ctx.fillText('TRIAGE & INTAKE', 20, 32);
+        ctx.fillText('DIAGNOSTICS & SURGERY', 158, 32);
+        ctx.fillText('INPATIENT WARD', 320, 32);
+
+        // Draw Staff Avatars
+        // Doctors in Surgery
+        ctx.fillStyle = '#60a5fa';
+        for (let i = 0; i < state.staff.doctors; i++) {
+          const dx = 175 + (i % 3) * 40;
+          const dy = 70 + Math.floor(i / 3) * 50;
+          drawAvatar(ctx, dx, dy, '👨‍⚕️', '#38bdf8', 'Dr.');
+        }
+
+        // Nurses in Triage
+        ctx.fillStyle = '#34d399';
+        for (let i = 0; i < state.staff.nurses; i++) {
+          const nx = 35 + (i % 2) * 55;
+          const ny = 70 + Math.floor(i / 2) * 50;
+          drawAvatar(ctx, nx, ny, '👩‍⚕️', '#34d399', 'Rn.');
+        }
+
+        // Orderlies in Hallway/Ward
+        ctx.fillStyle = '#fbbf24';
+        for (let i = 0; i < state.staff.orderlies; i++) {
+          const ox = 330 + (i % 2) * 55;
+          const oy = 145;
+          drawAvatar(ctx, ox, oy, '🧹', '#fbbf24', 'Ord.');
+        }
+
+        // Draw Inpatient Beds
+        for (let b = 0; b < Math.min(6, state.capacity); b++) {
+          const bx = 325 + (b % 2) * 60;
+          const by = 50 + Math.floor(b / 2) * 32;
+          ctx.fillStyle = '#0f2d48';
+          ctx.fillRect(bx, by, 50, 24);
+          ctx.strokeStyle = '#0284c7';
+          ctx.strokeRect(bx, by, 50, 24);
+
+          // Draw patient in bed if occupied
+          if (b < state.patientQueue.length) {
+            const p = state.patientQueue[b];
+            ctx.fillStyle = p.treated ? '#34d399' : '#f87171';
+            ctx.font = '10px monospace';
+            ctx.fillText(p.treated ? '✓ CURED' : '● ADMIT', bx + 4, by + 16);
+          } else {
+            ctx.fillStyle = '#475569';
+            ctx.font = '9px monospace';
+            ctx.fillText('EMPTY', bx + 10, by + 16);
+          }
+        }
+
+        // Vital ECG line across bottom
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(10, 222);
+        ctx.lineTo(120, 222);
+        ctx.lineTo(135, 212);
+        ctx.lineTo(145, 228);
+        ctx.lineTo(155, 215);
+        ctx.lineTo(165, 222);
+        ctx.lineTo(450, 222);
+        ctx.stroke();
+
+        // Update HUD
+        const dayEl = document.getElementById('val-day');
+        if (dayEl) dayEl.textContent = 'Day ' + state.day;
+
+        const fundsEl = document.getElementById('val-funds');
+        if (fundsEl) fundsEl.textContent = '$' + state.funds;
+
+        const repEl = document.getElementById('val-rep');
+        if (repEl) repEl.textContent = state.reputation + '%';
+
+        const hygEl = document.getElementById('val-hyg');
+        if (hygEl) hygEl.textContent = state.hygiene + '%';
+
+        const sklEl = document.getElementById('val-skl');
+        if (sklEl) sklEl.textContent = state.staffSkill;
+
+        const bedsEl = document.getElementById('val-beds');
+        if (bedsEl) bedsEl.textContent = state.patientQueue.length + '/' + state.capacity + ' Beds';
+
+        // Render Patient Queue
+        const queueEl = document.getElementById('patient-queue');
+        if (queueEl) {
+          let qHtml = '';
+          for (let i = 0; i < state.patientQueue.length; i++) {
+            const p = state.patientQueue[i];
+            const cls = p.treated ? 'patient-pill treated' : 'patient-pill';
+            const sevCls = p.severity === 'severe' ? 'sev-severe' : (p.severity === 'moderate' ? 'sev-moderate' : 'sev-mild');
+            qHtml += '<div class="' + cls + '">'
+              + '<span class="sev-dot ' + sevCls + '"></span>'
+              + '<span>' + p.name + ' ($' + p.payout + ') ' + (p.treated ? '✓' : '⚠️') + '</span>'
+              + '</div>';
+          }
+          if (state.patientQueue.length === 0) {
+            qHtml = '<div style="font-size: 0.72rem; color: #64748b; padding: 4px;">No patients currently admitted. End shift to admit new queue.</div>';
+          }
+          queueEl.innerHTML = qHtml;
+        }
+
+        // Render Actions
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:process_queue') cls += ' btn-treat';
+            else if (act === 'action:sanitize_clinic') cls += ' btn-clean';
+            else if (act.startsWith('hire:')) cls += ' btn-hire';
+            else if (act.startsWith('action:expand_') || act.startsWith('action:train_')) cls += ' btn-upg';
+            else if (act === 'action:end_shift') cls += ' btn-shift';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Render Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'HOSPITAL EXCELLENCE AWARD!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Apex Clinic treated ' + state.patientsTreated + ' patients with pristine reputation! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'FACILITY SHUTDOWN';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Operations could not be sustained. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function drawAvatar(ctx, x, y, icon, col, title) {
+        ctx.fillStyle = '#082f49';
+        ctx.beginPath();
+        ctx.arc(x, y, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(icon, x, y);
+
+        ctx.font = '8px monospace';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(title, x, y + 18);
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic';
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:process_queue') return '🩺 TREAT PATIENTS (Process Queue)';
+        if (act === 'action:sanitize_clinic') return '🧼 Sterilize Clinic (+20% Hyg)';
+        if (act === 'hire:doctor') return '👨‍⚕️ Hire Doctor ($150)';
+        if (act === 'hire:nurse') return '👩‍⚕️ Hire Nurse ($100)';
+        if (act === 'hire:orderly') return '🧹 Hire Orderly ($80)';
+        if (act === 'action:expand_capacity') return '🛏️ Expand Ward Beds ($200)';
+        if (act === 'action:train_staff') return '🎓 Train Medical Staff ($150)';
+        if (act === 'action:end_shift') return '🌙 CONCLUDE SHIFT & PAYROLL';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

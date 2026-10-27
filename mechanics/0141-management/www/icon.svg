@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="clinic-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#082f49"/>
+      <stop offset="50%" stop-color="#0c4a6e"/>
+      <stop offset="100%" stop-color="#031525"/>
+    </linearGradient>
+    <linearGradient id="cross-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#clinic-bg)"/>
+  <!-- Glowing Hex Shield -->
+  <polygon points="256,60 410,130 410,340 256,450 102,340 102,130" fill="none" stroke="#38bdf8" stroke-width="12" opacity="0.4"/>
+  <!-- Medical Cross -->
+  <path d="M 216 130 H 296 V 216 H 382 V 296 H 296 V 382 H 216 V 296 H 130 V 216 H 216 Z" fill="url(#cross-grad)"/>
+  <!-- Vital ECG Pulse Line across center -->
+  <path d="M 100 256 L 190 256 L 220 180 L 256 330 L 290 210 L 320 270 L 340 256 L 412 256" fill="none" stroke="#f0fdfa" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
