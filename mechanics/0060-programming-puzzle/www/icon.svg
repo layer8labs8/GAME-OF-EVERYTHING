@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="neonCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)" />
+  <!-- Circuit Traces -->
+  <path d="M128 96 H200 V160 M384 96 H312 V160 M96 384 H180 V320 M416 384 H332 V320" stroke="#1e293b" stroke-width="8" stroke-linecap="round" />
+  <!-- Robot Head Box -->
+  <rect x="146" y="166" width="220" height="180" rx="36" fill="#1e293b" stroke="url(#neonCyan)" stroke-width="12" />
+  <!-- Antenna -->
+  <line x1="256" y1="166" x2="256" y2="110" stroke="#38bdf8" stroke-width="10" stroke-linecap="round" />
+  <circle cx="256" cy="100" r="18" fill="#38bdf8" />
+  <!-- Glowing Screen Face -->
+  <rect x="176" y="200" width="160" height="110" rx="18" fill="#020617" />
+  <!-- Robot Eyes -->
+  <rect x="200" y="230" width="36" height="36" rx="8" fill="#38bdf8" />
+  <rect x="276" y="230" width="36" height="36" rx="8" fill="#38bdf8" />
+  <!-- Code Symbol (Brackets in chest) -->
+  <text x="256" y="420" fill="#38bdf8" font-size="48" font-family="monospace" font-weight="bold" text-anchor="middle">&lt; / &gt;</text>
+</svg>

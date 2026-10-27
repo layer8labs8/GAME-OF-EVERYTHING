@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Robo Script - Programming Puzzle</title>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #020617;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 480px;
+      gap: 10px;
+    }
+    .hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .badge-cyan { color: #38bdf8; }
+    .badge-gold { color: #facc15; }
+    .badge-emerald { color: #34d399; }
+    canvas {
+      width: 100%;
+      max-width: 440px;
+      aspect-ratio: 1;
+      background: #090e1a;
+      border: 2px solid #1e293b;
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(56, 189, 248, 0.15);
+      display: block;
+    }
+    .program-tray {
+      width: 100%;
+      min-height: 44px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      display: flex;
+      gap: 6px;
+      padding: 6px;
+      align-items: center;
+      overflow-x: auto;
+    }
+    .chip {
+      background: #1e293b;
+      color: #38bdf8;
+      border: 1px solid #0284c7;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.1s;
+    }
+    .chip:hover {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+    .palette-row {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-op {
+      flex: 1;
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 10px 4px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transition: all 0.1s;
+    }
+    .btn-op:hover {
+      background: #334155;
+      border-color: #38bdf8;
+    }
+    .btn-run {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+    }
+    .btn-run:disabled {
+      background: #334155;
+      color: #64748b;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .message-bar {
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: center;
+      min-height: 18px;
+      font-weight: 600;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 11px;
+      color: #64748b;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="hud">
+      <div class="badge-cyan" id="stage-display">STAGE 1/3</div>
+      <div class="badge-gold" id="nodes-display">NODES: 0/2</div>
+      <div class="badge-emerald" id="runs-display">RUNS: 0/25</div>
+      <div id="score-display">PTS 0</div>
+    </div>
+
+    <!-- Circuit Matrix -->
+    <canvas id="canvas" width="440" height="440"></canvas>
+
+    <!-- Program Register Tray -->
+    <div class="program-tray" id="program-tray">
+      <span style="font-size: 11px; color: #64748b; margin-left: 6px;">Program empty. Add commands below.</span>
+    </div>
+
+    <!-- Instruction Palette -->
+    <div class="palette-row">
+      <button class="btn-op" data-op="forward"><span>⬆</span><span>MOVE</span></button>
+      <button class="btn-op" data-op="left"><span>↺</span><span>LEFT</span></button>
+      <button class="btn-op" data-op="right"><span>↻</span><span>RIGHT</span></button>
+      <button class="btn-op" data-op="jump"><span>⤴</span><span>JUMP</span></button>
+      <button class="btn-op" data-op="light"><span>💡</span><span>LIGHT</span></button>
+      <button class="btn-run" id="btn-run">RUN ▶</button>
+    </div>
+
+    <div class="message-bar" id="message-display">Assemble instructions, then click RUN to execute routine.</div>
+
+    <div class="footer">
+      <span>Tap chip to remove. Max 10 commands.</span>
+      <button style="background:transparent;border:1px solid #334155;color:#94a3b8;padding:4px 8px;border-radius:4px;cursor:pointer;" id="btn-restart">Restart</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('canvas');
+      const ctx = (canvas && typeof canvas.getContext === 'function') ? canvas.getContext('2d') : null;
+
+      let state = createState(Math.floor(Math.random() * 100000) + 1);
+
+      // Web Audio Synth
+      let audioCtx = null;
+      function getAudio() {
+        if (!audioCtx && typeof AudioContext !== 'undefined') {
+          audioCtx = new AudioContext();
+        }
+        return audioCtx;
+      }
+      function playTone(freq, type, duration, gainVal = 0.08) {
+        try {
+          const actx = getAudio();
+          if (!actx) return;
+          const osc = actx.createOscillator();
+          const gain = actx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, actx.currentTime);
+          gain.gain.setValueAtTime(gainVal, actx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(actx.destination);
+          osc.start();
+          osc.stop(actx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      function playSound(type) {
+        if (type === 'cmd') playTone(440, 'triangle', 0.05, 0.06);
+        else if (type === 'run') playTone(220, 'sawtooth', 0.15, 0.1);
+        else if (type === 'light') playTone(880, 'sine', 0.15, 0.12);
+        else if (type === 'win') {
+          playTone(523, 'sine', 0.15, 0.1);
+          setTimeout(() => playTone(659, 'sine', 0.15, 0.1), 100);
+          setTimeout(() => playTone(784, 'sine', 0.25, 0.15), 200);
+        }
+      }
+
+      function updateUI() {
+        const stageEl = document.getElementById('stage-display');
+        const nodesEl = document.getElementById('nodes-display');
+        const runsEl = document.getElementById('runs-display');
+        const scoreEl = document.getElementById('score-display');
+        const msgEl = document.getElementById('message-display');
+        const runBtn = document.getElementById('btn-run');
+        const trayEl = document.getElementById('program-tray');
+
+        if (stageEl) stageEl.textContent = 'STAGE ' + state.stage + '/' + state.maxStages;
+        const litCount = state.nodes.filter(n => n.lit).length;
+        if (nodesEl) nodesEl.textContent = 'NODES: ' + litCount + '/' + state.nodes.length;
+        if (runsEl) runsEl.textContent = 'RUNS: ' + state.runsUsed + '/' + state.maxRuns;
+        if (scoreEl) scoreEl.textContent = 'PTS ' + score(state);
+        if (msgEl) msgEl.textContent = state.message;
+
+        if (runBtn) {
+          runBtn.disabled = !legalActions(state).includes('run');
+        }
+
+        // Render Program Chips
+        if (trayEl) {
+          if (state.program.length === 0) {
+            trayEl.innerHTML = '<span style="font-size: 11px; color: #64748b; margin-left: 6px;">Program empty. Add commands below.</span>';
+          } else {
+            let html = '';
+            for (let i = 0; i < state.program.length; i++) {
+              const op = state.program[i];
+              html += `<button class="chip" data-idx="${i}">${i + 1}. ${op.toUpperCase()}</button>`;
+            }
+            trayEl.innerHTML = html;
+          }
+        }
+      }
+
+      function render() {
+        if (!ctx) return;
+        const W = canvas.width;
+        const H = canvas.height;
+        const tileSize = W / WIDTH;
+
+        ctx.fillStyle = '#090e1a';
+        ctx.fillRect(0, 0, W, H);
+
+        // Draw Circuit Matrix
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            const cell = state.grid[y][x];
+            const px = x * tileSize;
+            const py = y * tileSize;
+
+            if (cell === '#') {
+              // Firewall Insulator
+              ctx.fillStyle = '#1e293b';
+              ctx.fillRect(px, py, tileSize, tileSize);
+              ctx.fillStyle = '#0f172a';
+              ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
+            } else if (cell === 'W') {
+              // Bus Chasm
+              ctx.fillStyle = '#020617';
+              ctx.fillRect(px, py, tileSize, tileSize);
+              ctx.strokeStyle = '#450a0a';
+              ctx.lineWidth = 2;
+              ctx.strokeRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
+            } else {
+              // Conductive Trace Floor
+              ctx.fillStyle = ((x + y) % 2 === 0) ? '#0c1527' : '#0a1120';
+              ctx.fillRect(px, py, tileSize, tileSize);
+              ctx.strokeStyle = '#1e293b';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(px, py, tileSize, tileSize);
+            }
+          }
+        }
+
+        // Draw Light Nodes
+        for (const n of state.nodes) {
+          const nx = n.x * tileSize + tileSize / 2;
+          const ny = n.y * tileSize + tileSize / 2;
+
+          if (n.lit) {
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(nx, ny, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = '#451a03';
+            ctx.beginPath();
+            ctx.arc(nx, ny, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+        }
+
+        // Draw Rover Bot
+        const rx = state.rover.x * tileSize + tileSize / 2;
+        const ry = state.rover.y * tileSize + tileSize / 2;
+
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.arc(rx, ry, tileSize / 2 - 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Direction Indicator (Antenna)
+        const fDelta = FACING_DIRS[state.rover.facing];
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(rx, ry);
+        ctx.lineTo(rx + fDelta.dx * 16, ry + fDelta.dy * 16);
+        ctx.stroke();
+
+        // Game Over Overlay
+        if (state.done) {
+          ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+          ctx.fillRect(0, 0, W, H);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (state.won) {
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 28px sans-serif';
+            ctx.fillText('CIRCUITS ILLUMINATED!', W / 2, H / 2 - 25);
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('All Memory Cores Programmed', W / 2, H / 2 + 10);
+            ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 35);
+          } else {
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 28px sans-serif';
+            ctx.fillText('CPU OVERHEAT', W / 2, H / 2 - 25);
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('Exceeded run attempts', W / 2, H / 2 + 10);
+            ctx.fillText('Press Restart to try again', W / 2, H / 2 + 35);
+          }
+        }
+      }
+
+      function handleAction(act) {
+        if (state.done) return;
+        const leg = legalActions(state);
+        if (!leg.includes(act)) return;
+
+        const prevStage = state.stage;
+        const prevLit = state.nodes.filter(n => n.lit).length;
+
+        step(state, act);
+
+        if (state.stage > prevStage || state.won) playSound('win');
+        else if (act === 'run') {
+          const nowLit = state.nodes.filter(n => n.lit).length;
+          if (nowLit > prevLit) playSound('light');
+          else playSound('run');
+        } else if (act.startsWith('add:')) playSound('cmd');
+
+        updateUI();
+        render();
+      }
+
+      // Event Listeners
+      const palette = (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function')
+        ? document.querySelectorAll('.btn-op')
+        : [];
+      for (let i = 0; i < palette.length; i++) {
+        const btn = palette[i];
+        const op = (btn && typeof btn.getAttribute === 'function') ? btn.getAttribute('data-op') : null;
+        if (op && typeof btn.addEventListener === 'function') {
+          btn.addEventListener('click', () => handleAction(`add:${op}`));
+        }
+      }
+
+      const runBtn = document.getElementById('btn-run');
+      if (runBtn && typeof runBtn.addEventListener === 'function') {
+        runBtn.addEventListener('click', () => handleAction('run'));
+      }
+
+      const trayEl = document.getElementById('program-tray');
+      if (trayEl && typeof trayEl.addEventListener === 'function') {
+        trayEl.addEventListener('click', (e) => {
+          let btn = e.target;
+          while (btn && btn !== trayEl && !btn.getAttribute('data-idx')) {
+            btn = btn.parentElement;
+          }
+          if (!btn || btn === trayEl) return;
+          const idx = btn.getAttribute('data-idx');
+          if (idx !== null) {
+            handleAction(`remove:${idx}`);
+          }
+        });
+      }
+
+      const restartBtn = document.getElementById('btn-restart');
+      if (restartBtn && typeof restartBtn.addEventListener === 'function') {
+        restartBtn.addEventListener('click', () => {
+          state = createState(Math.floor(Math.random() * 100000) + 1);
+          updateUI();
+          render();
+        });
+      }
+
+      if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'r' || e.key === 'R') {
+            if (legalActions(state).includes('run')) handleAction('run');
+          } else if (e.key === 'c' || e.key === 'C') {
+            if (legalActions(state).includes('clear')) handleAction('clear');
+          }
+        });
+      }
+
+      // Initial render
+      updateUI();
+      render();
+    })();
+  </script>
+</body>
+</html>
