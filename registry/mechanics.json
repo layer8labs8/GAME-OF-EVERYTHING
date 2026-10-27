@@ -950,8 +950,9 @@
    "slug": "real-time-strategy",
    "name": "Real-Time Strategy",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {
