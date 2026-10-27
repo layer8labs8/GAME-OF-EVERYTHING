@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="theater-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#022c22"/>
+      <stop offset="50%" stop-color="#064e3b"/>
+      <stop offset="100%" stop-color="#021c15"/>
+    </linearGradient>
+    <linearGradient id="lamp-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#theater-bg)"/>
+  <!-- Operating Theater Surgical Lamp -->
+  <ellipse cx="256" cy="110" rx="130" ry="40" fill="url(#lamp-glow)" stroke="#6ee7b7" stroke-width="6"/>
+  <circle cx="200" cy="110" r="14" fill="#ffffff"/>
+  <circle cx="256" cy="110" r="16" fill="#ffffff"/>
+  <circle cx="312" cy="110" r="14" fill="#ffffff"/>
+  <path d="M 256 70 V 30" stroke="#6ee7b7" stroke-width="8" stroke-linecap="round"/>
+  <!-- Vital ECG Pulse Line across center -->
+  <path d="M 70 270 L 170 270 L 200 180 L 235 340 L 270 210 L 295 285 L 320 270 L 442 270" fill="none" stroke="#34d399" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Surgical Scalpel -->
+  <path d="M 170 410 L 320 330 L 340 340 L 190 420 Z" fill="#94a3b8" stroke="#cbd5e1" stroke-width="3"/>
+  <polygon points="320,330 360,310 350,335" fill="#f8fafc"/>
+  <!-- Sterile Red Cross Emblem -->
+  <path d="M 240 370 H 272 V 400 H 302 V 432 H 272 V 462 H 240 V 432 H 210 V 400 H 240 Z" fill="#ef4444"/>
+</svg>

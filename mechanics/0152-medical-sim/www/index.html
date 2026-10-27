@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Trauma Ward - Medical Sim</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#059669">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #021a14;
+      color: #ecfdf5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #064e3b;
+      border-radius: 8px;
+      border: 1px solid #10b981;
+    }
+    h1 {
+      font-size: 0.95rem;
+      color: #6ee7b7;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hud {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hud-box {
+      background: #064e3b;
+      border: 1px solid #059669;
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.72rem;
+    }
+    .hud-label {
+      color: #a7f3d0;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .hud-val {
+      font-weight: bold;
+      color: #ffffff;
+      font-size: 0.8rem;
+    }
+    .val-funds { color: #4ade80; }
+    .val-rep { color: #facc15; }
+    .val-saved { color: #38bdf8; }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 460px;
+      aspect-ratio: 16 / 8;
+      background: #01140e;
+      border: 2px solid #10b981;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+      touch-action: none;
+    }
+
+    .section-title {
+      width: 100%;
+      max-width: 480px;
+      font-size: 0.72rem;
+      color: #a7f3d0;
+      margin: 6px 0 2px 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .patient-banner {
+      width: 100%;
+      max-width: 480px;
+      background: #064e3b;
+      border: 1px solid #10b981;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+    .stability-bar-bg {
+      width: 100px;
+      height: 6px;
+      background: #022c22;
+      border-radius: 3px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+    .stability-bar-fill {
+      height: 100%;
+      background: #34d399;
+      border-radius: 3px;
+      transition: width 0.2s ease;
+    }
+
+    .actions-panel {
+      width: 100%;
+      max-width: 480px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .btn-act {
+      background: #064e3b;
+      color: #ecfdf5;
+      border: 1px solid #10b981;
+      border-radius: 6px;
+      padding: 8px 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-act:hover {
+      background: #047857;
+      transform: translateY(-1px);
+    }
+    .btn-surg {
+      background: #0284c7;
+      border-color: #38bdf8;
+      font-size: 0.8rem;
+    }
+    .btn-surg:hover { background: #0369a1; }
+    .btn-shock {
+      background: #be123c;
+      border-color: #f43f5e;
+      color: #ffffff;
+      font-weight: bold;
+    }
+    .btn-shock:hover { background: #e11d48; }
+    .btn-admit {
+      background: #059669;
+      border-color: #34d399;
+      grid-column: span 2;
+      font-size: 0.85rem;
+      padding: 10px;
+    }
+    .btn-admit:hover { background: #10b981; }
+
+    .log-box {
+      width: 100%;
+      max-width: 480px;
+      background: #01140e;
+      border: 1px solid #064e3b;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      height: 75px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+      font-family: monospace;
+    }
+    .log-entry {
+      color: #6ee7b7;
+      line-height: 1.25;
+    }
+    .log-entry:first-child {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(1, 20, 14, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: #d1fae5;
+      margin-bottom: 16px;
+      max-width: 320px;
+    }
+    .btn-restart {
+      background: #10b981;
+      border: none;
+      color: #022c22;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .win-title { color: #4ade80; }
+    .lose-title { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🩺 Trauma Ward</h1>
+    <div style="font-size: 0.72rem; color: #a7f3d0;" id="header-phase">Operating Room 1</div>
+  </header>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">Hospital Funds</div>
+      <div class="hud-val val-funds" id="val-funds">$400</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Reputation</div>
+      <div class="hud-val val-rep" id="val-rep">75%</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Patients Saved</div>
+      <div class="hud-val val-saved" id="val-saved">0 / 10</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Fatalities</div>
+      <div class="hud-val" id="val-fat" style="color: #f87171;">0 / 3</div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="surg-canvas" width="460" height="230"></canvas>
+    
+    <div class="modal-overlay" id="end-modal">
+      <div class="modal-title" id="modal-title">FELLOWSHIP OF MEDICINE</div>
+      <div class="modal-desc" id="modal-desc">Successfully discharged 10 critical trauma patients!</div>
+      <button class="btn-restart" onclick="window.restartGame()">Begin New Emergency Shift</button>
+    </div>
+  </div>
+
+  <div class="section-title">Active Trauma Patient Case</div>
+  <div class="patient-banner" id="patient-banner">
+    <div>
+      <div style="font-weight: bold; color: #ffffff;" id="pat-name">Arthur Pendelton</div>
+      <div style="font-size: 0.68rem; color: #6ee7b7;" id="pat-cond">Acute Appendicitis</div>
+      <div class="stability-bar-bg"><div class="stability-bar-fill" id="bar-stab" style="width: 75%;"></div></div>
+    </div>
+    <div style="text-align: right;">
+      <div style="font-weight: bold; color: #facc15;" id="pat-hr">95 bpm ❤️</div>
+      <div style="font-size: 0.68rem; color: #f87171;" id="pat-blood">Blood Loss: 25%</div>
+      <div style="font-size: 0.72rem; color: #38bdf8; font-weight: bold;" id="pat-payout">Fee: $180</div>
+    </div>
+  </div>
+
+  <div class="section-title">Surgical Interventions</div>
+  <div class="actions-panel" id="actions-panel"></div>
+
+  <div class="section-title">Operating Theater Chronicle</div>
+  <div class="log-box" id="log-box"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function() {
+      let state = null;
+      const canvas = document.getElementById('surg-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function init() {
+        state = createState(Date.now() % 100000);
+        render();
+      }
+
+      window.restartGame = function() {
+        init();
+      };
+
+      window.executeAction = function(action) {
+        if (!state || state.done) return;
+        try {
+          step(state, action);
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      function render() {
+        if (!state) return;
+
+        // Render Canvas
+        ctx.fillStyle = '#01140e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Overhead Surgical Spotlight
+        ctx.fillStyle = 'rgba(52, 211, 153, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(230, 0);
+        ctx.lineTo(80, 230);
+        ctx.lineTo(380, 230);
+        ctx.closePath();
+        ctx.fill();
+
+        // Operating Table with Draped Patient
+        ctx.fillStyle = '#064e3b';
+        ctx.beginPath();
+        ctx.roundRect(110, 100, 240, 95, 12);
+        ctx.fill();
+        ctx.strokeStyle = '#059669';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Patient Head & Sterile Drape
+        ctx.fillStyle = '#fde68a';
+        ctx.beginPath();
+        ctx.arc(140, 145, 18, 0, Math.PI * 2);
+        ctx.fill();
+        // Surgical mask on patient
+        ctx.fillStyle = '#a7f3d0';
+        ctx.fillRect(135, 145, 15, 12);
+
+        // Surgical Cavity / Window
+        const p = state.currentPatient;
+        if (p) {
+          ctx.fillStyle = '#881337';
+          ctx.beginPath();
+          ctx.roundRect(210, 125, 80, 45, 8);
+          ctx.fill();
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Phase indicator icon inside surgical field
+          ctx.font = '20px sans-serif';
+          ctx.textAlign = 'center';
+          let fieldIcon = '🔍';
+          if (p.phase === 0) fieldIcon = '💉';
+          else if (p.phase === 1) fieldIcon = '🔪';
+          else if (p.phase === 2) fieldIcon = '🩸';
+          else if (p.phase === 3) fieldIcon = '🩹';
+          ctx.fillText(fieldIcon, 250, 155);
+
+          // Phase text
+          const phases = ['Pre-Op Prep', 'Incision Opened', 'Field Hemostasis', 'Internal Repair'];
+          ctx.font = '9px monospace';
+          ctx.fillStyle = '#fde68a';
+          ctx.fillText(phases[p.phase] || 'Surgical Field', 250, 185);
+        } else {
+          ctx.font = '12px monospace';
+          ctx.fillStyle = '#34d399';
+          ctx.textAlign = 'center';
+          ctx.fillText('TABLE EMPTY - ADMIT PATIENT', 230, 150);
+        }
+        ctx.textAlign = 'start';
+
+        // Vital Monitor Screen (Top Left)
+        ctx.fillStyle = '#022c22';
+        ctx.fillRect(15, 12, 110, 60);
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(15, 12, 110, 60);
+
+        ctx.font = '8px monospace';
+        ctx.fillStyle = '#a7f3d0';
+        ctx.fillText('ECG MONITOR', 22, 24);
+
+        // Live ECG trace line
+        ctx.strokeStyle = p ? (p.stability < 30 ? '#ef4444' : '#34d399') : '#6ee7b7';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(20, 50);
+        ctx.lineTo(45, 50);
+        ctx.lineTo(52, 35);
+        ctx.lineTo(60, 60);
+        ctx.lineTo(68, 42);
+        ctx.lineTo(75, 50);
+        ctx.lineTo(115, 50);
+        ctx.stroke();
+
+        // Vital Monitor HR / BP
+        if (p) {
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = p.stability < 30 ? '#f87171' : '#34d399';
+          ctx.fillText(p.heartRate + ' BPM', 22, 65);
+        }
+
+        // Update HUD
+        const headerPhase = document.getElementById('header-phase');
+        if (headerPhase) headerPhase.textContent = p ? ('Phase ' + p.phase + ' Surgical') : 'Theater Clear';
+
+        const fundsEl = document.getElementById('val-funds');
+        if (fundsEl) {
+          fundsEl.textContent = '$' + state.funds;
+          fundsEl.style.color = state.funds >= 0 ? '#4ade80' : '#f87171';
+        }
+
+        const repEl = document.getElementById('val-rep');
+        if (repEl) repEl.textContent = state.reputation + '%';
+
+        const savedEl = document.getElementById('val-saved');
+        if (savedEl) savedEl.textContent = state.patientsSaved + ' / 10';
+
+        const fatEl = document.getElementById('val-fat');
+        if (fatEl) fatEl.textContent = state.fatalities + ' / 3';
+
+        // Patient Banner
+        const nameEl = document.getElementById('pat-name');
+        const condEl = document.getElementById('pat-cond');
+        const stabBar = document.getElementById('bar-stab');
+        const hrEl = document.getElementById('pat-hr');
+        const bloodEl = document.getElementById('pat-blood');
+        const payEl = document.getElementById('pat-payout');
+
+        if (p) {
+          if (nameEl) nameEl.textContent = p.name;
+          if (condEl) condEl.textContent = p.condition;
+          if (stabBar) {
+            stabBar.style.width = p.stability + '%';
+            stabBar.style.background = p.stability < 30 ? '#ef4444' : '#34d399';
+          }
+          if (hrEl) {
+            hrEl.textContent = p.heartRate + ' bpm ❤️';
+            hrEl.style.color = p.stability < 30 ? '#ef4444' : '#facc15';
+          }
+          if (bloodEl) bloodEl.textContent = 'Blood Loss: ' + p.bloodLoss + '%';
+          if (payEl) payEl.textContent = 'Fee: +$' + p.payout;
+        } else {
+          if (nameEl) nameEl.textContent = 'Operating Theater Clear';
+          if (condEl) condEl.textContent = 'Admit next emergency case';
+          if (stabBar) stabBar.style.width = '0%';
+          if (hrEl) hrEl.textContent = '-- bpm';
+          if (bloodEl) bloodEl.textContent = 'Blood Loss: 0%';
+          if (payEl) payEl.textContent = '';
+        }
+
+        // Action Buttons
+        const actionsEl = document.getElementById('actions-panel');
+        if (actionsEl) {
+          const acts = legalActions(state);
+          let html = '';
+          for (let i = 0; i < acts.length; i++) {
+            const act = acts[i];
+            let cls = 'btn-act';
+            if (act === 'action:admit_next_patient') cls += ' btn-admit';
+            else if (act === 'action:defibrillate') cls += ' btn-shock';
+            else if (act !== 'action:administer_sedation') cls += ' btn-surg';
+
+            html += '<button class="' + cls + '" onclick="window.executeAction(\'' + act + '\')">'
+              + formatActionTitle(act)
+              + '</button>';
+          }
+          actionsEl.innerHTML = html;
+        }
+
+        // Activity Logs
+        const logEl = document.getElementById('log-box');
+        if (logEl) {
+          let logHtml = '';
+          for (let i = state.log.length - 1; i >= 0; i--) {
+            logHtml += '<div class="log-entry">' + escapeHtml(state.log[i]) + '</div>';
+          }
+          logEl.innerHTML = logHtml;
+        }
+
+        // End Game Modal
+        const modal = document.getElementById('end-modal');
+        if (modal) {
+          if (state.done) {
+            modal.style.display = 'flex';
+            const mTitle = document.getElementById('modal-title');
+            const mDesc = document.getElementById('modal-desc');
+
+            if (state.victory) {
+              if (mTitle) {
+                mTitle.textContent = 'SURGICAL EXCELLENCE!';
+                mTitle.className = 'modal-title win-title';
+              }
+              if (mDesc) mDesc.textContent = 'Saved ' + state.patientsSaved + ' critical patients with $' + state.funds + ' hospital funds! Final Score: ' + state.score;
+            } else {
+              if (mTitle) {
+                mTitle.textContent = 'MALPRACTICE INQUIRY';
+                mTitle.className = 'modal-title lose-title';
+              }
+              if (mDesc) mDesc.textContent = 'Operating complications exceeded medical safety thresholds. Final Score: ' + state.score;
+            }
+          } else {
+            modal.style.display = 'none';
+          }
+        }
+      }
+
+      function formatActionTitle(act) {
+        if (act === 'action:admit_next_patient') return '🚑 ADMIT EMERGENCY TRAUMA CASE';
+        if (act === 'action:defibrillate') return '⚡ DEFIBRILLATE (200J Shock)';
+        if (act === 'action:administer_sedation') return '💉 Administer Sedation (+Stab)';
+        if (act === 'action:scalpel_incision') return '🔪 Scalpel Incision (Open)';
+        if (act === 'action:cauterize_and_suction') return '🩸 Cauterize & Suction';
+        if (act === 'action:execute_repair') return '🪡 Repair Internal Pathology';
+        if (act === 'action:suture_and_close') return '🩹 Suture & Close (Discharge)';
+        return act;
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      window.addEventListener('keydown', function(e) {
+        if (!state || state.done) return;
+        const acts = legalActions(state);
+        if (e.key >= '1' && e.key <= '9') {
+          const idx = parseInt(e.key, 10) - 1;
+          if (idx < acts.length) {
+            window.executeAction(acts[idx]);
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
