@@ -1,0 +1,12 @@
+{
+  "name": "Clash of Titans",
+  "short_name": "ClashTitans",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#120808",
+  "theme_color": "#120808",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ashen Knight - Souls-like</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0b10">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #09070c;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Cinzel", "Segoe UI", serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #f59e0b;
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    canvas {
+      background: #110e17;
+      border: 2px solid #2d2438;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 400 / 320;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) repeat(4, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 10px;
+    }
+    .btn {
+      background: #1e1726;
+      color: #f8fafc;
+      border: 1px solid #3b2d4a;
+      border-radius: 6px;
+      padding: 9px 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.08s ease;
+    }
+    .btn:active {
+      transform: translateY(2px);
+      background: #3b2d4a;
+      border-color: #f59e0b;
+    }
+    .btn-slash {
+      background: #451a03;
+      border-color: #d97706;
+      color: #fef3c7;
+    }
+    .btn-visceral {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      color: #fee2e2;
+    }
+    .btn-roll {
+      background: #022c22;
+      border-color: #059669;
+      color: #d1fae5;
+    }
+    .btn-heal {
+      background: #78350f;
+      border-color: #f59e0b;
+      color: #fef3c7;
+    }
+    .key-hint {
+      font-size: 0.6rem;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Ashen Knight</h1>
+      <div class="hud">
+        <div>SCORE: <span id="hud-score">0</span></div>
+      </div>
+    </header>
+    <canvas id="canvas" width="400" height="320"></canvas>
+    <div class="controls">
+      <button class="btn btn-slash" id="btn-light">⚔ Slash<span class="key-hint">J</span></button>
+      <button class="btn btn-slash" id="btn-heavy">🗡 Thrust<span class="key-hint">K</span></button>
+      <button class="btn btn-visceral" id="btn-visceral">🩸 Execute<span class="key-hint">Space</span></button>
+      <button class="btn btn-roll" id="btn-roll">💨 Roll<span class="key-hint">L</span></button>
+      <button class="btn" id="btn-parry">🛡 Parry<span class="key-hint">I</span></button>
+      <button class="btn" id="btn-block">🏰 Block<span class="key-hint">O</span></button>
+      <button class="btn btn-heal" id="btn-heal">⚱ Estus<span class="key-hint">H (<span id="btn-flask-count">3</span>)</span></button>
+      <button class="btn" id="btn-rest">⏳ Rest<span class="key-hint">R</span></button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    const logic = window.AshenKnight;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const hudScore = document.getElementById('hud-score');
+    const btnFlaskCount = document.getElementById('btn-flask-count');
+
+    let state = logic.createState(Math.floor(Math.random() * 100000));
+    let lastAction = 'rest';
+
+    function triggerAction(action) {
+      if (logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+        return;
+      }
+      const legal = logic.legalActions(state);
+      if (legal.includes(action)) {
+        lastAction = action;
+        logic.step(state, action);
+        render();
+      }
+    }
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      const code = e.code;
+      if (code === 'KeyJ') triggerAction('light_slash');
+      else if (code === 'KeyK') triggerAction('heavy_thrust');
+      else if (code === 'Space') {
+        if (state.boss.staggered > 0) triggerAction('visceral_strike');
+        else triggerAction('heavy_thrust');
+      }
+      else if (code === 'KeyL') triggerAction('dodge_roll');
+      else if (code === 'KeyI') triggerAction('parry');
+      else if (code === 'KeyO') triggerAction('block');
+      else if (code === 'KeyH') triggerAction('heal');
+      else if (code === 'KeyR') {
+        if (logic.isOver(state)) {
+          state = logic.createState(Math.floor(Math.random() * 100000));
+          render();
+        } else {
+          triggerAction('rest');
+        }
+      }
+    });
+
+    // Touch bindings
+    document.getElementById('btn-light').addEventListener('pointerdown', () => triggerAction('light_slash'));
+    document.getElementById('btn-heavy').addEventListener('pointerdown', () => triggerAction('heavy_thrust'));
+    document.getElementById('btn-visceral').addEventListener('pointerdown', () => triggerAction('visceral_strike'));
+    document.getElementById('btn-roll').addEventListener('pointerdown', () => triggerAction('dodge_roll'));
+    document.getElementById('btn-parry').addEventListener('pointerdown', () => triggerAction('parry'));
+    document.getElementById('btn-block').addEventListener('pointerdown', () => triggerAction('block'));
+    document.getElementById('btn-heal').addEventListener('pointerdown', () => triggerAction('heal'));
+    document.getElementById('btn-rest').addEventListener('pointerdown', () => triggerAction('rest'));
+
+    function render() {
+      hudScore.textContent = logic.score(state);
+      btnFlaskCount.textContent = state.player.flasks;
+
+      // Cathedral Sanctuary Background
+      ctx.fillStyle = '#0a080e';
+      ctx.fillRect(0, 0, 400, 320);
+
+      // Gothic Arches
+      ctx.strokeStyle = '#1e1828';
+      ctx.lineWidth = 2;
+      for (let x = 40; x <= 360; x += 80) {
+        ctx.beginPath();
+        ctx.moveTo(x, 260);
+        ctx.lineTo(x, 100);
+        ctx.arc(x + 40, 100, 40, Math.PI, 0);
+        ctx.lineTo(x + 80, 260);
+        ctx.stroke();
+      }
+
+      // Stone Floor
+      const FLOOR = 260;
+      ctx.fillStyle = '#17121f';
+      ctx.fillRect(0, FLOOR, 400, 60);
+      ctx.strokeStyle = '#382b47';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, FLOOR);
+      ctx.lineTo(400, FLOOR);
+      ctx.stroke();
+
+      // Ember Lord Boss
+      const b = state.boss;
+      ctx.save();
+      const bx = 280;
+      const by = FLOOR;
+      ctx.translate(bx, by);
+
+      // Boss Telegraph Warning
+      if (b.windup > 0) {
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 20px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠ WINDUP', 0, -110);
+      }
+
+      // Stagger Daze
+      if (b.staggered > 0) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 16px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚡ STAGGERED', 0, -90);
+      }
+
+      // Phase 2 Flame Aura
+      if (b.phase === 2) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+        ctx.beginPath();
+        ctx.arc(0, -45, 55, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Boss Body (Heavy Armored Titan)
+      ctx.fillStyle = b.phase === 2 ? '#7f1d1d' : '#271e33';
+      ctx.fillRect(-22, -80, 44, 80);
+
+      // Helm with Horns/Crown
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(-16, -80);
+      ctx.lineTo(-24, -98);
+      ctx.lineTo(-12, -85);
+      ctx.lineTo(0, -100);
+      ctx.lineTo(12, -85);
+      ctx.lineTo(24, -98);
+      ctx.lineTo(16, -80);
+      ctx.closePath();
+      ctx.fill();
+
+      // Giant Greatsword
+      ctx.strokeStyle = b.phase === 2 ? '#f97316' : '#94a3b8';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(-15, -40);
+      ctx.lineTo(-65, -70);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Ashen Knight Player
+      const p = state.player;
+      ctx.save();
+      const px = 100;
+      const py = FLOOR;
+      ctx.translate(px, py);
+
+      // Roll / Defense animation
+      if (lastAction === 'dodge_roll') {
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.arc(0, -15, 15, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Knight Armor
+        ctx.fillStyle = '#64748b';
+        ctx.fillRect(-10, -40, 20, 40);
+        // Helm
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(0, -48, 9, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Shield
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(8, -35, 6, 25);
+
+        // Sword
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-6, -20);
+        ctx.lineTo(-26, -35);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      // Top HUD: Player Health and Stamina
+      const barW = 120;
+      // HP
+      ctx.fillStyle = '#450a0a';
+      ctx.fillRect(16, 14, barW, 10);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(16, 14, barW * (p.hp / p.maxHp), 10);
+      ctx.strokeStyle = '#7f1d1d';
+      ctx.strokeRect(16, 14, barW, 10);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 8px sans-serif';
+      ctx.fillText(`HP ${p.hp}`, 20, 22);
+
+      // Stamina
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(16, 28, barW, 8);
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(16, 28, barW * (p.stamina / p.maxStamina), 8);
+      ctx.strokeStyle = '#047857';
+      ctx.strokeRect(16, 28, barW, 8);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`SP ${p.stamina}`, 20, 35);
+
+      // Bottom Boss Bar
+      const bossBarW = 280;
+      const bbx = 60;
+      const bby = 295;
+
+      // Boss HP
+      ctx.fillStyle = '#2b0c0c';
+      ctx.fillRect(bbx, bby, bossBarW, 10);
+      ctx.fillStyle = b.phase === 2 ? '#f97316' : '#dc2626';
+      ctx.fillRect(bbx, bby, bossBarW * (b.hp / b.maxHp), 10);
+      ctx.strokeStyle = '#571c1c';
+      ctx.strokeRect(bbx, bby, bossBarW, 10);
+
+      // Boss Title
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 10px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${b.name.toUpperCase()} (PHASE ${b.phase})`, 200, bby - 4);
+
+      // Overlays
+      if (state.won) {
+        ctx.fillStyle = 'rgba(10, 8, 14, 0.9)';
+        ctx.fillRect(0, 0, 400, 320);
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 22px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('HEIR OF FIRE DEFEATED', 200, 140);
+        ctx.fillStyle = '#f3f4f6';
+        ctx.font = '14px serif';
+        ctx.fillText(`Score: ${logic.score(state)}`, 200, 170);
+        ctx.fillText('Tap or press R to duel again', 200, 200);
+      } else if (state.lost) {
+        ctx.fillStyle = 'rgba(10, 8, 14, 0.9)';
+        ctx.fillRect(0, 0, 400, 320);
+        ctx.fillStyle = '#991b1b';
+        ctx.font = 'bold 28px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('YOU DIED', 200, 140);
+        ctx.fillStyle = '#f3f4f6';
+        ctx.font = '14px serif';
+        ctx.fillText('Ash returns to the soil', 200, 170);
+        ctx.fillText('Tap or press R to rise again', 200, 200);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

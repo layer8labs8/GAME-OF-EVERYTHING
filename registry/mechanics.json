@@ -82,9 +82,10 @@
       "slug": "parkour",
       "name": "Parkour",
       "family": "Action",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0009",
@@ -113,9 +114,10 @@
       "slug": "souls-like",
       "name": "Souls-like",
       "family": "Action",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0012",
@@ -141,9 +143,10 @@
       "slug": "2d-fighting",
       "name": "2D Fighting",
       "family": "Action",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0015",
@@ -246,9 +249,10 @@
       "slug": "twin-stick-shooter",
       "name": "Twin Stick Shooter",
       "family": "Shooter",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "levels": "endless"
     },
     {
       "id": "0025",

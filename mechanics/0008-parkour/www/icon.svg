@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="100" fill="#090d16" />
+  <circle cx="256" cy="256" r="210" fill="#131b2e" stroke="#10b981" stroke-width="8"/>
+  <!-- Skyline Rooftop Silhouette -->
+  <polygon points="60,400 160,400 160,320 280,320 280,360 452,360 452,440 60,440" fill="#1e293b"/>
+  <!-- Free-running parkour silhouette -->
+  <circle cx="260" cy="200" r="18" fill="#10b981"/>
+  <path d="M260,220 L270,270 L290,290 L320,290" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="round"/>
+  <path d="M270,240 L230,260 L200,240" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="round"/>
+  <path d="M265,270 L240,320 L220,330" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="round"/>
+</svg>

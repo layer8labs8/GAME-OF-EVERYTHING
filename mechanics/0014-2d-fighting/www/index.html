@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clash of Titans - 2D Fighting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#120808">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #0f0707;
+      color: #fef2f2;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 420px;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #f59e0b;
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    canvas {
+      background: #180d0d;
+      border: 2px solid #3b1d1d;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 360 / 320;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) repeat(2, 1fr);
+      gap: 6px;
+      width: 100%;
+      max-width: 360px;
+      margin-top: 10px;
+    }
+    .btn {
+      background: #271414;
+      color: #f8fafc;
+      border: 1px solid #4a2626;
+      border-radius: 6px;
+      padding: 9px 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.08s ease;
+    }
+    .btn:active {
+      transform: translateY(2px);
+      background: #4a2626;
+      border-color: #f59e0b;
+    }
+    .btn-atk {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      color: #fee2e2;
+    }
+    .btn-sp {
+      background: #78350f;
+      border-color: #f59e0b;
+      color: #fef3c7;
+    }
+    .key-hint {
+      font-size: 0.6rem;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Clash of Titans</h1>
+      <div class="hud">
+        <div>ROUND: <span id="hud-round">1</span></div>
+        <div>SCORE: <span id="hud-score">0</span></div>
+      </div>
+    </header>
+    <canvas id="canvas" width="360" height="320"></canvas>
+    <div class="controls">
+      <button class="btn" id="btn-back">◀ Step<span class="key-hint">A / ◀</span></button>
+      <button class="btn" id="btn-fwd">Step ▶<span class="key-hint">D / ▶</span></button>
+      <button class="btn" id="btn-jump">▲ Jump<span class="key-hint">W / ▲</span></button>
+      <button class="btn" id="btn-block">🛡 Block<span class="key-hint">S / ▼</span></button>
+      <button class="btn btn-atk" id="btn-punch">🥊 Punch<span class="key-hint">J</span></button>
+      <button class="btn btn-atk" id="btn-kick">🥋 Kick<span class="key-hint">K</span></button>
+      <button class="btn btn-sp" id="btn-hado">🔥 Hadou<span class="key-hint">U</span></button>
+      <button class="btn btn-sp" id="btn-shoryu">⚡ Uppercut<span class="key-hint">I</span></button>
+      <button class="btn btn-sp" style="grid-column: span 2; background: #831843; border-color: #ec4899;" id="btn-super">
+        💥 SUPER ART<span class="key-hint">Space</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    const logic = window.ClashOfTitans;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const hudRound = document.getElementById('hud-round');
+    const hudScore = document.getElementById('hud-score');
+
+    let state = logic.createState(Math.floor(Math.random() * 100000));
+
+    function triggerAction(action) {
+      if (logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+        return;
+      }
+      const legal = logic.legalActions(state);
+      if (legal.includes(action)) {
+        logic.step(state, action);
+        render();
+      }
+    }
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      const code = e.code;
+      if (code === 'KeyD' || code === 'ArrowRight') triggerAction('step_forward');
+      else if (code === 'KeyA' || code === 'ArrowLeft') triggerAction('step_back');
+      else if (code === 'KeyW' || code === 'ArrowUp') triggerAction('jump');
+      else if (code === 'KeyS' || code === 'ArrowDown') triggerAction('block');
+      else if (code === 'KeyJ') triggerAction('light_punch');
+      else if (code === 'KeyK') triggerAction('heavy_kick');
+      else if (code === 'KeyU') triggerAction('hadouken');
+      else if (code === 'KeyI') triggerAction('dragon_uppercut');
+      else if (code === 'Space') triggerAction('super');
+      else if (code === 'KeyR' && logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+      }
+    });
+
+    // Touch bindings
+    document.getElementById('btn-fwd').addEventListener('pointerdown', () => triggerAction('step_forward'));
+    document.getElementById('btn-back').addEventListener('pointerdown', () => triggerAction('step_back'));
+    document.getElementById('btn-jump').addEventListener('pointerdown', () => triggerAction('jump'));
+    document.getElementById('btn-block').addEventListener('pointerdown', () => triggerAction('block'));
+    document.getElementById('btn-punch').addEventListener('pointerdown', () => triggerAction('light_punch'));
+    document.getElementById('btn-kick').addEventListener('pointerdown', () => triggerAction('heavy_kick'));
+    document.getElementById('btn-hado').addEventListener('pointerdown', () => triggerAction('hadouken'));
+    document.getElementById('btn-shoryu').addEventListener('pointerdown', () => triggerAction('dragon_uppercut'));
+    document.getElementById('btn-super').addEventListener('pointerdown', () => triggerAction('super'));
+
+    function render() {
+      hudRound.textContent = `${state.round} (P1: ${state.playerRounds} | CPU: ${state.rivalRounds})`;
+      hudScore.textContent = logic.score(state);
+
+      // Background Courtyard
+      ctx.fillStyle = '#140808';
+      ctx.fillRect(0, 0, 360, 320);
+
+      // Moon / Lantern glow
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
+      ctx.beginPath();
+      ctx.arc(180, 80, 50, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Stone Arena Floor
+      ctx.fillStyle = '#1f1313';
+      ctx.fillRect(0, 280, 360, 40);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 280);
+      ctx.lineTo(360, 280);
+      ctx.stroke();
+
+      // Projectiles (Hadouken)
+      for (const pr of state.projectiles) {
+        ctx.save();
+        ctx.fillStyle = pr.owner === 'player' ? '#38bdf8' : '#f97316';
+        ctx.beginPath();
+        ctx.arc(pr.x, pr.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Draw Player (Red Martial Artist)
+      const p = state.player;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+
+      // Block shield
+      if (p.isBlocking) {
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(12, -25, 22, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+      }
+
+      // Body
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-10, -42, 20, 42);
+      // Head
+      ctx.fillStyle = '#fed7aa';
+      ctx.beginPath();
+      ctx.arc(0, -50, 10, 0, Math.PI * 2);
+      ctx.fill();
+      // Headband
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-11, -54, 22, 4);
+
+      ctx.restore();
+
+      // Draw Rival (Blue Martial Artist)
+      const r = state.rival;
+      ctx.save();
+      ctx.translate(r.x, r.y);
+
+      // Block shield
+      if (r.isBlocking) {
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(-12, -25, 22, Math.PI / 2, -Math.PI / 2);
+        ctx.stroke();
+      }
+
+      // Body
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(-10, -42, 20, 42);
+      // Head
+      ctx.fillStyle = '#fed7aa';
+      ctx.beginPath();
+      ctx.arc(0, -50, 10, 0, Math.PI * 2);
+      ctx.fill();
+      // Headband
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(-11, -54, 22, 4);
+
+      ctx.restore();
+
+      // Top Versus HUD: Dual Health Bars
+      const barW = 130;
+      // Player 1 HP
+      ctx.fillStyle = '#450a0a';
+      ctx.fillRect(16, 16, barW, 14);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(16, 16, barW * (p.hp / p.maxHp), 14);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeRect(16, 16, barW, 14);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillText('TITAN (P1)', 20, 27);
+
+      // Rival CPU HP
+      ctx.fillStyle = '#172554';
+      ctx.fillRect(214, 16, barW, 14);
+      ctx.fillStyle = '#3b82f6';
+      const rRatio = r.hp / r.maxHp;
+      ctx.fillRect(214 + barW * (1 - rRatio), 16, barW * rRatio, 14);
+      ctx.strokeStyle = '#06b6d4';
+      ctx.strokeRect(214, 16, barW, 14);
+      ctx.fillStyle = '#fff';
+      ctx.fillText('SHADOW (CPU)', 270, 27);
+
+      // Super Meter at bottom
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(16, 38, barW, 6);
+      ctx.fillStyle = p.superGauge >= 100 ? '#ec4899' : '#f59e0b';
+      ctx.fillRect(16, 38, barW * (p.superGauge / 100), 6);
+      ctx.strokeStyle = '#475569';
+      ctx.strokeRect(16, 38, barW, 6);
+
+      // Overlays
+      if (state.won) {
+        ctx.fillStyle = 'rgba(15, 7, 7, 0.88)';
+        ctx.fillRect(0, 0, 360, 320);
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('CHAMPION VICTORIOUS', 180, 150);
+        ctx.fillStyle = '#fef2f2';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Score: ${logic.score(state)} - Won 2 Rounds!`, 180, 180);
+        ctx.fillText('Tap or press R to fight again', 180, 210);
+      } else if (state.lost) {
+        ctx.fillStyle = 'rgba(15, 7, 7, 0.88)';
+        ctx.fillRect(0, 0, 360, 320);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('DEFEATED', 180, 150);
+        ctx.fillStyle = '#fef2f2';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Shadow warrior claimed the match', 180, 180);
+        ctx.fillText('Tap or press R to rematch', 180, 210);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vortex Core - Twin Stick Shooter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#060913">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #04060d;
+      color: #e0f2fe;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .hud span { color: #f8fafc; }
+    canvas {
+      background: #0a0f1d;
+      border: 2px solid #1e293b;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1 / 1;
+    }
+    .controls-panel {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 8px;
+      gap: 8px;
+    }
+    .stick-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .stick-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 34px);
+      grid-template-rows: repeat(3, 34px);
+      gap: 3px;
+    }
+    .btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn:active {
+      background: #334155;
+      border-color: #38bdf8;
+    }
+    .btn-fire {
+      background: #0c4a6e;
+      border-color: #0284c7;
+      color: #38bdf8;
+    }
+    .btn-bomb {
+      background: #881337;
+      border-color: #f43f5e;
+      color: #ffe4e6;
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Vortex Core</h1>
+      <div class="hud">
+        <div>WAVE: <span id="hud-wave">1/5</span></div>
+        <div>SCORE: <span id="hud-score">0</span></div>
+      </div>
+    </header>
+    <canvas id="canvas" width="400" height="400"></canvas>
+    <div class="controls-panel">
+      <div class="stick-group">
+        <span class="stick-label">Move (WASD)</span>
+        <div class="dpad">
+          <div></div>
+          <button class="btn" id="m-up">▲</button>
+          <div></div>
+          <button class="btn" id="m-left">◀</button>
+          <div></div>
+          <button class="btn" id="m-right">▶</button>
+          <div></div>
+          <button class="btn" id="m-down">▼</button>
+          <div></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; flex: 1;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #f43f5e; margin-bottom: 4px;">
+          BOMBS: <span id="hud-bombs" style="color: #fff;">2</span>
+        </div>
+        <button class="btn-bomb" id="btn-bomb">⚡ EMP BOMB<br><span style="font-size: 0.65rem;">(Space)</span></button>
+      </div>
+      <div class="stick-group">
+        <span class="stick-label">Aim & Fire (IJKL)</span>
+        <div class="dpad">
+          <button class="btn btn-fire" id="f-nw">◤</button>
+          <button class="btn btn-fire" id="f-n">▲</button>
+          <button class="btn btn-fire" id="f-ne">◥</button>
+          <button class="btn btn-fire" id="f-w">◀</button>
+          <div></div>
+          <button class="btn btn-fire" id="f-e">▶</button>
+          <button class="btn btn-fire" id="f-sw">◣</button>
+          <button class="btn btn-fire" id="f-s">▼</button>
+          <button class="btn btn-fire" id="f-se">◢</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    const logic = window.VortexCore;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const hudWave = document.getElementById('hud-wave');
+    const hudScore = document.getElementById('hud-score');
+    const hudBombs = document.getElementById('hud-bombs');
+
+    let state = logic.createState(Math.floor(Math.random() * 100000));
+    let lastFacing = 'n';
+    let bombFlash = 0;
+
+    function triggerAction(action) {
+      if (logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+        return;
+      }
+      const legal = logic.legalActions(state);
+      if (legal.includes(action)) {
+        if (action === 'bomb') bombFlash = 6;
+        logic.step(state, action);
+        render();
+      }
+    }
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      const code = e.code;
+      if (code === 'KeyW' || code === 'ArrowUp') triggerAction('move_n');
+      else if (code === 'KeyS' || code === 'ArrowDown') triggerAction('move_s');
+      else if (code === 'KeyA' || code === 'ArrowLeft') triggerAction('move_w');
+      else if (code === 'KeyD' || code === 'ArrowRight') triggerAction('move_e');
+      else if (code === 'KeyI') { lastFacing = 'n'; triggerAction('fire_n'); }
+      else if (code === 'KeyK') { lastFacing = 's'; triggerAction('fire_s'); }
+      else if (code === 'KeyJ') { lastFacing = 'w'; triggerAction('fire_w'); }
+      else if (code === 'KeyL') { lastFacing = 'e'; triggerAction('fire_e'); }
+      else if (code === 'KeyU') { lastFacing = 'nw'; triggerAction('fire_nw'); }
+      else if (code === 'KeyO') { lastFacing = 'ne'; triggerAction('fire_ne'); }
+      else if (code === 'KeyM') { lastFacing = 'sw'; triggerAction('fire_sw'); }
+      else if (code === 'Period') { lastFacing = 'se'; triggerAction('fire_se'); }
+      else if (code === 'Space') triggerAction('bomb');
+      else if (code === 'KeyR' && logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+      }
+    });
+
+    // Touch bindings
+    document.getElementById('m-up').addEventListener('pointerdown', () => triggerAction('move_n'));
+    document.getElementById('m-down').addEventListener('pointerdown', () => triggerAction('move_s'));
+    document.getElementById('m-left').addEventListener('pointerdown', () => triggerAction('move_w'));
+    document.getElementById('m-right').addEventListener('pointerdown', () => triggerAction('move_e'));
+
+    document.getElementById('f-n').addEventListener('pointerdown', () => { lastFacing = 'n'; triggerAction('fire_n'); });
+    document.getElementById('f-s').addEventListener('pointerdown', () => { lastFacing = 's'; triggerAction('fire_s'); });
+    document.getElementById('f-w').addEventListener('pointerdown', () => { lastFacing = 'w'; triggerAction('fire_w'); });
+    document.getElementById('f-e').addEventListener('pointerdown', () => { lastFacing = 'e'; triggerAction('fire_e'); });
+    document.getElementById('f-nw').addEventListener('pointerdown', () => { lastFacing = 'nw'; triggerAction('fire_nw'); });
+    document.getElementById('f-ne').addEventListener('pointerdown', () => { lastFacing = 'ne'; triggerAction('fire_ne'); });
+    document.getElementById('f-sw').addEventListener('pointerdown', () => { lastFacing = 'sw'; triggerAction('fire_sw'); });
+    document.getElementById('f-se').addEventListener('pointerdown', () => { lastFacing = 'se'; triggerAction('fire_se'); });
+
+    document.getElementById('btn-bomb').addEventListener('pointerdown', () => triggerAction('bomb'));
+
+    function render() {
+      hudWave.textContent = `${state.wave}/5`;
+      hudScore.textContent = logic.score(state);
+      hudBombs.textContent = state.player.bombs;
+
+      // Arena background
+      ctx.fillStyle = '#060a16';
+      ctx.fillRect(0, 0, 400, 400);
+
+      // Arena Grid Perimeter
+      ctx.strokeStyle = '#1e3a5f';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(30, 30, 340, 340);
+
+      // Subtle cyber grid
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+      ctx.lineWidth = 1;
+      for (let i = 50; i < 370; i += 40) {
+        ctx.beginPath();
+        ctx.moveTo(i, 30);
+        ctx.lineTo(i, 370);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(30, i);
+        ctx.lineTo(370, i);
+        ctx.stroke();
+      }
+
+      // Bomb Flash FX
+      if (bombFlash > 0) {
+        ctx.fillStyle = `rgba(56, 189, 248, ${bombFlash * 0.12})`;
+        ctx.fillRect(30, 30, 340, 340);
+        bombFlash--;
+      }
+
+      // Projectiles
+      for (const pr of state.projectiles) {
+        ctx.save();
+        if (pr.owner === 'player') {
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(pr.x, pr.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#f43f5e';
+          ctx.beginPath();
+          ctx.arc(pr.x, pr.y, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Enemies
+      for (const e of state.enemies) {
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        if (e.type === 'seeker') {
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(0, -10);
+          ctx.lineTo(8, 8);
+          ctx.lineTo(-8, 8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#fca5a5';
+          ctx.stroke();
+        } else if (e.type === 'turret') {
+          ctx.fillStyle = '#06b6d4';
+          ctx.beginPath();
+          ctx.arc(0, 0, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#67e8f9';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else if (e.type === 'mine') {
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.arc(0, 0, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fdba74';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+
+      // Player Ship
+      const p = state.player;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+
+      // Ship triangle
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.moveTo(0, -14);
+      ctx.lineTo(10, 10);
+      ctx.lineTo(-10, 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Shield Ring
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+      ctx.beginPath();
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Top HUD: Shield Integrity
+      ctx.fillStyle = 'rgba(6, 10, 22, 0.8)';
+      ctx.fillRect(16, 12, 120, 10);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(16, 12, 120 * (p.hp / p.maxHp), 10);
+      ctx.strokeStyle = '#1e3a5f';
+      ctx.strokeRect(16, 12, 120, 10);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillText(`SHIELD ${p.hp}%`, 20, 20);
+
+      // Overlays
+      if (state.won) {
+        ctx.fillStyle = 'rgba(6, 9, 19, 0.88)';
+        ctx.fillRect(0, 0, 400, 400);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('SECTOR LIBERATED', 200, 180);
+        ctx.fillStyle = '#e0f2fe';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Final Score: ${logic.score(state)}`, 200, 210);
+        ctx.fillText('Tap or press R to restart', 200, 240);
+      } else if (state.lost) {
+        ctx.fillStyle = 'rgba(6, 9, 19, 0.88)';
+        ctx.fillRect(0, 0, 400, 400);
+        ctx.fillStyle = '#f43f5e';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('CORE DESTABILIZED', 200, 180);
+        ctx.fillStyle = '#e0f2fe';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Lost on Wave ${state.wave}`, 200, 210);
+        ctx.fillText('Tap or press R to retry', 200, 240);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

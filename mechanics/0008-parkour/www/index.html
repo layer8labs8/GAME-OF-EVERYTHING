@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rooftop Velocity - Parkour</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#090d16">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #060911;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 440px;
+      padding: 10px;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #10b981;
+      text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+    .hud {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .hud span { color: #f8fafc; }
+    canvas {
+      background: #090e1c;
+      border: 2px solid #1e293b;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 400 / 280;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) 1.2fr;
+      gap: 6px;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 10px;
+    }
+    .btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.08s ease;
+    }
+    .btn:active {
+      transform: translateY(2px);
+      background: #334155;
+      border-color: #10b981;
+    }
+    .btn-jump {
+      background: #047857;
+      border-color: #10b981;
+      color: #ecfdf5;
+    }
+    .btn-slide {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #f0f9ff;
+    }
+    .btn-wall {
+      background: #854d0e;
+      border-color: #eab308;
+      color: #fefce8;
+    }
+    .btn-boost {
+      background: #701a75;
+      border-color: #d946ef;
+      color: #fdf4ff;
+    }
+    .key-hint {
+      font-size: 0.65rem;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Rooftop Velocity</h1>
+      <div class="hud">
+        <div>DIST: <span id="hud-dist">0</span>/1000m</div>
+        <div>SCORE: <span id="hud-score">0</span></div>
+      </div>
+    </header>
+    <canvas id="canvas" width="400" height="280"></canvas>
+    <div class="controls">
+      <button class="btn" id="btn-run">🏃 Run<span class="key-hint">A</span></button>
+      <button class="btn btn-jump" id="btn-jump">▲ Leap<span class="key-hint">W / Space</span></button>
+      <button class="btn btn-slide" id="btn-slide">▼ Slide<span class="key-hint">S</span></button>
+      <button class="btn btn-wall" id="btn-wall">🧗 Wall<span class="key-hint">D</span></button>
+      <button class="btn btn-boost" id="btn-boost">⚡ Boost<span class="key-hint">Shift / E</span></button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    const logic = window.RooftopVelocity;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const hudDist = document.getElementById('hud-dist');
+    const hudScore = document.getElementById('hud-score');
+
+    let state = logic.createState(Math.floor(Math.random() * 100000));
+    let lastAction = 'run';
+
+    function triggerAction(action) {
+      if (logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+        return;
+      }
+      const legal = logic.legalActions(state);
+      if (legal.includes(action)) {
+        lastAction = action;
+        logic.step(state, action);
+        render();
+      }
+    }
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      const code = e.code;
+      if (code === 'KeyW' || code === 'ArrowUp' || code === 'Space') triggerAction('jump');
+      else if (code === 'KeyS' || code === 'ArrowDown') triggerAction('slide');
+      else if (code === 'KeyD' || code === 'ArrowRight') triggerAction('wall_run');
+      else if (code === 'KeyA' || code === 'ArrowLeft') triggerAction('run');
+      else if (code === 'ShiftLeft' || code === 'ShiftRight' || code === 'KeyE') triggerAction('boost');
+      else if (code === 'KeyR' && logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        render();
+      }
+    });
+
+    // Touch bindings
+    document.getElementById('btn-run').addEventListener('pointerdown', () => triggerAction('run'));
+    document.getElementById('btn-jump').addEventListener('pointerdown', () => triggerAction('jump'));
+    document.getElementById('btn-slide').addEventListener('pointerdown', () => triggerAction('slide'));
+    document.getElementById('btn-wall').addEventListener('pointerdown', () => triggerAction('wall_run'));
+    document.getElementById('btn-boost').addEventListener('pointerdown', () => triggerAction('boost'));
+
+    function render() {
+      hudDist.textContent = state.distance;
+      hudScore.textContent = logic.score(state);
+
+      // Night sky with stars
+      ctx.fillStyle = '#060a14';
+      ctx.fillRect(0, 0, 400, 280);
+
+      // City Skyline silhouettes
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(40, 90, 60, 150);
+      ctx.fillRect(120, 60, 80, 180);
+      ctx.fillRect(230, 110, 70, 130);
+      ctx.fillRect(320, 80, 70, 160);
+
+      // Windows
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.3)';
+      for (let bx = 50; bx < 380; bx += 40) {
+        for (let by = 120; by < 220; by += 24) {
+          ctx.fillRect(bx, by, 8, 12);
+        }
+      }
+
+      // Rooftop Ground level
+      const FLOOR = 230;
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, FLOOR, 400, 50);
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, FLOOR);
+      ctx.lineTo(400, FLOOR);
+      ctx.stroke();
+
+      // Render upcoming obstacles in viewport (distance relative to runner)
+      for (const obs of state.obstacles) {
+        const relX = (obs.distance - state.distance) * 5 + 80;
+        if (relX >= -50 && relX <= 450) {
+          ctx.save();
+          if (obs.type === 'gap') {
+            // Chasm drop
+            ctx.fillStyle = '#060a14';
+            ctx.fillRect(relX - 16, FLOOR, 32, 50);
+            ctx.strokeStyle = '#ef4444';
+            ctx.strokeRect(relX - 16, FLOOR, 32, 50);
+          } else if (obs.type === 'duct') {
+            // Low overhead duct
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(relX - 12, FLOOR - 42, 24, 16);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeRect(relX - 12, FLOOR - 42, 24, 16);
+          } else if (obs.type === 'barrier') {
+            // Sheer brick barrier
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(relX - 8, FLOOR - 48, 16, 48);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.strokeRect(relX - 8, FLOOR - 48, 16, 48);
+          } else if (obs.type === 'ring') {
+            // Kinetic Ring
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(relX, FLOOR - 24, 10, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+
+      // Draw Freerunner at x = 80
+      ctx.save();
+      const px = 80;
+      let py = FLOOR;
+
+      if (lastAction === 'jump') py -= 35;
+      else if (lastAction === 'wall_run') py -= 25;
+
+      ctx.translate(px, py);
+
+      // Momentum trail
+      if (state.momentum >= 50) {
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-10, -18);
+        ctx.lineTo(-28, -18);
+        ctx.stroke();
+      }
+
+      if (lastAction === 'slide') {
+        // Sliding posture
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(-14, -12, 28, 12);
+        ctx.beginPath();
+        ctx.arc(14, -6, 6, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Standing / Running posture
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(0, -32, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(-6, -24, 12, 24);
+      }
+
+      ctx.restore();
+
+      // Top HUD: Momentum & Shields
+      ctx.fillStyle = 'rgba(6, 10, 20, 0.8)';
+      ctx.fillRect(16, 12, 120, 10);
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(16, 12, 120 * (state.momentum / 100), 10);
+      ctx.strokeStyle = '#334155';
+      ctx.strokeRect(16, 12, 120, 10);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillText(`MOMENTUM ${state.momentum}%`, 20, 20);
+
+      // Shields
+      ctx.fillStyle = '#f43f5e';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('❤'.repeat(Math.max(0, state.shields)), 145, 21);
+
+      // Overlays
+      if (state.won) {
+        ctx.fillStyle = 'rgba(6, 10, 20, 0.88)';
+        ctx.fillRect(0, 0, 400, 280);
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('SKYLINE CONQUERED', 200, 120);
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Final Score: ${logic.score(state)} - 1000m Cleared!`, 200, 150);
+        ctx.fillText('Tap or press R to run again', 200, 180);
+      } else if (state.lost) {
+        ctx.fillStyle = 'rgba(6, 10, 20, 0.88)';
+        ctx.fillRect(0, 0, 400, 280);
+        ctx.fillStyle = '#f43f5e';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('RUNNER WIPED OUT', 200, 120);
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Fell at ${state.distance} meters`, 200, 150);
+        ctx.fillText('Tap or press R to restart', 200, 180);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
