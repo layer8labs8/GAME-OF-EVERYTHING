@@ -1,0 +1,462 @@
+{
+  "schema": 1,
+  "mechanic": "physics-puzzle",
+  "levels": [
+    {
+      "id": "001",
+      "name": "Orbital Drift",
+      "difficulty": 1,
+      "data": {
+        "width": 8,
+        "height": 8,
+        "maxFuel": 5,
+        "probe": {
+          "x": 1,
+          "y": 1
+        },
+        "goal": {
+          "x": 6,
+          "y": 1
+        },
+        "beacons": [
+          {
+            "x": 3,
+            "y": 1
+          }
+        ],
+        "wells": [],
+        "asteroids": []
+      },
+      "par": 3,
+      "solution": "RRR"
+    },
+    {
+      "id": "002",
+      "name": "Diagonal Vector",
+      "difficulty": 1,
+      "data": {
+        "width": 8,
+        "height": 8,
+        "maxFuel": 6,
+        "probe": {
+          "x": 1,
+          "y": 1
+        },
+        "goal": {
+          "x": 6,
+          "y": 6
+        },
+        "beacons": [
+          {
+            "x": 3,
+            "y": 3
+          }
+        ],
+        "wells": [],
+        "asteroids": []
+      },
+      "par": 6,
+      "solution": "DRUDCD"
+    },
+    {
+      "id": "003",
+      "name": "Asteroid Gate",
+      "difficulty": 2,
+      "data": {
+        "width": 9,
+        "height": 9,
+        "maxFuel": 6,
+        "probe": {
+          "x": 1,
+          "y": 4
+        },
+        "goal": {
+          "x": 7,
+          "y": 4
+        },
+        "beacons": [
+          {
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "wells": [],
+        "asteroids": [
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 5
+          }
+        ]
+      },
+      "par": 6,
+      "solution": "URDCDR"
+    },
+    {
+      "id": "004",
+      "name": "Singularity Sling",
+      "difficulty": 2,
+      "data": {
+        "width": 9,
+        "height": 9,
+        "maxFuel": 5,
+        "probe": {
+          "x": 1,
+          "y": 2
+        },
+        "goal": {
+          "x": 7,
+          "y": 6
+        },
+        "beacons": [
+          {
+            "x": 4,
+            "y": 6
+          }
+        ],
+        "wells": [
+          {
+            "x": 4,
+            "y": 3,
+            "range": 2
+          }
+        ],
+        "asteroids": []
+      },
+      "par": 6,
+      "solution": "DCRDUU"
+    },
+    {
+      "id": "005",
+      "name": "Binary Beacons",
+      "difficulty": 3,
+      "data": {
+        "width": 9,
+        "height": 9,
+        "maxFuel": 8,
+        "probe": {
+          "x": 1,
+          "y": 4
+        },
+        "goal": {
+          "x": 7,
+          "y": 4
+        },
+        "beacons": [
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 6
+          }
+        ],
+        "wells": [
+          {
+            "x": 4,
+            "y": 4,
+            "range": 2
+          }
+        ],
+        "asteroids": [
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 7
+          }
+        ]
+      },
+      "par": 9,
+      "solution": "URRLLCRRU"
+    },
+    {
+      "id": "006",
+      "name": "Event Horizon",
+      "difficulty": 3,
+      "data": {
+        "width": 10,
+        "height": 10,
+        "maxFuel": 7,
+        "probe": {
+          "x": 1,
+          "y": 1
+        },
+        "goal": {
+          "x": 8,
+          "y": 8
+        },
+        "beacons": [
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 2
+          }
+        ],
+        "wells": [
+          {
+            "x": 5,
+            "y": 5,
+            "range": 3
+          }
+        ],
+        "asteroids": [
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ]
+      },
+      "par": 15,
+      "solution": "DDCRUCCCRCCCRCR"
+    },
+    {
+      "id": "007",
+      "name": "Twin Pulsars",
+      "difficulty": 4,
+      "data": {
+        "width": 10,
+        "height": 10,
+        "maxFuel": 8,
+        "probe": {
+          "x": 1,
+          "y": 5
+        },
+        "goal": {
+          "x": 8,
+          "y": 5
+        },
+        "beacons": [
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 8
+          }
+        ],
+        "wells": [
+          {
+            "x": 3,
+            "y": 5,
+            "range": 2
+          },
+          {
+            "x": 7,
+            "y": 5,
+            "range": 2
+          }
+        ],
+        "asteroids": [
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "par": 16,
+      "solution": "UCRCCCUCDDRCCUUC"
+    },
+    {
+      "id": "008",
+      "name": "Corridor of Shards",
+      "difficulty": 4,
+      "data": {
+        "width": 10,
+        "height": 10,
+        "maxFuel": 8,
+        "probe": {
+          "x": 1,
+          "y": 2
+        },
+        "goal": {
+          "x": 8,
+          "y": 7
+        },
+        "beacons": [
+          {
+            "x": 5,
+            "y": 5
+          }
+        ],
+        "wells": [
+          {
+            "x": 3,
+            "y": 7,
+            "range": 2
+          },
+          {
+            "x": 7,
+            "y": 2,
+            "range": 2
+          }
+        ],
+        "asteroids": [
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          }
+        ]
+      },
+      "par": 13,
+      "solution": "DDCUUUDCCRCRC"
+    },
+    {
+      "id": "009",
+      "name": "Triad Resonance",
+      "difficulty": 5,
+      "data": {
+        "width": 11,
+        "height": 11,
+        "maxFuel": 10,
+        "probe": {
+          "x": 1,
+          "y": 1
+        },
+        "goal": {
+          "x": 9,
+          "y": 9
+        },
+        "beacons": [
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 9
+          }
+        ],
+        "wells": [
+          {
+            "x": 5,
+            "y": 5,
+            "range": 3
+          }
+        ],
+        "asteroids": [
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 6
+          }
+        ]
+      },
+      "par": 18,
+      "solution": "RRCDCLLCUURCCCCRLC"
+    },
+    {
+      "id": "010",
+      "name": "Galactic Gauntlet",
+      "difficulty": 5,
+      "data": {
+        "width": 11,
+        "height": 11,
+        "maxFuel": 12,
+        "probe": {
+          "x": 1,
+          "y": 5
+        },
+        "goal": {
+          "x": 9,
+          "y": 5
+        },
+        "beacons": [
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 1
+          }
+        ],
+        "wells": [
+          {
+            "x": 3,
+            "y": 5,
+            "range": 2
+          },
+          {
+            "x": 7,
+            "y": 5,
+            "range": 2
+          }
+        ],
+        "asteroids": [
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 6
+          }
+        ]
+      },
+      "par": 15,
+      "solution": "DCLURRDDLLLCUUC"
+    }
+  ]
+}

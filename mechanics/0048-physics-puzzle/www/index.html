@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Gravity Sling - Physics Puzzle</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#070b19">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #070b19;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    header {
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #1e293b;
+    }
+    .title-group h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 0.5px;
+    }
+    .title-group .sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    .level-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .level-nav button {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .level-nav button:hover:not(:disabled) {
+      background: #334155;
+    }
+    .level-nav button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .stats-bar {
+      width: 100%;
+      max-width: 480px;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0b1120;
+      border-bottom: 1px solid #1e293b;
+      font-size: 0.82rem;
+    }
+    .stat-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .stat-badge .label {
+      font-size: 0.68rem;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+    .stat-badge .value {
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .fuel-gauge {
+      display: flex;
+      gap: 2px;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .fuel-pip {
+      width: 7px;
+      height: 10px;
+      border-radius: 2px;
+      background: #38bdf8;
+      box-shadow: 0 0 4px rgba(56, 189, 248, 0.6);
+    }
+    .fuel-pip.spent {
+      background: #334155;
+      box-shadow: none;
+    }
+    #gameCanvas {
+      background: #030712;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 1;
+      display: block;
+      border-bottom: 1px solid #1e293b;
+    }
+    .controls-panel {
+      width: 100%;
+      max-width: 480px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #090d1a;
+      flex-grow: 1;
+    }
+    .dpad-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 44px);
+      gap: 6px;
+      max-width: 220px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .btn-dpad {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      font-weight: 700;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+      transition: all 0.1s;
+    }
+    .btn-dpad:active {
+      background: #0284c7;
+      color: #ffffff;
+      transform: translateY(1px);
+    }
+    .btn-coast {
+      background: #0f766e;
+      border-color: #14b8a6;
+      color: #ccfbf1;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .btn-coast:active {
+      background: #14b8a6;
+    }
+    .action-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .btn-tool {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-tool:hover {
+      background: #334155;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 20px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-box {
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(56, 189, 248, 0.2);
+    }
+    .modal-box h2 {
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+    .modal-box.win h2 {
+      color: #34d399;
+    }
+    .modal-box.lose h2 {
+      color: #f43f5e;
+    }
+    .modal-box p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+    .modal-box .btn-modal {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .modal-box .btn-modal:hover {
+      background: #0369a1;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-group">
+      <h1>Gravity Sling</h1>
+      <div class="sub" id="levelTitle">Level 1: Orbital Drift</div>
+    </div>
+    <div class="level-nav">
+      <button id="prevLvl" aria-label="Previous Level">&larr;</button>
+      <span id="lvlIndicator" style="font-size: 0.85rem; font-weight: 600;">1 / 10</span>
+      <button id="nextLvl" aria-label="Next Level">&rarr;</button>
+    </div>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat-badge">
+      <span class="label">Fuel</span>
+      <div class="fuel-gauge" id="fuelGauge"></div>
+    </div>
+    <div class="stat-badge">
+      <span class="label">Velocity</span>
+      <span class="value" id="velValue">vx:0 vy:0</span>
+    </div>
+    <div class="stat-badge">
+      <span class="label">Beacons</span>
+      <span class="value" id="beaconValue">0 / 1</span>
+    </div>
+    <div class="stat-badge">
+      <span class="label">Score</span>
+      <span class="value" id="scoreValue">0</span>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas" width="480" height="480"></canvas>
+
+  <div class="controls-panel">
+    <div class="dpad-container">
+      <div></div>
+      <button class="btn-dpad" id="btnUp" aria-label="Thrust Up">&uarr;</button>
+      <div></div>
+      <button class="btn-dpad" id="btnLeft" aria-label="Thrust Left">&larr;</button>
+      <button class="btn-dpad btn-coast" id="btnCoast" aria-label="Coast">Coast</button>
+      <button class="btn-dpad" id="btnRight" aria-label="Thrust Right">&rarr;</button>
+      <div></div>
+      <button class="btn-dpad" id="btnDown" aria-label="Thrust Down">&darr;</button>
+      <div></div>
+    </div>
+    <div class="action-row">
+      <button class="btn-tool" id="btnUndo">Undo (U)</button>
+      <button class="btn-tool" id="btnReset">Reset (R)</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="endModal">
+    <div class="modal-box" id="modalBox">
+      <h2 id="modalTitle">Victory!</h2>
+      <p id="modalMsg">Warp trajectory achieved.</p>
+      <button class="btn-modal" id="modalBtn">Next Level</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+
+      let currentLevel = 0;
+      let state = null;
+      let history = [];
+
+      // Initialize Stars background
+      const stars = [];
+      for (let i = 0; i < 45; i++) {
+        stars.push({
+          x: Math.random() * 480,
+          y: Math.random() * 480,
+          r: 0.5 + Math.random() * 1.5,
+          alpha: 0.3 + Math.random() * 0.7
+        });
+      }
+
+      function initLevel(lvlIdx) {
+        currentLevel = Math.max(0, Math.min(GravitySling.LEVELS.length - 1, lvlIdx));
+        state = GravitySling.createState(12345 + currentLevel * 100, currentLevel);
+        history = [JSON.stringify(state)];
+        updateUI();
+        render();
+      }
+
+      function updateUI() {
+        if (!state) return;
+
+        const levelTitle = document.getElementById('levelTitle');
+        if (levelTitle) levelTitle.textContent = 'Level ' + (currentLevel + 1) + ': ' + state.levelName;
+
+        const lvlIndicator = document.getElementById('lvlIndicator');
+        if (lvlIndicator) lvlIndicator.textContent = (currentLevel + 1) + ' / ' + GravitySling.LEVELS.length;
+
+        const prevBtn = document.getElementById('prevLvl');
+        if (prevBtn) prevBtn.disabled = currentLevel <= 0;
+
+        const nextBtn = document.getElementById('nextLvl');
+        if (nextBtn) nextBtn.disabled = currentLevel >= GravitySling.LEVELS.length - 1;
+
+        const velVal = document.getElementById('velValue');
+        if (velVal) velVal.textContent = 'vx:' + state.vx + ' vy:' + state.vy;
+
+        const beaconVal = document.getElementById('beaconValue');
+        if (beaconVal) {
+          let count = 0;
+          for (let i = 0; i < state.beacons.length; i++) {
+            if ((state.collectedMask & (1 << i)) !== 0) count++;
+          }
+          beaconVal.textContent = count + ' / ' + state.beacons.length;
+        }
+
+        const scoreVal = document.getElementById('scoreValue');
+        if (scoreVal) scoreVal.textContent = state.scoreVal;
+
+        const fuelGauge = document.getElementById('fuelGauge');
+        if (fuelGauge) {
+          let html = '';
+          for (let i = 0; i < state.maxFuel; i++) {
+            html += '<div class="fuel-pip' + (i >= state.fuel ? ' spent' : '') + '"></div>';
+          }
+          fuelGauge.innerHTML = html;
+        }
+
+        // Check victory / defeat
+        const modal = document.getElementById('endModal');
+        const modalBox = document.getElementById('modalBox');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMsg = document.getElementById('modalMsg');
+        const modalBtn = document.getElementById('modalBtn');
+
+        if (state.won) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('lose');
+            modalBox.classList.add('win');
+          }
+          if (modalTitle) modalTitle.textContent = 'WARP COMPLETE!';
+          if (modalMsg) modalMsg.textContent = 'Steps: ' + state.stepCount + ' | Fuel Left: ' + state.fuel + ' | Score: ' + state.scoreVal;
+          if (modalBtn) {
+            modalBtn.textContent = currentLevel < GravitySling.LEVELS.length - 1 ? 'Next Level' : 'Replay Level';
+            modalBtn.onclick = function () {
+              if (modal && modal.classList) modal.classList.remove('active');
+              if (currentLevel < GravitySling.LEVELS.length - 1) {
+                initLevel(currentLevel + 1);
+              } else {
+                initLevel(currentLevel);
+              }
+            };
+          }
+        } else if (state.lost) {
+          if (modal && modal.classList) modal.classList.add('active');
+          if (modalBox && modalBox.classList) {
+            modalBox.classList.remove('win');
+            modalBox.classList.add('lose');
+          }
+          if (modalTitle) modalTitle.textContent = 'PROBE LOST';
+          if (modalMsg) modalMsg.textContent = state.fuel <= 0 && state.vx === 0 && state.vy === 0 ? 'Stranded with depleted fuel.' : 'Trajectory impact occurred.';
+          if (modalBtn) {
+            modalBtn.textContent = 'Try Again';
+            modalBtn.onclick = function () {
+              if (modal && modal.classList) modal.classList.remove('active');
+              initLevel(currentLevel);
+            };
+          }
+        } else {
+          if (modal && modal.classList) modal.classList.remove('active');
+        }
+      }
+
+      function handleAction(action) {
+        if (!state || state.won || state.lost) return;
+        const legal = GravitySling.legalActions(state);
+        if (!legal.includes(action)) return;
+
+        history.push(JSON.stringify(state));
+        GravitySling.step(state, action);
+        updateUI();
+        render();
+      }
+
+      function undo() {
+        if (history.length > 1) {
+          history.pop();
+          state = JSON.parse(history[history.length - 1]);
+          updateUI();
+          render();
+        }
+      }
+
+      function render() {
+        if (!ctx || !state) return;
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // Starfield
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < stars.length; i++) {
+          const s = stars[i];
+          ctx.globalAlpha = s.alpha;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+
+        const cols = state.width;
+        const rows = state.height;
+        const cellW = w / cols;
+        const cellH = h / rows;
+
+        // Subtle grid lines
+        ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+        ctx.lineWidth = 1;
+        for (let c = 0; c <= cols; c++) {
+          ctx.beginPath();
+          ctx.moveTo(c * cellW, 0);
+          ctx.lineTo(c * cellW, h);
+          ctx.stroke();
+        }
+        for (let r = 0; r <= rows; r++) {
+          ctx.beginPath();
+          ctx.moveTo(0, r * cellH);
+          ctx.lineTo(w, r * cellH);
+          ctx.stroke();
+        }
+
+        // Draw Gravity Wells & Influence Ranges
+        for (let i = 0; i < state.wells.length; i++) {
+          const well = state.wells[i];
+          const cx = (well.x + 0.5) * cellW;
+          const cy = (well.y + 0.5) * cellH;
+          const rad = (well.range + 0.5) * Math.min(cellW, cellH);
+
+          // Range field
+          ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Radial glow
+          const grad = ctx.createRadialGradient(cx, cy, 4, cx, cy, rad * 0.8);
+          grad.addColorStop(0, 'rgba(168, 85, 247, 0.6)');
+          grad.addColorStop(0.5, 'rgba(99, 102, 241, 0.2)');
+          grad.addColorStop(1, 'rgba(99, 102, 241, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, rad * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Singularity Core
+          ctx.fillStyle = '#020617';
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(cx, cy, Math.min(cellW, cellH) * 0.35, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        // Draw Asteroids
+        for (let i = 0; i < state.asteroids.length; i++) {
+          const a = state.asteroids[i];
+          const cx = (a.x + 0.5) * cellW;
+          const cy = (a.y + 0.5) * cellH;
+          const rad = Math.min(cellW, cellH) * 0.38;
+
+          ctx.fillStyle = '#475569';
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          // Faceted octagon
+          for (let step = 0; step < 8; step++) {
+            const angle = (step / 8) * Math.PI * 2;
+            const rOffset = step % 2 === 0 ? rad : rad * 0.85;
+            const px = cx + Math.cos(angle) * rOffset;
+            const py = cy + Math.sin(angle) * rOffset;
+            if (step === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        // Draw Warp Goal Portal
+        const gx = (state.goal.x + 0.5) * cellW;
+        const gy = (state.goal.y + 0.5) * cellH;
+        const allBeaconsCollected = state.collectedMask === ((1 << state.beacons.length) - 1);
+
+        ctx.strokeStyle = allBeaconsCollected ? '#38bdf8' : '#64748b';
+        ctx.fillStyle = allBeaconsCollected ? 'rgba(56, 189, 248, 0.25)' : 'rgba(100, 116, 139, 0.15)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(gx, gy, Math.min(cellW, cellH) * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(gx, gy, Math.min(cellW, cellH) * 0.22, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Draw Energy Beacons
+        for (let i = 0; i < state.beacons.length; i++) {
+          const b = state.beacons[i];
+          const bx = (b.x + 0.5) * cellW;
+          const by = (b.y + 0.5) * cellH;
+          const isCollected = (state.collectedMask & (1 << i)) !== 0;
+
+          if (isCollected) {
+            ctx.fillStyle = 'rgba(52, 211, 153, 0.2)';
+            ctx.beginPath();
+            ctx.arc(bx, by, Math.min(cellW, cellH) * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillStyle = '#34d399';
+            ctx.strokeStyle = '#a7f3d0';
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = '#34d399';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            // Diamond shape
+            const rad = Math.min(cellW, cellH) * 0.28;
+            ctx.moveTo(bx, by - rad);
+            ctx.lineTo(bx + rad, by);
+            ctx.lineTo(bx, by + rad);
+            ctx.lineTo(bx - rad, by);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+          }
+        }
+
+        // Draw Historical Trajectory Path
+        if (state.trajectory.length > 1) {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = 0; i < state.trajectory.length; i++) {
+            const pt = state.trajectory[i];
+            const px = (pt.x + 0.5) * cellW;
+            const py = (pt.y + 0.5) * cellH;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+
+        // Draw Probe Craft
+        const px = (state.probe.x + 0.5) * cellW;
+        const py = (state.probe.y + 0.5) * cellH;
+        const craftRad = Math.min(cellW, cellH) * 0.35;
+
+        // Velocity vector arrow preview
+        if (state.vx !== 0 || state.vy !== 0) {
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px + state.vx * cellW, py + state.vy * cellH);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Probe Body
+        ctx.save();
+        ctx.translate(px, py);
+        let angle = 0;
+        if (state.vx !== 0 || state.vy !== 0) {
+          angle = Math.atan2(state.vy, state.vx);
+        }
+        ctx.rotate(angle);
+
+        // Ship triangle
+        ctx.fillStyle = '#38bdf8';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(craftRad, 0);
+        ctx.lineTo(-craftRad * 0.7, -craftRad * 0.7);
+        ctx.lineTo(-craftRad * 0.4, 0);
+        ctx.lineTo(-craftRad * 0.7, craftRad * 0.7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      // Attach button events
+      const btnUp = document.getElementById('btnUp');
+      if (btnUp) btnUp.onclick = () => handleAction('thrust_up');
+
+      const btnDown = document.getElementById('btnDown');
+      if (btnDown) btnDown.onclick = () => handleAction('thrust_down');
+
+      const btnLeft = document.getElementById('btnLeft');
+      if (btnLeft) btnLeft.onclick = () => handleAction('thrust_left');
+
+      const btnRight = document.getElementById('btnRight');
+      if (btnRight) btnRight.onclick = () => handleAction('thrust_right');
+
+      const btnCoast = document.getElementById('btnCoast');
+      if (btnCoast) btnCoast.onclick = () => handleAction('coast');
+
+      const btnUndo = document.getElementById('btnUndo');
+      if (btnUndo) btnUndo.onclick = undo;
+
+      const btnReset = document.getElementById('btnReset');
+      if (btnReset) btnReset.onclick = () => initLevel(currentLevel);
+
+      const prevLvl = document.getElementById('prevLvl');
+      if (prevLvl) prevLvl.onclick = () => initLevel(currentLevel - 1);
+
+      const nextLvl = document.getElementById('nextLvl');
+      if (nextLvl) nextLvl.onclick = () => initLevel(currentLevel + 1);
+
+      // Keyboard support
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+          e.preventDefault();
+          handleAction('thrust_up');
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+          e.preventDefault();
+          handleAction('thrust_down');
+        } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          e.preventDefault();
+          handleAction('thrust_left');
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          handleAction('thrust_right');
+        } else if (e.key === ' ' || e.key === 'c' || e.key === 'C') {
+          e.preventDefault();
+          handleAction('coast');
+        } else if (e.key === 'u' || e.key === 'U' || e.key === 'z') {
+          e.preventDefault();
+          undo();
+        } else if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          initLevel(currentLevel);
+        }
+      });
+
+      // PWA service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch(() => {});
+        });
+      }
+
+      initLevel(0);
+    })();
+  </script>
+</body>
+</html>

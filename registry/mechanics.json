@@ -493,8 +493,9 @@
       "slug": "physics-puzzle",
       "name": "Physics Puzzle",
       "family": "Puzzle",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "data",
       "source": "steam-tag"
     },
     {
