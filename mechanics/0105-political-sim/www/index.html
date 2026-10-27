@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Statecraft: Political Simulator</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0b111e;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #141e33;
+      border: 1px solid #233554;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      letter-spacing: 0.05em;
+      color: #f6d365;
+      text-transform: uppercase;
+    }
+    .hud-stat {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #64ffda;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      background: #090e17;
+      border: 1px solid #1f2e4d;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+    .controls-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-section {
+      background: #141e33;
+      border: 1px solid #233554;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f1f5f9;
+      padding: 8px 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 48px;
+    }
+    .btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #64ffda;
+    }
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .btn.active-policy {
+      background: #0f3d3e;
+      border-color: #64ffda;
+      color: #e6fffa;
+    }
+    .btn-crisis {
+      background: #4c1d24;
+      border-color: #f87171;
+      color: #fee2e2;
+    }
+    .btn-advance {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #eff6ff;
+      font-weight: 700;
+      padding: 10px;
+      font-size: 0.88rem;
+    }
+    .btn-advance:hover:not(:disabled) {
+      background: #2563eb;
+    }
+    .crisis-banner {
+      display: none;
+      background: #7f1d1d;
+      border: 1px solid #ef4444;
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #fecaca;
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+      line-height: 1.35;
+    }
+    .log-feed {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      max-height: 52px;
+      overflow-y: auto;
+      line-height: 1.3;
+      padding: 4px;
+      background: #0b111e;
+      border-radius: 4px;
+      border: 1px solid #1e293b;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Statecraft</h1>
+    <div class="hud-stat" id="hud-stats">Q1 / 16 • $420M</div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="view" width="600" height="360"></canvas>
+
+    <div class="controls-panel">
+      <!-- Crisis Notification -->
+      <div id="crisis-box" class="crisis-banner">
+        <div id="crisis-title" style="font-weight: 700; margin-bottom: 2px;">EMERGENCY</div>
+        <div id="crisis-desc">Executive decision required.</div>
+      </div>
+
+      <!-- Emergency Choices (visible during crises) -->
+      <div id="crisis-actions" class="panel-section" style="display: none;">
+        <div class="section-title">Emergency Cabinet Directive</div>
+        <div class="button-grid">
+          <button id="btn-crisis-a" class="btn btn-crisis">Option A</button>
+          <button id="btn-crisis-b" class="btn btn-crisis">Option B</button>
+        </div>
+      </div>
+
+      <!-- Legislative Policies -->
+      <div id="policy-actions" class="panel-section">
+        <div class="section-title">
+          <span>Legislative Policies</span>
+          <span id="active-count" style="color: #64ffda;">1 Active</span>
+        </div>
+        <div class="button-grid">
+          <button id="btn-pol-healthcare" class="btn">Universal Healthcare<br><small>-$110M / Q</small></button>
+          <button id="btn-pol-tax_cut" class="btn">Corporate Tax Cut<br><small>-$130M / Q</small></button>
+          <button id="btn-pol-defense" class="btn">Defense Modernization<br><small>-$140M / Q</small></button>
+          <button id="btn-pol-education" class="btn">Public Education<br><small>-$95M / Q</small></button>
+          <button id="btn-pol-anti_corruption" class="btn">Anti-Corruption Commission<br><small>-$75M / Q</small></button>
+          <button id="btn-pol-austerity" class="btn">Fiscal Austerity<br><small>+$170M / Q</small></button>
+        </div>
+      </div>
+
+      <!-- Campaign Rallies & Advance -->
+      <div id="governance-actions" class="panel-section">
+        <div class="section-title">Cabinet Operations</div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-camp-labor" class="btn">Labor Rally<br><small>-$50M</small></button>
+          <button id="btn-camp-capitalists" class="btn">Industry Summit<br><small>-$50M</small></button>
+          <button id="btn-camp-patriots" class="btn">Security Briefing<br><small>-$50M</small></button>
+          <button id="btn-camp-reformists" class="btn">Civic Townhall<br><small>-$50M</small></button>
+        </div>
+        <button id="btn-advance" class="btn btn-advance" style="width: 100%;">Advance Fiscal Quarter (End Turn)</button>
+      </div>
+
+      <!-- Executive Log -->
+      <div class="panel-section">
+        <div class="section-title">Executive Gazette & Historical Record</div>
+        <div id="log-feed" class="log-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now() & 0xffff);
+    const canvas = document.getElementById('view');
+    const ctx = canvas.getContext('2d');
+
+    // Web Audio Sound FX
+    let audioCtx = null;
+    function playSfx(freq = 440, type = 'sine', duration = 0.08) {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state !== 'closed') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        }
+      } catch (e) {}
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        step(state, action);
+        playSfx(action.startsWith('resolve') ? 587 : 440, 'triangle', 0.12);
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn('Action error:', err);
+      }
+    }
+
+    // Attach static button listeners
+    document.getElementById('btn-advance').onclick = () => doAction('advance_quarter');
+    document.getElementById('btn-pol-healthcare').onclick = () => togglePolicy('healthcare');
+    document.getElementById('btn-pol-tax_cut').onclick = () => togglePolicy('tax_cut');
+    document.getElementById('btn-pol-defense').onclick = () => togglePolicy('defense');
+    document.getElementById('btn-pol-education').onclick = () => togglePolicy('education');
+    document.getElementById('btn-pol-anti_corruption').onclick = () => togglePolicy('anti_corruption');
+    document.getElementById('btn-pol-austerity').onclick = () => togglePolicy('austerity');
+
+    document.getElementById('btn-camp-labor').onclick = () => doAction('campaign:labor');
+    document.getElementById('btn-camp-capitalists').onclick = () => doAction('campaign:capitalists');
+    document.getElementById('btn-camp-patriots').onclick = () => doAction('campaign:patriots');
+    document.getElementById('btn-camp-reformists').onclick = () => doAction('campaign:reformists');
+
+    document.getElementById('btn-crisis-a').onclick = () => doAction('resolve_crisis:A');
+    document.getElementById('btn-crisis-b').onclick = () => doAction('resolve_crisis:B');
+
+    function togglePolicy(id) {
+      if (state.activePolicies.includes(id)) {
+        doAction(`repeal:${id}`);
+      } else {
+        doAction(`enact:${id}`);
+      }
+    }
+
+    function updateUI() {
+      const legals = legalActions(state);
+      const approval = getApproval(state);
+
+      // Top HUD
+      const hud = document.getElementById('hud-stats');
+      if (hud) {
+        hud.textContent = `Q${state.quarter} / 16 • $${state.treasury}M Treasury • ${approval}% Approval`;
+      }
+
+      // Crisis visibility
+      const crisisBox = document.getElementById('crisis-box');
+      const crisisActions = document.getElementById('crisis-actions');
+      const policyPanel = document.getElementById('policy-actions');
+      const govPanel = document.getElementById('governance-actions');
+
+      if (state.activeCrisis) {
+        const crisis = CRISES.find(c => c.id === state.activeCrisis);
+        if (crisisBox && crisis) {
+          crisisBox.style.display = 'block';
+          const titleEl = document.getElementById('crisis-title');
+          const descEl = document.getElementById('crisis-desc');
+          if (titleEl) titleEl.textContent = `CRISIS: ${crisis.title}`;
+          if (descEl) descEl.textContent = crisis.desc;
+        }
+        if (crisisActions && crisis) {
+          crisisActions.style.display = 'block';
+          const btnA = document.getElementById('btn-crisis-a');
+          const btnB = document.getElementById('btn-crisis-b');
+          if (btnA) btnA.innerHTML = `${crisis.choiceA.name}<br><small>Cost: $${crisis.choiceA.cost}M</small>`;
+          if (btnB) btnB.innerHTML = `${crisis.choiceB.name}<br><small>Cost: $${crisis.choiceB.cost}M</small>`;
+        }
+        if (policyPanel) policyPanel.style.opacity = '0.3';
+        if (govPanel) govPanel.style.opacity = '0.3';
+      } else {
+        if (crisisBox) crisisBox.style.display = 'none';
+        if (crisisActions) crisisActions.style.display = 'none';
+        if (policyPanel) policyPanel.style.opacity = '1.0';
+        if (govPanel) govPanel.style.opacity = '1.0';
+      }
+
+      // Policy buttons state
+      for (const pid in POLICIES) {
+        const btn = document.getElementById(`btn-pol-${pid}`);
+        if (btn) {
+          const isActive = state.activePolicies.includes(pid);
+          if (btn.classList) {
+            if (isActive) {
+              btn.classList.add('active-policy');
+            } else {
+              btn.classList.remove('active-policy');
+            }
+          }
+          btn.disabled = state.activeCrisis !== null || state.done;
+        }
+      }
+
+      const activeCount = document.getElementById('active-count');
+      if (activeCount) activeCount.textContent = `${state.activePolicies.length} Active`;
+
+      // Campaign buttons
+      ['labor', 'capitalists', 'patriots', 'reformists'].forEach(f => {
+        const btn = document.getElementById(`btn-camp-${f}`);
+        if (btn) {
+          btn.disabled = state.activeCrisis !== null || state.treasury < 50 || state.factions[f] >= 90 || state.done;
+        }
+      });
+
+      // Advance button
+      const advBtn = document.getElementById('btn-advance');
+      if (advBtn) {
+        advBtn.disabled = state.activeCrisis !== null || state.done;
+        if (state.quarter % 4 === 0) {
+          advBtn.textContent = 'Hold General Election & Advance Year';
+          advBtn.style.background = '#059669';
+        } else {
+          advBtn.textContent = 'Advance Fiscal Quarter (End Turn)';
+          advBtn.style.background = '#1e3a8a';
+        }
+      }
+
+      // History log
+      const logFeed = document.getElementById('log-feed');
+      if (logFeed && state.history.length > 0) {
+        logFeed.innerHTML = state.history.slice(-4).reverse().join('<br>');
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Background gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bgGrad.addColorStop(0, '#0c1527');
+      bgGrad.addColorStop(1, '#050a14');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Presidential Chamber / Seal Backdrop
+      ctx.strokeStyle = 'rgba(100, 255, 218, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(300, 180, 140, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Top Title Banner
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Republic of Statecraft — Term ${Math.ceil(state.quarter / 4)} / 4 (Quarter ${state.quarter})`, 24, 30);
+
+      // Stability Meter
+      renderGauge(24, 46, 260, 22, 'Constitutional Stability', state.stability, '#38bdf8');
+
+      // Public Approval Meter
+      const approval = getApproval(state);
+      renderGauge(316, 46, 260, 22, 'Public Approval Mandate', approval, approval >= 50 ? '#4ade80' : '#f87171');
+
+      // Faction Breakdown Bar Chart (4 columns)
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('SOCIETAL FACTION SATISFACTION (Electoral Coalition)', 24, 102);
+
+      const factions = [
+        { id: 'labor', name: 'Labor Unions', val: state.factions.labor, col: '#f97316' },
+        { id: 'capitalists', name: 'Capitalists', val: state.factions.capitalists, col: '#fbbf24' },
+        { id: 'patriots', name: 'Patriots/Mil', val: state.factions.patriots, col: '#ef4444' },
+        { id: 'reformists', name: 'Civil Reform', val: state.factions.reformists, col: '#a855f7' }
+      ];
+
+      factions.forEach((f, idx) => {
+        const x = 24 + idx * 142;
+        const y = 112;
+        const w = 126;
+        const h = 50;
+
+        // Container card
+        ctx.fillStyle = '#141e33';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = '#233554';
+        ctx.strokeRect(x, y, w, h);
+
+        // Label
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '11px sans-serif';
+        ctx.fillText(f.name, x + 8, y + 16);
+
+        // Value
+        ctx.fillStyle = f.col;
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${f.val}%`, x + w - 8, y + 16);
+        ctx.textAlign = 'left';
+
+        // Progress track
+        ctx.fillStyle = '#0b111e';
+        ctx.fillRect(x + 8, y + 26, w - 16, 12);
+
+        // Fill
+        const fillW = Math.max(0, Math.min(w - 16, ((w - 16) * f.val) / 100));
+        ctx.fillStyle = f.col;
+        ctx.fillRect(x + 8, y + 26, fillW, 12);
+      });
+
+      // Treasury & Fiscal Balance Box
+      const tBoxY = 180;
+      ctx.fillStyle = '#111c2e';
+      ctx.fillRect(24, tBoxY, 260, 110);
+      ctx.strokeStyle = '#1e3a5f';
+      ctx.strokeRect(24, tBoxY, 260, 110);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('NATIONAL TREASURY & BUDGET', 36, tBoxY + 22);
+
+      ctx.fillStyle = state.treasury >= 0 ? '#4ade80' : '#f87171';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(`$${state.treasury}M`, 36, tBoxY + 52);
+
+      let policyTotal = 0;
+      state.activePolicies.forEach(p => { policyTotal += POLICIES[p].cost; });
+      const net = state.taxRevenue - policyTotal;
+
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(`Tax Receipts: +$${state.taxRevenue}M / Q`, 36, tBoxY + 74);
+      ctx.fillText(`Policy Outflows: -$${policyTotal}M / Q (Net: ${net >= 0 ? '+' : ''}$${net}M)`, 36, tBoxY + 92);
+
+      // Active Enacted Decrees Display
+      ctx.fillStyle = '#111c2e';
+      ctx.fillRect(316, tBoxY, 260, 110);
+      ctx.strokeStyle = '#1e3a5f';
+      ctx.strokeRect(316, tBoxY, 260, 110);
+
+      ctx.fillStyle = '#f6d365';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('ACTIVE LEGISLATIVE DECREES', 328, tBoxY + 22);
+
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      if (state.activePolicies.length === 0) {
+        ctx.fillText('No policies currently enacted.', 328, tBoxY + 50);
+      } else {
+        state.activePolicies.forEach((pid, i) => {
+          if (i < 4) {
+            ctx.fillStyle = '#64ffda';
+            ctx.fillText(`• ${POLICIES[pid].name}`, 328, tBoxY + 44 + i * 16);
+          }
+        });
+        if (state.activePolicies.length > 4) {
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(`... and ${state.activePolicies.length - 4} more`, 328, tBoxY + 104);
+        }
+      }
+
+      // Next Election Countdown Badge
+      const qUntil = 4 - (state.quarter % 4);
+      const electText = (state.quarter % 4 === 0) ? 'ELECTION IMMINENT THIS QUARTER' : `Next Election: in ${qUntil} Quarter(s)`;
+      ctx.fillStyle = (state.quarter % 4 === 0) ? '#f59e0b' : '#38bdf8';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(electText, 300, 312);
+      ctx.textAlign = 'left';
+
+      // Game Over Screen Overlay
+      if (state.done) {
+        ctx.fillStyle = 'rgba(3, 7, 18, 0.88)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.textAlign = 'center';
+        if (state.winner === 'player') {
+          ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('VICTORY: STATESMAN OF THE REPUBLIC', 300, 150);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Final Governance Score: ${score(state)} Points`, 300, 180);
+          ctx.fillText('Guided the republic through all 16 quarters and retained democratic mandates.', 300, 205);
+        } else {
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('ADMINISTRATION COLLAPSE', 300, 150);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Reason: ${state.result.replace('_', ' ').toUpperCase()}`, 300, 180);
+          ctx.fillText(`Tenure Score: ${score(state)} Points`, 300, 205);
+        }
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function renderGauge(x, y, w, h, label, val, color) {
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(label, x, y - 4);
+
+      ctx.fillStyle = '#0b111e';
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#233554';
+      ctx.strokeRect(x, y, w, h);
+
+      const fillW = Math.max(0, Math.min(w, (w * val) / 100));
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, fillW, h);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${val}%`, x + w - 6, y + 15);
+      ctx.textAlign = 'left';
+    }
+
+    // Initialize
+    updateUI();
+    render();
+
+    // Register service worker if supported
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1087,9 +1087,11 @@
    "id": "0105",
    "slug": "political-sim",
    "name": "Political Sim",
+   "title": "Statecraft",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {
