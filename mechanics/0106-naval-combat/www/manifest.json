@@ -1,0 +1,12 @@
+{
+  "name": "Ironclad Broadside: Naval Combat",
+  "short_name": "Ironclads",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#061325",
+  "theme_color": "#061325",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1098,9 +1098,11 @@
    "id": "0106",
    "slug": "naval-combat",
    "name": "Naval Combat",
+   "title": "Ironclad Broadside",
    "family": "Strategy",
-   "status": "idea",
-   "bot": false,
+   "status": "playable",
+   "levels": "endless",
+   "bot": true,
    "source": "steam-tag"
   },
   {

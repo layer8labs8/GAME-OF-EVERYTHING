@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ironclad Broadside: Naval Combat</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #06111f;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #0d213a;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      color: #38bdf8;
+      text-transform: uppercase;
+    }
+    .hud-stat {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #f59e0b;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      background: #030b14;
+      border: 1px solid #142e4e;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+    .controls-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .panel-section {
+      background: #0c1a2c;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .btn {
+      background: #172a45;
+      border: 1px solid #294970;
+      border-radius: 6px;
+      color: #f1f5f9;
+      padding: 8px 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 48px;
+    }
+    .btn:hover:not(:disabled) {
+      background: #233e66;
+      border-color: #38bdf8;
+    }
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-fire {
+      background: #451a1a;
+      border-color: #7f2323;
+      color: #fecaca;
+    }
+    .btn-fire:hover:not(:disabled) {
+      background: #632525;
+      border-color: #ef4444;
+    }
+    .btn-repair {
+      background: #064e3b;
+      border-color: #059669;
+      color: #d1fae5;
+    }
+    .log-feed {
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      max-height: 52px;
+      overflow-y: auto;
+      line-height: 1.3;
+      padding: 4px;
+      background: #040912;
+      border-radius: 4px;
+      border: 1px solid #142e4e;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ironclad Broadside</h1>
+    <div class="hud-stat" id="hud-stats">Turn 1 / 40 • Wind: E</div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="view" width="560" height="380"></canvas>
+
+    <div class="controls-panel">
+      <!-- Navigation & Helm -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Helm & Propulsion</span>
+          <span id="heading-stat" style="color: #38bdf8;">Heading: N</span>
+        </div>
+        <div class="button-grid">
+          <button id="btn-rudder-port" class="btn">Rudder Port<br><small>↺ 90° CCW</small></button>
+          <button id="btn-sail-ahead" class="btn" style="background: #1d4ed8; border-color: #3b82f6;">Sail Ahead<br><small>Ahead 1-2 Knots</small></button>
+          <button id="btn-rudder-starboard" class="btn">Rudder Starboard<br><small>↻ 90° CW</small></button>
+        </div>
+      </div>
+
+      <!-- Gunnery & Weapons -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Gunnery Batteries & Tactical Orders</span>
+          <span id="cooldown-stat" style="color: #f87171;">Batteries Ready</span>
+        </div>
+        <div class="button-grid" style="margin-bottom: 6px;">
+          <button id="btn-fire-port" class="btn btn-fire">Port Broadside<br><small>Left Flank</small></button>
+          <button id="btn-fire-bow" class="btn btn-fire">Bow Chaser<br><small>Forward Beam</small></button>
+          <button id="btn-fire-starboard" class="btn btn-fire">Starboard Broadside<br><small>Right Flank</small></button>
+        </div>
+        <button id="btn-damage-control" class="btn btn-repair" style="width: 100%;">Emergency Damage Control (+24 Hull HP)</button>
+      </div>
+
+      <!-- Action Log -->
+      <div class="panel-section">
+        <div class="section-title">Tactical Signal Log</div>
+        <div id="log-feed" class="log-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now() & 0xffff);
+    const canvas = document.getElementById('view');
+    const ctx = canvas.getContext('2d');
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(freq = 200, type = 'sawtooth', duration = 0.15) {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state !== 'closed') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        }
+      } catch (e) {}
+    }
+
+    function doAction(action) {
+      if (state.done) return;
+      try {
+        step(state, action);
+        if (action.startsWith('fire')) playSfx(90, 'square', 0.22);
+        else if (action.startsWith('rudder')) playSfx(320, 'sine', 0.08);
+        else playSfx(220, 'triangle', 0.1);
+        updateUI();
+        render();
+      } catch (err) {
+        console.warn('Action error:', err);
+      }
+    }
+
+    // Attach static button listeners
+    document.getElementById('btn-sail-ahead').onclick = () => doAction('sail_ahead');
+    document.getElementById('btn-rudder-port').onclick = () => doAction('rudder_port');
+    document.getElementById('btn-rudder-starboard').onclick = () => doAction('rudder_starboard');
+    document.getElementById('btn-fire-port').onclick = () => doAction('fire_broadside_port');
+    document.getElementById('btn-fire-starboard').onclick = () => doAction('fire_broadside_starboard');
+    document.getElementById('btn-fire-bow').onclick = () => doAction('fire_bow_chaser');
+    document.getElementById('btn-damage-control').onclick = () => doAction('damage_control');
+
+    function updateUI() {
+      const legals = legalActions(state);
+      const p = state.player;
+
+      // Header stats
+      const hud = document.getElementById('hud-stats');
+      if (hud) {
+        hud.textContent = `Turn ${state.turn} / ${state.maxTurns} • Wind: ${state.wind} • Flagship Hull: ${p.hp}/${p.maxHp}`;
+      }
+
+      const hStat = document.getElementById('heading-stat');
+      if (hStat) {
+        const bonus = (p.heading === state.wind) ? ' (Running Downwind +1 Speed!)' : '';
+        hStat.textContent = `Heading: ${p.heading}${bonus}`;
+      }
+
+      const cdStat = document.getElementById('cooldown-stat');
+      if (cdStat) {
+        const portStatus = p.portCooldown > 0 ? 'Port: Reloading' : 'Port: Ready';
+        const starStatus = p.starboardCooldown > 0 ? 'Starboard: Reloading' : 'Starboard: Ready';
+        cdStat.textContent = `${portStatus} • ${starStatus}`;
+      }
+
+      // Buttons
+      const btnAhead = document.getElementById('btn-sail-ahead');
+      const btnPort = document.getElementById('btn-rudder-port');
+      const btnStar = document.getElementById('btn-rudder-starboard');
+      const btnFirePort = document.getElementById('btn-fire-port');
+      const btnFireStar = document.getElementById('btn-fire-starboard');
+      const btnFireBow = document.getElementById('btn-fire-bow');
+      const btnRepair = document.getElementById('btn-damage-control');
+
+      if (btnAhead) btnAhead.disabled = !legals.includes('sail_ahead');
+      if (btnPort) btnPort.disabled = !legals.includes('rudder_port');
+      if (btnStar) btnStar.disabled = !legals.includes('rudder_starboard');
+      if (btnFirePort) btnFirePort.disabled = !legals.includes('fire_broadside_port');
+      if (btnFireStar) btnFireStar.disabled = !legals.includes('fire_broadside_starboard');
+      if (btnFireBow) btnFireBow.disabled = !legals.includes('fire_bow_chaser');
+      if (btnRepair) {
+        btnRepair.disabled = !legals.includes('damage_control');
+        btnRepair.textContent = `Emergency Damage Control (${p.repairsRemaining} Remaining)`;
+      }
+
+      // History log
+      const logFeed = document.getElementById('log-feed');
+      if (logFeed && state.history.length > 0) {
+        logFeed.innerHTML = state.history.slice(-4).reverse().join('<br>');
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Deep Ocean Background
+      const seaGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      seaGrad.addColorStop(0, '#061a33');
+      seaGrad.addColorStop(1, '#020b17');
+      ctx.fillStyle = seaGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Sea coordinates & layout
+      const gridPx = 46;
+      const originX = 36;
+      const originY = 32;
+
+      // Draw Grid & Ocean hex/tiles
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          const gx = originX + x * gridPx;
+          const gy = originY + y * gridPx;
+
+          ctx.fillStyle = ((x + y) % 2 === 0) ? '#09213d' : '#071b33';
+          ctx.fillRect(gx, gy, gridPx - 2, gridPx - 2);
+
+          // Subtle wave ripples
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.1)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(gx + 22, gy + 22, 12, 0, Math.PI);
+          ctx.stroke();
+        }
+      }
+
+      // Draw firing arcs for player flagship
+      const p = state.player;
+      if (p.hp > 0 && !state.done) {
+        // Port firing arc
+        const portDir = getPortDir(p.heading);
+        drawBeamHighlight(originX, originY, gridPx, p.x, p.y, portDir, 3, 'rgba(239, 68, 68, 0.25)');
+        // Starboard firing arc
+        const starDir = getStarboardDir(p.heading);
+        drawBeamHighlight(originX, originY, gridPx, p.x, p.y, starDir, 3, 'rgba(239, 68, 68, 0.25)');
+        // Bow firing line
+        drawBeamHighlight(originX, originY, gridPx, p.x, p.y, p.heading, 3, 'rgba(56, 189, 248, 0.25)');
+      }
+
+      // Draw Enemy Warships
+      state.enemies.forEach(e => {
+        if (!e.alive) {
+          // Sunk wreckage marker
+          const ex = originX + e.x * gridPx + gridPx / 2;
+          const ey = originY + e.y * gridPx + gridPx / 2;
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(ex, ey, 14, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = '#64748b';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('✕ Sunk', ex, ey + 4);
+          ctx.textAlign = 'left';
+          return;
+        }
+
+        drawVessel(originX, originY, gridPx, e.x, e.y, e.heading, '#ef4444', '#f87171', e.name);
+
+        // Enemy HP mini bar
+        const ex = originX + e.x * gridPx;
+        const ey = originY + e.y * gridPx;
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(ex + 4, ey + 2, gridPx - 10, 4);
+        const hpW = Math.max(0, ((gridPx - 10) * e.hp) / e.maxHp);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(ex + 4, ey + 2, hpW, 4);
+      });
+
+      // Draw Player Flagship
+      if (p.hp > 0) {
+        drawVessel(originX, originY, gridPx, p.x, p.y, p.heading, '#0284c7', '#38bdf8', 'HMS Sovereign');
+
+        // Player HP mini bar
+        const px = originX + p.x * gridPx;
+        const py = originY + p.y * gridPx;
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(px + 4, py + 2, gridPx - 10, 4);
+        const hpW = Math.max(0, ((gridPx - 10) * p.hp) / p.maxHp);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(px + 4, py + 2, hpW, 4);
+      }
+
+      // Right Tactical Status Card
+      const cardX = 380;
+      const cardY = 32;
+      const cardW = 160;
+      const cardH = 320;
+
+      ctx.fillStyle = '#0c1a2c';
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+      ctx.strokeStyle = '#1e3a5f';
+      ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+      // Wind Rose Indicator
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('TACTICAL COMPASS', cardX + 12, cardY + 22);
+
+      drawWindCompass(cardX + 80, cardY + 70, state.wind);
+
+      // Enemy Status List
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('HOSTILE SQUADRON', cardX + 12, cardY + 130);
+
+      state.enemies.forEach((e, idx) => {
+        const ey = cardY + 150 + idx * 46;
+        ctx.font = '11px sans-serif';
+        ctx.fillStyle = e.alive ? '#f1f5f9' : '#64748b';
+        ctx.fillText(e.name, cardX + 12, ey);
+
+        if (e.alive) {
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.fillText(`${e.hp} / ${e.maxHp} HP`, cardX + 12, ey + 15);
+        } else {
+          ctx.fillStyle = '#64748b';
+          ctx.fillText('DESTROYED', cardX + 12, ey + 15);
+        }
+      });
+
+      // Score counter
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`Battle Score: ${score(state)}`, cardX + 12, cardY + 295);
+
+      // Game Over Screen Overlay
+      if (state.done) {
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.textAlign = 'center';
+        if (state.winner === 'player') {
+          ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('DECISIVE NAVAL VICTORY', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`Entire Flotilla Destroyed! Final Score: ${score(state)}`, 280, 195);
+        } else {
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('FLAGSHIP LOST AT SEA', 280, 160);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '14px sans-serif';
+          ctx.fillText(`The fleet was scattered. Final Score: ${score(state)}`, 280, 195);
+        }
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function drawBeamHighlight(ox, oy, sz, sx, sy, dir, range, color) {
+      const vec = VECTORS[dir];
+      for (let d = 1; d <= range; d++) {
+        const tx = sx + vec.dx * d;
+        const ty = sy + vec.dy * d;
+        if (tx >= 0 && tx < GRID_SIZE && ty >= 0 && ty < GRID_SIZE) {
+          ctx.fillStyle = color;
+          ctx.fillRect(ox + tx * sz, oy + ty * sz, sz - 2, sz - 2);
+          ctx.strokeStyle = color;
+          ctx.strokeRect(ox + tx * sz + 1, oy + ty * sz + 1, sz - 4, sz - 4);
+        }
+      }
+    }
+
+    function drawVessel(ox, oy, sz, gx, gy, heading, hullCol, trimCol, name) {
+      const cx = ox + gx * sz + sz / 2;
+      const cy = oy + gy * sz + sz / 2;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Rotate based on heading: N=0, E=90, S=180, W=270
+      const angles = { N: 0, E: Math.PI / 2, S: Math.PI, W: -Math.PI / 2 };
+      ctx.rotate(angles[heading] || 0);
+
+      // Ship Hull geometry (pointed bow facing top)
+      ctx.fillStyle = hullCol;
+      ctx.beginPath();
+      ctx.moveTo(0, -18); // Pointed bow
+      ctx.lineTo(11, -8);
+      ctx.lineTo(11, 14);
+      ctx.lineTo(-11, 14);
+      ctx.lineTo(-11, -8);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = trimCol;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Gun Turret / Armored Casemate in Center
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-6, -4, 12, 10);
+      ctx.fillStyle = trimCol;
+      ctx.beginPath();
+      ctx.arc(0, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Forward Gun Barrel
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -4);
+      ctx.lineTo(0, -14);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawWindCompass(cx, cy, windDir) {
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 26, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.textAlign = 'center';
+      ctx.fillText('N', cx, cy - 29);
+      ctx.fillText('S', cx, cy + 38);
+      ctx.fillText('W', cx - 34, cy + 4);
+      ctx.fillText('E', cx + 34, cy + 4);
+
+      // Wind vector arrow
+      const angles = { N: -Math.PI / 2, E: 0, S: Math.PI / 2, W: Math.PI };
+      const rad = angles[windDir];
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rad);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-16, 0);
+      ctx.lineTo(16, 0);
+      ctx.lineTo(8, -6);
+      ctx.moveTo(16, 0);
+      ctx.lineTo(8, 6);
+      ctx.stroke();
+
+      ctx.restore();
+      ctx.textAlign = 'left';
+    }
+
+    // Initialize
+    updateUI();
+    render();
+
+    // Register service worker if supported
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

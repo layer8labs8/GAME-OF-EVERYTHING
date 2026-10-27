@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="ocean" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#09203f" />
+      <stop offset="50%" stop-color="#143152" />
+      <stop offset="100%" stop-color="#040d1a" />
+    </linearGradient>
+    <linearGradient id="armor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="50%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="brass" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <radialGradient id="blast" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="40%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="rgba(239, 68, 68, 0)" />
+    </radialGradient>
+  </defs>
+
+  <!-- Ocean Background -->
+  <rect width="512" height="512" rx="100" fill="url(#ocean)" stroke="#1e3a5f" stroke-width="8" />
+
+  <!-- Wave lines -->
+  <g fill="none" stroke="#38bdf8" stroke-width="4" opacity="0.4">
+    <path d="M 40,360 Q 90,340 140,360 T 240,360 T 340,360 T 440,360 T 490,360" />
+    <path d="M 20,400 Q 70,380 120,400 T 220,400 T 320,400 T 420,400 T 490,400" />
+    <path d="M 50,440 Q 100,420 150,440 T 250,440 T 350,440 T 450,440" />
+  </g>
+
+  <!-- Ironclad Hull (Profile/Diagonal) -->
+  <g>
+    <!-- Keel / Lower Hull -->
+    <path d="M 80,330 L 420,330 L 390,370 L 120,370 Z" fill="#0f172a" stroke="#0284c7" stroke-width="2" />
+    
+    <!-- Armored Casemate Main Hull -->
+    <path d="M 90,330 L 140,250 L 360,250 L 420,330 Z" fill="url(#armor)" stroke="#38bdf8" stroke-width="4" />
+    
+    <!-- Steam Funnel / Smokestack -->
+    <rect x="236" y="170" width="32" height="80" fill="#1e293b" stroke="#94a3b8" stroke-width="3" />
+    <rect x="230" y="160" width="44" height="14" rx="2" fill="url(#brass)" />
+
+    <!-- Rotating Armored Gun Turret -->
+    <path d="M 160,250 C 160,205 210,205 210,250 Z" fill="#334155" stroke="#94a3b8" stroke-width="3" />
+    <!-- Gun Barrel -->
+    <rect x="110" y="222" width="60" height="12" rx="2" fill="#0f172a" stroke="#64748b" stroke-width="2" />
+
+    <!-- Second Turret -->
+    <path d="M 290,250 C 290,205 340,205 340,250 Z" fill="#334155" stroke="#94a3b8" stroke-width="3" />
+    <rect x="330" y="222" width="60" height="12" rx="2" fill="#0f172a" stroke="#64748b" stroke-width="2" />
+
+    <!-- Cannon Muzzle Flash -->
+    <circle cx="100" cy="228" r="28" fill="url(#blast)" />
+    <circle cx="400" cy="228" r="28" fill="url(#blast)" />
+
+    <!-- Armor Rivets -->
+    <circle cx="150" cy="310" r="3" fill="#cbd5e1" />
+    <circle cx="190" cy="310" r="3" fill="#cbd5e1" />
+    <circle cx="230" cy="310" r="3" fill="#cbd5e1" />
+    <circle cx="270" cy="310" r="3" fill="#cbd5e1" />
+    <circle cx="310" cy="310" r="3" fill="#cbd5e1" />
+    <circle cx="350" cy="310" r="3" fill="#cbd5e1" />
+  </g>
+
+  <!-- Compass / Crosshair in Sky -->
+  <circle cx="256" cy="100" r="32" fill="none" stroke="url(#brass)" stroke-width="3" opacity="0.7" />
+  <line x1="256" y1="60" x2="256" y2="140" stroke="url(#brass)" stroke-width="3" opacity="0.7" />
+  <line x1="216" y1="100" x2="296" y2="100" stroke="url(#brass)" stroke-width="3" opacity="0.7" />
+</svg>
