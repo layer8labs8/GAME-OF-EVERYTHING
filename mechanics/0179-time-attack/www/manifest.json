@@ -1,0 +1,12 @@
+{
+  "name": "Speed Chrono: Time Attack",
+  "short_name": "SpeedChrono",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#09090b",
+  "theme_color": "#e11d48",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

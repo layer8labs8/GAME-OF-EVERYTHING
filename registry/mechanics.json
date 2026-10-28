@@ -1902,8 +1902,10 @@
       "slug": "time-attack",
       "name": "Time Attack",
       "family": "Other",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "none",
+      "title": "Speed Chrono",
       "source": "steam-tag"
     }
   ]
