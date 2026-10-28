@@ -1,577 +1,368 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Aero Ace - Flight Simulator</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      background-color: #032b43;
-      color: #f0f9ff;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 12px;
-      background: #0b4f6c;
-      border: 1px solid #38bdf8;
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #38bdf8;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: #0284c7;
-      color: #f0f9ff;
-      font-weight: 600;
-    }
-    #game-container {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 4/3;
-      background: #011627;
-      border: 2px solid #38bdf8;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.25);
-    }
-    .vitals-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .vital-card {
-      background: #0b4f6c;
-      border: 1px solid #0284c7;
-      border-radius: 6px;
-      padding: 6px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .vital-title {
-      font-size: 0.65rem;
-      color: #bae6fd;
-      text-transform: uppercase;
-      font-weight: bold;
-    }
-    .vital-val {
-      font-size: 0.95rem;
-      font-weight: bold;
-      color: #fff;
-    }
-    .meter-bar {
-      height: 4px;
-      background: #011627;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 2px;
-    }
-    .meter-fill {
-      height: 100%;
-      background: #38bdf8;
-      transition: width 0.2s ease;
-    }
-    #message-box {
-      background: #083344;
-      border-left: 4px solid #38bdf8;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      min-height: 38px;
-      display: flex;
-      align-items: center;
-      color: #e0f2fe;
-    }
-    #actions-panel {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .btn {
-      background: #0c4a6e;
-      border: 1px solid #0284c7;
-      color: #fff;
-      padding: 10px 8px;
-      border-radius: 6px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      transition: all 0.1s ease;
-    }
-    .btn:active {
-      transform: scale(0.97);
-      filter: brightness(1.2);
-    }
-    .btn-thrust {
-      background: #0369a1;
-      border-color: #38bdf8;
-      color: #f0f9ff;
-    }
-    .btn-pitch {
-      background: #1e3a8a;
-      border-color: #60a5fa;
-      color: #eff6ff;
-    }
-    .btn-bank {
-      background: #4338ca;
-      border-color: #818cf8;
-      color: #eef2ff;
-    }
-    .btn-gear {
-      background: #b45309;
-      border-color: #f59e0b;
-      color: #fefce8;
-    }
-    .top-controls {
-      display: flex;
-      gap: 6px;
-    }
-    .ctrl-btn {
-      background: #0b4f6c;
-      border: 1px solid #38bdf8;
-      color: #38bdf8;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      font-weight: 600;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#030814">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Aero Ace</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #030814; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Aero Ace</h1>
-    <div class="top-controls">
-      <button class="ctrl-btn" id="bot-toggle-btn" onclick="window.toggleBot()">BOT: OFF</button>
-      <button class="ctrl-btn" onclick="window.restartGame()">RESTART</button>
-      <span class="badge" id="turn-badge">TURN 0/100</span>
-    </div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <div id="game-container">
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+const W = 360;
+const H = 640;
+let scale = 1;
 
-    <div class="vitals-grid">
-      <div class="vital-card">
-        <span class="vital-title">Altitude (ft)</span>
-        <span class="vital-val" id="val-alt">1,200 ft</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-alt" style="width:24%"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Airspeed (kts)</span>
-        <span class="vital-val" id="val-speed">130 kts</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-speed" style="width:43%;background:#22c55e"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Throttle / Fuel</span>
-        <span class="vital-val" id="val-thrust">60% | 100%</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-fuel" style="width:100%;background:#eab308"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Sky Rings / Gear</span>
-        <span class="vital-val" id="val-rings">0/5 | UP</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-rings" style="width:0%;background:#a855f7"></div></div>
-      </div>
-    </div>
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-    <div id="message-box">Aircraft cruising at 1,200 ft. Line up through the first aerial sky ring.</div>
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
-    <div id="actions-panel"></div>
-  </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0176-best') || 0; } catch (e) {}
 
-  <script src="logic.js"></script>
-  <script>
-    let state = createState(Date.now ? Date.now() : 12345);
-    let botRunning = false;
-    let botInterval = null;
+let state = createState(Date.now());
+let visualPitch = 0;
+let visualBank = 0;
+let floaters = [];
+let overAt = 0;
 
-    // Web Audio Synthesizer
-    const audioCtx = (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')
-      ? new (window.AudioContext || window.webkitAudioContext)()
-      : null;
+function restart() {
+  state = createState(Date.now());
+  visualPitch = 0;
+  visualBank = 0;
+  floaters = [];
+  overAt = 0;
+}
 
-    function playSfx(type) {
-      if (!audioCtx) return;
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      const t = audioCtx.currentTime;
+function performAction(act) {
+  if (isOver(state)) return;
+  const legals = legalActions(state);
+  if (!legals.includes(act)) return;
 
-      if (type === 'thrust') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(110, t);
-        osc.frequency.linearRampToValueAtTime(150, t + 0.15);
-        gain.gain.setValueAtTime(0.12, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.15);
-        osc.start(t);
-        osc.stop(t + 0.15);
-      } else if (type === 'gear') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(220, t);
-        osc.frequency.linearRampToValueAtTime(80, t + 0.2);
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.2);
-        osc.start(t);
-        osc.stop(t + 0.2);
-      } else if (type === 'ring') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587, t);
-        osc.frequency.setValueAtTime(880, t + 0.1);
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.25);
-        osc.start(t);
-        osc.stop(t + 0.25);
-      } else if (type === 'crash') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(90, t);
-        osc.frequency.linearRampToValueAtTime(30, t + 0.4);
-        gain.gain.setValueAtTime(0.3, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.4);
-        osc.start(t);
-        osc.stop(t + 0.4);
-      }
+  const oldRings = state.ringsPassed;
+  const res = step(state, act);
+
+  if (state.ringsPassed > oldRings) {
+    floaters.push({ text: 'RING CLEARED! +1200', x: 180, y: 180, t: 0, color: '#38bdf8' });
+  } else if (act.includes('throttle_increase')) {
+    floaters.push({ text: 'THROTTLE ' + state.throttle + '%', x: 70, y: 380, t: 0, color: '#10b981' });
+  } else if (act.includes('pitch_up')) {
+    floaters.push({ text: 'CLIMB +' + state.pitch + '°', x: 180, y: 380, t: 0, color: '#38bdf8' });
+  } else if (act.includes('pitch_down')) {
+    floaters.push({ text: 'DIVE ' + state.pitch + '°', x: 180, y: 380, t: 0, color: '#f59e0b' });
+  } else if (act.includes('level_wings')) {
+    floaters.push({ text: 'WINGS LEVEL', x: 180, y: 380, t: 0, color: '#06b6d4' });
+  } else if (act.includes('toggle_landing_gear')) {
+    floaters.push({ text: state.landingGear ? 'GEAR DOWN' : 'GEAR UP', x: 280, y: 380, t: 0, color: '#fbbf24' });
+  }
+
+  if (isOver(state)) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0176-best', best); } catch (e) {}
     }
+  }
+}
 
-    function render() {
-      // Vitals UI
-      document.getElementById('turn-badge').textContent = 'TURN ' + state.turns + '/' + state.maxTurns;
-      document.getElementById('val-alt').textContent = state.altitude + ' ft';
-      document.getElementById('fill-alt').style.width = Math.min(100, (state.altitude / 5000) * 100) + '%';
+// Action button hitboxes on canvas
+const BTNS = [
+  { id: 'bank_l', label: '◀ BANK L', action: 'action:bank_left', x: 20, y: 470, w: 75, h: 48, col: '#0284c7' },
+  { id: 'pitch_up', label: 'PULL UP ▲', action: 'action:pitch_up', x: 105, y: 470, w: 70, h: 48, col: '#38bdf8' },
+  { id: 'pitch_dn', label: 'DIVE ▼', action: 'action:pitch_down', x: 185, y: 470, w: 70, h: 48, col: '#38bdf8' },
+  { id: 'bank_r', label: 'BANK R ▶', action: 'action:bank_right', x: 265, y: 470, w: 75, h: 48, col: '#0284c7' },
+  { id: 'throt_up', label: 'THROT ▲', action: 'action:throttle_increase', x: 20, y: 530, w: 75, h: 44, col: '#10b981' },
+  { id: 'level', label: 'LEVEL WINGS', action: 'action:level_wings', x: 105, y: 530, w: 150, h: 44, col: '#06b6d4' },
+  { id: 'throt_dn', label: 'THROT ▼', action: 'action:throttle_decrease', x: 265, y: 530, w: 75, h: 44, col: '#ef4444' },
+  { id: 'gear', label: 'TOGGLE GEAR', action: 'action:toggle_landing_gear', x: 80, y: 585, w: 200, h: 42, col: '#f59e0b' },
+];
 
-      document.getElementById('val-speed').textContent = state.airspeed + ' kts';
-      document.getElementById('fill-speed').style.width = Math.min(100, (state.airspeed / 280) * 100) + '%';
-      document.getElementById('fill-speed').style.background = state.airspeed < 80 ? '#ef4444' : '#22c55e';
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
 
-      document.getElementById('val-thrust').textContent = state.throttle + '% | ' + state.fuel + '%';
-      document.getElementById('fill-fuel').style.width = Math.max(0, state.fuel) + '%';
-
-      document.getElementById('val-rings').textContent = state.ringsPassed + '/5 | ' + (state.landingGear ? 'GEAR DN' : 'GEAR UP');
-      document.getElementById('fill-rings').style.width = ((state.ringsPassed / 5) * 100) + '%';
-
-      document.getElementById('message-box').textContent = state.gameMessage;
-
-      // Canvas Artificial Horizon & Flight View
-      const canvas = document.getElementById('gameCanvas');
-      if (!canvas || !canvas.getContext) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-      const cx = w / 2;
-      const cy = h / 2;
-
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate((-state.bank * Math.PI) / 180);
-
-      // Pitch vertical displacement: positive pitch moves horizon down
-      const horizonOffset = state.pitch * 6;
-
-      // 1. Sky Half
-      ctx.fillStyle = '#0284c7';
-      ctx.fillRect(-w, -h * 2 + horizonOffset, w * 2, h * 2);
-
-      // 2. Earth / Ocean Half
-      ctx.fillStyle = '#064e3b';
-      ctx.fillRect(-w, horizonOffset, w * 2, h * 2);
-
-      // Horizon Line
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(-w, horizonOffset);
-      ctx.lineTo(w, horizonOffset);
-      ctx.stroke();
-
-      // Pitch Ladder Marks (-20, -10, +10, +20)
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.lineWidth = 2;
-      ctx.font = '10px sans-serif';
-      ctx.fillStyle = '#fff';
-      ctx.textAlign = 'right';
-
-      for (let p = -30; p <= 30; p += 10) {
-        if (p === 0) continue;
-        const py = horizonOffset - p * 6;
-        const markW = 35;
-        ctx.beginPath();
-        ctx.moveTo(-markW, py);
-        ctx.lineTo(markW, py);
-        ctx.stroke();
-        ctx.fillText(p + '°', -markW - 4, py + 3);
-      }
-
-      // Next Sky Ring in 3D Perspective Projection
-      if (state.currentRingIndex < SKY_RINGS.length) {
-        const ring = SKY_RINGS[state.currentRingIndex];
-        const distToRing = ring.distance - state.flightDistance;
-
-        if (distToRing > -50 && distToRing < 500) {
-          const scale = Math.max(0.2, 1 - distToRing / 500);
-          const ringRad = 70 * scale;
-          const altDiff = ring.targetAltitude - state.altitude;
-          const ry = horizonOffset - (altDiff * 0.12) * scale;
-          const rx = (ring.targetBank - state.bank) * 8 * scale;
-
-          // Outer glowing ring
-          ctx.strokeStyle = '#f59e0b';
-          ctx.lineWidth = 10 * scale;
-          ctx.beginPath();
-          ctx.arc(rx, ry, ringRad, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Inner ring border
-          ctx.strokeStyle = '#fef08a';
-          ctx.lineWidth = 4 * scale;
-          ctx.beginPath();
-          ctx.arc(rx, ry, ringRad * 0.9, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Ring Target Tag
-          ctx.fillStyle = '#fef08a';
-          ctx.font = 'bold ' + Math.floor(13 * scale) + 'px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('RING ' + (state.currentRingIndex + 1) + ' (' + ring.targetAltitude + 'ft)', rx, ry - ringRad - 6);
-        }
-      }
-
-      // Runway Visual on Final Sector
-      if (state.flightDistance >= 1200) {
-        const distToRunway = RUNWAY_DISTANCE - state.flightDistance;
-        const scale = Math.max(0.1, 1 - distToRunway / 450);
-        const rwyY = horizonOffset;
-        const rwTopW = 20 * scale;
-        const rwBottomW = 120 * scale;
-        const rwLen = 140 * scale;
-
-        ctx.fillStyle = '#1e293b';
-        ctx.beginPath();
-        ctx.moveTo(-rwTopW / 2, rwyY);
-        ctx.lineTo(rwTopW / 2, rwyY);
-        ctx.lineTo(rwBottomW / 2, rwyY + rwLen);
-        ctx.lineTo(-rwBottomW / 2, rwyY + rwLen);
-        ctx.closePath();
-        ctx.fill();
-
-        // Runway Centerline
-        ctx.strokeStyle = '#f8fafc';
-        ctx.setLineDash([8, 8]);
-        ctx.lineWidth = 3 * scale;
-        ctx.beginPath();
-        ctx.moveTo(0, rwyY);
-        ctx.lineTo(0, rwyY + rwLen);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      ctx.restore();
-
-      // Fixed Aircraft Crosshair Reticle at Center
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 3;
-      // Center dot
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-      ctx.fill();
-      // Reticle wings
-      ctx.beginPath();
-      ctx.moveTo(cx - 45, cy);
-      ctx.lineTo(cx - 15, cy);
-      ctx.lineTo(cx - 15, cy + 10);
-      ctx.moveTo(cx + 45, cy);
-      ctx.lineTo(cx + 15, cy);
-      ctx.lineTo(cx + 15, cy + 10);
-      ctx.stroke();
-
-      // Stall Warning Banner
-      if (state.isStalling) {
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
-        ctx.fillRect(cx - 120, cy - 80, 240, 36);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('STALL WARNING!', cx, cy - 56);
-      }
-
-      // Game Over Screen Overlay
-      if (isOver(state)) {
-        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(state.victory ? 'MISSION ACCOMPLISHED - SAFE LANDING!' : 'FLIGHT TERMINATED - CRASH', cx, cy - 20);
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Aviator Evaluation Score: ' + score(state), cx, cy + 15);
-      }
-
-      updateActions();
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  for (const b of BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      performAction(b.action);
+      return;
     }
+  }
+  // Yoke tap zones in upper half
+  if (p.y < 460) {
+    if (p.y < 200) performAction('action:pitch_down');
+    else if (p.y > 320) performAction('action:pitch_up');
+    else if (p.x < 120) performAction('action:bank_left');
+    else if (p.x > 240) performAction('action:bank_right');
+    else performAction('action:level_wings');
+  }
+});
 
-    function updateActions() {
-      const panel = document.getElementById('actions-panel');
-      if (isOver(state)) {
-        panel.innerHTML = '<button class="btn btn-thrust" onclick="window.restartGame()">NEW FLIGHT FLIGHTPLAN</button>';
-        return;
-      }
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  if (k === 'arrowleft' || k === 'a') performAction('action:bank_left');
+  else if (k === 'arrowright' || k === 'd') performAction('action:bank_right');
+  else if (k === 'arrowdown' || k === 's') performAction('action:pitch_up'); // Pulled back = pitch up
+  else if (k === 'arrowup' || k === 'w') performAction('action:pitch_down'); // Pushed fwd = pitch down
+  else if (k === 'e' || k === '+') performAction('action:throttle_increase');
+  else if (k === 'q' || k === '-') performAction('action:throttle_decrease');
+  else if (k === ' ' || k === 'enter') performAction('action:level_wings');
+  else if (k === 'g') performAction('action:toggle_landing_gear');
+});
 
-      const actions = legalActions(state);
-      let html = '';
+function draw(dt) {
+  // Lerp visual orientation
+  visualPitch += (state.pitch - visualPitch) * Math.min(1, dt * 8);
+  visualBank += (state.bank - visualBank) * Math.min(1, dt * 8);
 
-      for (const act of actions) {
-        let cls = 'btn';
-        let label = act;
-        let sub = '';
+  // Cockpit Viewport (0..460)
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, W, 460);
+  ctx.clip();
 
-        if (act === 'action:throttle_increase') {
-          cls += ' btn-thrust';
-          label = '⚡ Throttle Up (+20%)';
-          sub = 'Gain Thrust & Speed';
-        } else if (act === 'action:throttle_decrease') {
-          cls += ' btn-thrust';
-          label = '📉 Throttle Down (-20%)';
-          sub = 'Slow Airspeed';
-        } else if (act === 'action:pitch_up') {
-          cls += ' btn-pitch';
-          label = '⬆️ Pitch Up (Climb)';
-          sub = 'Stick Back (+8° Angle)';
-        } else if (act === 'action:pitch_down') {
-          cls += ' btn-pitch';
-          label = '⬇️ Pitch Down (Dive)';
-          sub = 'Stick Forward (-8° Angle)';
-        } else if (act === 'action:bank_left') {
-          cls += ' btn-bank';
-          label = '◀ Bank Left';
-          sub = 'Roll -10° Left';
-        } else if (act === 'action:bank_right') {
-          cls += ' btn-bank';
-          label = '▶ Bank Right';
-          sub = 'Roll +10° Right';
-        } else if (act === 'action:level_wings') {
-          cls += ' btn-pitch';
-          label = '⚖️ Level Wings';
-          sub = 'Auto-Trim Horizon';
-        } else if (act === 'action:toggle_landing_gear') {
-          cls += ' btn-gear';
-          label = state.landingGear ? '⚙️ Retract Gear' : '⚙️ Deploy Gear Down';
-          sub = state.landingGear ? 'Reduce Drag' : 'Mandatory for Landing';
-        }
+  // Artificial Horizon Center
+  const hx = W / 2;
+  const hy = 230 + visualPitch * 4;
 
-        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
-      }
+  ctx.save();
+  ctx.translate(hx, hy);
+  ctx.rotate((-visualBank * Math.PI) / 180);
 
-      panel.innerHTML = html;
+  // Sky
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(-W, -H, W * 2, H);
+
+  // Ground
+  ctx.fillStyle = '#14532d';
+  ctx.fillRect(-W, 0, W * 2, H);
+
+  // Horizon Line
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(-W, 0);
+  ctx.lineTo(W, 0);
+  ctx.stroke();
+
+  // Pitch ladder marks
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 1.5;
+  for (let p = -20; p <= 20; p += 10) {
+    if (p === 0) continue;
+    const py = -p * 4;
+    ctx.beginPath();
+    ctx.moveTo(-25, py);
+    ctx.lineTo(25, py);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  // Draw Sky Rings / Target Waypoint in forward view
+  if (state.currentRingIndex < 5) {
+    const rx = W / 2 + (state.bank * 1.5);
+    const ry = 210 - (state.altitude - 1500) * 0.05;
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(rx, Math.max(80, Math.min(380, ry)), 32, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(250, 204, 21, 0.2)';
+    ctx.fill();
+
+    ctx.fillStyle = '#fef08a';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('RING #' + (state.currentRingIndex + 1), rx, Math.max(80, Math.min(380, ry)) - 38);
+  }
+
+  // Crosshair Gunsight / Flight Director (Aircraft Reticle)
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  // Center dot
+  ctx.arc(W / 2, 230, 4, 0, Math.PI * 2);
+  // Wings
+  ctx.moveTo(W / 2 - 40, 230);
+  ctx.lineTo(W / 2 - 12, 230);
+  ctx.moveTo(W / 2 + 12, 230);
+  ctx.lineTo(W / 2 + 40, 230);
+  // Fin
+  ctx.moveTo(W / 2, 222);
+  ctx.lineTo(W / 2, 210);
+  ctx.stroke();
+
+  // Instrument Tapes on Sides
+  // Speed Tape (Left)
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+  rrect(10, 80, 52, 140, 4);
+  ctx.fill();
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('KNOTS', 36, 96);
+  ctx.font = 'bold 17px system-ui, sans-serif';
+  ctx.fillStyle = state.isStalling ? '#ef4444' : '#ffffff';
+  ctx.fillText(state.airspeed, 36, 122);
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText(state.isStalling ? 'STALL!' : 'AIRSPEED', 36, 142);
+
+  // Altitude Tape (Right)
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+  rrect(W - 62, 80, 52, 140, 4);
+  ctx.fill();
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ALT FT', W - 36, 96);
+  ctx.font = 'bold 17px system-ui, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(state.altitude, W - 36, 122);
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('MSL', W - 36, 142);
+
+  ctx.restore();
+
+  // Top Header HUD
+  ctx.fillStyle = 'rgba(3, 8, 20, 0.9)';
+  ctx.fillRect(0, 0, W, 48);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('RINGS: ' + state.ringsPassed + '/5', 12, 22);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#10b981';
+  ctx.fillText('THROT ' + state.throttle + '%', W - 12, 22);
+
+  // Sub-bars: Fuel & Gear
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'left';
+  ctx.fillText('FUEL ' + state.fuel + '%', 12, 38);
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(66, 30, 75, 8);
+  ctx.fillStyle = state.fuel > 25 ? '#10b981' : '#ef4444';
+  ctx.fillRect(66, 30, 75 * (state.fuel / 100), 8);
+
+  ctx.fillStyle = state.landingGear ? '#fbbf24' : '#64748b';
+  ctx.textAlign = 'right';
+  ctx.fillText(state.landingGear ? 'GEAR DOWN 🛞' : 'GEAR RETRACTED ✈', W - 12, 38);
+
+  // Floating text
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 35 * dt;
+    f.t += dt;
+    if (f.t > 0.8) {
+      floaters.splice(i, 1);
+      continue;
     }
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  }
 
-    window.triggerAction = function(act) {
-      if (isOver(state)) return;
-      if (act.includes('throttle')) playSfx('thrust');
-      else if (act.includes('gear')) playSfx('gear');
+  // Draw Control Deck
+  ctx.fillStyle = '#060f1e';
+  ctx.fillRect(0, 460, W, 180);
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(0, 458, W, 2);
 
-      const oldRings = state.ringsPassed;
-      step(state, act);
+  const legals = legalActions(state);
+  for (const b of BTNS) {
+    const isLegal = legals.includes(b.action);
+    ctx.fillStyle = isLegal ? b.col : '#1e293b';
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.fill();
+    ctx.strokeStyle = isLegal ? 'rgba(255,255,255,0.3)' : '#334155';
+    ctx.lineWidth = 1.5;
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.stroke();
 
-      if (state.ringsPassed > oldRings) playSfx('ring');
-      if (state.defeat) playSfx('crash');
-      render();
-    };
+    ctx.fillStyle = isLegal ? '#ffffff' : '#64748b';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+  }
+  ctx.textBaseline = 'alphabetic';
 
-    window.restartGame = function() {
-      state = createState(Date.now ? Date.now() : 12345);
-      render();
-    };
+  // Game over overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(3, 8, 20, 0.9)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.victory ? '#10b981' : '#ef4444';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.victory ? 'TOUCHDOWN SAFE!' : 'AIRCRAFT CRASH', W / 2, H / 2 - 40);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state) + '  (Best: ' + best + ')', W / 2, H / 2);
+    ctx.fillText('Rings Cleared: ' + state.ringsPassed + '/5  Distance: ' + state.flightDistance, W / 2, H / 2 + 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap to fly again', W / 2, H / 2 + 70);
+  }
+}
 
-    window.toggleBot = function() {
-      botRunning = !botRunning;
-      const btn = document.getElementById('bot-toggle-btn');
-      if (btn) {
-        btn.textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
-        btn.style.background = botRunning ? '#0284c7' : '#0b4f6c';
-      }
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 
-      if (botRunning) {
-        botInterval = setInterval(() => {
-          if (isOver(state)) {
-            state = createState(Date.now ? Date.now() : 9999);
-            render();
-            return;
-          }
-          const acts = legalActions(state);
-          if (acts.length > 0) {
-            let choice = acts[0];
-            // Intelligent flight navigation autopilot
-            if (state.flightDistance >= RUNWAY_DISTANCE - 100) {
-              if (!state.landingGear && acts.includes('action:toggle_landing_gear')) choice = 'action:toggle_landing_gear';
-              else if (state.altitude > 100 && acts.includes('action:pitch_down')) choice = 'action:pitch_down';
-              else if (state.airspeed > 120 && acts.includes('action:throttle_decrease')) choice = 'action:throttle_decrease';
-              else if (acts.includes('action:level_wings')) choice = 'action:level_wings';
-            } else if (state.currentRingIndex < SKY_RINGS.length) {
-              const target = SKY_RINGS[state.currentRingIndex];
-              if (state.altitude < target.targetAltitude - 150 && acts.includes('action:pitch_up')) choice = 'action:pitch_up';
-              else if (state.altitude > target.targetAltitude + 150 && acts.includes('action:pitch_down')) choice = 'action:pitch_down';
-              else if (state.bank < target.targetBank - 10 && acts.includes('action:bank_right')) choice = 'action:bank_right';
-              else if (state.bank > target.targetBank + 10 && acts.includes('action:bank_left')) choice = 'action:bank_left';
-              else if (state.airspeed < 110 && acts.includes('action:throttle_increase')) choice = 'action:throttle_increase';
-              else if (acts.includes('action:level_wings')) choice = 'action:level_wings';
-            }
-
-            window.triggerAction(choice);
-          }
-        }, 250);
-      } else {
-        clearInterval(botInterval);
-      }
-    };
-
-    render();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-  </script>
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

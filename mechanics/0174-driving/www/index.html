@@ -1,527 +1,379 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Highway Hauler - Semi-Truck Driving</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      background-color: #0b1320;
-      color: #f1f5f9;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 12px;
-      background: #1e293b;
-      border: 1px solid #38bdf8;
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #38bdf8;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: #0284c7;
-      color: #f0f9ff;
-      font-weight: 600;
-    }
-    #game-container {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 4/3;
-      background: #030712;
-      border: 2px solid #0284c7;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.2);
-    }
-    .vitals-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .vital-card {
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      padding: 4px 6px;
-      border-radius: 6px;
-      text-align: center;
-    }
-    .vital-title {
-      font-size: 0.62rem;
-      color: #94a3b8;
-      text-transform: uppercase;
-    }
-    .vital-val {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-top: 1px;
-    }
-    .log-box {
-      background: #0f172a;
-      border: 1px solid #0284c7;
-      border-left: 4px solid #38bdf8;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 0.78rem;
-      color: #f1f5f9;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-    }
-    .actions-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 6px;
-      margin-top: 2px;
-    }
-    .btn {
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #f1f5f9;
-      padding: 8px 6px;
-      font-family: inherit;
-      font-size: 0.72rem;
-      border-radius: 6px;
-      cursor: pointer;
-      text-transform: uppercase;
-      font-weight: 600;
-      transition: all 0.15s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-    .btn:hover {
-      background: #334155;
-      border-color: #38bdf8;
-      color: #fff;
-    }
-    .btn:active {
-      transform: scale(0.97);
-    }
-    .btn-drive {
-      background: #0369a1;
-      border-color: #38bdf8;
-      color: #f0f9ff;
-    }
-    .btn-drive:hover {
-      background: #0284c7;
-    }
-    .btn-brake {
-      border-color: #ef4444;
-      color: #fca5a5;
-    }
-    .btn-brake:hover {
-      background: #450a0a;
-    }
-    .btn-service {
-      border-color: #10b981;
-      color: #6ee7b7;
-    }
-    .btn-service:hover {
-      background: #064e3b;
-    }
-    .btn-gold {
-      background: #78350f;
-      border-color: #d97706;
-      color: #fde68a;
-    }
-    .btn-gold:hover {
-      background: #b45309;
-    }
-    .footer-bar {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 6px;
-      width: 100%;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#030712">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Highway Hauler</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #030712; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>🚛 Highway Hauler</h1>
-    <div>
-      <span id="turn-badge" class="badge">0 / 100 KM</span>
-      <span id="score-badge" class="badge" style="background:#0369a1; color:#f0f9ff;">0 PTS</span>
-    </div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <div id="game-container">
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+const W = 360;
+const H = 640;
+let scale = 1;
 
-    <div class="vitals-grid">
-      <div class="vital-card">
-        <div class="vital-title">Speedometer</div>
-        <div id="val-speed" class="vital-val" style="color: #38bdf8;">30 km/h</div>
-      </div>
-      <div class="vital-card">
-        <div class="vital-title">Diesel Fuel</div>
-        <div id="val-fuel" class="vital-val" style="color: #facc15;">100 L</div>
-      </div>
-      <div class="vital-card">
-        <div class="vital-title">Fatigue</div>
-        <div id="val-fatigue" class="vital-val" style="color: #10b981;">0%</div>
-      </div>
-      <div class="vital-card">
-        <div class="vital-title">Cargo Health</div>
-        <div id="val-cargo" class="vital-val" style="color: #4ade80;">100%</div>
-      </div>
-    </div>
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-    <div id="game-log" class="log-box">
-      18-wheeler diesel engine idling at Interstate on-ramp. Deliver fragile cargo safely.
-    </div>
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
-    <div id="actions-panel" class="actions-grid">
-      <!-- Injected dynamically -->
-    </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0174-best') || 0; } catch (e) {}
 
-    <div class="footer-bar">
-      <div id="gear-summary" style="font-size:0.7rem; color:#94a3b8;">Transmission: Gear 1 (Max 40 km/h) | Lane: Center</div>
-      <button id="bot-toggle-btn" class="btn" style="padding: 4px 10px; font-size: 0.68rem;" onclick="window.toggleBot()">BOT: OFF</button>
-    </div>
-  </div>
+let state = createState(Date.now());
+let playerX = 180;
+let targetX = 180;
+let roadOffset = 0;
+let floaters = [];
+let overAt = 0;
+let swipeStartX = null;
 
-  <script src="logic.js"></script>
-  <script>
-    let state = createState(Date.now ? Date.now() : 12345);
-    let botRunning = false;
-    let botInterval = null;
+function restart() {
+  state = createState(Date.now());
+  targetX = getLaneX(state.lane);
+  playerX = targetX;
+  floaters = [];
+  overAt = 0;
+}
 
-    // Web Audio Synthesizer
-    let audioCtx = null;
-    function playSfx(type) {
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const t = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+function getLaneX(lane) {
+  return 85 + lane * 95;
+}
 
-        if (type === 'throttle') {
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(65, t);
-          osc.frequency.linearRampToValueAtTime(110, t + 0.25);
-          gain.gain.setValueAtTime(0.3, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
-          osc.start(t);
-          osc.stop(t + 0.3);
-        } else if (type === 'brake') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(400, t);
-          osc.frequency.exponentialRampToValueAtTime(150, t + 0.2);
-          gain.gain.setValueAtTime(0.35, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
-          osc.start(t);
-          osc.stop(t + 0.25);
-        } else if (type === 'shift') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(250, t);
-          osc.frequency.setValueAtTime(350, t + 0.05);
-          gain.gain.setValueAtTime(0.25, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
-          osc.start(t);
-          osc.stop(t + 0.12);
-        } else if (type === 'service') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(523.25, t);
-          osc.frequency.setValueAtTime(659.25, t + 0.1);
-          gain.gain.setValueAtTime(0.2, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
-          osc.start(t);
-          osc.stop(t + 0.3);
-        }
-      } catch (e) {}
+function performAction(act) {
+  if (isOver(state)) return;
+  const legals = legalActions(state);
+  if (!legals.includes(act)) return;
+
+  const oldDist = state.distance;
+  const res = step(state, act);
+  targetX = getLaneX(state.lane);
+
+  if (act.includes('accelerate')) {
+    floaters.push({ text: state.speed + ' KM/H', x: playerX, y: 380, t: 0, color: '#10b981' });
+  } else if (act.includes('brakes')) {
+    floaters.push({ text: 'BRAKE', x: playerX, y: 380, t: 0, color: '#ef4444' });
+  } else if (act.includes('fuel')) {
+    floaters.push({ text: '+FUEL REFILL', x: playerX, y: 380, t: 0, color: '#f59e0b' });
+  } else if (act.includes('rest')) {
+    floaters.push({ text: 'RESTORED FATIGUE', x: playerX, y: 380, t: 0, color: '#06b6d4' });
+  } else if (act.includes('deliver')) {
+    floaters.push({ text: 'FREIGHT DELIVERED!', x: playerX, y: 380, t: 0, color: '#38bdf8' });
+  }
+
+  if (isOver(state)) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0174-best', best); } catch (e) {}
     }
+  }
+}
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    let dashOffset = 0;
-    const LANE_NAMES = ['Slow / Right Shoulder', 'Center Cruising', 'Left Passing'];
+// Action button hitboxes on canvas
+const BTNS = [
+  { id: 'left', label: '◀ STEER L', action: 'action:shift_lane:left', x: 20, y: 470, w: 75, h: 48, col: '#0284c7' },
+  { id: 'gas', label: 'THROTTLE ▲', action: 'action:accelerate_throttle', x: 105, y: 470, w: 150, h: 48, col: '#10b981' },
+  { id: 'right', label: 'STEER R ▶', action: 'action:shift_lane:right', x: 265, y: 470, w: 75, h: 48, col: '#0284c7' },
+  { id: 'brake', label: 'BRAKES ▼', action: 'action:apply_service_brakes', x: 20, y: 528, w: 100, h: 44, col: '#ef4444' },
+  { id: 'gear_up', label: 'GEAR ▲', action: 'action:shift_gear_up', x: 130, y: 528, w: 100, h: 44, col: '#f59e0b' },
+  { id: 'gear_dn', label: 'GEAR ▼', action: 'action:shift_gear_down', x: 240, y: 528, w: 100, h: 44, col: '#d97706' },
+  { id: 'fuel', label: 'FUEL STOP', action: 'action:stop_at_fuel_depot', x: 20, y: 582, w: 100, h: 44, col: '#06b6d4' },
+  { id: 'rest', label: 'REST CAB', action: 'action:rest_sleeper_cab', x: 130, y: 582, w: 100, h: 44, col: '#8b5cf6' },
+  { id: 'deliver', label: 'DELIVER FREIGHT', action: 'action:deliver_freight', x: 240, y: 582, w: 100, h: 44, col: '#10b981' },
+];
 
-    function render() {
-      // Status badges
-      document.getElementById('turn-badge').textContent = state.distance + ' / ' + ROUTE_LENGTH_KM + ' KM';
-      document.getElementById('score-badge').textContent = score(state) + ' PTS';
-      document.getElementById('game-log').textContent = state.gameMessage;
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
 
-      document.getElementById('val-speed').textContent = state.speed + ' km/h';
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  for (const b of BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      performAction(b.action);
+      return;
+    }
+  }
+  if (p.y < 460) {
+    swipeStartX = p.x;
+    if (p.x < 110) performAction('action:shift_lane:left');
+    else if (p.x > 250) performAction('action:shift_lane:right');
+    else performAction('action:accelerate_throttle');
+  }
+});
 
-      const fEl = document.getElementById('val-fuel');
-      fEl.textContent = state.fuel + ' L';
-      fEl.style.color = state.fuel > 30 ? '#facc15' : '#ef4444';
+canvas.addEventListener('pointermove', (e) => {
+  if (swipeStartX === null || isOver(state)) return;
+  const p = toLogical(e);
+  const dx = p.x - swipeStartX;
+  if (Math.abs(dx) > 30) {
+    if (dx > 0) performAction('action:shift_lane:right');
+    else performAction('action:shift_lane:left');
+    swipeStartX = p.x;
+  }
+});
 
-      const fatEl = document.getElementById('val-fatigue');
-      fatEl.textContent = state.fatigue + '%';
-      fatEl.style.color = state.fatigue < 50 ? '#10b981' : (state.fatigue < 80 ? '#f59e0b' : '#ef4444');
+canvas.addEventListener('pointerup', () => { swipeStartX = null; });
+canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
 
-      const cEl = document.getElementById('val-cargo');
-      cEl.textContent = state.cargoIntegrity + '%';
-      cEl.style.color = state.cargoIntegrity > 60 ? '#4ade80' : '#ef4444';
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  if (k === 'arrowleft' || k === 'a') performAction('action:shift_lane:left');
+  else if (k === 'arrowright' || k === 'd') performAction('action:shift_lane:right');
+  else if (k === 'arrowup' || k === 'w') performAction('action:accelerate_throttle');
+  else if (k === 'arrowdown' || k === 's') performAction('action:apply_service_brakes');
+  else if (k === 'e') performAction('action:shift_gear_up');
+  else if (k === 'q') performAction('action:shift_gear_down');
+  else if (k === 'f') performAction('action:stop_at_fuel_depot');
+  else if (k === 'r') performAction('action:rest_sleeper_cab');
+  else if (k === ' ' || k === 'enter') {
+    if (state.distance >= 100) performAction('action:deliver_freight');
+    else performAction('action:accelerate_throttle');
+  }
+});
 
-      document.getElementById('gear-summary').textContent =
-        'Gear ' + state.gear + ' (Max ' + GEAR_MAX_SPEED[state.gear] + ' km/h) | Lane: ' + LANE_NAMES[state.lane];
+function draw(dt) {
+  // Road scrolling speed based on truck km/h
+  const pxSpeed = Math.max(40, state.speed * 4.5);
+  roadOffset = (roadOffset + pxSpeed * dt) % 60;
 
-      // Canvas Rendering
-      const w = canvas.width;
-      const h = canvas.height;
-      const cx = w / 2;
-      const horizonY = h * 0.38;
+  // Background
+  ctx.fillStyle = '#030712';
+  ctx.fillRect(0, 0, W, H);
 
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, w, h);
+  // Interstate Highway Surface
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(40, 0, 280, 460);
 
-      // Sky & Twilight horizon
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
-      skyGrad.addColorStop(0, '#0284c7');
-      skyGrad.addColorStop(0.7, '#38bdf8');
-      skyGrad.addColorStop(1, '#fed7aa');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, w, horizonY);
+  // Shoulders & Guardrails
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillRect(36, 0, 4, 460);
+  ctx.fillRect(320, 0, 4, 460);
 
-      // Distant tree silhouette along highway
-      ctx.fillStyle = '#064e3b';
-      ctx.fillRect(0, horizonY - 14, w, 14);
+  // Lane dividers (striped)
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  for (let y = -60 + roadOffset; y < 460; y += 50) {
+    ctx.fillRect(132, y, 4, 28);
+    ctx.fillRect(224, y, 4, 28);
+  }
 
-      // Highway 3D Perspective
-      const roadTopW = 120;
-      const roadBottomW = 520;
+  // Draw Hazards / Traffic in lanes
+  if (state.traffic) {
+    for (let lane = 0; lane < 3; lane++) {
+      const item = state.traffic[lane];
+      if (!item) continue;
+      const hx = getLaneX(lane);
+      const hy = 160;
 
-      ctx.fillStyle = '#334155';
-      ctx.beginPath();
-      ctx.moveTo(cx - roadTopW / 2, horizonY);
-      ctx.lineTo(cx + roadTopW / 2, horizonY);
-      ctx.lineTo(cx + roadBottomW / 2, h);
-      ctx.lineTo(cx - roadBottomW / 2, h);
-      ctx.closePath();
-      ctx.fill();
-
-      // White solid outer road shoulders
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 4;
-      ctx.stroke();
-
-      // Dashed lane dividers
-      dashOffset = (dashOffset + Math.max(2, Math.floor(state.speed / 6))) % 36;
-      ctx.strokeStyle = '#facc15';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([18, 18]);
-      ctx.lineDashOffset = -dashOffset;
-
-      // Divider between lane 0 and 1
-      ctx.beginPath();
-      ctx.moveTo(cx - roadTopW / 6, horizonY);
-      ctx.lineTo(cx - roadBottomW / 6, h);
-      ctx.stroke();
-
-      // Divider between lane 1 and 2
-      ctx.beginPath();
-      ctx.moveTo(cx + roadTopW / 6, horizonY);
-      ctx.lineTo(cx + roadBottomW / 6, h);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Draw Traffic Ahead in Lanes
-      for (let l = 0; l < 3; l++) {
-        const obs = state.traffic[l];
-        if (obs) {
-          const t = 0.45; // distance scale
-          const ty = horizonY + (h - horizonY) * t;
-          const curW = roadTopW + (roadBottomW - roadTopW) * t;
-          const laneW = curW / 3;
-          const tx = cx - curW / 2 + l * laneW + laneW / 2;
-
-          ctx.fillStyle = obs.type === 'road_work' ? '#f97316' : '#64748b';
-          ctx.fillRect(tx - 15, ty - 12, 30, 24);
-          ctx.fillStyle = '#fef08a';
-          ctx.fillRect(tx - 12, ty + 8, 6, 4);
-          ctx.fillRect(tx + 6, ty + 8, 6, 4);
-        }
-      }
-
-      // Draw Semi-Truck Hood & Windshield from Driver's Perspective
-      const hoodY = h - 75;
-      const curW = roadBottomW * 0.9;
-      const laneW = curW / 3;
-      const px = cx - curW / 2 + state.lane * laneW + laneW / 2;
-
-      // Heavy chrome semi-truck hood
-      ctx.fillStyle = '#0284c7';
-      ctx.beginPath();
-      ctx.moveTo(px - 60, h);
-      ctx.lineTo(px - 40, hoodY);
-      ctx.lineTo(px + 40, hoodY);
-      ctx.lineTo(px + 60, h);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      // Chrome hood ornament / centerline
-      ctx.fillStyle = '#cbd5e1';
-      ctx.fillRect(px - 3, hoodY, 6, h - hoodY);
-
-      // Game Over Screen
-      if (isOver(state)) {
-        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px sans-serif';
+      if (item.type === 'slow_van') {
+        ctx.fillStyle = '#f59e0b';
+        rrect(hx - 15, hy - 22, 30, 44, 5);
+        ctx.fill();
+        ctx.fillStyle = '#1e293b';
+        rrect(hx - 11, hy - 16, 22, 12, 3);
+        ctx.fill();
+        ctx.fillStyle = '#fef3c7';
+        ctx.font = 'bold 9px system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(state.victory ? 'HAUL COMPLETE - CARGO DELIVERED!' : 'DELIVERY FAILED - ROUTE ABORTED', cx, cy - 20);
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Driver Evaluation Score: ' + score(state), cx, cy + 15);
-      }
-
-      updateActions();
-    }
-
-    function updateActions() {
-      const panel = document.getElementById('actions-panel');
-      if (isOver(state)) {
-        panel.innerHTML = '<button class="btn btn-drive" onclick="window.restartGame()">NEW FREIGHT CONTRACT</button>';
-        return;
-      }
-
-      const actions = legalActions(state);
-      let html = '';
-
-      for (const act of actions) {
-        let cls = 'btn';
-        let label = act;
-        let sub = '';
-
-        if (act === 'action:accelerate_throttle') {
-          cls += ' btn-drive';
-          label = '🚚 Throttle Accelerate';
-          sub = '+Speed (Gear ' + state.gear + ')';
-        } else if (act === 'action:apply_service_brakes') {
-          cls += ' btn-brake';
-          label = '🛑 Service Brakes';
-          sub = '-30 km/h Deceleration';
-        } else if (act === 'action:shift_gear_up') {
-          label = '⬆️ Shift Gear Up';
-          sub = 'To Gear ' + (state.gear + 1);
-        } else if (act === 'action:shift_gear_down') {
-          label = '⬇️ Shift Gear Down';
-          sub = 'To Gear ' + (state.gear - 1);
-        } else if (act === 'action:shift_lane:left') {
-          label = '◀ Merge Left';
-          sub = 'Lane Change';
-        } else if (act === 'action:shift_lane:right') {
-          label = '▶ Merge Right';
-          sub = 'Lane Change';
-        } else if (act === 'action:stop_at_fuel_depot') {
-          cls += ' btn-service';
-          label = '⛽ Service Plaza Fuel';
-          sub = 'Fill Tank to 100L';
-        } else if (act === 'action:rest_sleeper_cab') {
-          cls += ' btn-service';
-          label = '💤 Sleeper Cab Rest';
-          sub = 'Reset Fatigue to 0%';
-        } else if (act === 'action:deliver_freight') {
-          cls += ' btn-gold';
-          label = '🏆 Finalize Container Delivery!';
-          sub = 'Victory';
-        }
-
-        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
-      }
-
-      panel.innerHTML = html;
-    }
-
-    window.triggerAction = function(act) {
-      if (isOver(state)) return;
-      if (act.includes('accelerate')) playSfx('throttle');
-      else if (act.includes('brake')) playSfx('brake');
-      else if (act.includes('gear') || act.includes('lane')) playSfx('shift');
-      else if (act.includes('fuel') || act.includes('rest') || act.includes('deliver')) playSfx('service');
-
-      step(state, act);
-      render();
-    };
-
-    window.restartGame = function() {
-      state = createState(Date.now ? Date.now() : 12345);
-      render();
-    };
-
-    window.toggleBot = function() {
-      botRunning = !botRunning;
-      document.getElementById('bot-toggle-btn').textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
-      document.getElementById('bot-toggle-btn').style.background = botRunning ? '#0284c7' : '#1e293b';
-
-      if (botRunning) {
-        botInterval = setInterval(() => {
-          if (isOver(state)) {
-            state = createState(Date.now ? Date.now() : 9999);
-            render();
-            return;
-          }
-          const acts = legalActions(state);
-          if (acts.length > 0) {
-            let choice = acts[0];
-            if (acts.includes('action:deliver_freight')) choice = 'action:deliver_freight';
-            else if (state.fuel < 40 && acts.includes('action:stop_at_fuel_depot')) choice = 'action:stop_at_fuel_depot';
-            else if (state.fatigue > 60 && acts.includes('action:rest_sleeper_cab')) choice = 'action:rest_sleeper_cab';
-            else if (state.traffic[state.lane] && acts.includes('action:shift_lane:left')) choice = 'action:shift_lane:left';
-            else if (state.traffic[state.lane] && acts.includes('action:shift_lane:right')) choice = 'action:shift_lane:right';
-            else if (state.speed >= 30 && acts.includes('action:shift_gear_up')) choice = 'action:shift_gear_up';
-            else if (acts.includes('action:accelerate_throttle')) choice = 'action:accelerate_throttle';
-            else choice = acts[0];
-            window.triggerAction(choice);
-          }
-        }, 250);
+        ctx.fillText('VAN 35k', hx, hy - 26);
       } else {
-        clearInterval(botInterval);
+        // Road work cones
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.moveTo(hx - 12, hy + 16);
+        ctx.lineTo(hx + 12, hy + 16);
+        ctx.lineTo(hx, hy - 16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(hx - 6, hy - 4, 12, 4);
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 9px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('CONES!', hx, hy - 22);
       }
-    };
-
-    render();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
     }
-  </script>
+  }
+
+  // Smooth lerp for Semi-Truck
+  playerX += (targetX - playerX) * Math.min(1, dt * 12);
+
+  // Draw Semi-Truck (Trailer + Cab)
+  const py = 360;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  rrect(playerX - 20, py + 20, 40, 36, 6);
+  ctx.fill();
+
+  // Wheels
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(playerX - 22, py - 35, 5, 14);
+  ctx.fillRect(playerX + 17, py - 35, 5, 14);
+  ctx.fillRect(playerX - 22, py - 5, 5, 14);
+  ctx.fillRect(playerX + 17, py - 5, 5, 14);
+  ctx.fillRect(playerX - 22, py + 25, 5, 14);
+  ctx.fillRect(playerX + 17, py + 25, 5, 14);
+
+  // Big Cargo Trailer
+  ctx.fillStyle = '#e2e8f0';
+  rrect(playerX - 18, py - 18, 36, 60, 4);
+  ctx.fill();
+  ctx.fillStyle = '#0284c7';
+  rrect(playerX - 16, py - 14, 32, 52, 3);
+  ctx.fill();
+
+  // Cab
+  ctx.fillStyle = '#38bdf8';
+  rrect(playerX - 17, py - 48, 34, 28, 5);
+  ctx.fill();
+  ctx.fillStyle = '#0f172a';
+  rrect(playerX - 12, py - 44, 24, 10, 2);
+  ctx.fill();
+
+  // Top Dashboard HUD
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  ctx.fillRect(0, 0, W, 48);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('ROUTE: ' + state.distance + '/100 KM', 12, 22);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#10b981';
+  ctx.fillText(state.speed + ' KM/H (G' + state.gear + ')', W - 12, 22);
+
+  // Sub-bars: Cargo & Fuel
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'left';
+  ctx.fillText('CARGO ' + state.cargoIntegrity + '%', 12, 38);
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(75, 30, 75, 8);
+  ctx.fillStyle = state.cargoIntegrity > 50 ? '#10b981' : '#ef4444';
+  ctx.fillRect(75, 30, 75 * (state.cargoIntegrity / 100), 8);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('FUEL ' + state.fuel + '%', 165, 38);
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(215, 30, 60, 8);
+  ctx.fillStyle = state.fuel > 25 ? '#38bdf8' : '#ef4444';
+  ctx.fillRect(215, 30, 60 * (state.fuel / 100), 8);
+
+  ctx.fillStyle = '#f59e0b';
+  ctx.fillText('TIRED ' + state.fatigue + '%', 282, 38);
+
+  // Floating text
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 35 * dt;
+    f.t += dt;
+    if (f.t > 0.8) {
+      floaters.splice(i, 1);
+      continue;
+    }
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  }
+
+  // Draw Control Deck
+  ctx.fillStyle = '#0b1320';
+  ctx.fillRect(0, 460, W, 180);
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(0, 458, W, 2);
+
+  const legals = legalActions(state);
+  for (const b of BTNS) {
+    const isLegal = legals.includes(b.action);
+    ctx.fillStyle = isLegal ? b.col : '#1e293b';
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.fill();
+    ctx.strokeStyle = isLegal ? 'rgba(255,255,255,0.3)' : '#334155';
+    ctx.lineWidth = 1.5;
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.stroke();
+
+    ctx.fillStyle = isLegal ? '#ffffff' : '#64748b';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+  }
+  ctx.textBaseline = 'alphabetic';
+
+  // Game over overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(3, 7, 18, 0.9)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.victory ? '#10b981' : '#ef4444';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.victory ? 'DELIVERY COMPLETE!' : 'HAUL FAILED', W / 2, H / 2 - 40);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state) + '  (Best: ' + best + ')', W / 2, H / 2);
+    ctx.fillText('Cargo: ' + state.cargoIntegrity + '%  Distance: ' + state.distance + 'km', W / 2, H / 2 + 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap to drive again', W / 2, H / 2 + 70);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

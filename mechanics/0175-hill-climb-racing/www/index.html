@@ -1,586 +1,336 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Peak Climber - Hill Climb Racing</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      background-color: #064e3b;
-      color: #f0fdf4;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 12px;
-      background: #065f46;
-      border: 1px solid #10b981;
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #6ee7b7;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: #047857;
-      color: #ecfdf5;
-      font-weight: 600;
-    }
-    #game-container {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 4/3;
-      background: #022c22;
-      border: 2px solid #10b981;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
-    }
-    .vitals-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .vital-card {
-      background: #065f46;
-      border: 1px solid #047857;
-      border-radius: 6px;
-      padding: 6px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .vital-title {
-      font-size: 0.65rem;
-      color: #a7f3d0;
-      text-transform: uppercase;
-      font-weight: bold;
-    }
-    .vital-val {
-      font-size: 0.95rem;
-      font-weight: bold;
-      color: #fff;
-    }
-    .meter-bar {
-      height: 4px;
-      background: #022c22;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 2px;
-    }
-    .meter-fill {
-      height: 100%;
-      background: #10b981;
-      transition: width 0.2s ease;
-    }
-    #message-box {
-      background: #047857;
-      border-left: 4px solid #34d399;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      min-height: 38px;
-      display: flex;
-      align-items: center;
-      color: #ecfdf5;
-    }
-    #actions-panel {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .btn {
-      background: #065f46;
-      border: 1px solid #10b981;
-      color: #fff;
-      padding: 10px 8px;
-      border-radius: 6px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      transition: all 0.1s ease;
-    }
-    .btn:active {
-      transform: scale(0.97);
-      filter: brightness(1.2);
-    }
-    .btn-gas {
-      background: #15803d;
-      border-color: #22c55e;
-      color: #f0fdf4;
-    }
-    .btn-brake {
-      background: #991b1b;
-      border-color: #ef4444;
-      color: #fef2f2;
-    }
-    .btn-tilt {
-      background: #1e3a8a;
-      border-color: #3b82f6;
-      color: #eff6ff;
-    }
-    .btn-upgrade {
-      background: #854d0e;
-      border-color: #eab308;
-      color: #fefce8;
-    }
-    .top-controls {
-      display: flex;
-      gap: 6px;
-    }
-    .ctrl-btn {
-      background: #065f46;
-      border: 1px solid #10b981;
-      color: #6ee7b7;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      font-weight: 600;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#03080e">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Peak Climber</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #03080e; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Peak Climber</h1>
-    <div class="top-controls">
-      <button class="ctrl-btn" id="bot-toggle-btn" onclick="window.toggleBot()">BOT: OFF</button>
-      <button class="ctrl-btn" onclick="window.restartGame()">RESTART</button>
-      <span class="badge" id="turn-badge">TURN 0/120</span>
-    </div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <div id="game-container">
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+const W = 360;
+const H = 640;
+let scale = 1;
 
-    <div class="vitals-grid">
-      <div class="vital-card">
-        <span class="vital-title">Summit Progress</span>
-        <span class="vital-val" id="val-distance">0 / 1000m</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-distance" style="width:0%"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Fuel Level</span>
-        <span class="vital-val" id="val-fuel">100%</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-fuel" style="width:100%;background:#ef4444"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Pitch & Speed</span>
-        <span class="vital-val" id="val-pitch">0° (8 m/s)</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-speed" style="width:32%;background:#38bdf8"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Garage Coins</span>
-        <span class="vital-val" id="val-coins">$30</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-coins" style="width:30%;background:#eab308"></div></div>
-      </div>
-    </div>
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-    <div id="message-box">4x4 Off-roader idling at trail base. Scale the 1,000m peak without flipping!</div>
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
-    <div id="actions-panel"></div>
-  </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0175-best') || 0; } catch (e) {}
 
-  <script src="logic.js"></script>
-  <script>
-    let state = createState(Date.now ? Date.now() : 12345);
-    let botRunning = false;
-    let botInterval = null;
+let state = createState(Date.now());
+let visualPitch = 0;
+let floaters = [];
+let overAt = 0;
 
-    // Web Audio Synthesizer
-    const audioCtx = (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')
-      ? new (window.AudioContext || window.webkitAudioContext)()
-      : null;
+function restart() {
+  state = createState(Date.now());
+  visualPitch = 0;
+  floaters = [];
+  overAt = 0;
+}
 
-    function playSfx(type) {
-      if (!audioCtx) return;
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      const t = audioCtx.currentTime;
+function getTerrainY(worldX) {
+  return 360 - (Math.sin(worldX * 0.04) * 45 + Math.sin(worldX * 0.015) * 35);
+}
 
-      if (type === 'gas') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(80, t);
-        osc.frequency.exponentialRampToValueAtTime(220, t + 0.15);
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.15);
-        osc.start(t);
-        osc.stop(t + 0.15);
-      } else if (type === 'brake') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(300, t);
-        osc.frequency.linearRampToValueAtTime(120, t + 0.2);
-        gain.gain.setValueAtTime(0.15, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.2);
-        osc.start(t);
-        osc.stop(t + 0.2);
-      } else if (type === 'upgrade') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, t);
-        osc.frequency.setValueAtTime(660, t + 0.08);
-        osc.frequency.setValueAtTime(880, t + 0.16);
-        gain.gain.setValueAtTime(0.15, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.24);
-        osc.start(t);
-        osc.stop(t + 0.24);
-      } else if (type === 'crash') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(100, t);
-        osc.frequency.linearRampToValueAtTime(30, t + 0.35);
-        gain.gain.setValueAtTime(0.3, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.35);
-        osc.start(t);
-        osc.stop(t + 0.35);
-      }
+function performAction(act) {
+  if (isOver(state)) return;
+  const legals = legalActions(state);
+  if (!legals.includes(act)) return;
+
+  const oldCoins = state.coins;
+  const oldFuel = state.fuel;
+  const res = step(state, act);
+
+  if (act.includes('gas')) {
+    floaters.push({ text: 'GAS +' + state.velocity + 'm/s', x: 180, y: 260, t: 0, color: '#10b981' });
+  } else if (act.includes('brake')) {
+    floaters.push({ text: 'BRAKE', x: 180, y: 260, t: 0, color: '#ef4444' });
+  } else if (act.includes('tilt')) {
+    floaters.push({ text: 'BALANCE ' + state.pitchAngle + '°', x: 180, y: 260, t: 0, color: '#38bdf8' });
+  } else if (act.includes('upgrade')) {
+    floaters.push({ text: 'UPGRADE APPLIED!', x: 180, y: 260, t: 0, color: '#fbbf24' });
+  }
+
+  if (state.coins > oldCoins) {
+    floaters.push({ text: '+' + (state.coins - oldCoins) + ' COINS', x: 220, y: 240, t: 0, color: '#facc15' });
+  }
+  if (state.fuel > oldFuel) {
+    floaters.push({ text: '+FUEL CANISTER', x: 140, y: 240, t: 0, color: '#ef4444' });
+  }
+
+  if (isOver(state)) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0175-best', best); } catch (e) {}
     }
+  }
+}
 
-    function render() {
-      // Vitals UI
-      document.getElementById('turn-badge').textContent = 'TURN ' + state.turns + '/' + state.maxTurns;
-      document.getElementById('val-distance').textContent = state.distance + ' / ' + SUMMIT_DISTANCE + 'm';
-      document.getElementById('fill-distance').style.width = Math.min(100, (state.distance / SUMMIT_DISTANCE) * 100) + '%';
+// Action button hitboxes on canvas
+const BTNS = [
+  { id: 'brake', label: '◀ BRAKE', action: 'action:brake_reverse', x: 20, y: 480, w: 90, h: 56, col: '#ef4444' },
+  { id: 'tilt_fwd', label: 'TILT DN ⤵', action: 'action:tilt_forward', x: 120, y: 480, w: 55, h: 56, col: '#0284c7' },
+  { id: 'tilt_back', label: '⤴ TILT UP', action: 'action:tilt_backward', x: 185, y: 480, w: 55, h: 56, col: '#0284c7' },
+  { id: 'gas', label: 'GAS ▲', action: 'action:gas_accelerate', x: 250, y: 480, w: 90, h: 56, col: '#10b981' },
+  { id: 'upg_eng', label: 'ENGINE +', action: 'action:upgrade_vehicle:engine', x: 20, y: 550, w: 100, h: 42, col: '#f59e0b' },
+  { id: 'upg_susp', label: 'SUSPENSION +', action: 'action:upgrade_vehicle:suspension', x: 130, y: 550, w: 100, h: 42, col: '#8b5cf6' },
+  { id: 'upg_tires', label: 'TIRES +', action: 'action:upgrade_vehicle:tires', x: 240, y: 550, w: 100, h: 42, col: '#06b6d4' },
+];
 
-      document.getElementById('val-fuel').textContent = state.fuel + '%';
-      document.getElementById('fill-fuel').style.width = Math.max(0, state.fuel) + '%';
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
 
-      document.getElementById('val-pitch').textContent = state.pitchAngle + '° (' + state.velocity + ' m/s)';
-      document.getElementById('fill-speed').style.width = Math.min(100, (state.velocity / 25) * 100) + '%';
-
-      document.getElementById('val-coins').textContent = '$' + state.coins + ' (E:' + state.upgrades.engine + ' S:' + state.upgrades.suspension + ' T:' + state.upgrades.tires + ')';
-      document.getElementById('fill-coins').style.width = Math.min(100, (state.coins / 150) * 100) + '%';
-
-      document.getElementById('message-box').textContent = state.gameMessage;
-
-      // Canvas Rendering
-      const canvas = document.getElementById('gameCanvas');
-      if (!canvas || !canvas.getContext) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-
-      // 1. Sky & Mountain Background
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
-      skyGrad.addColorStop(0, '#38bdf8');
-      skyGrad.addColorStop(0.6, '#bae6fd');
-      skyGrad.addColorStop(1, '#dcfce7');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, w, h);
-
-      // Distant mountains
-      ctx.fillStyle = '#94a3b8';
-      ctx.beginPath();
-      ctx.moveTo(0, h * 0.7);
-      ctx.lineTo(w * 0.25, h * 0.35);
-      ctx.lineTo(w * 0.55, h * 0.65);
-      ctx.lineTo(w * 0.8, h * 0.3);
-      ctx.lineTo(w, h * 0.7);
-      ctx.lineTo(w, h);
-      ctx.lineTo(0, h);
-      ctx.closePath();
-      ctx.fill();
-
-      // 2. Rolling Terrain Curve
-      const carScreenX = w * 0.35;
-      const carDist = state.distance;
-      const groundY = h * 0.65;
-
-      ctx.fillStyle = '#16a34a';
-      ctx.beginPath();
-      ctx.moveTo(0, h);
-
-      for (let x = 0; x <= w; x += 10) {
-        const worldD = carDist + (x - carScreenX) * 0.5;
-        const elevation = Math.sin(worldD * 0.04) * 45 + Math.sin(worldD * 0.015) * 35;
-        const y = groundY - elevation;
-        if (x === 0) ctx.lineTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.lineTo(w, h);
-      ctx.closePath();
-      ctx.fill();
-
-      // Dirt slope trim
-      ctx.strokeStyle = '#854d0e';
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      for (let x = 0; x <= w; x += 10) {
-        const worldD = carDist + (x - carScreenX) * 0.5;
-        const elevation = Math.sin(worldD * 0.04) * 45 + Math.sin(worldD * 0.015) * 35;
-        const y = groundY - elevation;
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      // Roadside fuel canisters and coins
-      for (let marker = Math.floor(carDist / 100) * 100; marker <= carDist + 400; marker += 100) {
-        const sx = carScreenX + (marker - carDist) * 2.0;
-        if (sx >= -50 && sx <= w + 50) {
-          const elev = Math.sin(marker * 0.04) * 45 + Math.sin(marker * 0.015) * 35;
-          const sy = groundY - elev - 25;
-
-          // Red fuel can
-          ctx.fillStyle = '#dc2626';
-          ctx.fillRect(sx - 10, sy - 15, 20, 24);
-          ctx.fillStyle = '#fef08a';
-          ctx.fillRect(sx - 3, sy - 21, 6, 6);
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 9px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('GAS', sx, sy);
-        }
-      }
-
-      // Summit Flag at 1000m
-      if (carDist >= 700) {
-        const sx = carScreenX + (SUMMIT_DISTANCE - carDist) * 2.0;
-        const elev = Math.sin(SUMMIT_DISTANCE * 0.04) * 45 + Math.sin(SUMMIT_DISTANCE * 0.015) * 35;
-        const sy = groundY - elev;
-        // Flagpole
-        ctx.strokeStyle = '#f8fafc';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(sx, sy - 90);
-        ctx.stroke();
-        // Checkered victory banner
-        ctx.fillStyle = '#f59e0b';
-        ctx.fillRect(sx, sy - 90, 50, 30);
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('PEAK', sx + 25, sy - 72);
-      }
-
-      // 3. 4x4 Off-Roader Vehicle
-      const carElev = Math.sin(carDist * 0.04) * 45 + Math.sin(carDist * 0.015) * 35;
-      const carScreenY = groundY - carElev - 25;
-
-      ctx.save();
-      ctx.translate(carScreenX, carScreenY);
-      ctx.rotate((state.pitchAngle * Math.PI) / 180);
-
-      // Chassis Body
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.roundRect(-45, -20, 90, 28, 6);
-      ctx.fill();
-      ctx.strokeStyle = '#991b1b';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      // Cabin / Roll cage
-      ctx.fillStyle = '#b91c1c';
-      ctx.beginPath();
-      ctx.moveTo(-30, -20);
-      ctx.lineTo(-10, -45);
-      ctx.lineTo(25, -45);
-      ctx.lineTo(35, -20);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#fca5a5';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      // Driver helmet
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(8, -32, 9, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#b45309';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Headlight beam
-      ctx.fillStyle = 'rgba(254, 240, 138, 0.35)';
-      ctx.beginPath();
-      ctx.moveTo(45, -10);
-      ctx.lineTo(120, -35);
-      ctx.lineTo(120, 15);
-      ctx.closePath();
-      ctx.fill();
-
-      // Wheels & Tires
-      const tireRadius = 18 + state.upgrades.tires * 2;
-      // Rear tire
-      ctx.fillStyle = '#18181b';
-      ctx.beginPath();
-      ctx.arc(-30, 12, tireRadius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#cbd5e1';
-      ctx.beginPath();
-      ctx.arc(-30, 12, 7, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Front tire
-      ctx.fillStyle = '#18181b';
-      ctx.beginPath();
-      ctx.arc(30, 12, tireRadius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#cbd5e1';
-      ctx.beginPath();
-      ctx.arc(30, 12, 7, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-
-      // Game Over Screen Overlay
-      if (isOver(state)) {
-        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(state.victory ? 'SUMMIT CONQUERED! VICTORY!' : 'EXPEDITION FAILED', w / 2, h / 2 - 20);
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Final Expedition Score: ' + score(state), w / 2, h / 2 + 15);
-      }
-
-      updateActions();
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  for (const b of BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      performAction(b.action);
+      return;
     }
+  }
+  // Tap upper half: left=tilt back, right=gas, bottom-left=brake
+  if (p.y < 470) {
+    if (p.x > 200) performAction('action:gas_accelerate');
+    else if (p.x < 100) performAction('action:brake_reverse');
+    else performAction('action:tilt_forward');
+  }
+});
 
-    function updateActions() {
-      const panel = document.getElementById('actions-panel');
-      if (isOver(state)) {
-        panel.innerHTML = '<button class="btn btn-gas" onclick="window.restartGame()">NEW EXPEDITION</button>';
-        return;
-      }
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  if (k === 'arrowright' || k === 'd' || k === ' ') performAction('action:gas_accelerate');
+  else if (k === 'arrowleft' || k === 'a') performAction('action:brake_reverse');
+  else if (k === 'arrowdown' || k === 's') performAction('action:tilt_forward');
+  else if (k === 'arrowup' || k === 'w') performAction('action:tilt_backward');
+  else if (k === '1') performAction('action:upgrade_vehicle:engine');
+  else if (k === '2') performAction('action:upgrade_vehicle:suspension');
+  else if (k === '3') performAction('action:upgrade_vehicle:tires');
+});
 
-      const actions = legalActions(state);
-      let html = '';
+function draw(dt) {
+  // Background Sky Gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, 400);
+  grad.addColorStop(0, '#03080e');
+  grad.addColorStop(1, '#0e2a47');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
 
-      for (const act of actions) {
-        let cls = 'btn';
-        let label = act;
-        let sub = '';
+  // Smooth visual pitch lerp
+  visualPitch += (state.pitchAngle - visualPitch) * Math.min(1, dt * 10);
 
-        if (act === 'action:gas_accelerate') {
-          cls += ' btn-gas';
-          label = '⚡ Gas Throttle';
-          sub = '+Speed, Pitch Up, -3% Fuel';
-        } else if (act === 'action:brake_reverse') {
-          cls += ' btn-brake';
-          label = '🛑 Brake / Reverse';
-          sub = '-Speed, Pitch Down';
-        } else if (act === 'action:tilt_forward') {
-          cls += ' btn-tilt';
-          label = '◀ Tilt Forward';
-          sub = 'Balance -18° Pitch';
-        } else if (act === 'action:tilt_backward') {
-          cls += ' btn-tilt';
-          label = '▶ Tilt Backward';
-          sub = 'Balance +18° Pitch';
-        } else if (act.startsWith('action:upgrade_vehicle:')) {
-          const u = act.split(':')[2];
-          cls += ' btn-upgrade';
-          const cost = getUpgradeCost(state.upgrades[u]);
-          label = '🔧 Upgrade ' + u.toUpperCase();
-          sub = '$' + cost + ' (Next: Lv' + (state.upgrades[u] + 1) + ')';
-        }
+  // Mountain Terrain
+  const carWorldX = state.distance;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  for (let sx = 0; sx <= W; sx += 8) {
+    const wx = carWorldX + (sx - 150);
+    const sy = getTerrainY(wx);
+    if (sx === 0) ctx.lineTo(sx, sy);
+    else ctx.lineTo(sx, sy);
+  }
+  ctx.lineTo(W, H);
+  ctx.closePath();
 
-        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
-      }
+  // Terrain fill
+  ctx.fillStyle = '#143322';
+  ctx.fill();
 
-      panel.innerHTML = html;
+  // Grass cap
+  ctx.strokeStyle = '#22c55e';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  for (let sx = 0; sx <= W; sx += 8) {
+    const wx = carWorldX + (sx - 150);
+    const sy = getTerrainY(wx);
+    if (sx === 0) ctx.moveTo(sx, sy);
+    else ctx.lineTo(sx, sy);
+  }
+  ctx.stroke();
+
+  // Draw 4x4 Rig at fixed screen center (x=150, y=getTerrainY(carWorldX))
+  const carSX = 150;
+  const carSY = getTerrainY(carWorldX) - 12;
+
+  ctx.save();
+  ctx.translate(carSX, carSY);
+  ctx.rotate((visualPitch * Math.PI) / 180);
+
+  // Chassis
+  ctx.fillStyle = '#0284c7';
+  rrect(-24, -18, 48, 20, 4);
+  ctx.fill();
+  ctx.fillStyle = '#38bdf8';
+  rrect(-12, -28, 26, 12, 3);
+  ctx.fill();
+
+  // Roll cage
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-14, -8);
+  ctx.lineTo(-8, -28);
+  ctx.lineTo(14, -28);
+  ctx.lineTo(20, -8);
+  ctx.stroke();
+
+  // Wheels
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(-16, 6, 9, 0, Math.PI * 2);
+  ctx.arc(16, 6, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#94a3b8';
+  ctx.beginPath();
+  ctx.arc(-16, 6, 4, 0, Math.PI * 2);
+  ctx.arc(16, 6, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // Top HUD
+  ctx.fillStyle = 'rgba(3, 8, 14, 0.88)';
+  ctx.fillRect(0, 0, W, 48);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('PEAK: ' + state.distance + '/1000 M', 12, 22);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#facc15';
+  ctx.fillText('COINS: ' + state.coins + ' 🪙', W - 12, 22);
+
+  // Bars: Fuel & Angle
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'left';
+  ctx.fillText('FUEL ' + state.fuel + '%', 12, 38);
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(66, 30, 80, 8);
+  ctx.fillStyle = state.fuel > 25 ? '#ef4444' : '#b91c1c';
+  ctx.fillRect(66, 30, 80 * (state.fuel / 100), 8);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('TILT ' + state.pitchAngle + '°', 160, 38);
+  ctx.fillStyle = '#10b981';
+  ctx.textAlign = 'right';
+  ctx.fillText('SPEED ' + state.velocity + ' m/s', W - 12, 38);
+
+  // Floating text
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 35 * dt;
+    f.t += dt;
+    if (f.t > 0.8) {
+      floaters.splice(i, 1);
+      continue;
     }
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  }
 
-    window.triggerAction = function(act) {
-      if (isOver(state)) return;
-      if (act.includes('gas')) playSfx('gas');
-      else if (act.includes('brake')) playSfx('brake');
-      else if (act.includes('upgrade')) playSfx('upgrade');
+  // Draw Control Deck
+  ctx.fillStyle = '#06101c';
+  ctx.fillRect(0, 460, W, 180);
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(0, 458, W, 2);
 
-      step(state, act);
-      if (state.defeat) playSfx('crash');
-      render();
-    };
+  const legals = legalActions(state);
+  for (const b of BTNS) {
+    const isLegal = legals.includes(b.action);
+    ctx.fillStyle = isLegal ? b.col : '#1e293b';
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.fill();
+    ctx.strokeStyle = isLegal ? 'rgba(255,255,255,0.3)' : '#334155';
+    ctx.lineWidth = 1.5;
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.stroke();
 
-    window.restartGame = function() {
-      state = createState(Date.now ? Date.now() : 12345);
-      render();
-    };
+    ctx.fillStyle = isLegal ? '#ffffff' : '#64748b';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+  }
+  ctx.textBaseline = 'alphabetic';
 
-    window.toggleBot = function() {
-      botRunning = !botRunning;
-      const btn = document.getElementById('bot-toggle-btn');
-      if (btn) {
-        btn.textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
-        btn.style.background = botRunning ? '#047857' : '#065f46';
-      }
+  // Game over overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(3, 8, 14, 0.9)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.victory ? '#10b981' : '#ef4444';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.victory ? 'SUMMIT CONQUERED!' : 'ROLLOVER CRASH', W / 2, H / 2 - 40);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state) + '  (Best: ' + best + ')', W / 2, H / 2);
+    ctx.fillText('Climbed: ' + state.distance + 'm  Coins: ' + state.coins, W / 2, H / 2 + 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap to climb again', W / 2, H / 2 + 70);
+  }
+}
 
-      if (botRunning) {
-        botInterval = setInterval(() => {
-          if (isOver(state)) {
-            state = createState(Date.now ? Date.now() : 9999);
-            render();
-            return;
-          }
-          const acts = legalActions(state);
-          if (acts.length > 0) {
-            let choice = acts[0];
-            // Intelligent bot heuristic
-            if (state.pitchAngle > 40 && acts.includes('action:tilt_forward')) choice = 'action:tilt_forward';
-            else if (state.pitchAngle < -20 && acts.includes('action:tilt_backward')) choice = 'action:tilt_backward';
-            else if (acts.some(a => a.startsWith('action:upgrade_vehicle:engine'))) choice = acts.find(a => a.startsWith('action:upgrade_vehicle:engine'));
-            else if (acts.includes('action:gas_accelerate')) choice = 'action:gas_accelerate';
-            else choice = acts[0];
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 
-            window.triggerAction(choice);
-          }
-        }, 250);
-      } else {
-        clearInterval(botInterval);
-      }
-    };
-
-    render();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-  </script>
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

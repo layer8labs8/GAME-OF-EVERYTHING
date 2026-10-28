@@ -1,562 +1,367 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Arcade Blast - Score Attack</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      background-color: #09090b;
-      color: #fafafa;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 12px;
-      background: #18181b;
-      border: 1px solid #ec4899;
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #ec4899;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: #be185d;
-      color: #fdf2f8;
-      font-weight: 600;
-    }
-    #game-container {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 4/3;
-      background: #030712;
-      border: 2px solid #ec4899;
-      border-radius: 8px;
-      box-shadow: 0 4px 25px rgba(236, 72, 153, 0.25);
-    }
-    .vitals-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .vital-card {
-      background: #18181b;
-      border: 1px solid #3f3f46;
-      border-radius: 6px;
-      padding: 6px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .vital-title {
-      font-size: 0.65rem;
-      color: #a1a1aa;
-      text-transform: uppercase;
-      font-weight: bold;
-    }
-    .vital-val {
-      font-size: 0.95rem;
-      font-weight: bold;
-      color: #fff;
-    }
-    .meter-bar {
-      height: 4px;
-      background: #09090b;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 2px;
-    }
-    .meter-fill {
-      height: 100%;
-      background: #ec4899;
-      transition: width 0.2s ease;
-    }
-    #message-box {
-      background: #18181b;
-      border-left: 4px solid #ec4899;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      min-height: 38px;
-      display: flex;
-      align-items: center;
-      color: #f472b6;
-    }
-    #actions-panel {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .btn {
-      background: #18181b;
-      border: 1px solid #3f3f46;
-      color: #fff;
-      padding: 10px 8px;
-      border-radius: 6px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      transition: all 0.1s ease;
-    }
-    .btn:active {
-      transform: scale(0.97);
-      filter: brightness(1.2);
-    }
-    .btn-blast {
-      background: #831843;
-      border-color: #ec4899;
-      color: #fdf2f8;
-    }
-    .btn-laser {
-      background: #0369a1;
-      border-color: #38bdf8;
-      color: #f0f9ff;
-    }
-    .btn-frenzy {
-      background: #a21caf;
-      border-color: #f472b6;
-      color: #fdf4ff;
-    }
-    .btn-refresh {
-      background: #27272a;
-      border-color: #71717a;
-      color: #e4e4e7;
-    }
-    .top-controls {
-      display: flex;
-      gap: 6px;
-    }
-    .ctrl-btn {
-      background: #18181b;
-      border: 1px solid #ec4899;
-      color: #ec4899;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      font-weight: 600;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0d041c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Arcade Blast</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d041c; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Arcade Blast</h1>
-    <div class="top-controls">
-      <button class="ctrl-btn" id="bot-toggle-btn" onclick="window.toggleBot()">BOT: OFF</button>
-      <button class="ctrl-btn" onclick="window.restartGame()">RESTART</button>
-      <span class="badge" id="turn-badge">TURN 0/80</span>
-    </div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <div id="game-container">
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+const W = 360;
+const H = 640;
+let scale = 1;
 
-    <div class="vitals-grid">
-      <div class="vital-card">
-        <span class="vital-title">Arcade Score</span>
-        <span class="vital-val" id="val-score">0 pts</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-score" style="width:0%"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Combo Multiplier</span>
-        <span class="vital-val" id="val-combo">1x (0 Combo)</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-combo" style="width:10%;background:#eab308"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Frenzy Meter</span>
-        <span class="vital-val" id="val-frenzy">0%</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-frenzy" style="width:0%;background:#a855f7"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Shield Integrity</span>
-        <span class="vital-val" id="val-shield">3 / 3</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-shield" style="width:100%;background:#22c55e"></div></div>
-      </div>
-    </div>
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-    <div id="message-box">Neon Arcade Matrix primed. Chain gems, avoid hazard skulls, and reach 75,000 points!</div>
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
-    <div id="actions-panel"></div>
-  </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0178-best') || 0; } catch (e) {}
 
-  <script src="logic.js"></script>
-  <script>
-    let state = createState(Date.now ? Date.now() : 12345);
-    let botRunning = false;
-    let botInterval = null;
+let state = createState(Date.now());
+let particles = [];
+let floaters = [];
+let animTimer = 0;
+let overAt = 0;
 
-    // Web Audio Synthesizer
-    const audioCtx = (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')
-      ? new (window.AudioContext || window.webkitAudioContext)()
-      : null;
+function restart() {
+  state = createState(Date.now());
+  particles = [];
+  floaters = [];
+  overAt = 0;
+}
 
-    function playSfx(type, pitchTier) {
-      if (!audioCtx) return;
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      const t = audioCtx.currentTime;
+const TARGET_COLORS = {
+  ruby: '#ef4444',
+  sapphire: '#0ea5e9',
+  emerald: '#22c55e',
+  diamond: '#c084fc',
+  skull: '#dc2626'
+};
 
-      if (type === 'gem') {
-        const baseFreq = 300 + (pitchTier || 1) * 70;
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(baseFreq, t);
-        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, t + 0.1);
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.15);
-        osc.start(t);
-        osc.stop(t + 0.15);
-      } else if (type === 'skull') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(140, t);
-        osc.frequency.linearRampToValueAtTime(50, t + 0.25);
-        gain.gain.setValueAtTime(0.25, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.25);
-        osc.start(t);
-        osc.stop(t + 0.25);
-      } else if (type === 'laser') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(800, t);
-        osc.frequency.linearRampToValueAtTime(200, t + 0.2);
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.2);
-        osc.start(t);
-        osc.stop(t + 0.2);
-      } else if (type === 'frenzy') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(300, t);
-        osc.frequency.exponentialRampToValueAtTime(1200, t + 0.35);
-        gain.gain.setValueAtTime(0.3, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.35);
-        osc.start(t);
-        osc.stop(t + 0.35);
-      }
+const TARGET_LABELS = {
+  ruby: 'RUBY +150',
+  sapphire: 'SAPPHIRE +300',
+  emerald: 'EMERALD +600',
+  diamond: 'DIAMOND +1200',
+  skull: 'HAZARD SKULL!'
+};
+
+function performAction(act) {
+  if (isOver(state)) return;
+  const legals = legalActions(state);
+  if (!legals.includes(act)) return;
+
+  const oldPoints = state.points;
+  const oldShield = state.shield;
+  const res = step(state, act);
+
+  const gain = state.points - oldPoints;
+  if (gain > 0) {
+    floaters.push({ text: '+' + gain, x: 180, y: 220, t: 0, color: '#facc15' });
+  } else if (state.shield < oldShield) {
+    floaters.push({ text: 'SHIELD DAMAGED!', x: 180, y: 220, t: 0, color: '#ef4444' });
+  } else if (act.includes('laser')) {
+    floaters.push({ text: 'OVERDRIVE LASER!', x: 180, y: 220, t: 0, color: '#38bdf8' });
+  } else if (act.includes('frenzy')) {
+    floaters.push({ text: 'FRENZY BURST x4!', x: 180, y: 220, t: 0, color: '#a855f7' });
+  }
+
+  // Spark burst
+  for (let i = 0; i < 15; i++) {
+    particles.push({
+      x: 180 + (Math.random() - 0.5) * 80,
+      y: 260 + (Math.random() - 0.5) * 80,
+      vx: (Math.random() - 0.5) * 300,
+      vy: (Math.random() - 0.5) * 300,
+      color: gain > 0 ? '#facc15' : '#ef4444',
+      life: 0.35,
+      maxLife: 0.35
+    });
+  }
+
+  if (isOver(state)) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0178-best', best); } catch (e) {}
+    }
+  }
+}
+
+// 4 Matrix Target Pad Hitboxes on Canvas
+const PADS = [
+  { idx: 0, x: 25, y: 120, w: 145, h: 145 },
+  { idx: 1, x: 190, y: 120, w: 145, h: 145 },
+  { idx: 2, x: 25, y: 285, w: 145, h: 145 },
+  { idx: 3, x: 190, y: 285, w: 145, h: 145 }
+];
+
+// Bottom Action Buttons
+const BTNS = [
+  { id: 'laser', label: '⚡ OVERDRIVE LASER', action: 'action:charge_overdrive_laser', x: 20, y: 470, w: 320, h: 46, col: '#0284c7' },
+  { id: 'frenzy', label: '🔥 FRENZY BURST (4x)', action: 'action:trigger_frenzy_burst', x: 20, y: 524, w: 155, h: 48, col: '#a855f7' },
+  { id: 'refresh', label: '🔄 SHUFFLE MATRIX', action: 'action:refresh_targets', x: 185, y: 524, w: 155, h: 48, col: '#10b981' }
+];
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  // Check Pad Taps
+  for (const pad of PADS) {
+    if (p.x >= pad.x && p.x <= pad.x + pad.w && p.y >= pad.y && p.y <= pad.y + pad.h) {
+      performAction('action:blast_target:' + pad.idx);
+      return;
+    }
+  }
+  // Check Button Taps
+  for (const b of BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      performAction(b.action);
+      return;
+    }
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  if (k === '1' || k === 'q') performAction('action:blast_target:0');
+  else if (k === '2' || k === 'w') performAction('action:blast_target:1');
+  else if (k === '3' || k === 'a') performAction('action:blast_target:2');
+  else if (k === '4' || k === 's') performAction('action:blast_target:3');
+  else if (k === ' ' || k === 'e') performAction('action:charge_overdrive_laser');
+  else if (k === 'f') performAction('action:trigger_frenzy_burst');
+  else if (k === 'r') performAction('action:refresh_targets');
+});
+
+function draw(dt) {
+  animTimer += dt;
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#150628');
+  bg.addColorStop(1, '#080210');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top Dashboard Header
+  ctx.fillStyle = 'rgba(21, 6, 40, 0.9)';
+  ctx.fillRect(0, 0, W, 50);
+
+  ctx.fillStyle = '#facc15';
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(state.points + ' PTS', 14, 22);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#c084fc';
+  ctx.fillText('COMBO x' + state.comboMultiplier + ' (' + state.combo + ')', W - 14, 22);
+
+  // Sub-bars: Shield & Frenzy
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'left';
+  ctx.fillText('SHIELDS: ' + '🛡'.repeat(state.shield), 14, 40);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'right';
+  ctx.fillText('FRENZY: ' + state.frenzyMeter + '% ⚡', W - 14, 40);
+
+  // Draw 4 Matrix Target Pads
+  for (let i = 0; i < 4; i++) {
+    const pad = PADS[i];
+    const target = state.slots[i];
+    if (!target) continue;
+
+    const col = TARGET_COLORS[target.type] || '#fff';
+    const isSkull = target.type === 'skull';
+
+    // Pad container
+    ctx.fillStyle = isSkull ? 'rgba(220, 38, 38, 0.15)' : 'rgba(30, 10, 60, 0.7)';
+    rrect(pad.x, pad.y, pad.w, pad.h, 12);
+    ctx.fill();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = isSkull ? 3 : 2;
+    rrect(pad.x, pad.y, pad.w, pad.h, 12);
+    ctx.stroke();
+
+    // Central Icon / Gem Symbol
+    const cx = pad.x + pad.w / 2;
+    const cy = pad.y + pad.h / 2 - 8;
+    const pulse = Math.sin(animTimer * 4 + i) * 3;
+
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    if (isSkull) {
+      // Skull Shape
+      ctx.arc(cx, cy, 26 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#080210';
+      ctx.beginPath();
+      ctx.arc(cx - 8, cy - 2, 5, 0, Math.PI * 2);
+      ctx.arc(cx + 8, cy - 2, 5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Gem Diamond
+      ctx.moveTo(cx, cy - (28 + pulse));
+      ctx.lineTo(cx + (28 + pulse), cy);
+      ctx.lineTo(cx, cy + (28 + pulse));
+      ctx.lineTo(cx - (28 + pulse), cy);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.beginPath();
+      ctx.arc(cx - 6, cy - 6, 8, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    function render() {
-      // Vitals UI
-      document.getElementById('turn-badge').textContent = 'TURN ' + state.turns + '/' + state.maxTurns;
-      document.getElementById('val-score').textContent = state.points.toLocaleString() + ' pts';
-      document.getElementById('fill-score').style.width = Math.min(100, (state.points / PLATINUM_THRESHOLD) * 100) + '%';
+    // Label on Pad
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(TARGET_LABELS[target.type], cx, pad.y + pad.h - 14);
 
-      document.getElementById('val-combo').textContent = state.comboMultiplier + 'x (' + state.combo + ' streak)';
-      document.getElementById('fill-combo').style.width = Math.min(100, (state.comboMultiplier / 10) * 100) + '%';
+    // Number key helper pill in top left
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    rrect(pad.x + 8, pad.y + 8, 22, 22, 4);
+    ctx.fill();
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.fillText(i + 1, pad.x + 19, pad.y + 24);
+  }
 
-      document.getElementById('val-frenzy').textContent = state.frenzyActive > 0 ? 'FRENZY (' + state.frenzyActive + ')' : state.frenzyMeter + '%';
-      document.getElementById('fill-frenzy').style.width = (state.frenzyActive > 0 ? 100 : state.frenzyMeter) + '%';
-
-      document.getElementById('val-shield').textContent = state.shield + ' / 3';
-      document.getElementById('fill-shield').style.width = ((state.shield / 3) * 100) + '%';
-      document.getElementById('fill-shield').style.background = state.shield === 1 ? '#ef4444' : '#22c55e';
-
-      document.getElementById('message-box').textContent = state.gameMessage;
-
-      // Canvas Rendering
-      const canvas = document.getElementById('gameCanvas');
-      if (!canvas || !canvas.getContext) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-
-      // 1. Neon Matrix Background
-      ctx.fillStyle = '#050508';
-      ctx.fillRect(0, 0, w, h);
-
-      // Background grid lines
-      ctx.strokeStyle = state.frenzyActive > 0 ? 'rgba(236, 72, 153, 0.25)' : 'rgba(56, 189, 248, 0.15)';
-      ctx.lineWidth = 1;
-      for (let x = 0; x < w; x += 40) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
-      }
-      for (let y = 0; y < h; y += 40) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-      }
-
-      // Frenzy plasma border glow
-      if (state.frenzyActive > 0) {
-        ctx.strokeStyle = '#f472b6';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(4, 4, w - 8, h - 8);
-      }
-
-      // 2. Render 4 Target Pads
-      const padW = 120;
-      const padH = 140;
-      const padY = h / 2 - 70;
-      const padGap = (w - padW * 4) / 5;
-
-      for (let i = 0; i < state.slots.length; i++) {
-        const slot = state.slots[i];
-        const px = padGap + i * (padW + padGap);
-
-        // Pad Bezel
-        ctx.fillStyle = '#111827';
-        ctx.beginPath();
-        ctx.roundRect(px, padY, padW, padH, 8);
-        ctx.fill();
-
-        let borderCol = '#38bdf8';
-        if (slot.type === 'ruby') borderCol = '#ef4444';
-        else if (slot.type === 'sapphire') borderCol = '#38bdf8';
-        else if (slot.type === 'emerald') borderCol = '#22c55e';
-        else if (slot.type === 'diamond') borderCol = '#e879f9';
-        else if (slot.type === 'skull') borderCol = '#f97316';
-
-        ctx.strokeStyle = borderCol;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Slot Number Badge
-        ctx.fillStyle = '#64748b';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('SLOT ' + (i + 1), px + 8, padY + 16);
-
-        // Target Gem Graphic
-        const cx = px + padW / 2;
-        const cy = padY + padH / 2 - 6;
-
-        if (slot.type === 'skull') {
-          // Hazard Skull
-          ctx.fillStyle = '#f97316';
-          ctx.beginPath();
-          ctx.arc(cx, cy - 4, 22, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillRect(cx - 12, cy + 10, 24, 14);
-          // Eye sockets
-          ctx.fillStyle = '#0f172a';
-          ctx.beginPath();
-          ctx.arc(cx - 8, cy - 4, 6, 0, Math.PI * 2);
-          ctx.arc(cx + 8, cy - 4, 6, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          // Gem Diamond polygon
-          ctx.fillStyle = borderCol;
-          ctx.beginPath();
-          ctx.moveTo(cx, cy - 26);
-          ctx.lineTo(cx + 26, cy);
-          ctx.lineTo(cx, cy + 26);
-          ctx.lineTo(cx - 26, cy);
-          ctx.closePath();
-          ctx.fill();
-          ctx.strokeStyle = '#fff';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-
-        // Target Name & Score
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(slot.name, cx, padY + padH - 24);
-        ctx.fillStyle = slot.type === 'skull' ? '#ef4444' : '#fde047';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillText(slot.type === 'skull' ? '-400 pts (HAZARD)' : '+' + slot.baseScore + ' pts', cx, padY + padH - 10);
-      }
-
-      // 3. Milestone Progress Bar at Top
-      const mbY = 30;
-      const mbW = w - 80;
-      const mbX = 40;
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(mbX, mbY, mbW, 10);
-
-      const ratio = Math.min(1, state.points / PLATINUM_THRESHOLD);
-      ctx.fillStyle = '#ec4899';
-      ctx.fillRect(mbX, mbY, mbW * ratio, 10);
-
-      // Milestone flags
-      ctx.fillStyle = '#fef08a';
-      ctx.font = '9px sans-serif';
-      ctx.textAlign = 'center';
-      // Gold (50k)
-      const goldX = mbX + mbW * (GOLD_THRESHOLD / PLATINUM_THRESHOLD);
-      ctx.fillRect(goldX - 1, mbY - 4, 2, 18);
-      ctx.fillText('GOLD (50k)', goldX, mbY - 8);
-      // Plat (75k)
-      ctx.fillRect(mbX + mbW - 1, mbY - 4, 2, 18);
-      ctx.fillText('PLATINUM (75k)', mbX + mbW, mbY - 8);
-
-      // Game Over Screen Overlay
-      if (isOver(state)) {
-        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.92)' : 'rgba(69, 10, 10, 0.92)';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(state.victory ? 'ARCADE MASTER! PLATINUM TROPHY!' : 'ARCADE RUN OVER', w / 2, h / 2 - 20);
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Final Arcade Score: ' + score(state).toLocaleString() + ' pts', w / 2, h / 2 + 15);
-      }
-
-      updateActions();
+  // Draw Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.life -= dt;
+    if (pt.life <= 0) {
+      particles.splice(i, 1);
+      continue;
     }
+    ctx.fillStyle = pt.color;
+    ctx.globalAlpha = pt.life / pt.maxLife;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 
-    function updateActions() {
-      const panel = document.getElementById('actions-panel');
-      if (isOver(state)) {
-        panel.innerHTML = '<button class="btn btn-blast" onclick="window.restartGame()">NEW SCORE RUN</button>';
-        return;
-      }
-
-      const actions = legalActions(state);
-      let html = '';
-
-      for (const act of actions) {
-        let cls = 'btn';
-        let label = act;
-        let sub = '';
-
-        if (act.startsWith('action:blast_target:')) {
-          const idx = parseInt(act.split(':')[2], 10);
-          const t = state.slots[idx];
-          cls += ' btn-blast';
-          label = '💥 Blast Slot ' + (idx + 1) + ': ' + (t ? t.name : '');
-          sub = t ? (t.type === 'skull' ? 'DANGER: Hazard Skull!' : '+' + (t.baseScore * state.comboMultiplier) + ' Pts') : '';
-        } else if (act === 'action:charge_overdrive_laser') {
-          cls += ' btn-laser';
-          label = '⚡ Overdrive Laser Beam';
-          sub = 'Sweep Entire Matrix (-40% Frenzy)';
-        } else if (act === 'action:trigger_frenzy_burst') {
-          cls += ' btn-frenzy';
-          label = '🌟 HYPER FRENZY BURST!';
-          sub = 'Max 10x Multiplier for 5 Turns!';
-        } else if (act === 'action:refresh_targets') {
-          cls += ' btn-refresh';
-          label = '🔄 Scramble Matrix';
-          sub = 'Re-roll Target Spawns';
-        }
-
-        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
-      }
-
-      panel.innerHTML = html;
+  // Floating text
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 40 * dt;
+    f.t += dt;
+    if (f.t > 0.8) {
+      floaters.splice(i, 1);
+      continue;
     }
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  }
 
-    window.triggerAction = function(act) {
-      if (isOver(state)) return;
-      if (act.startsWith('action:blast_target:')) {
-        const idx = parseInt(act.split(':')[2], 10);
-        const t = state.slots[idx];
-        if (t && t.type === 'skull') playSfx('skull');
-        else playSfx('gem', state.comboMultiplier);
-      } else if (act === 'action:charge_overdrive_laser') {
-        playSfx('laser');
-      } else if (act === 'action:trigger_frenzy_burst') {
-        playSfx('frenzy');
-      }
+  // Control Deck at Bottom
+  ctx.fillStyle = '#0f041e';
+  ctx.fillRect(0, 450, W, 190);
+  ctx.fillStyle = '#7c3aed';
+  ctx.fillRect(0, 448, W, 2);
 
-      step(state, act);
-      render();
-    };
+  const legals = legalActions(state);
+  for (const b of BTNS) {
+    const isLegal = legals.includes(b.action);
+    ctx.fillStyle = isLegal ? b.col : '#1e1030';
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.fill();
+    ctx.strokeStyle = isLegal ? 'rgba(255,255,255,0.3)' : '#2d1848';
+    ctx.lineWidth = 1.5;
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.stroke();
 
-    window.restartGame = function() {
-      state = createState(Date.now ? Date.now() : 12345);
-      render();
-    };
+    ctx.fillStyle = isLegal ? '#ffffff' : '#6b7280';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+  }
+  ctx.textBaseline = 'alphabetic';
 
-    window.toggleBot = function() {
-      botRunning = !botRunning;
-      const btn = document.getElementById('bot-toggle-btn');
-      if (btn) {
-        btn.textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
-        btn.style.background = botRunning ? '#be185d' : '#18181b';
-      }
+  // Game over overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(13, 4, 28, 0.92)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.victory ? '#10b981' : '#ef4444';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.victory ? 'PLATINUM BLAST!' : 'SHIELD COLLAPSE', W / 2, H / 2 - 40);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state) + '  (Best: ' + best + ')', W / 2, H / 2);
+    ctx.fillText('Gems Cleared: ' + state.gemsCleared + '  Points: ' + state.points, W / 2, H / 2 + 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap to blast again', W / 2, H / 2 + 70);
+  }
+}
 
-      if (botRunning) {
-        botInterval = setInterval(() => {
-          if (isOver(state)) {
-            state = createState(Date.now ? Date.now() : 9999);
-            render();
-            return;
-          }
-          const acts = legalActions(state);
-          if (acts.length > 0) {
-            let choice = acts[0];
-            // Intelligent score bot: prioritize frenzy, laser, then safe gems over skulls
-            if (acts.includes('action:trigger_frenzy_burst')) choice = 'action:trigger_frenzy_burst';
-            else if (acts.includes('action:charge_overdrive_laser')) choice = 'action:charge_overdrive_laser';
-            else {
-              // Find best gem slot that is not a skull
-              let bestIdx = -1;
-              let bestPts = -999;
-              for (let i = 0; i < state.slots.length; i++) {
-                const t = state.slots[i];
-                if (t.type !== 'skull' && t.baseScore > bestPts) {
-                  bestPts = t.baseScore;
-                  bestIdx = i;
-                }
-              }
-              if (bestIdx >= 0 && acts.includes('action:blast_target:' + bestIdx)) {
-                choice = 'action:blast_target:' + bestIdx;
-              } else if (acts.includes('action:refresh_targets')) {
-                choice = 'action:refresh_targets';
-              }
-            }
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 
-            window.triggerAction(choice);
-          }
-        }, 250);
-      } else {
-        clearInterval(botInterval);
-      }
-    };
-
-    render();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-  </script>
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

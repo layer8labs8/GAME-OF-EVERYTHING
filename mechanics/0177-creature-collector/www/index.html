@@ -1,586 +1,371 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Beast Tamer Arena - Creature Collector</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      background-color: #052e16;
-      color: #f0fdf4;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 12px;
-      background: #14532d;
-      border: 1px solid #22c55e;
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #4ade80;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: #15803d;
-      color: #f0fdf4;
-      font-weight: 600;
-    }
-    #game-container {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 4/3;
-      background: #022c22;
-      border: 2px solid #22c55e;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.25);
-    }
-    .vitals-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .vital-card {
-      background: #14532d;
-      border: 1px solid #16a34a;
-      border-radius: 6px;
-      padding: 6px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .vital-title {
-      font-size: 0.65rem;
-      color: #bbf7d0;
-      text-transform: uppercase;
-      font-weight: bold;
-    }
-    .vital-val {
-      font-size: 0.95rem;
-      font-weight: bold;
-      color: #fff;
-    }
-    .meter-bar {
-      height: 4px;
-      background: #022c22;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 2px;
-    }
-    .meter-fill {
-      height: 100%;
-      background: #22c55e;
-      transition: width 0.2s ease;
-    }
-    #message-box {
-      background: #064e3b;
-      border-left: 4px solid #4ade80;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      min-height: 38px;
-      display: flex;
-      align-items: center;
-      color: #f0fdf4;
-    }
-    #actions-panel {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .btn {
-      background: #14532d;
-      border: 1px solid #22c55e;
-      color: #fff;
-      padding: 10px 8px;
-      border-radius: 6px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      transition: all 0.1s ease;
-    }
-    .btn:active {
-      transform: scale(0.97);
-      filter: brightness(1.2);
-    }
-    .btn-attack {
-      background: #991b1b;
-      border-color: #ef4444;
-      color: #fef2f2;
-    }
-    .btn-defend {
-      background: #1e3a8a;
-      border-color: #3b82f6;
-      color: #eff6ff;
-    }
-    .btn-sphere {
-      background: #854d0e;
-      border-color: #eab308;
-      color: #fefce8;
-    }
-    .btn-potion {
-      background: #047857;
-      border-color: #10b981;
-      color: #ecfdf5;
-    }
-    .top-controls {
-      display: flex;
-      gap: 6px;
-    }
-    .ctrl-btn {
-      background: #14532d;
-      border: 1px solid #22c55e;
-      color: #4ade80;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      font-weight: 600;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#061220">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Beast Tamer Arena</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #061220; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Beast Tamer Arena</h1>
-    <div class="top-controls">
-      <button class="ctrl-btn" id="bot-toggle-btn" onclick="window.toggleBot()">BOT: OFF</button>
-      <button class="ctrl-btn" onclick="window.restartGame()">RESTART</button>
-      <span class="badge" id="turn-badge">TURN 0/120</span>
-    </div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <div id="game-container">
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+const W = 360;
+const H = 640;
+let scale = 1;
 
-    <div class="vitals-grid">
-      <div class="vital-card">
-        <span class="vital-title">Active Beast HP</span>
-        <span class="vital-val" id="val-hp">50 / 50</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-hp" style="width:100%"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Badges Won</span>
-        <span class="vital-val" id="val-badges">0 / 4</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-badges" style="width:0%;background:#eab308"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Spheres & Potions</span>
-        <span class="vital-val" id="val-items">5 ⚪ | 3 🧪</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-items" style="width:80%;background:#38bdf8"></div></div>
-      </div>
-      <div class="vital-card">
-        <span class="vital-title">Roster Size</span>
-        <span class="vital-val" id="val-roster">1 / 3 Beasts</span>
-        <div class="meter-bar"><div class="meter-fill" id="fill-roster" style="width:33%;background:#a855f7"></div></div>
-      </div>
-    </div>
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-    <div id="message-box">Starter creature Sparkfang ready. Explore tall grass or challenge regional arena leaders.</div>
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
-    <div id="actions-panel"></div>
-  </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0177-best') || 0; } catch (e) {}
 
-  <script src="logic.js"></script>
-  <script>
-    let state = createState(Date.now ? Date.now() : 12345);
-    let botRunning = false;
-    let botInterval = null;
+let state = createState(Date.now());
+let floaters = [];
+let animTimer = 0;
+let overAt = 0;
 
-    // Web Audio Synthesizer
-    const audioCtx = (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')
-      ? new (window.AudioContext || window.webkitAudioContext)()
-      : null;
+function restart() {
+  state = createState(Date.now());
+  floaters = [];
+  overAt = 0;
+}
 
-    function playSfx(type) {
-      if (!audioCtx) return;
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      const t = audioCtx.currentTime;
+function getActiveBeast() {
+  return state.party[state.activeBeastIndex] || state.party[0];
+}
 
-      if (type === 'hit') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(260, t);
-        osc.frequency.linearRampToValueAtTime(80, t + 0.12);
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.12);
-        osc.start(t);
-        osc.stop(t + 0.12);
-      } else if (type === 'sphere') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, t);
-        osc.frequency.setValueAtTime(554, t + 0.1);
-        osc.frequency.setValueAtTime(659, t + 0.2);
-        gain.gain.setValueAtTime(0.18, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.3);
-        osc.start(t);
-        osc.stop(t + 0.3);
-      } else if (type === 'potion') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(330, t);
-        osc.frequency.linearRampToValueAtTime(660, t + 0.2);
-        gain.gain.setValueAtTime(0.15, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.2);
-        osc.start(t);
-        osc.stop(t + 0.2);
-      } else if (type === 'victory') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523, t);
-        osc.frequency.setValueAtTime(659, t + 0.12);
-        osc.frequency.setValueAtTime(783, t + 0.24);
-        osc.frequency.setValueAtTime(1046, t + 0.36);
-        gain.gain.setValueAtTime(0.25, t);
-        gain.gain.linearRampToValueAtTime(0.01, t + 0.55);
-        osc.start(t);
-        osc.stop(t + 0.55);
-      }
+function performAction(act) {
+  if (isOver(state)) return;
+  const legals = legalActions(state);
+  if (!legals.includes(act)) return;
+
+  const oldEnemyHp = state.enemy ? state.enemy.hp : 0;
+  const oldActiveHp = getActiveBeast().hp;
+  const oldCaught = state.creaturesCaught;
+
+  const res = step(state, act);
+
+  if (act.includes('attack')) {
+    const dmg = state.enemy ? Math.max(0, oldEnemyHp - state.enemy.hp) : 0;
+    floaters.push({ text: '-' + dmg + ' HP', x: 250, y: 150, t: 0, color: '#ef4444' });
+  } else if (act.includes('throw_tamer_sphere')) {
+    if (state.creaturesCaught > oldCaught) {
+      floaters.push({ text: 'CAUGHT!', x: 250, y: 140, t: 0, color: '#a855f7' });
+    } else {
+      floaters.push({ text: 'BROKE FREE!', x: 250, y: 140, t: 0, color: '#f59e0b' });
     }
+  } else if (act.includes('use_potion')) {
+    floaters.push({ text: '+POTION HEAL', x: 100, y: 320, t: 0, color: '#10b981' });
+  } else if (act.includes('defend')) {
+    floaters.push({ text: 'SHIELD UP', x: 100, y: 320, t: 0, color: '#38bdf8' });
+  }
 
-    function getElementColor(elem) {
-      if (elem === 'Fire') return '#ef4444';
-      if (elem === 'Water') return '#38bdf8';
-      if (elem === 'Grass') return '#22c55e';
-      if (elem === 'Electric') return '#eab308';
-      return '#a855f7';
+  if (isOver(state)) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0177-best', best); } catch (e) {}
     }
+  }
+}
 
-    function render() {
-      const active = state.party[state.activeBeastIndex] || state.party[0];
+// Action buttons on canvas
+const BTNS = [
+  { id: 'atk', label: '⚔ ATTACK', action: 'action:command_attack', x: 20, y: 470, w: 155, h: 48, col: '#ef4444' },
+  { id: 'def', label: '🛡 DEFEND', action: 'action:command_defend', x: 185, y: 470, w: 155, h: 48, col: '#3b82f6' },
+  { id: 'sph', label: '🔮 CATCH SPHERE', action: 'action:throw_tamer_sphere', x: 20, y: 526, w: 155, h: 46, col: '#8b5cf6' },
+  { id: 'pot', label: '🧪 USE POTION', action: 'action:use_potion', x: 185, y: 526, w: 155, h: 46, col: '#10b981' },
+  { id: 'grass', label: '🌿 TALL GRASS', action: 'action:explore_tall_grass', x: 20, y: 580, w: 155, h: 44, col: '#059669' },
+  { id: 'arena', label: '🏆 CHALLENGE LEADER', action: 'action:challenge_arena_leader', x: 185, y: 580, w: 155, h: 44, col: '#d97706' },
+];
 
-      // Vitals UI
-      document.getElementById('turn-badge').textContent = 'TURN ' + state.turns + '/' + state.maxTurns;
-      document.getElementById('val-hp').textContent = active.hp + ' / ' + active.maxHp + ' (Lv' + active.level + ')';
-      document.getElementById('fill-hp').style.width = Math.min(100, Math.max(0, (active.hp / active.maxHp) * 100)) + '%';
-      document.getElementById('fill-hp').style.background = (active.hp / active.maxHp) < 0.25 ? '#ef4444' : '#22c55e';
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
 
-      document.getElementById('val-badges').textContent = state.badges + ' / 4 Badges';
-      document.getElementById('fill-badges').style.width = ((state.badges / 4) * 100) + '%';
-
-      document.getElementById('val-items').textContent = state.spheres + ' ⚪ | ' + state.potions + ' 🧪';
-      document.getElementById('val-roster').textContent = state.party.length + ' / 3 Beasts';
-      document.getElementById('fill-roster').style.width = ((state.party.length / 3) * 100) + '%';
-
-      document.getElementById('message-box').textContent = state.gameMessage;
-
-      // Canvas Rendering
-      const canvas = document.getElementById('gameCanvas');
-      if (!canvas || !canvas.getContext) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-
-      // 1. Background Arena / Field
-      if (state.isArenaMatch) {
-        // Colosseum arena floor
-        ctx.fillStyle = '#451a03';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#78350f';
-        ctx.beginPath();
-        ctx.ellipse(w / 2, h / 2 + 40, w * 0.45, h * 0.35, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-      } else {
-        // Tall grass meadow
-        ctx.fillStyle = '#064e3b';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#047857';
-        // Battle circles
-        ctx.beginPath();
-        ctx.ellipse(w * 0.28, h * 0.72, 110, 36, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(w * 0.72, h * 0.38, 95, 30, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // 2. Enemy Beast Platform (Upper Right)
-      if (state.inBattle && state.enemy) {
-        const ex = w * 0.72;
-        const ey = h * 0.35;
-        const elemCol = getElementColor(state.enemy.element);
-
-        // Creature Sprite Representation
-        ctx.fillStyle = elemCol;
-        ctx.beginPath();
-        ctx.arc(ex, ey - 20, 32, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Beast Eyes
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(ex - 10, ey - 24, 6, 0, Math.PI * 2);
-        ctx.arc(ex + 10, ey - 24, 6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(ex - 10, ey - 24, 3, 0, Math.PI * 2);
-        ctx.arc(ex + 10, ey - 24, 3, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Enemy HUD Box
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.roundRect(ex - 120, ey - 105, 240, 48, 6);
-        ctx.fill();
-        ctx.strokeStyle = elemCol;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(state.enemy.name + ' Lv' + state.enemy.level, ex - 110, ey - 88);
-        ctx.fillStyle = elemCol;
-        ctx.fillText(state.enemy.element, ex + 60, ey - 88);
-
-        // Enemy HP Bar
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(ex - 110, ey - 76, 220, 8);
-        const ehpRatio = Math.max(0, state.enemy.hp / state.enemy.maxHp);
-        ctx.fillStyle = ehpRatio < 0.25 ? '#ef4444' : '#22c55e';
-        ctx.fillRect(ex - 110, ey - 76, 220 * ehpRatio, 8);
-      } else {
-        // Idle Overworld Visual
-        ctx.fillStyle = '#a7f3d0';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Searching the Wilds... Tall Grass Awaits', w / 2, h * 0.35);
-      }
-
-      // 3. Player Active Beast Platform (Lower Left)
-      const px = w * 0.28;
-      const py = h * 0.70;
-      const pElemCol = getElementColor(active.element);
-
-      // Player Beast Sprite
-      ctx.fillStyle = pElemCol;
-      ctx.beginPath();
-      ctx.arc(px, py - 25, 38, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 4;
-      ctx.stroke();
-
-      // Cute ears / crest
-      ctx.beginPath();
-      ctx.moveTo(px - 25, py - 55);
-      ctx.lineTo(px - 15, py - 85);
-      ctx.lineTo(px - 5, py - 58);
-      ctx.moveTo(px + 5, py - 58);
-      ctx.lineTo(px + 15, py - 85);
-      ctx.lineTo(px + 25, py - 55);
-      ctx.fillStyle = pElemCol;
-      ctx.fill();
-
-      // Eyes
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(px - 12, py - 28, 7, 0, Math.PI * 2);
-      ctx.arc(px + 12, py - 28, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.beginPath();
-      ctx.arc(px - 10, py - 28, 3, 0, Math.PI * 2);
-      ctx.arc(px + 14, py - 28, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Player HUD Box
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-      ctx.roundRect(px - 110, py + 18, 220, 48, 6);
-      ctx.fill();
-      ctx.strokeStyle = pElemCol;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(active.name + ' Lv' + active.level, px - 100, py + 34);
-      ctx.fillStyle = pElemCol;
-      ctx.fillText(active.element, px + 50, py + 34);
-
-      // Player HP Bar
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(px - 100, py + 44, 200, 8);
-      const phpRatio = Math.max(0, active.hp / active.maxHp);
-      ctx.fillStyle = phpRatio < 0.25 ? '#ef4444' : '#22c55e';
-      ctx.fillRect(px - 100, py + 44, 200 * phpRatio, 8);
-
-      // Game Over Screen Overlay
-      if (isOver(state)) {
-        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(state.victory ? 'MASTER TAMER CHAMPION! VICTORY!' : 'EXPEDITION FAILED - PARTY FAINTED', w / 2, h / 2 - 20);
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Grand Tamer Final Score: ' + score(state), w / 2, h / 2 + 15);
-      }
-
-      updateActions();
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  for (const b of BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      performAction(b.action);
+      return;
     }
+  }
+  // Tap enemy to attack, tap self to heal/defend
+  if (p.y < 460) {
+    if (p.x > 180 && p.y < 250) performAction('action:command_attack');
+    else if (p.x < 180 && p.y > 250) performAction('action:command_defend');
+    else if (!state.inBattle) performAction('action:explore_tall_grass');
+  }
+});
 
-    function updateActions() {
-      const panel = document.getElementById('actions-panel');
-      if (isOver(state)) {
-        panel.innerHTML = '<button class="btn btn-attack" onclick="window.restartGame()">NEW TAMER EXPEDITION</button>';
-        return;
-      }
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  if (k === '1' || k === 'a' || k === ' ') performAction('action:command_attack');
+  else if (k === '2' || k === 'd') performAction('action:command_defend');
+  else if (k === '3' || k === 'c') performAction('action:throw_tamer_sphere');
+  else if (k === '4' || k === 'p') performAction('action:use_potion');
+  else if (k === 'e' || k === 'g') performAction('action:explore_tall_grass');
+  else if (k === 'l' || k === 'enter') performAction('action:challenge_arena_leader');
+});
 
-      const actions = legalActions(state);
-      let html = '';
+function draw(dt) {
+  animTimer += dt;
 
-      for (const act of actions) {
-        let cls = 'btn';
-        let label = act;
-        let sub = '';
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#091e36');
+  bg.addColorStop(1, '#050c18');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
 
-        if (act === 'action:command_attack') {
-          cls += ' btn-attack';
-          label = '⚔️ Elemental Strike';
-          sub = 'Strike Enemy Creature';
-        } else if (act === 'action:command_defend') {
-          cls += ' btn-defend';
-          label = '🛡️ Defend Stance';
-          sub = 'Cut incoming damage by 50%';
-        } else if (act === 'action:throw_tamer_sphere') {
-          cls += ' btn-sphere';
-          label = '⚪ Throw Tamer Sphere';
-          sub = 'Attempt Capture (' + state.spheres + ' Left)';
-        } else if (act === 'action:use_potion') {
-          cls += ' btn-potion';
-          label = '🧪 Administer Potion';
-          sub = '+40 HP (' + state.potions + ' Left)';
-        } else if (act === 'action:explore_tall_grass') {
-          cls += ' btn-potion';
-          label = '🌿 Explore Tall Grass';
-          sub = 'Encounter Wild Beasts';
-        } else if (act === 'action:challenge_arena_leader') {
-          cls += ' btn-attack';
-          label = '🏆 Challenge Arena Leader';
-          sub = 'Badge Match #' + (state.badges + 1);
-        } else if (act.startsWith('action:switch_beast:')) {
-          const idx = parseInt(act.split(':')[2], 10);
-          const b = state.party[idx];
-          cls += ' btn-defend';
-          label = '🔄 Switch: ' + (b ? b.name : 'Beast ' + idx);
-          sub = b ? 'Lv' + b.level + ' ' + b.element + ' (' + b.hp + ' HP)' : '';
-        }
+  // Arena Battle Field / Stage Podiums
+  // Enemy Podium
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+  ctx.beginPath();
+  ctx.ellipse(250, 210, 70, 24, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
-      }
+  // Player Podium
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+  ctx.beginPath();
+  ctx.ellipse(100, 390, 80, 28, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-      panel.innerHTML = html;
+  // Draw Enemy Beast (Top Right)
+  if (state.enemy && state.enemy.hp > 0) {
+    const ex = 250;
+    const ey = 175 + Math.sin(animTimer * 3) * 4;
+
+    // Enemy Avatar
+    ctx.fillStyle = state.enemy.element === 'Fire' ? '#ef4444' :
+                    state.enemy.element === 'Water' ? '#0ea5e9' :
+                    state.enemy.element === 'Grass' ? '#22c55e' : '#eab308';
+    ctx.beginPath();
+    ctx.arc(ex, ey, 26, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(state.enemy.name[0], ex, ey);
+
+    // Enemy HUD Card
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    rrect(150, 70, 190, 48, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    rrect(150, 70, 190, 48, 6);
+    ctx.stroke();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(state.enemy.name, 160, 76);
+    ctx.fillStyle = '#f59e0b';
+    ctx.textAlign = 'right';
+    ctx.fillText('LV ' + (state.enemy.level || 1), 330, 76);
+
+    // Enemy HP Bar
+    const eHpPct = Math.max(0, state.enemy.hp / state.enemy.maxHp);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(160, 96, 170, 8);
+    ctx.fillStyle = eHpPct > 0.4 ? '#22c55e' : '#ef4444';
+    ctx.fillRect(160, 96, 170 * eHpPct, 8);
+  } else if (!state.inBattle) {
+    // Wild grass scene
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🌿 Wandering in Wild Plains 🌿', 250, 180);
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('Tap Tall Grass to find beasts', 250, 204);
+  }
+
+  // Draw Player Beast (Bottom Left)
+  const active = getActiveBeast();
+  const px = 100;
+  const py = 350 + Math.sin(animTimer * 2.5) * 3;
+
+  ctx.fillStyle = active.element === 'Fire' ? '#ef4444' :
+                  active.element === 'Water' ? '#0ea5e9' :
+                  active.element === 'Grass' ? '#22c55e' : '#eab308';
+  ctx.beginPath();
+  ctx.arc(px, py, 32, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(active.name[0], px, py);
+
+  // Player Beast HUD Card
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  rrect(20, 260, 190, 52, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1;
+  rrect(20, 260, 190, 52, 6);
+  ctx.stroke();
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(active.name, 30, 268);
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'right';
+  ctx.fillText('LV ' + active.level, 200, 268);
+
+  // Player HP Bar
+  const pHpPct = Math.max(0, active.hp / active.maxHp);
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(30, 290, 170, 8);
+  ctx.fillStyle = pHpPct > 0.4 ? '#22c55e' : '#ef4444';
+  ctx.fillRect(30, 290, 170 * pHpPct, 8);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = 'bold 9px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(active.hp + '/' + active.maxHp + ' HP', 200, 301);
+
+  // Top Dashboard Header
+  ctx.fillStyle = 'rgba(6, 18, 32, 0.9)';
+  ctx.fillRect(0, 0, W, 48);
+
+  ctx.fillStyle = '#facc15';
+  ctx.font = 'bold 15px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('BADGES: ' + state.badges + '/4 🏅', 12, 22);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillText('CAUGHT: ' + state.creaturesCaught + ' 🐾', W - 12, 22);
+
+  // Items Bar
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#c084fc';
+  ctx.textAlign = 'left';
+  ctx.fillText('SPHERES: ' + state.spheres + ' 🔮', 12, 38);
+  ctx.fillStyle = '#4ade80';
+  ctx.textAlign = 'center';
+  ctx.fillText('POTIONS: ' + state.potions + ' 🧪', W / 2, 38);
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'right';
+  ctx.fillText(state.inBattle ? '⚔ BATTLE' : '🏕 FIELD', W - 12, 38);
+
+  // Floating text
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 35 * dt;
+    f.t += dt;
+    if (f.t > 0.8) {
+      floaters.splice(i, 1);
+      continue;
     }
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  }
 
-    window.triggerAction = function(act) {
-      if (isOver(state)) return;
-      if (act.includes('attack')) playSfx('hit');
-      else if (act.includes('sphere')) playSfx('sphere');
-      else if (act.includes('potion')) playSfx('potion');
+  // Draw Control Deck
+  ctx.fillStyle = '#071526';
+  ctx.fillRect(0, 460, W, 180);
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(0, 458, W, 2);
 
-      step(state, act);
+  const legals = legalActions(state);
+  for (const b of BTNS) {
+    const isLegal = legals.includes(b.action);
+    ctx.fillStyle = isLegal ? b.col : '#1e293b';
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.fill();
+    ctx.strokeStyle = isLegal ? 'rgba(255,255,255,0.3)' : '#334155';
+    ctx.lineWidth = 1.5;
+    rrect(b.x, b.y, b.w, b.h, 6);
+    ctx.stroke();
 
-      if (state.victory) playSfx('victory');
-      render();
-    };
+    ctx.fillStyle = isLegal ? '#ffffff' : '#64748b';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+  }
+  ctx.textBaseline = 'alphabetic';
 
-    window.restartGame = function() {
-      state = createState(Date.now ? Date.now() : 12345);
-      render();
-    };
+  // Game over overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(6, 18, 32, 0.9)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.victory ? '#10b981' : '#ef4444';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.victory ? 'GRAND CHAMPION!' : 'PARTY FAINTED', W / 2, H / 2 - 40);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state) + '  (Best: ' + best + ')', W / 2, H / 2);
+    ctx.fillText('Badges: ' + state.badges + '  Beasts: ' + state.creaturesCaught, W / 2, H / 2 + 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap to battle again', W / 2, H / 2 + 70);
+  }
+}
 
-    window.toggleBot = function() {
-      botRunning = !botRunning;
-      const btn = document.getElementById('bot-toggle-btn');
-      if (btn) {
-        btn.textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
-        btn.style.background = botRunning ? '#15803d' : '#14532d';
-      }
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 
-      if (botRunning) {
-        botInterval = setInterval(() => {
-          if (isOver(state)) {
-            state = createState(Date.now ? Date.now() : 9999);
-            render();
-            return;
-          }
-          const acts = legalActions(state);
-          if (acts.length > 0) {
-            let choice = acts[0];
-            const active = state.party[state.activeBeastIndex] || state.party[0];
-
-            if (state.inBattle) {
-              if (active.hp < 20 && acts.includes('action:use_potion')) choice = 'action:use_potion';
-              else if (!state.isArenaMatch && state.enemy && state.enemy.hp < 25 && acts.includes('action:throw_tamer_sphere')) choice = 'action:throw_tamer_sphere';
-              else if (acts.includes('action:command_attack')) choice = 'action:command_attack';
-            } else {
-              if (active.hp < 20 && acts.includes('action:use_potion')) choice = 'action:use_potion';
-              else if (active.level >= 2 + state.badges && acts.includes('action:challenge_arena_leader')) choice = 'action:challenge_arena_leader';
-              else if (acts.includes('action:explore_tall_grass')) choice = 'action:explore_tall_grass';
-            }
-
-            window.triggerAction(choice);
-          }
-        }, 250);
-      } else {
-        clearInterval(botInterval);
-      }
-    };
-
-    render();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-  </script>
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>
