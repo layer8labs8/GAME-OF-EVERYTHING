@@ -10,7 +10,7 @@
 
   const ARENA_W = 400;
   const ARENA_H = 400;
-  const MAX_STEPS = 160;
+  const MAX_STEPS = 600;
   const MAX_WAVES = 3;
 
   function nextRandom(state) {
@@ -78,7 +78,7 @@
   function legalActions(state) {
     if (isOver(state)) return [];
 
-    const actions = ['move_up', 'move_down', 'move_forward', 'move_back', 'fire', 'rest'];
+    const actions = ['move_up', 'move_down', 'move_forward', 'move_back', 'fire', 'rest', 'wait'];
     const p = state.player;
 
     if (p.missiles > 0) {
@@ -297,6 +297,10 @@
   }
 
   return {
+    ARENA_W,
+    ARENA_H,
+    MAX_STEPS,
+    MAX_WAVES,
     createState,
     legalActions,
     step,

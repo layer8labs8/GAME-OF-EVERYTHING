@@ -10,7 +10,7 @@
 
   const ARENA_MIN = 20;
   const ARENA_MAX = 380;
-  const MAX_STEPS = 160;
+  const MAX_STEPS = 550;
   const MAX_AMMO = 12;
 
   function nextRandom(state) {
@@ -106,7 +106,7 @@
   function legalActions(state) {
     if (isOver(state)) return [];
 
-    const actions = ['move_n', 'move_s', 'move_e', 'move_w'];
+    const actions = ['move_n', 'move_s', 'move_e', 'move_w', 'wait'];
     const p = state.player;
 
     if (p.ammo > 0) {
@@ -376,6 +376,10 @@
   }
 
   return {
+    ARENA_MIN,
+    ARENA_MAX,
+    MAX_STEPS,
+    MAX_AMMO,
     createState,
     legalActions,
     step,

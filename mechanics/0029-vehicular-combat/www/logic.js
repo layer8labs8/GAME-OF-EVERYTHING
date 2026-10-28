@@ -8,7 +8,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const MAX_STEPS = 120;
+  const MAX_STEPS = 480;
   const ARENA_MIN = 20;
   const ARENA_MAX = 380;
 
@@ -114,6 +114,7 @@
     if (state.player.scrap >= 20 && state.player.armor < state.player.maxArmor) {
       actions.push('repair_armor');
     }
+    actions.push('wait');
 
     return actions;
   }
@@ -246,6 +247,11 @@
       p.armor = Math.min(p.maxArmor, p.armor + 35);
       state.lastEvent = 'Scrap plates welded onto hull (+35 Armor)';
       reward += 25;
+    } else if (action === 'wait') {
+      if (p.speed > 0) p.speed = Math.max(0, p.speed - 1);
+      else if (p.speed < 0) p.speed = Math.min(0, p.speed + 1);
+      if (p.speed !== 0) moveVehicle(p, p.speed * 5);
+      state.lastEvent = 'Coasting across wasteland arena';
     }
 
     // 2. Passive Nitro Regeneration

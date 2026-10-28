@@ -1,7 +1,7 @@
 // 0165-sandbox: Physics Toybox - Pure Bot Contract Logic
 // Deterministic, zero DOM, pure state machine.
 
-const ROWS = 12;
+const ROWS = 18;
 const COLS = 16;
 const TARGET_COLS = [2, 5, 8, 11, 14];
 const ELEMENT_TYPES = ['sand', 'water', 'plant', 'fire', 'stone', 'acid', 'dynamite'];
@@ -39,7 +39,7 @@ function createState(seed = 12345) {
     seed: s,
     prngState: s,
     turns: 0,
-    maxTurns: 120,
+    maxTurns: 1500,
     grid,
     elementsPlaced: 0,
     glassCreated: 0,
@@ -309,6 +309,45 @@ function step(state, action) {
   return { reward, done };
 }
 
+function paintCell(state, el, r, c) {
+  if (isOver(state)) return false;
+  const row = Math.max(0, Math.min(ROWS - 2, Math.floor(r)));
+  const col = Math.max(0, Math.min(COLS - 1, Math.floor(c)));
+  if (el === 'lightning') {
+    state.electricalArcs += 1;
+    for (let rr = 0; rr < ROWS - 1; rr++) {
+      if (state.grid[rr][col] === 'dynamite') {
+        explode(state, rr, col);
+      } else if (state.grid[rr][col] === 'sand') {
+        state.grid[rr][col] = 'glass';
+        state.glassCreated += 1;
+      } else if (state.grid[rr][col] === 'empty' || state.grid[rr][col] === 'water') {
+        state.grid[rr][col] = 'spark';
+      }
+    }
+    checkMilestones(state);
+    state.gameMessage = 'Discharged lightning bolt down column ' + col + '!';
+    return true;
+  }
+  if (!ELEMENT_TYPES.includes(el)) return false;
+  if (el === 'stone' || el === 'fire' || el === 'acid') {
+    state.grid[row][col] = el;
+    state.elementsPlaced += 1;
+  } else {
+    if (state.grid[row][col] === 'empty' || state.grid[row][col] === 'spark') {
+      state.grid[row][col] = el;
+      state.elementsPlaced += 1;
+    }
+    if (row > 0 && state.grid[row - 1][col] === 'empty' && (el === 'sand' || el === 'water')) {
+      state.grid[row - 1][col] = el;
+      state.elementsPlaced += 1;
+    }
+  }
+  checkMilestones(state);
+  state.gameMessage = 'Painted ' + el.toUpperCase() + ' at (' + col + ', ' + row + ').';
+  return true;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     createState,
@@ -316,6 +355,7 @@ if (typeof module !== 'undefined' && module.exports) {
     step,
     isOver,
     score,
+    paintCell,
     ROWS,
     COLS,
     ELEMENT_TYPES,

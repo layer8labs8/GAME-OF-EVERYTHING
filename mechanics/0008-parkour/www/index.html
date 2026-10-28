@@ -1,340 +1,649 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Rooftop Velocity - Parkour</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#090d16">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-    body {
-      background: #060911;
-      color: #f1f5f9;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      touch-action: none;
-    }
-    #game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      max-width: 440px;
-      padding: 10px;
-    }
-    header {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    h1 {
-      font-size: 1.15rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #10b981;
-      text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
-    }
-    .hud {
-      display: flex;
-      gap: 12px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #94a3b8;
-    }
-    .hud span { color: #f8fafc; }
-    canvas {
-      background: #090e1c;
-      border: 2px solid #1e293b;
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
-      width: 100%;
-      max-width: 400px;
-      aspect-ratio: 400 / 280;
-    }
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr) 1.2fr;
-      gap: 6px;
-      width: 100%;
-      max-width: 400px;
-      margin-top: 10px;
-    }
-    .btn {
-      background: #1e293b;
-      color: #f8fafc;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 10px 4px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.08s ease;
-    }
-    .btn:active {
-      transform: translateY(2px);
-      background: #334155;
-      border-color: #10b981;
-    }
-    .btn-jump {
-      background: #047857;
-      border-color: #10b981;
-      color: #ecfdf5;
-    }
-    .btn-slide {
-      background: #0369a1;
-      border-color: #38bdf8;
-      color: #f0f9ff;
-    }
-    .btn-wall {
-      background: #854d0e;
-      border-color: #eab308;
-      color: #fefce8;
-    }
-    .btn-boost {
-      background: #701a75;
-      border-color: #d946ef;
-      color: #fdf4ff;
-    }
-    .key-hint {
-      font-size: 0.65rem;
-      opacity: 0.6;
-      margin-top: 2px;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#060a14">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Rooftop Velocity</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #060a14;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
 </head>
 <body>
-  <div id="game-container">
-    <header>
-      <h1>Rooftop Velocity</h1>
-      <div class="hud">
-        <div>DIST: <span id="hud-dist">0</span>/1000m</div>
-        <div>SCORE: <span id="hud-score">0</span></div>
-      </div>
-    </header>
-    <canvas id="canvas" width="400" height="280"></canvas>
-    <div class="controls">
-      <button class="btn" id="btn-run">🏃 Run<span class="key-hint">A</span></button>
-      <button class="btn btn-jump" id="btn-jump">▲ Leap<span class="key-hint">W / Space</span></button>
-      <button class="btn btn-slide" id="btn-slide">▼ Slide<span class="key-hint">S</span></button>
-      <button class="btn btn-wall" id="btn-wall">🧗 Wall<span class="key-hint">D</span></button>
-      <button class="btn btn-boost" id="btn-boost">⚡ Boost<span class="key-hint">Shift / E</span></button>
-    </div>
-  </div>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const logic = RooftopVelocity;
+const { TARGET_DISTANCE } = logic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <script src="logic.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+const W = 360;
+const H = 640;
+const FLOOR_Y = 365;
+const RUNNER_X = 76;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0008-best') || 0; } catch (e) {}
+
+let state = logic.createState(Date.now());
+let overAt = 0;
+
+// Smooth 60 FPS visual state
+let visDist = 0;
+let visMom = state.momentum;
+let pose = 'run';
+let poseTimer = 0;
+let bufferedStunt = null;
+let bufferTimer = 0;
+let hurtFlash = 0;
+let shakeTime = 0;
+let animTime = 0;
+let popups = [];
+
+const RUN_INTERVAL = 0.26;
+let tickAcc = 0;
+let pointerDown = false;
+let activeBtn = null;
+let swipeStart = null;
+const keys = {};
+
+const BUTTONS = [
+  { id: 'jump', x: 16, y: 454, w: 158, h: 58, label: '▲ LEAP GAP', sub: 'Swipe Up · W / Space', color: '#047857', border: '#34d399' },
+  { id: 'slide', x: 186, y: 454, w: 158, h: 58, label: '▼ SLIDE DUCT', sub: 'Swipe Down · S', color: '#0369a1', border: '#38bdf8' },
+  { id: 'wall_run', x: 16, y: 522, w: 158, h: 58, label: '▶ WALL RUN', sub: 'Swipe Right · D', color: '#b45309', border: '#fbbf24' },
+  { id: 'boost', x: 186, y: 522, w: 158, h: 58, label: '⚡ BOOST 2x', sub: '25% Mom · Shift / E', color: '#701a75', border: '#e879f9' }
+];
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function restart() {
+  state = logic.createState(Date.now());
+  visDist = 0;
+  visMom = state.momentum;
+  pose = 'run';
+  poseTimer = 0;
+  bufferedStunt = null;
+  bufferTimer = 0;
+  hurtFlash = 0;
+  shakeTime = 0;
+  popups = [];
+  tickAcc = 0;
+  activeBtn = null;
+  swipeStart = null;
+  overAt = 0;
+}
+
+function expectedStepDist(act) {
+  let d = 12 + Math.floor(state.momentum / 8);
+  if (act === 'boost' && state.momentum >= 25) d *= 2;
+  return d;
+}
+
+function nextHazard() {
+  for (const obs of state.obstacles) {
+    if (obs.distance > state.distance && obs.type !== 'ring') {
+      return obs;
     }
+  }
+  return null;
+}
 
-    const logic = window.RooftopVelocity;
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+function hitButton(p) {
+  for (const b of BUTTONS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      return b.id;
+    }
+  }
+  return null;
+}
 
-    const hudDist = document.getElementById('hud-dist');
-    const hudScore = document.getElementById('hud-score');
+function stepRunner(act) {
+  if (logic.isOver(state)) return;
+  const legals = logic.legalActions(state);
+  const chosen = legals.includes(act) ? act : 'run';
 
-    let state = logic.createState(Math.floor(Math.random() * 100000));
-    let lastAction = 'run';
+  const prevShields = state.shields;
+  const prevStreak = state.streak;
+  const prevMom = state.momentum;
 
-    function triggerAction(action) {
-      if (logic.isOver(state)) {
-        state = logic.createState(Math.floor(Math.random() * 100000));
-        render();
-        return;
-      }
-      const legal = logic.legalActions(state);
-      if (legal.includes(action)) {
-        lastAction = action;
-        logic.step(state, action);
-        render();
+  if (chosen !== 'run') {
+    pose = chosen;
+    poseTimer = 0.34;
+  }
+
+  const res = logic.step(state, chosen);
+
+  if (state.shields < prevShields) {
+    hurtFlash = 0.32;
+    shakeTime = 0.22;
+    popups.push({ x: RUNNER_X + 20, y: FLOOR_Y - 56, text: 'CRASH! -1 SHIELD', color: '#ef4444', life: 0.75, maxLife: 0.75 });
+  } else if (state.streak > prevStreak) {
+    popups.push({ x: RUNNER_X + 24, y: FLOOR_Y - 62, text: 'STUNT x' + state.streak + '!', color: '#34d399', life: 0.65, maxLife: 0.65 });
+  } else if (state.momentum > prevMom + 10) {
+    popups.push({ x: RUNNER_X + 24, y: FLOOR_Y - 56, text: 'RING +20% MOM', color: '#fde047', life: 0.65, maxLife: 0.65 });
+  }
+
+  const sc = logic.score(state);
+  if (sc > best) {
+    best = sc;
+    try { localStorage.setItem('goe-0008-best', best); } catch (e) {}
+  }
+
+  if (res.done || logic.isOver(state)) {
+    overAt = performance.now();
+  }
+}
+
+function requestStunt(act) {
+  if (logic.isOver(state)) return;
+  const legals = logic.legalActions(state);
+  if (!legals.includes(act)) return;
+
+  pose = act;
+  poseTimer = 0.45;
+
+  const stepD = expectedStepDist(act);
+  const haz = nextHazard();
+
+  // If hazard is within this immediate step (or boost/no close hazard), fire with 0ms latency!
+  if (!haz || haz.distance <= state.distance + stepD || haz.distance > state.distance + stepD * 2.4) {
+    bufferedStunt = null;
+    bufferTimer = 0;
+    stepRunner(act);
+    tickAcc = 0;
+  } else {
+    // Player reacted slightly ahead of obstacle — queue stunt so next crossing clears cleanly!
+    bufferedStunt = act;
+    bufferTimer = 0.7;
+  }
+}
+
+function getHeldStunt() {
+  if (activeBtn) return activeBtn;
+  if (keys['ArrowUp'] || keys['w'] || keys['W'] || keys[' ']) return 'jump';
+  if (keys['ArrowDown'] || keys['s'] || keys['S']) return 'slide';
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) return 'wall_run';
+  if (keys['Shift'] || keys['e'] || keys['E']) return 'boost';
+  return null;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (logic.isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (canvas.setPointerCapture && e.pointerId != null) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+  pointerDown = true;
+
+  const btn = hitButton(p);
+  if (btn) {
+    activeBtn = btn;
+    swipeStart = null;
+    requestStunt(btn);
+    return;
+  }
+
+  if (p.y <= 440) {
+    swipeStart = p;
+    // Also support tapping directly on an upcoming obstacle on the rooftop!
+    for (const obs of state.obstacles) {
+      const sx = (obs.distance - visDist) * 4.8 + RUNNER_X;
+      if (sx >= RUNNER_X - 10 && sx <= W && Math.abs(p.x - sx) <= 36) {
+        if (obs.type === 'gap') { requestStunt('jump'); swipeStart = null; return; }
+        if (obs.type === 'duct') { requestStunt('slide'); swipeStart = null; return; }
+        if (obs.type === 'barrier') { requestStunt('wall_run'); swipeStart = null; return; }
       }
     }
+  }
+});
 
-    // Keyboard bindings
-    window.addEventListener('keydown', (e) => {
-      const code = e.code;
-      if (code === 'KeyW' || code === 'ArrowUp' || code === 'Space') triggerAction('jump');
-      else if (code === 'KeyS' || code === 'ArrowDown') triggerAction('slide');
-      else if (code === 'KeyD' || code === 'ArrowRight') triggerAction('wall_run');
-      else if (code === 'KeyA' || code === 'ArrowLeft') triggerAction('run');
-      else if (code === 'ShiftLeft' || code === 'ShiftRight' || code === 'KeyE') triggerAction('boost');
-      else if (code === 'KeyR' && logic.isOver(state)) {
-        state = logic.createState(Math.floor(Math.random() * 100000));
-        render();
-      }
-    });
-
-    // Touch bindings
-    document.getElementById('btn-run').addEventListener('pointerdown', () => triggerAction('run'));
-    document.getElementById('btn-jump').addEventListener('pointerdown', () => triggerAction('jump'));
-    document.getElementById('btn-slide').addEventListener('pointerdown', () => triggerAction('slide'));
-    document.getElementById('btn-wall').addEventListener('pointerdown', () => triggerAction('wall_run'));
-    document.getElementById('btn-boost').addEventListener('pointerdown', () => triggerAction('boost'));
-
-    function render() {
-      hudDist.textContent = state.distance;
-      hudScore.textContent = logic.score(state);
-
-      // Night sky with stars
-      ctx.fillStyle = '#060a14';
-      ctx.fillRect(0, 0, 400, 280);
-
-      // City Skyline silhouettes
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(40, 90, 60, 150);
-      ctx.fillRect(120, 60, 80, 180);
-      ctx.fillRect(230, 110, 70, 130);
-      ctx.fillRect(320, 80, 70, 160);
-
-      // Windows
-      ctx.fillStyle = 'rgba(251, 191, 36, 0.3)';
-      for (let bx = 50; bx < 380; bx += 40) {
-        for (let by = 120; by < 220; by += 24) {
-          ctx.fillRect(bx, by, 8, 12);
-        }
-      }
-
-      // Rooftop Ground level
-      const FLOOR = 230;
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, FLOOR, 400, 50);
-      ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, FLOOR);
-      ctx.lineTo(400, FLOOR);
-      ctx.stroke();
-
-      // Render upcoming obstacles in viewport (distance relative to runner)
-      for (const obs of state.obstacles) {
-        const relX = (obs.distance - state.distance) * 5 + 80;
-        if (relX >= -50 && relX <= 450) {
-          ctx.save();
-          if (obs.type === 'gap') {
-            // Chasm drop
-            ctx.fillStyle = '#060a14';
-            ctx.fillRect(relX - 16, FLOOR, 32, 50);
-            ctx.strokeStyle = '#ef4444';
-            ctx.strokeRect(relX - 16, FLOOR, 32, 50);
-          } else if (obs.type === 'duct') {
-            // Low overhead duct
-            ctx.fillStyle = '#475569';
-            ctx.fillRect(relX - 12, FLOOR - 42, 24, 16);
-            ctx.strokeStyle = '#38bdf8';
-            ctx.strokeRect(relX - 12, FLOOR - 42, 24, 16);
-          } else if (obs.type === 'barrier') {
-            // Sheer brick barrier
-            ctx.fillStyle = '#b45309';
-            ctx.fillRect(relX - 8, FLOOR - 48, 16, 48);
-            ctx.strokeStyle = '#f59e0b';
-            ctx.strokeRect(relX - 8, FLOOR - 48, 16, 48);
-          } else if (obs.type === 'ring') {
-            // Kinetic Ring
-            ctx.strokeStyle = '#facc15';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(relX, FLOOR - 24, 10, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-          ctx.restore();
-        }
-      }
-
-      // Draw Freerunner at x = 80
-      ctx.save();
-      const px = 80;
-      let py = FLOOR;
-
-      if (lastAction === 'jump') py -= 35;
-      else if (lastAction === 'wall_run') py -= 25;
-
-      ctx.translate(px, py);
-
-      // Momentum trail
-      if (state.momentum >= 50) {
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(-10, -18);
-        ctx.lineTo(-28, -18);
-        ctx.stroke();
-      }
-
-      if (lastAction === 'slide') {
-        // Sliding posture
-        ctx.fillStyle = '#10b981';
-        ctx.fillRect(-14, -12, 28, 12);
-        ctx.beginPath();
-        ctx.arc(14, -6, 6, 0, Math.PI * 2);
-        ctx.fill();
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointerDown || logic.isOver(state)) return;
+  const p = toLogical(e);
+  const btn = hitButton(p);
+  if (btn) {
+    if (btn !== activeBtn) {
+      activeBtn = btn;
+      requestStunt(btn);
+    }
+    return;
+  }
+  if (swipeStart) {
+    const dx = p.x - swipeStart.x;
+    const dy = p.y - swipeStart.y;
+    if (Math.hypot(dx, dy) >= 24) {
+      if (Math.abs(dy) >= Math.abs(dx)) {
+        requestStunt(dy < 0 ? 'jump' : 'slide');
       } else {
-        // Standing / Running posture
-        ctx.fillStyle = '#10b981';
-        ctx.beginPath();
-        ctx.arc(0, -32, 7, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillRect(-6, -24, 12, 24);
+        requestStunt(dx > 0 ? 'wall_run' : 'boost');
       }
+      swipeStart = null;
+    }
+  }
+});
 
-      ctx.restore();
-
-      // Top HUD: Momentum & Shields
-      ctx.fillStyle = 'rgba(6, 10, 20, 0.8)';
-      ctx.fillRect(16, 12, 120, 10);
-      ctx.fillStyle = '#10b981';
-      ctx.fillRect(16, 12, 120 * (state.momentum / 100), 10);
-      ctx.strokeStyle = '#334155';
-      ctx.strokeRect(16, 12, 120, 10);
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 9px sans-serif';
-      ctx.fillText(`MOMENTUM ${state.momentum}%`, 20, 20);
-
-      // Shields
-      ctx.fillStyle = '#f43f5e';
-      ctx.font = '12px sans-serif';
-      ctx.fillText('❤'.repeat(Math.max(0, state.shields)), 145, 21);
-
-      // Overlays
-      if (state.won) {
-        ctx.fillStyle = 'rgba(6, 10, 20, 0.88)';
-        ctx.fillRect(0, 0, 400, 280);
-        ctx.fillStyle = '#10b981';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('SKYLINE CONQUERED', 200, 120);
-        ctx.fillStyle = '#f8fafc';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`Final Score: ${logic.score(state)} - 1000m Cleared!`, 200, 150);
-        ctx.fillText('Tap or press R to run again', 200, 180);
-      } else if (state.lost) {
-        ctx.fillStyle = 'rgba(6, 10, 20, 0.88)';
-        ctx.fillRect(0, 0, 400, 280);
-        ctx.fillStyle = '#f43f5e';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('RUNNER WIPED OUT', 200, 120);
-        ctx.fillStyle = '#f8fafc';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`Fell at ${state.distance} meters`, 200, 150);
-        ctx.fillText('Tap or press R to restart', 200, 180);
+canvas.addEventListener('pointerup', (e) => {
+  if (swipeStart && !logic.isOver(state)) {
+    const p = toLogical(e);
+    if (Math.hypot(p.x - swipeStart.x, p.y - swipeStart.y) < 24) {
+      // Quick tap on upper sky leaps, lower rooftop slides, ahead wall-runs!
+      const haz = nextHazard();
+      if (haz && haz.distance - state.distance <= 45) {
+        if (haz.type === 'gap') requestStunt('jump');
+        else if (haz.type === 'duct') requestStunt('slide');
+        else if (haz.type === 'barrier') requestStunt('wall_run');
+      } else if (p.y < FLOOR_Y - 30) {
+        requestStunt('jump');
+      } else {
+        requestStunt('slide');
       }
     }
+  }
+  pointerDown = false;
+  activeBtn = null;
+  swipeStart = null;
+});
 
-    render();
-  </script>
+function cancelPtr() {
+  pointerDown = false;
+  activeBtn = null;
+  swipeStart = null;
+}
+canvas.addEventListener('pointercancel', cancelPtr);
+addEventListener('pointerup', cancelPtr);
+addEventListener('pointercancel', cancelPtr);
+
+addEventListener('keydown', (e) => {
+  if (logic.isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter' || e.key === 'r' || e.key === 'R') && performance.now() - overAt > 400) {
+      restart();
+    }
+    return;
+  }
+  if (e.key === 'r' || e.key === 'R') {
+    restart();
+    return;
+  }
+  if (!keys[e.key]) {
+    keys[e.key] = true;
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+      stepRunner('run');
+      tickAcc = 0;
+      return;
+    }
+    const stunt = getHeldStunt();
+    if (stunt) requestStunt(stunt);
+  }
+});
+
+addEventListener('keyup', (e) => {
+  keys[e.key] = false;
+});
+
+function update(dt) {
+  animTime += dt;
+  if (hurtFlash > 0) hurtFlash = Math.max(0, hurtFlash - dt);
+  if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
+  if (poseTimer > 0) {
+    poseTimer -= dt;
+    if (poseTimer <= 0 && !getHeldStunt() && !bufferedStunt) pose = 'run';
+  }
+  if (bufferTimer > 0) {
+    bufferTimer -= dt;
+    if (bufferTimer <= 0) bufferedStunt = null;
+  }
+
+  if (!logic.isOver(state)) {
+    tickAcc += dt;
+    while (tickAcc >= RUN_INTERVAL && !logic.isOver(state)) {
+      tickAcc -= RUN_INTERVAL;
+      let act = getHeldStunt() || 'run';
+      if (bufferedStunt) {
+        const haz = nextHazard();
+        const sd = expectedStepDist(bufferedStunt);
+        if (!haz || haz.distance <= state.distance + sd || bufferTimer < 0.28) {
+          act = bufferedStunt;
+          bufferedStunt = null;
+          bufferTimer = 0;
+        }
+      }
+      stepRunner(act);
+    }
+  }
+
+  // Smooth continuous 60 FPS rooftop scroll
+  const targetVis = logic.isOver(state)
+    ? state.distance
+    : Math.min(TARGET_DISTANCE, state.distance + (tickAcc / RUN_INTERVAL) * expectedStepDist('run') * 0.85);
+  visDist += (targetVis - visDist) * Math.min(1, dt * 16);
+  visMom += (state.momentum - visMom) * Math.min(1, dt * 14);
+
+  popups = popups.filter(p => {
+    p.life -= dt;
+    p.y -= 28 * dt;
+    return p.life > 0;
+  });
+}
+
+function draw() {
+  ctx.save();
+  if (shakeTime > 0) {
+    const mag = shakeTime * 15;
+    ctx.translate(Math.sin(animTime * 58) * mag, Math.cos(animTime * 46) * mag * 0.6);
+  }
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#091226');
+  bg.addColorStop(1, '#050811');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top HUD Panel
+  ctx.fillStyle = '#0f172a';
+  rrect(12, 10, W - 24, 62, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('DISTANCE ' + state.distance + ' / ' + TARGET_DISTANCE + 'm', 22, 26);
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE ' + logic.score(state) + ' · BEST ' + best, W - 22, 26);
+
+  // Distance Progress Bar
+  ctx.fillStyle = '#060a14';
+  rrect(22, 32, W - 44, 8, 4);
+  ctx.fill();
+  ctx.fillStyle = '#10b981';
+  const dRatio = Math.max(0, Math.min(1, visDist / TARGET_DISTANCE));
+  if (dRatio > 0) {
+    rrect(22, 32, Math.max(6, (W - 44) * dRatio), 8, 4);
+    ctx.fill();
+  }
+
+  // Momentum & Shields
+  ctx.fillStyle = '#34d399';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('MOMENTUM ' + Math.round(visMom) + '%', 22, 58);
+
+  ctx.fillStyle = '#fbbf24';
+  ctx.textAlign = 'center';
+  if (state.streak > 0) ctx.fillText('FLOW x' + state.streak, W / 2 + 12, 58);
+
+  ctx.fillStyle = '#f43f5e';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('♥ '.repeat(Math.max(0, state.shields)) || 'OUT', W - 22, 59);
+
+  // Parallax City Skyline
+  const pShift = (visDist * 1.4) % 180;
+  for (let i = -1; i < 4; i++) {
+    const bx = i * 95 - (pShift % 95);
+    const bh = 130 + ((i + 10) % 3) * 32;
+    ctx.fillStyle = '#0d172c';
+    ctx.fillRect(bx, FLOOR_Y - bh, 76, bh);
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.22)';
+    for (let wy = FLOOR_Y - bh + 14; wy < FLOOR_Y - 18; wy += 22) {
+      ctx.fillRect(bx + 12, wy, 8, 10);
+      ctx.fillRect(bx + 34, wy, 8, 10);
+      ctx.fillRect(bx + 54, wy, 8, 10);
+    }
+  }
+
+  // Rooftop Deck
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(0, FLOOR_Y, W, 62);
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(0, FLOOR_Y);
+  ctx.lineTo(W, FLOOR_Y);
+  ctx.stroke();
+
+  // Upcoming Hazard Cue Banner
+  const haz = nextHazard();
+  let cueId = null;
+  if (haz && haz.distance - visDist < 42) {
+    cueId = haz.type === 'gap' ? 'jump' : haz.type === 'duct' ? 'slide' : 'wall_run';
+    const cueTxt = haz.type === 'gap' ? '▲ LEAP GAP!' : haz.type === 'duct' ? '▼ SLIDE DUCT!' : '▶ WALL RUN!';
+    const cueCol = haz.type === 'gap' ? '#34d399' : haz.type === 'duct' ? '#38bdf8' : '#fbbf24';
+    ctx.fillStyle = cueCol;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(cueTxt, W / 2, 105);
+  }
+
+  // Draw Obstacles scrolling at 60 FPS
+  for (const obs of state.obstacles) {
+    const sx = (obs.distance - visDist) * 4.8 + RUNNER_X;
+    if (sx < -45 || sx > W + 45) continue;
+
+    if (obs.type === 'gap') {
+      ctx.fillStyle = '#050811';
+      ctx.fillRect(sx - 18, FLOOR_Y - 2, 36, 65);
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx - 18, FLOOR_Y, 36, 60);
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('▲', sx, FLOOR_Y + 20);
+    } else if (obs.type === 'duct') {
+      ctx.fillStyle = '#0c4a6e';
+      rrect(sx - 16, FLOOR_Y - 56, 32, 28, 4);
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#e0f2fe';
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('▼', sx, FLOOR_Y - 38);
+    } else if (obs.type === 'barrier') {
+      ctx.fillStyle = '#78350f';
+      rrect(sx - 10, FLOOR_Y - 58, 20, 58, 3);
+      ctx.fill();
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('▶', sx, FLOOR_Y - 26);
+    } else if (obs.type === 'ring') {
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(sx, FLOOR_Y - 28, 11 + Math.sin(animTime * 10) * 1.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // Draw Freerunner
+  const activePose = bufferedStunt || pose;
+  ctx.save();
+  let ry = FLOOR_Y;
+  if (activePose === 'jump') ry -= 42;
+  else if (activePose === 'wall_run') ry -= 28;
+  ctx.translate(RUNNER_X, ry);
+
+  // Kinetic speed lines
+  if (visMom >= 45 || activePose === 'boost') {
+    ctx.strokeStyle = activePose === 'boost' ? 'rgba(232, 121, 249, 0.7)' : 'rgba(16, 185, 129, 0.45)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-12, -20); ctx.lineTo(-34, -20);
+    ctx.moveTo(-10, -10); ctx.lineTo(-26, -10);
+    ctx.stroke();
+  }
+
+  const runCol = hurtFlash > 0 ? '#fca5a5' : (activePose === 'boost' ? '#e879f9' : '#10b981');
+  if (activePose === 'slide') {
+    ctx.fillStyle = '#38bdf8';
+    rrect(-16, -13, 30, 13, 5);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(16, -7, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    const stride = Math.sin(animTime * 18) * 5;
+    ctx.fillStyle = runCol;
+    rrect(-7, -30, 14, 22, 4);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(2, -37, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = runCol;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-2, -10); ctx.lineTo(-6 + stride, 0);
+    ctx.moveTo(2, -10); ctx.lineTo(6 - stride, 0);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Popups
+  for (const p of popups) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.restore();
+  }
+
+  if (hurtFlash > 0) {
+    ctx.fillStyle = 'rgba(239, 68, 68, ' + (hurtFlash * 0.4) + ')';
+    ctx.fillRect(0, 76, W, 355);
+  }
+
+  // Bottom Parkour Control Deck
+  const legals = logic.legalActions(state);
+  const held = getHeldStunt();
+  for (const b of BUTTONS) {
+    const isAvail = legals.includes(b.id);
+    const isPressed = held === b.id || bufferedStunt === b.id;
+    const isCue = cueId === b.id;
+
+    ctx.fillStyle = isPressed ? '#ffffff' : (isAvail ? b.color : '#111827');
+    rrect(b.x, b.y, b.w, b.h, 10);
+    ctx.fill();
+    ctx.strokeStyle = isPressed ? '#ffffff' : (isCue ? '#fde047' : (isAvail ? b.border : '#1e293b'));
+    ctx.lineWidth = isCue ? 2.6 : 1.6;
+    ctx.stroke();
+
+    ctx.fillStyle = isPressed ? '#0f172a' : (isAvail ? '#ffffff' : '#475569');
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + 25);
+
+    ctx.fillStyle = isPressed ? '#334155' : (isAvail ? '#e2e8f0' : '#334155');
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.fillText(b.sub, b.x + b.w / 2, b.y + 43);
+  }
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Swipe skyline, tap obstacles, or tap/hold stunt pads!', W / 2, 608);
+
+  if (logic.isOver(state)) {
+    ctx.fillStyle = 'rgba(6, 10, 20, 0.92)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = state.won ? '#34d399' : '#f43f5e';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'SKYLINE CONQUERED!' : 'RUNNER WIPED OUT', W / 2, H / 2 - 48);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(
+      state.won ? '1000m Rooftop Sprint Completed!' : 'Reached ' + state.distance + 'm / 1000m',
+      W / 2,
+      H / 2 - 14
+    );
+
+    ctx.fillStyle = '#fde047';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText('Final Score: ' + logic.score(state), W / 2, H / 2 + 26);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText('Best: ' + best, W / 2, H / 2 + 52);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap or press Space to run again', W / 2, H / 2 + 94);
+  }
+
+  ctx.restore();
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

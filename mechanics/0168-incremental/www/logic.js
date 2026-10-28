@@ -42,7 +42,7 @@ function createState(seed = 12345) {
     seed: s,
     prngState: s,
     turns: 0,
-    maxTurns: 120,
+    maxTurns: 800,
     matter: 20,
     energy: 0,
     cubits: 0,
@@ -94,6 +94,9 @@ function legalActions(state) {
 
   // Manual matter synthesis is always available
   actions.push('action:synthesize_matter');
+
+  // Automated idle harvest tick
+  actions.push('action:idle_cycle');
 
   // Purchase facility upgrades
   for (const type of FACILITY_TYPES) {
@@ -148,6 +151,8 @@ function step(state, action) {
     const gain = Math.floor(clickBase * cubitMult);
     state.matter += gain;
     state.gameMessage = 'Extracted raw subatomic matter from quantum foam: +' + gain + ' Matter.';
+  } else if (action === 'action:idle_cycle') {
+    state.gameMessage = 'Quantum manifold resonating. Harvesting subatomic flux.';
   } else if (action.startsWith('action:purchase_facility:')) {
     const type = action.split(':')[2];
     const cost = getFacilityCost(type, state.facilities[type]);

@@ -1,14 +1,16 @@
 // Metroidvania ("Chasm Crawler") deterministic logic
 (function (root, factory) {
+  const api = factory();
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    module.exports = api;
   } else {
-    root.ChasmCrawler = factory();
+    root.ChasmCrawler = api;
+    root.GameLogic = api;
   }
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const MAX_STEPS = 160;
+  const MAX_STEPS = 800;
 
   function nextRandom(state) {
     let s = (state.rng + 0x6d2b79f5) | 0;
@@ -99,6 +101,7 @@
     const p = state.player;
 
     let isInvulnerable = false;
+    const wasHopped = p.isAirborne && p.y === 300;
 
     // 1. Resolve Operative Action
     if (action === 'move_left') {
@@ -112,6 +115,7 @@
       }
 
       p.x = Math.max(30, targetX);
+      if (p.y <= 200 && p.x < 160) p.y = 140;
     } else if (action === 'move_right') {
       p.facing = 1;
       let targetX = p.x + 24;
@@ -123,25 +127,32 @@
       }
 
       p.x = Math.min(370, targetX);
+      if (p.y < 180 && p.x > 160) p.y = 180;
     } else if (action === 'jump') {
       // Platform vertical elevation
       if (p.y >= 300) {
         if (p.x >= 320 && p.hasDoubleJump) {
           // Double jump up shaft to upper ruins (Y: 180)
           p.y = 180;
+          p.isAirborne = false;
           state.scoreVal += 100;
         } else if (p.x >= 320) {
           // Single jump falls back down without upgrade
           p.y = 340;
+          p.isAirborne = false;
         } else {
           // Normal hop
           p.y = 300;
+          p.isAirborne = true;
         }
       } else if (p.y <= 200) {
         // High ruins ledge
         if (p.x >= 340) {
           // Drop down shaft back to Sector 2
           p.y = 340;
+          p.isAirborne = false;
+        } else if (p.x <= 160) {
+          p.y = 140;
         }
       }
     } else if (action === 'dash') {
@@ -153,9 +164,11 @@
         laser.open = true;
         state.scoreVal += 250;
       }
+      if (p.y <= 200 && p.x < 160) p.y = 140;
+      else if (p.y < 180 && p.x > 160) p.y = 180;
     } else if (action === 'rest') {
       p.hp = Math.min(p.maxHp, p.hp + 15);
-      if (p.y >= 260 && p.y < 340) p.y = 340; // Ground settling
+      if (p.y >= 260 && p.y < 340) { p.y = 340; p.isAirborne = false; }
     } else if (action === 'fire') {
       // Beam blast
       const beamReach = 180;
@@ -204,10 +217,17 @@
             state.scoreVal += 500;
           } else if (up.type === 'phase_dash') {
             p.hasPhaseDash = true;
+            p.missiles += 2;
             state.scoreVal += 500;
           }
         }
       }
+    }
+
+    // Settle back to ground after an aerial hop step
+    if (wasHopped && action !== 'jump' && p.y === 300) {
+      p.y = 340;
+      p.isAirborne = false;
     }
 
     // 3. Enemy AI & Retaliation

@@ -1,514 +1,873 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Shadow Breach - Tactical Top-down Shooter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#090d16">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-    body {
-      background: #060911;
-      color: #e2e8f0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      touch-action: none;
-    }
-    #game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      max-width: 440px;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1.15rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #38bdf8;
-      text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
-    }
-    .hud {
-      display: flex;
-      gap: 10px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #94a3b8;
-    }
-    .hud span { color: #f8fafc; }
-    canvas {
-      background: #0f172a;
-      border: 2px solid #1e293b;
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
-      width: 100%;
-      max-width: 400px;
-      aspect-ratio: 1;
-      display: block;
-    }
-    .status-panel {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #090e17;
-      border: 1px solid #1e293b;
-      border-radius: 6px;
-      padding: 6px 10px;
-      margin-top: 6px;
-      font-size: 0.78rem;
-      font-weight: bold;
-    }
-    .hp-bar-track {
-      width: 80px;
-      height: 8px;
-      background: #1e293b;
-      border-radius: 4px;
-      overflow: hidden;
-      display: inline-block;
-      vertical-align: middle;
-      margin-left: 4px;
-    }
-    .hp-bar-fill {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, #ef4444, #22c55e);
-    }
-    .controls {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      margin-top: 8px;
-      gap: 8px;
-    }
-    .dpad {
-      display: grid;
-      grid-template-columns: repeat(3, 40px);
-      grid-template-rows: repeat(3, 40px);
-      gap: 4px;
-    }
-    .action-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      flex: 1;
-    }
-    .action-row {
-      display: flex;
-      gap: 6px;
-      justify-content: flex-end;
-    }
-    button {
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #f8fafc;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.05s;
-    }
-    button:active { background: #334155; transform: scale(0.96); }
-    .btn-action { padding: 8px 10px; min-height: 38px; }
-    .btn-fire { background: linear-gradient(135deg, #0369a1, #0284c7); border-color: #38bdf8; }
-    .btn-breach { background: linear-gradient(135deg, #b45309, #d97706); border-color: #fbbf24; }
-    .btn-breach.active { animation: breachPulse 1s infinite alternate; }
-    @keyframes breachPulse {
-      from { box-shadow: 0 0 6px #f59e0b; }
-      to { box-shadow: 0 0 16px #fbbf24; }
-    }
-    #game-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(6, 9, 17, 0.9);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      z-index: 10;
-    }
-    #game-overlay h2 { font-size: 2rem; color: #38bdf8; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#060911">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Shadow Breach</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #060911;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
 </head>
 <body>
-  <div id="game-container" style="position: relative;">
-    <header>
-      <h1>SHADOW BREACH</h1>
-      <div class="hud">
-        <div>SCORE: <span id="val-score">0</span></div>
-      </div>
-    </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const {
+  MAX_AMMO = 12,
+  createState,
+  legalActions,
+  step,
+  isOver,
+  score
+} = ShadowBreach;
 
-    <canvas id="canvas" width="400" height="400"></canvas>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-    <div class="status-panel">
-      <div>
-        HP: <div class="hp-bar-track"><div id="bar-hp" class="hp-bar-fill"></div></div>
-      </div>
-      <div>AMMO: <span id="val-ammo" style="color: #38bdf8;">12/12</span></div>
-      <div>FLASH: <span id="val-flash" style="color: #fbbf24;">2</span></div>
-      <div>BREACH: <span id="val-breach" style="color: #f97316;">2</span></div>
-      <div>CORE: <span id="val-core" style="color: #ef4444;">SECURE</span></div>
-    </div>
+const W = 360;
+const H = 640;
+const ARENA_SIZE = 400;
+const VIEW_X = 10;
+const VIEW_Y = 68;
+const VIEW_S = 340;
+const A_SCALE = VIEW_S / ARENA_SIZE;
 
-    <div class="controls">
-      <div class="dpad">
-        <div></div>
-        <button id="btn-up">▲</button>
-        <div></div>
-        <button id="btn-left">◀</button>
-        <button id="btn-reload" style="font-size:0.65rem;">RELOAD</button>
-        <button id="btn-right">▶</button>
-        <div></div>
-        <button id="btn-down">▼</button>
-        <div></div>
-      </div>
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-      <div class="action-panel">
-        <div class="action-row">
-          <button id="btn-fire" class="btn-action btn-fire" style="flex:1;">FIRE [SPC]</button>
-          <button id="btn-flash" class="btn-action" style="flex:1;">FLASH [F]</button>
-        </div>
-        <div class="action-row">
-          <button id="btn-breach" class="btn-action btn-breach" style="flex:1;">BREACH [B]</button>
-        </div>
-      </div>
-    </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0025-best') || 0; } catch (e) {}
 
-    <div id="game-overlay">
-      <h2 id="overlay-title">MISSION ACCOMPLISHED</h2>
-      <p id="overlay-sub" style="font-size: 1.1rem; color: #cbd5e1;">Vault Core extracted safely!</p>
-      <button id="btn-restart" class="btn-action" style="padding: 10px 24px; font-size: 1rem;">DEPLOY AGAIN</button>
-    </div>
-  </div>
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
-  <script src="logic.js"></script>
-  <script>
-    (function () {
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
 
-      const elScore = document.getElementById('val-score');
-      const barHp = document.getElementById('bar-hp');
-      const elAmmo = document.getElementById('val-ammo');
-      const elFlash = document.getElementById('val-flash');
-      const elBreach = document.getElementById('val-breach');
-      const elCore = document.getElementById('val-core');
-      const btnBreach = document.getElementById('btn-breach');
-      const overlay = document.getElementById('game-overlay');
-      const overlayTitle = document.getElementById('overlay-title');
-      const overlaySub = document.getElementById('overlay-sub');
+function toArena(lx, ly) {
+  return { x: (lx - VIEW_X) / A_SCALE, y: (ly - VIEW_Y) / A_SCALE };
+}
 
-      let state = ShadowBreach.createState(Date.now() % 100000);
-      let fxList = [];
+let state = createState(Date.now());
+let overAt = 0;
+let visPlayer = { x: state.player.x, y: state.player.y, angle: -Math.PI / 2 };
+let visEnemies = new Map();
+let fxBeams = [];
+let fxWaves = [];
+let particles = [];
+let popups = [];
+let hurtFlash = 0;
 
-      function triggerAction(act) {
-        if (ShadowBreach.isOver(state)) return;
-        const legals = ShadowBreach.legalActions(state);
-        if (!legals.includes(act)) return;
+function syncInstant() {
+  visPlayer.x = state.player.x;
+  visPlayer.y = state.player.y;
+  visPlayer.angle = Math.atan2(state.player.facingY, state.player.facingX);
+  visEnemies.clear();
+  for (const e of state.enemies) visEnemies.set(e.id, { x: e.x, y: e.y, flash: 0 });
+}
+syncInstant();
 
-        const p = state.player;
-        if (act === 'fire') {
-          fxList.push({
-            type: 'laser',
-            x1: p.x,
-            y1: p.y,
-            x2: p.x + p.facingX * 180,
-            y2: p.y + p.facingY * 180,
-            life: 6
-          });
-        } else if (act === 'flashbang') {
-          fxList.push({
-            type: 'flash',
-            x: p.x + p.facingX * 60,
-            y: p.y + p.facingY * 60,
-            life: 15
-          });
-        } else if (act === 'breach_charge') {
-          for (const d of state.doors) {
-            if (!d.breached && Math.hypot(p.x - d.x, p.y - d.y) <= 50) {
-              fxList.push({ type: 'explosion', x: d.x, y: d.y, life: 16 });
-            }
-          }
-        }
+function restart() {
+  state = createState(Date.now());
+  overAt = 0;
+  fxBeams = [];
+  fxWaves = [];
+  particles = [];
+  popups = [];
+  hurtFlash = 0;
+  moveAcc = 0;
+  fireAcc = 0;
+  ambientAcc = 0;
+  syncInstant();
+}
 
-        ShadowBreach.step(state, act);
-        updateUI();
-        render();
+function closestMoveDir(dx, dy) {
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'e' : 'w';
+  return dy >= 0 ? 's' : 'n';
+}
+
+function spawnBurst(ax, ay, col, count, spd = 95) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const s = spd * (0.3 + Math.random() * 0.8);
+    particles.push({
+      x: ax, y: ay,
+      vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      life: 0.3 + Math.random() * 0.2,
+      maxLife: 0.45,
+      col,
+      r: 2 + Math.random() * 2.5
+    });
+  }
+}
+
+let moveAcc = 0;
+let fireAcc = 0;
+let ambientAcc = 0;
+
+function execAction(act) {
+  if (isOver(state)) return false;
+  const legal = legalActions(state);
+  if (!legal.includes(act)) return false;
+
+  const p = state.player;
+  const prevHp = p.hp;
+  const prevCore = state.hasCore;
+  const oldEnemies = new Map();
+  for (const e of state.enemies) oldEnemies.set(e.id, { x: e.x, y: e.y, hp: e.hp, type: e.type });
+
+  if (act === 'fire') {
+    fxBeams.push({
+      x1: p.x + p.facingX * 12,
+      y1: p.y + p.facingY * 12,
+      x2: p.x + p.facingX * 180,
+      y2: p.y + p.facingY * 180,
+      life: 0.14
+    });
+  } else if (act === 'flashbang') {
+    const fx = p.x + p.facingX * 60;
+    const fy = p.y + p.facingY * 60;
+    fxWaves.push({ x: fx, y: fy, r: 10, maxR: 95, col: '254, 240, 138', life: 0.35, maxLife: 0.35 });
+  } else if (act === 'breach_charge') {
+    for (const d of state.doors) {
+      if (!d.breached && Math.abs(p.x - d.x) <= 45 && Math.abs(p.y - d.y) <= 30) {
+        fxWaves.push({ x: d.x, y: d.y, r: 8, maxR: 85, col: '249, 115, 22', life: 0.4, maxLife: 0.4 });
+        spawnBurst(d.x, d.y, '#fb923c', 22, 130);
+        popups.push({ x: d.x, y: d.y - 16, txt: 'BREACHED!', col: '#fbbf24', life: 0.8 });
       }
+    }
+  } else if (act === 'reload') {
+    popups.push({ x: p.x, y: p.y - 18, txt: 'RELOADED', col: '#38bdf8', life: 0.5 });
+  }
 
-      function updateUI() {
-        if (elScore) elScore.textContent = state.scoreVal;
-        const p = state.player;
-        if (barHp) barHp.style.width = (p.hp / p.maxHp * 100) + '%';
-        if (elAmmo) elAmmo.textContent = `${p.ammo}/12`;
-        if (elFlash) elFlash.textContent = p.flashbangs;
-        if (elBreach) elBreach.textContent = p.breachCharges;
+  const res = step(state, act);
+  ambientAcc = 0;
 
-        if (elCore) {
-          if (state.hasCore) {
-            elCore.textContent = 'EXTRACTING';
-            elCore.style.color = '#22c55e';
-          } else {
-            elCore.textContent = 'SECURE';
-            elCore.style.color = '#ef4444';
-          }
-        }
+  const curIds = new Set(state.enemies.map(e => e.id));
+  for (const [id, old] of oldEnemies) {
+    if (!curIds.has(id)) {
+      spawnBurst(old.x, old.y, '#ef4444', 14, 105);
+      const pts = old.type === 'sentry' ? 200 : old.type === 'enforcer' ? 150 : 80;
+      popups.push({ x: old.x, y: old.y - 10, txt: '+' + pts, col: '#4ade80', life: 0.65 });
+    } else {
+      const cur = state.enemies.find(e => e.id === id);
+      if (cur && cur.hp < old.hp) {
+        const ve = visEnemies.get(id);
+        if (ve) ve.flash = 0.14;
+        spawnBurst(cur.x, cur.y, '#38bdf8', 6, 70);
+        popups.push({ x: cur.x, y: cur.y - 12, txt: '-' + (old.hp - cur.hp), col: '#f43f5e', life: 0.55 });
+      }
+    }
+  }
 
-        const legals = ShadowBreach.legalActions(state);
-        if (btnBreach && btnBreach.classList) {
-          if (legals.includes('breach_charge')) {
-            btnBreach.classList.add('active');
-          } else {
-            btnBreach.classList.remove('active');
-          }
-        }
+  if (!prevCore && state.hasCore) {
+    spawnBurst(state.vaultCore.x, state.vaultCore.y, '#22d3ee', 20, 120);
+    popups.push({ x: 200, y: 70, txt: 'CORE SECURED! EXTRACT!', col: '#22c55e', life: 1.0 });
+  }
 
-        if (ShadowBreach.isOver(state)) {
-          if (overlay) {
-            overlay.style.display = 'flex';
-            if (state.won) {
-              if (overlayTitle) { overlayTitle.textContent = 'MISSION ACCOMPLISHED'; overlayTitle.style.color = '#38bdf8'; }
-              if (overlaySub) overlaySub.textContent = `Operative Extracted! Score: ${state.scoreVal}`;
-            } else {
-              if (overlayTitle) { overlayTitle.textContent = 'OPERATIVE KIA'; overlayTitle.style.color = '#ef4444'; }
-              if (overlaySub) overlaySub.textContent = `Signal lost in Sector. Score: ${state.scoreVal}`;
-            }
-          }
+  if (state.player.hp < prevHp) {
+    hurtFlash = 0.25;
+    spawnBurst(state.player.x, state.player.y, '#ef4444', 8, 80);
+  }
+
+  const sc = score(state);
+  if (sc > best) {
+    best = sc;
+    try { localStorage.setItem('goe-0025-best', best); } catch (e) {}
+  }
+  if (res.done) overAt = performance.now();
+  return true;
+}
+
+function smartFireOrReload() {
+  if (state.player.ammo > 0) return execAction('fire');
+  return execAction('reload');
+}
+
+function hasAlignedTarget() {
+  const p = state.player;
+  for (const e of state.enemies) {
+    const dx = e.x - p.x;
+    const dy = e.y - p.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= 180) {
+      if (p.facingX !== 0 && Math.sign(dx) === p.facingX && Math.abs(dy) <= 18) return true;
+      if (p.facingY !== 0 && Math.sign(dy) === p.facingY && Math.abs(dx) <= 18) return true;
+    }
+  }
+  return false;
+}
+
+// Bottom controls layout
+const STICK = { cx: 80, cy: 526, r: 58 };
+const BTN_FIRE = { x: 162, y: 432, w: 188, h: 66 };
+const BTN_BREACH = { x: 162, y: 506, w: 188, h: 48 };
+const BTN_FLASH = { x: 162, y: 562, w: 90, h: 46 };
+const BTN_RELOAD = { x: 260, y: 562, w: 90, h: 46 };
+
+const pointers = new Map();
+
+function hitBox(p, b) {
+  return p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
+}
+
+function classifyPoint(p) {
+  if (hitBox(p, BTN_FIRE)) return { zone: 'fire' };
+  if (hitBox(p, BTN_BREACH)) return { zone: 'breach' };
+  if (hitBox(p, BTN_FLASH)) return { zone: 'flash' };
+  if (hitBox(p, BTN_RELOAD)) return { zone: 'reload' };
+  if (Math.hypot(p.x - STICK.cx, p.y - STICK.cy) <= STICK.r + 16) return { zone: 'stick', x: p.x, y: p.y };
+  if (p.x >= VIEW_X && p.x <= VIEW_X + VIEW_S && p.y >= VIEW_Y && p.y <= VIEW_Y + VIEW_S) {
+    return { zone: 'arena', a: toArena(p.x, p.y) };
+  }
+  return { zone: 'none' };
+}
+
+function handleArenaTap(a) {
+  const legals = legalActions(state);
+  // Tap on unbreached door when near -> breach immediately
+  if (legals.includes('breach_charge')) {
+    for (const d of state.doors) {
+      if (!d.breached && Math.abs(a.x - d.x) <= 45 && Math.abs(a.y - d.y) <= 25) {
+        execAction('breach_charge');
+        return;
+      }
+    }
+  }
+  // Tap on enemy -> if aligned fire, else step/turn toward enemy
+  for (const e of state.enemies) {
+    if (Math.hypot(a.x - e.x, a.y - e.y) <= 28) {
+      if (hasAlignedTarget()) {
+        smartFireOrReload();
+      } else {
+        execAction('move_' + closestMoveDir(e.x - state.player.x, e.y - state.player.y));
+      }
+      return;
+    }
+  }
+  const dx = a.x - state.player.x;
+  const dy = a.y - state.player.y;
+  if (Math.hypot(dx, dy) > 12) {
+    execAction('move_' + closestMoveDir(dx, dy));
+  } else {
+    smartFireOrReload();
+  }
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 350) restart();
+    return;
+  }
+  const info = classifyPoint(p);
+  pointers.set(e.pointerId, info);
+
+  if (info.zone === 'fire') {
+    smartFireOrReload();
+    fireAcc = 0;
+  } else if (info.zone === 'breach') {
+    execAction('breach_charge');
+  } else if (info.zone === 'flash') {
+    execAction('flashbang');
+  } else if (info.zone === 'reload') {
+    execAction('reload');
+  } else if (info.zone === 'stick') {
+    const dx = p.x - STICK.cx;
+    const dy = p.y - STICK.cy;
+    if (Math.hypot(dx, dy) > 8) {
+      execAction('move_' + closestMoveDir(dx, dy));
+      moveAcc = 0;
+    }
+  } else if (info.zone === 'arena') {
+    handleArenaTap(info.a);
+    moveAcc = 0;
+  }
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointers.has(e.pointerId) || isOver(state)) return;
+  const p = toLogical(e);
+  const prev = pointers.get(e.pointerId);
+  if (prev.zone === 'stick') {
+    pointers.set(e.pointerId, { zone: 'stick', x: p.x, y: p.y });
+  } else if (prev.zone === 'arena') {
+    const cx = Math.max(VIEW_X, Math.min(VIEW_X + VIEW_S, p.x));
+    const cy = Math.max(VIEW_Y, Math.min(VIEW_Y + VIEW_S, p.y));
+    pointers.set(e.pointerId, { zone: 'arena', a: toArena(cx, cy) });
+  }
+});
+
+function clearPtr(e) { pointers.delete(e.pointerId); }
+canvas.addEventListener('pointerup', clearPtr);
+canvas.addEventListener('pointercancel', clearPtr);
+addEventListener('pointerup', clearPtr);
+addEventListener('pointercancel', clearPtr);
+
+const keys = {};
+addEventListener('keydown', (e) => {
+  const k = (e.key || '').toLowerCase();
+  if (isOver(state)) {
+    if ((k === ' ' || k === 'enter' || k === 'r') && performance.now() - overAt > 350) restart();
+    return;
+  }
+  const was = !!keys[k];
+  keys[k] = true;
+  if (!was) {
+    if (k === 'w' || k === 'arrowup') { execAction('move_n'); moveAcc = 0; }
+    else if (k === 's' || k === 'arrowdown') { execAction('move_s'); moveAcc = 0; }
+    else if (k === 'a' || k === 'arrowleft') { execAction('move_w'); moveAcc = 0; }
+    else if (k === 'd' || k === 'arrowright') { execAction('move_e'); moveAcc = 0; }
+    else if (k === ' ' || k === 'j') { smartFireOrReload(); fireAcc = 0; }
+    else if (k === 'r') execAction('reload');
+    else if (k === 'f') execAction('flashbang');
+    else if (k === 'b' || k === 'e') execAction('breach_charge');
+  }
+});
+addEventListener('keyup', (e) => {
+  keys[(e.key || '').toLowerCase()] = false;
+});
+
+function getMoveStick() {
+  for (const info of pointers.values()) {
+    if (info.zone === 'stick') {
+      const dx = info.x - STICK.cx;
+      const dy = info.y - STICK.cy;
+      const dist = Math.hypot(dx, dy);
+      const maxD = 32;
+      const k = dist > maxD ? maxD / dist : 1;
+      return { active: true, kx: dx * k, ky: dy * k, dir: dist > 10 ? closestMoveDir(dx, dy) : null };
+    }
+  }
+  if (keys['w'] || keys['arrowup']) return { active: true, kx: 0, ky: -26, dir: 'n' };
+  if (keys['s'] || keys['arrowdown']) return { active: true, kx: 0, ky: 26, dir: 's' };
+  if (keys['a'] || keys['arrowleft']) return { active: true, kx: -26, ky: 0, dir: 'w' };
+  if (keys['d'] || keys['arrowright']) return { active: true, kx: 26, ky: 0, dir: 'e' };
+  return { active: false, kx: 0, ky: 0, dir: null };
+}
+
+function isFireHeld() {
+  if (keys[' '] || keys['j']) return true;
+  for (const info of pointers.values()) {
+    if (info.zone === 'fire') return true;
+  }
+  return false;
+}
+
+function getArenaDrag() {
+  for (const info of pointers.values()) {
+    if (info.zone === 'arena') return info.a;
+  }
+  return null;
+}
+
+function update(dt) {
+  if (!isOver(state)) {
+    const ms = getMoveStick();
+    const fireHeld = isFireHeld();
+    const drag = getArenaDrag();
+    const REPEAT = 0.135;
+
+    if (fireHeld) {
+      fireAcc += dt;
+      while (fireAcc >= REPEAT && !isOver(state)) {
+        fireAcc -= REPEAT;
+        smartFireOrReload();
+      }
+    } else {
+      fireAcc = 0;
+    }
+
+    if (ms.dir) {
+      moveAcc += dt;
+      while (moveAcc >= REPEAT && !isOver(state)) {
+        moveAcc -= REPEAT;
+        execAction('move_' + ms.dir);
+      }
+    } else if (drag) {
+      moveAcc += dt;
+      while (moveAcc >= REPEAT && !isOver(state)) {
+        moveAcc -= REPEAT;
+        if (hasAlignedTarget() && state.player.ammo > 0) {
+          execAction('fire');
         } else {
-          if (overlay) overlay.style.display = 'none';
-        }
-      }
-
-      function render() {
-        ctx.clearRect(0, 0, 400, 400);
-
-        // Sector backgrounds
-        ctx.fillStyle = '#0d1527'; // Sector 1 Reception
-        ctx.fillRect(20, 260, 360, 120);
-        ctx.fillStyle = '#0f172a'; // Sector 2 Lab
-        ctx.fillRect(20, 140, 360, 120);
-        ctx.fillStyle = '#131e33'; // Sector 3 Vault
-        ctx.fillRect(20, 20, 360, 120);
-
-        // Extraction Zone
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeRect(175, 25, 50, 45);
-        ctx.setLineDash([]);
-        ctx.fillStyle = 'rgba(34, 197, 94, 0.15)';
-        ctx.fillRect(175, 25, 50, 45);
-
-        // Vault Core
-        if (!state.hasCore) {
-          ctx.save();
-          ctx.fillStyle = '#06b6d4';
-          ctx.beginPath();
-          ctx.arc(state.vaultCore.x, state.vaultCore.y, 8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#67e8f9';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          ctx.restore();
-        }
-
-        // Walls
-        ctx.fillStyle = '#334155';
-        for (const w of state.walls) {
-          ctx.fillRect(w.x, w.y, w.w, w.h);
-        }
-
-        // Doors
-        for (const d of state.doors) {
-          if (!d.breached) {
-            ctx.fillStyle = '#d97706';
-            ctx.fillRect(d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
-            ctx.strokeStyle = '#fbbf24';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
-          } else {
-            // Breached rubble
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
+          const dx = drag.x - state.player.x;
+          const dy = drag.y - state.player.y;
+          if (Math.hypot(dx, dy) > 14) {
+            execAction('move_' + closestMoveDir(dx, dy));
+          } else if (state.player.ammo === 0) {
+            execAction('reload');
           }
         }
-
-        // Laser Sight line for player
-        const p = state.player;
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x + p.facingX * 180, p.y + p.facingY * 180);
-        ctx.stroke();
-
-        // Enemies
-        for (const e of state.enemies) {
-          ctx.save();
-          if (e.type === 'sentry') {
-            ctx.fillStyle = '#475569';
-            ctx.fillRect(e.x - 12, e.y - 12, 24, 24);
-            ctx.fillStyle = '#ef4444';
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 6, 0, Math.PI * 2);
-            ctx.fill();
-          } else if (e.type === 'enforcer') {
-            ctx.fillStyle = '#1e3a8a';
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 11, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#60a5fa';
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-            // Shield arc
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 15, -Math.PI * 0.4, Math.PI * 0.4);
-            ctx.stroke();
-          } else {
-            // Guard
-            ctx.fillStyle = '#dc2626';
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#f87171';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-          }
-
-          if (e.stunned > 0) {
-            ctx.fillStyle = '#fbbf24';
-            ctx.font = '10px sans-serif';
-            ctx.fillText('⚡', e.x - 4, e.y - 14);
-          }
-          ctx.restore();
-        }
-
-        // Player Operative
-        ctx.save();
-        ctx.fillStyle = '#0ea5e9';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        // Carbine barrel
-        ctx.strokeStyle = '#f8fafc';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x + p.facingX * 16, p.y + p.facingY * 16);
-        ctx.stroke();
-        ctx.restore();
-
-        // FX Rendering
-        const nextFx = [];
-        for (const fx of fxList) {
-          ctx.save();
-          if (fx.type === 'laser') {
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 3 * (fx.life / 6);
-            ctx.beginPath();
-            ctx.moveTo(fx.x1, fx.y1);
-            ctx.lineTo(fx.x2, fx.y2);
-            ctx.stroke();
-          } else if (fx.type === 'flash') {
-            ctx.fillStyle = `rgba(255, 255, 255, ${fx.life / 15})`;
-            ctx.beginPath();
-            ctx.arc(fx.x, fx.y, 90, 0, Math.PI * 2);
-            ctx.fill();
-          } else if (fx.type === 'explosion') {
-            ctx.fillStyle = `rgba(245, 158, 11, ${fx.life / 16})`;
-            ctx.beginPath();
-            ctx.arc(fx.x, fx.y, 75 * (1 - fx.life / 20), 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-          }
-          ctx.restore();
-          fx.life--;
-          if (fx.life > 0) nextFx.push(fx);
-        }
-        fxList = nextFx;
-
-        if (fxList.length > 0) {
-          requestAnimationFrame(render);
-        }
       }
+    } else {
+      moveAcc = 0;
+    }
 
-      // Button listeners
-      const btnUp = document.getElementById('btn-up');
-      const btnDown = document.getElementById('btn-down');
-      const btnLeft = document.getElementById('btn-left');
-      const btnRight = document.getElementById('btn-right');
-      const btnFire = document.getElementById('btn-fire');
-      const btnReload = document.getElementById('btn-reload');
-      const btnFlash = document.getElementById('btn-flash');
-      const btnRestart = document.getElementById('btn-restart');
+    ambientAcc += dt;
+    if (ambientAcc >= 0.45 && !isOver(state)) {
+      ambientAcc = 0;
+      execAction('wait');
+    }
+  }
 
-      if (btnUp) btnUp.addEventListener('click', () => triggerAction('move_n'));
-      if (btnDown) btnDown.addEventListener('click', () => triggerAction('move_s'));
-      if (btnLeft) btnLeft.addEventListener('click', () => triggerAction('move_w'));
-      if (btnRight) btnRight.addEventListener('click', () => triggerAction('move_e'));
-      if (btnFire) btnFire.addEventListener('click', () => triggerAction('fire'));
-      if (btnReload) btnReload.addEventListener('click', () => triggerAction('reload'));
-      if (btnFlash) btnFlash.addEventListener('click', () => triggerAction('flashbang'));
-      if (btnBreach) btnBreach.addEventListener('click', () => triggerAction('breach_charge'));
+  // Smooth 60 FPS Visual Interpolation
+  const k = 1 - Math.exp(-22 * dt);
+  visPlayer.x += (state.player.x - visPlayer.x) * k;
+  visPlayer.y += (state.player.y - visPlayer.y) * k;
+  const tAng = Math.atan2(state.player.facingY, state.player.facingX);
+  let da = tAng - visPlayer.angle;
+  while (da > Math.PI) da -= Math.PI * 2;
+  while (da < -Math.PI) da += Math.PI * 2;
+  visPlayer.angle += da * k;
 
-      if (btnRestart) {
-        btnRestart.addEventListener('click', () => {
-          state = ShadowBreach.createState(Date.now() % 100000);
-          fxList = [];
-          updateUI();
-          render();
-        });
-      }
+  const eIds = new Set();
+  for (const e of state.enemies) {
+    eIds.add(e.id);
+    if (!visEnemies.has(e.id)) visEnemies.set(e.id, { x: e.x, y: e.y, flash: 0 });
+    else {
+      const ve = visEnemies.get(e.id);
+      ve.x += (e.x - ve.x) * k;
+      ve.y += (e.y - ve.y) * k;
+      if (ve.flash > 0) ve.flash = Math.max(0, ve.flash - dt);
+    }
+  }
+  for (const id of visEnemies.keys()) if (!eIds.has(id)) visEnemies.delete(id);
 
-      // Keyboard Controls
-      window.addEventListener('keydown', (e) => {
-        const k = e.key.toLowerCase();
-        if (k === 'arrowup' || k === 'w') triggerAction('move_n');
-        else if (k === 'arrowdown' || k === 's') triggerAction('move_s');
-        else if (k === 'arrowleft' || k === 'a') triggerAction('move_w');
-        else if (k === 'arrowright' || k === 'd') triggerAction('move_e');
-        else if (k === ' ' || k === 'j') triggerAction('fire');
-        else if (k === 'r') triggerAction('reload');
-        else if (k === 'f') triggerAction('flashbang');
-        else if (k === 'b' || k === 'e') triggerAction('breach_charge');
-      });
+  for (let i = fxBeams.length - 1; i >= 0; i--) {
+    fxBeams[i].life -= dt;
+    if (fxBeams[i].life <= 0) fxBeams.splice(i, 1);
+  }
+  for (let i = fxWaves.length - 1; i >= 0; i--) {
+    const w = fxWaves[i];
+    w.life -= dt;
+    w.r = w.maxR * (1 - Math.max(0, w.life / w.maxLife));
+    if (w.life <= 0) fxWaves.splice(i, 1);
+  }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.life -= dt;
+    if (pt.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = popups.length - 1; i >= 0; i--) {
+    const pp = popups[i];
+    pp.y -= 26 * dt;
+    pp.life -= dt;
+    if (pp.life <= 0) popups.splice(i, 1);
+  }
+  if (hurtFlash > 0) hurtFlash = Math.max(0, hurtFlash - dt);
+}
 
-      // PWA registration
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-      }
+function draw() {
+  ctx.fillStyle = '#060911';
+  ctx.fillRect(0, 0, W, H);
 
-      updateUI();
-      render();
-    })();
-  </script>
+  const p = state.player;
+  const legals = legalActions(state);
+  const canBreach = legals.includes('breach_charge');
+
+  // Top HUD
+  ctx.fillStyle = '#0b1220';
+  rrect(10, 8, W - 20, 52, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SHADOW BREACH', 20, 25);
+
+  ctx.fillStyle = state.hasCore ? '#4ade80' : '#f59e0b';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.hasCore ? 'CORE ACQUIRED → EXTRACT' : 'INFILTRATE VAULT', W / 2 + 12, 25);
+
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${score(state)}`, W - 20, 25);
+
+  // HP Bar
+  const hpPct = Math.max(0, Math.min(1, p.hp / p.maxHp));
+  ctx.fillStyle = '#1e293b';
+  rrect(20, 35, 130, 14, 5);
+  ctx.fill();
+  ctx.fillStyle = hpPct > 0.35 ? '#22c55e' : '#ef4444';
+  if (hpPct > 0) {
+    rrect(20, 35, Math.max(10, 130 * hpPct), 14, 5);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 9px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`HP ${p.hp}`, 26, 45);
+
+  ctx.fillStyle = p.ammo > 0 ? '#38bdf8' : '#ef4444';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`AMMO ${p.ammo}/${MAX_AMMO} · BEST ${best}`, W - 20, 45);
+
+  // Tactical Arena Viewport
+  ctx.save();
+  ctx.translate(VIEW_X, VIEW_Y);
+  ctx.scale(A_SCALE, A_SCALE);
+
+  // Sector Floors
+  ctx.fillStyle = '#0d1527';
+  ctx.fillRect(20, 260, 360, 120);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(20, 140, 360, 120);
+  ctx.fillStyle = '#131e33';
+  ctx.fillRect(20, 20, 360, 120);
+
+  // Subtle floor grid
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+  ctx.lineWidth = 1;
+  for (let g = 40; g < 380; g += 20) {
+    ctx.beginPath(); ctx.moveTo(g, 20); ctx.lineTo(g, 380); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20, g); ctx.lineTo(380, g); ctx.stroke();
+  }
+
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(20, 20, 360, 360);
+
+  // Extraction Pad
+  const extPulse = 0.15 + Math.sin(performance.now() * 0.006) * 0.08;
+  ctx.fillStyle = `rgba(34, 197, 94, ${state.hasCore ? extPulse + 0.15 : extPulse})`;
+  ctx.fillRect(175, 25, 50, 45);
+  ctx.strokeStyle = '#22c55e';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 4]);
+  ctx.strokeRect(175, 25, 50, 45);
+  ctx.setLineDash([]);
+
+  // Vault Core
+  if (!state.hasCore) {
+    const rPulse = 8 + Math.sin(performance.now() * 0.008) * 2;
+    ctx.fillStyle = '#06b6d4';
+    ctx.beginPath();
+    ctx.arc(state.vaultCore.x, state.vaultCore.y, rPulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#cffafe';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Walls
+  ctx.fillStyle = '#334155';
+  for (const w of state.walls) {
+    ctx.fillRect(w.x, w.y, w.w, w.h);
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(w.x, w.y, w.w, w.h);
+  }
+
+  // Blast Doors
+  for (const d of state.doors) {
+    if (!d.breached) {
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
+      ctx.strokeStyle = canBreach && Math.hypot(p.x - d.x, p.y - d.y) <= 55 ? '#fef08a' : '#fbbf24';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
+    } else {
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(d.x - d.w / 2, d.y - d.h / 2, d.w, d.h);
+    }
+  }
+
+  // Drag Path Reticle
+  const drag = getArenaDrag();
+  if (drag && !isOver(state)) {
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(visPlayer.x, visPlayer.y);
+    ctx.lineTo(drag.x, drag.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(drag.x, drag.y, 11, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Player Laser Sight
+  ctx.strokeStyle = hasAlignedTarget() ? 'rgba(239, 68, 68, 0.75)' : 'rgba(239, 68, 68, 0.32)';
+  ctx.lineWidth = hasAlignedTarget() ? 2 : 1.3;
+  ctx.beginPath();
+  ctx.moveTo(visPlayer.x, visPlayer.y);
+  ctx.lineTo(visPlayer.x + Math.cos(visPlayer.angle) * 180, visPlayer.y + Math.sin(visPlayer.angle) * 180);
+  ctx.stroke();
+
+  // Enemies
+  for (const e of state.enemies) {
+    const ve = visEnemies.get(e.id) || e;
+    const flash = ve.flash && ve.flash > 0;
+    ctx.save();
+    ctx.translate(ve.x, ve.y);
+
+    if (e.type === 'sentry') {
+      ctx.fillStyle = flash ? '#ffffff' : '#475569';
+      ctx.fillRect(-12, -12, 24, 24);
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (e.type === 'enforcer') {
+      ctx.fillStyle = flash ? '#ffffff' : '#1e3a8a';
+      ctx.beginPath();
+      ctx.arc(0, 0, 11.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#60a5fa';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 15, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = flash ? '#ffffff' : '#dc2626';
+      ctx.beginPath();
+      ctx.arc(0, 0, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fca5a5';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    if (e.stunned > 0) {
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('STUN', 0, -15);
+    } else if (e.hp < e.maxHp) {
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillRect(-12, -17, 24, 4);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-12, -17, 24 * Math.max(0, e.hp / e.maxHp), 4);
+    }
+    ctx.restore();
+  }
+
+  // Player Operative
+  ctx.save();
+  ctx.translate(visPlayer.x, visPlayer.y);
+  ctx.fillStyle = '#0ea5e9';
+  ctx.beginPath();
+  ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#7dd3fc';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.rotate(visPlayer.angle);
+  ctx.strokeStyle = '#f8fafc';
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(17, 0);
+  ctx.stroke();
+  ctx.restore();
+
+  // FX Beams & Shockwaves
+  for (const b of fxBeams) {
+    ctx.strokeStyle = `rgba(56, 189, 248, ${b.life * 7})`;
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(b.x1, b.y1);
+    ctx.lineTo(b.x2, b.y2);
+    ctx.stroke();
+  }
+  for (const w of fxWaves) {
+    ctx.fillStyle = `rgba(${w.col}, ${(w.life / w.maxLife) * 0.45})`;
+    ctx.strokeStyle = `rgba(${w.col}, ${w.life / w.maxLife})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  for (const pt of particles) {
+    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+    ctx.fillStyle = pt.col;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  for (const pp of popups) {
+    ctx.globalAlpha = Math.min(1, pp.life * 2);
+    ctx.fillStyle = pp.col;
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(pp.txt, pp.x, pp.y);
+  }
+  ctx.globalAlpha = 1;
+
+  if (hurtFlash > 0) {
+    ctx.fillStyle = `rgba(239, 68, 68, ${hurtFlash * 0.55})`;
+    ctx.fillRect(0, 0, ARENA_SIZE, ARENA_SIZE);
+  }
+
+  ctx.restore();
+
+  // Bottom Control Deck
+  const ms = getMoveStick();
+  ctx.fillStyle = '#0b1220';
+  ctx.beginPath();
+  ctx.arc(STICK.cx, STICK.cy, STICK.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = ms.active ? '#38bdf8' : '#1e293b';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MOVE (WASD)', STICK.cx, STICK.cy - STICK.r - 8);
+
+  ctx.fillStyle = ms.active ? '#0ea5e9' : '#1e293b';
+  ctx.beginPath();
+  ctx.arc(STICK.cx + ms.kx, STICK.cy + ms.ky, 22, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#7dd3fc';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // FIRE button
+  const firing = isFireHeld();
+  ctx.fillStyle = firing ? '#0284c7' : '#0369a1';
+  rrect(BTN_FIRE.x, BTN_FIRE.y, BTN_FIRE.w, BTN_FIRE.h, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.fillText(p.ammo > 0 ? `FIRE CARBINE (${p.ammo})` : 'TAP TO RELOAD!', BTN_FIRE.x + BTN_FIRE.w / 2, BTN_FIRE.y + 30);
+  ctx.fillStyle = '#bae6fd';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillText('Hold Space / J', BTN_FIRE.x + BTN_FIRE.w / 2, BTN_FIRE.y + 49);
+
+  // BREACH button
+  ctx.fillStyle = canBreach ? '#d97706' : '#1e293b';
+  rrect(BTN_BREACH.x, BTN_BREACH.y, BTN_BREACH.w, BTN_BREACH.h, 10);
+  ctx.fill();
+  ctx.strokeStyle = canBreach ? '#fef08a' : '#334155';
+  ctx.lineWidth = canBreach ? 2.5 : 1.5;
+  ctx.stroke();
+  ctx.fillStyle = canBreach ? '#ffffff' : '#64748b';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.fillText(`💥 BREACH DOOR [B] (${p.breachCharges})`, BTN_BREACH.x + BTN_BREACH.w / 2, BTN_BREACH.y + 29);
+
+  // FLASH & RELOAD buttons
+  const hasFlash = p.flashbangs > 0;
+  ctx.fillStyle = hasFlash ? '#334155' : '#0f172a';
+  rrect(BTN_FLASH.x, BTN_FLASH.y, BTN_FLASH.w, BTN_FLASH.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = hasFlash ? '#fbbf24' : '#1e293b';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = hasFlash ? '#fde047' : '#475569';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.fillText(`⚡ FLASH (${p.flashbangs})`, BTN_FLASH.x + BTN_FLASH.w / 2, BTN_FLASH.y + 27);
+
+  const canReload = p.ammo < MAX_AMMO;
+  ctx.fillStyle = canReload ? '#1e3a5f' : '#0f172a';
+  rrect(BTN_RELOAD.x, BTN_RELOAD.y, BTN_RELOAD.w, BTN_RELOAD.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = canReload ? '#38bdf8' : '#1e293b';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = canReload ? '#e0f2fe' : '#475569';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.fillText('↻ RELOAD [R]', BTN_RELOAD.x + BTN_RELOAD.w / 2, BTN_RELOAD.y + 27);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillText('Drag tactical map to move & auto-engage · Tap door to breach', W / 2, H - 10);
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(6, 9, 17, 0.92)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = state.won ? '#4ade80' : '#ef4444';
+    ctx.font = 'bold 26px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'MISSION ACCOMPLISHED!' : 'OPERATIVE KIA', W / 2, H / 2 - 48);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'Vault Core safely extracted!' : 'Signal lost inside enemy facility.', W / 2, H / 2 - 14);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText(`Score: ${score(state)}`, W / 2, H / 2 + 26);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere or press Space to deploy again', W / 2, H / 2 + 72);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

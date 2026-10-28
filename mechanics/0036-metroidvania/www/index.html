@@ -1,488 +1,774 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Chasm Crawler - Metroidvania</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0d081a">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-    body {
-      background: #080410;
-      color: #f3e8ff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      touch-action: none;
-    }
-    #game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      max-width: 440px;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1.15rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #c084fc;
-      text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
-    }
-    .hud {
-      display: flex;
-      gap: 10px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #e9d5ff;
-    }
-    .hud span { color: #ffffff; }
-    canvas {
-      background: #130924;
-      border: 2px solid #581c87;
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
-      width: 100%;
-      max-width: 400px;
-      aspect-ratio: 1;
-      display: block;
-    }
-    .status-panel {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #170b2e;
-      border: 1px solid #6b21a8;
-      border-radius: 6px;
-      padding: 6px 10px;
-      margin-top: 6px;
-      font-size: 0.75rem;
-      font-weight: bold;
-    }
-    .hp-bar-track {
-      width: 70px;
-      height: 8px;
-      background: #3b0764;
-      border-radius: 4px;
-      overflow: hidden;
-      display: inline-block;
-      vertical-align: middle;
-      margin-left: 4px;
-    }
-    .hp-bar-fill {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, #ef4444, #10b981);
-    }
-    .badge {
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.68rem;
-      border: 1px solid #4c1d95;
-      background: #2e1065;
-      color: #94a3b8;
-    }
-    .badge.active {
-      border-color: #34d399;
-      background: #064e3b;
-      color: #6ee7b7;
-    }
-    .controls {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      margin-top: 8px;
-      gap: 8px;
-    }
-    .dpad {
-      display: grid;
-      grid-template-columns: repeat(3, 40px);
-      grid-template-rows: repeat(3, 40px);
-      gap: 4px;
-    }
-    .action-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      flex: 1;
-    }
-    .action-row {
-      display: flex;
-      gap: 6px;
-      justify-content: flex-end;
-    }
-    button {
-      background: #2e1065;
-      border: 1px solid #6b21a8;
-      color: #f3e8ff;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.05s;
-    }
-    button:active { background: #581c87; transform: scale(0.96); }
-    .btn-action { padding: 8px 10px; min-height: 38px; }
-    .btn-fire { background: linear-gradient(135deg, #0284c7, #0ea5e9); border-color: #38bdf8; }
-    .btn-missile { background: linear-gradient(135deg, #991b1b, #dc2626); border-color: #f87171; }
-    .btn-dash { background: linear-gradient(135deg, #047857, #10b981); border-color: #34d399; }
-    #game-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(8, 4, 16, 0.92);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      z-index: 10;
-    }
-    #game-overlay h2 { font-size: 2rem; color: #c084fc; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0d081a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Chasm Crawler</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #080410; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <div id="game-container" style="position: relative;">
-    <header>
-      <h1>CHASM CRAWLER</h1>
-      <div class="hud">
-        <div>SCORE: <span id="val-score">0</span></div>
-      </div>
-    </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const logic = window.ChasmCrawler || window.GameLogic;
+const { createState, legalActions, step, isOver, score } = logic;
 
-    <canvas id="canvas" width="400" height="400"></canvas>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-    <div class="status-panel">
-      <div>
-        HP: <div class="hp-bar-track"><div id="bar-hp" class="hp-bar-fill"></div></div>
-      </div>
-      <div>MISSILE: <span id="val-missiles" style="color: #f87171;">0</span></div>
-      <div id="badge-jump" class="badge">JUMPx2</div>
-      <div id="badge-dash" class="badge">DASH</div>
-    </div>
+const W = 360;
+const H = 640;
 
-    <div class="controls">
-      <div class="dpad">
-        <div></div>
-        <button id="btn-jump">JUMP</button>
-        <div></div>
-        <button id="btn-left">◀</button>
-        <button id="btn-rest" style="font-size:0.65rem;">REST</button>
-        <button id="btn-right">▶</button>
-        <div></div>
-        <div></div>
-        <div></div>
-      </div>
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-      <div class="action-panel">
-        <div class="action-row">
-          <button id="btn-fire" class="btn-action btn-fire" style="flex:1;">BEAM [J]</button>
-          <button id="btn-missile" class="btn-action btn-missile" style="flex:1;">MISSILE [K]</button>
-        </div>
-        <div class="action-row">
-          <button id="btn-dash" class="btn-action btn-dash" style="flex:1;">PHASE DASH [L]</button>
-        </div>
-      </div>
-    </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0036-best') || 0; } catch (e) {}
 
-    <div id="game-overlay">
-      <h2 id="overlay-title">REACTOR STABILIZED</h2>
-      <p id="overlay-sub" style="font-size: 1.1rem; color: #e9d5ff;">Core Guardian defeated!</p>
-      <button id="btn-restart" class="btn-action btn-fire" style="padding: 10px 24px; font-size: 1rem;">DESCEND AGAIN</button>
-    </div>
-  </div>
+// Map world (20..380, 80..380) onto 340x295 viewport at (10, 108)
+const MAP_X = 10;
+const MAP_Y = 108;
+const MAP_W = 340;
+const MAP_H = 295;
+function wx(x) { return MAP_X + ((x - 20) / 360) * MAP_W; }
+function wy(y) { return MAP_Y + ((y - 70) / 320) * MAP_H; }
 
-  <script src="logic.js"></script>
-  <script>
-    (function () {
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
+let state = createState(Date.now());
+let visPlayer = { x: state.player.x, y: state.player.y, hop: 0 };
+let visEnemies = {};
+let animTime = 0;
+let shake = 0;
+let overAt = 0;
 
-      const elScore = document.getElementById('val-score');
-      const barHp = document.getElementById('bar-hp');
-      const elMissiles = document.getElementById('val-missiles');
-      const badgeJump = document.getElementById('badge-jump');
-      const badgeDash = document.getElementById('badge-dash');
-      const overlay = document.getElementById('game-overlay');
-      const overlayTitle = document.getElementById('overlay-title');
-      const overlaySub = document.getElementById('overlay-sub');
-      const btnRestart = document.getElementById('btn-restart');
+let beams = [];
+let particles = [];
+let popups = [];
 
-      let state = ChasmCrawler.createState(Date.now() % 100000);
-      let fxBeams = [];
+const keys = {};
+let touchDir = 0;
+let activeBtn = '';
+let activePointer = null;
+let dragAnchorX = null;
+let moveTimer = 0;
+let worldTimer = 0;
 
-      function triggerAction(act) {
-        if (ChasmCrawler.isOver(state)) return;
-        const legals = ChasmCrawler.legalActions(state);
-        if (!legals.includes(act)) return;
+const BTNS = [
+  { id: 'left', x: 16, y: 504, w: 68, h: 68, label: '◀' },
+  { id: 'right', x: 92, y: 504, w: 68, h: 68, label: '▶' },
+  { id: 'jump', x: 174, y: 504, w: 84, h: 68, label: 'JUMP' },
+  { id: 'fire', x: 266, y: 504, w: 78, h: 68, label: 'BEAM' },
+  { id: 'missile', x: 174, y: 442, w: 84, h: 52, label: 'MISSILE' },
+  { id: 'dash', x: 266, y: 442, w: 78, h: 52, label: 'DASH' },
+  { id: 'rest', x: 16, y: 442, w: 144, h: 52, label: '⚡ SHIELD REST' }
+];
 
-        const p = state.player;
-        if (act === 'fire') {
-          fxBeams.push({ x1: p.x, y1: p.y - 12, x2: p.x + p.facing * 180, y2: p.y - 12, color: '#38bdf8', life: 6 });
-        } else if (act === 'missile') {
-          fxBeams.push({ x1: p.x, y1: p.y - 12, x2: p.x + p.facing * 140, y2: p.y - 12, color: '#ef4444', life: 10, isMissile: true });
-        } else if (act === 'dash') {
-          fxBeams.push({ x1: p.x, y1: p.y - 12, x2: p.x + p.facing * 50, y2: p.y - 12, color: '#34d399', life: 8 });
-        }
+function syncEnemies(snapImmediate) {
+  const next = {};
+  for (const e of state.enemies) {
+    if (snapImmediate || !visEnemies[e.id]) {
+      next[e.id] = { x: e.x, y: e.y, hp: e.hp };
+    } else {
+      next[e.id] = visEnemies[e.id];
+    }
+  }
+  visEnemies = next;
+}
+syncEnemies(true);
 
-        ChasmCrawler.step(state, act);
-        updateUI();
-        render();
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function addBurst(sx, sy, color, count) {
+  for (let i = 0; i < count; i++) {
+    const a = (Math.PI * 2 * i) / count + (i % 3) * 0.2;
+    const sp = 35 + (i % 4) * 22;
+    particles.push({ x: sx, y: sy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 12, color, life: 0.45 });
+  }
+}
+
+function addPopup(sx, sy, text, color) {
+  popups.push({ x: sx, y: sy, text, color, life: 0.95 });
+}
+
+function restart() {
+  state = createState(Date.now());
+  visPlayer = { x: state.player.x, y: state.player.y, hop: 0 };
+  syncEnemies(true);
+  beams = [];
+  particles = [];
+  popups = [];
+  touchDir = 0;
+  activeBtn = '';
+  activePointer = null;
+  dragAnchorX = null;
+  moveTimer = 0;
+  worldTimer = 0;
+  shake = 0;
+  overAt = 0;
+}
+
+function executeAction(act) {
+  if (isOver(state)) return false;
+  const legal = legalActions(state);
+  if (!legal.includes(act)) return false;
+
+  const p = state.player;
+  const prevHp = p.hp;
+  const prevScore = score(state);
+  const prevUpgrades = state.upgrades.filter((u) => u.collected).length;
+  const prevDoorOpen = state.gates[0].open;
+  const prevLaserOpen = state.gates[1].open;
+  const prevEnemies = state.enemies.map((e) => ({ id: e.id, x: e.x, y: e.y, hp: e.hp }));
+
+  if (act === 'fire') {
+    beams.push({
+      x1: wx(p.x + p.facing * 12),
+      y1: wy(p.y - 12),
+      x2: wx(Math.max(24, Math.min(376, p.x + p.facing * 180))),
+      y2: wy(p.y - 12),
+      color: '#38bdf8',
+      width: 3.5,
+      life: 0.16
+    });
+  } else if (act === 'missile') {
+    beams.push({
+      x1: wx(p.x + p.facing * 12),
+      y1: wy(p.y - 12),
+      x2: wx(Math.max(24, Math.min(376, p.x + p.facing * 140))),
+      y2: wy(p.y - 12),
+      color: '#f43f5e',
+      width: 6,
+      life: 0.22
+    });
+    shake = 4;
+  } else if (act === 'dash') {
+    beams.push({
+      x1: wx(p.x),
+      y1: wy(p.y - 10),
+      x2: wx(Math.max(30, Math.min(370, p.x + p.facing * 50))),
+      y2: wy(p.y - 10),
+      color: '#34d399',
+      width: 10,
+      life: 0.2
+    });
+    addBurst(wx(p.x), wy(p.y - 10), '#34d399', 8);
+  } else if (act === 'jump') {
+    visPlayer.hop = 1.0;
+    addBurst(wx(p.x), wy(p.y), '#c084fc', 6);
+  }
+
+  const res = step(state, act);
+
+  // Detect enemy hits & kills
+  for (const oldE of prevEnemies) {
+    const curE = state.enemies.find((e) => e.id === oldE.id);
+    if (!curE) {
+      addBurst(wx(oldE.x), wy(oldE.y), '#fbbf24', 14);
+      addPopup(wx(oldE.x), wy(oldE.y - 16), oldE.id === 'boss' ? 'BOSS DOWN!' : '+150', '#fbbf24');
+      shake = 6;
+    } else if (curE.hp < oldE.hp) {
+      addBurst(wx(curE.x), wy(curE.y), '#38bdf8', 7);
+      addPopup(wx(curE.x), wy(curE.y - 16), `-${oldE.hp - curE.hp}`, '#38bdf8');
+    }
+  }
+  syncEnemies(false);
+
+  // Detect gate unlocks & upgrades
+  if (!prevDoorOpen && state.gates[0].open) {
+    addBurst(wx(180), wy(330), '#ef4444', 14);
+    addPopup(wx(180), wy(305), 'RED DOOR BLASTED!', '#f87171');
+  }
+  if (!prevLaserOpen && state.gates[1].open) {
+    addBurst(wx(160), wy(170), '#34d399', 14);
+    addPopup(wx(160), wy(145), 'LASER BYPASSED!', '#34d399');
+  }
+  const nowUpgrades = state.upgrades.filter((u) => u.collected).length;
+  if (nowUpgrades > prevUpgrades) {
+    addBurst(wx(p.x), wy(p.y - 10), '#c084fc', 16);
+    const label = p.hasPhaseDash && prevUpgrades === 2 ? 'PHASE DASH!' : p.hasDoubleJump && prevUpgrades >= 1 && !prevDoorOpen ? '2X JUMP!' : 'UPGRADE +500!';
+    addPopup(wx(p.x), wy(p.y - 26), label, '#e879f9');
+  }
+
+  if (p.hp < prevHp) {
+    shake = 5;
+    addBurst(wx(p.x), wy(p.y - 10), '#ef4444', 8);
+    addPopup(wx(p.x), wy(p.y - 24), `-${prevHp - p.hp} HP`, '#ef4444');
+  } else if (p.hp > prevHp && act === 'rest') {
+    addPopup(wx(p.x), wy(p.y - 24), `+${p.hp - prevHp} HP`, '#34d399');
+  }
+
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0036-best', best); } catch (e) {}
+    }
+  }
+  return true;
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function hitBtn(p) {
+  for (const b of BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) return b.id;
+  }
+  return '';
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 350) restart();
+    return;
+  }
+  canvas.setPointerCapture(e.pointerId);
+  activePointer = e.pointerId;
+
+  if (p.x >= W - 70 && p.x <= W - 12 && p.y >= 74 && p.y <= 100) {
+    restart();
+    return;
+  }
+
+  const bid = hitBtn(p);
+  activeBtn = bid;
+  if (bid === 'left') {
+    touchDir = -1;
+    if (executeAction('move_left')) { moveTimer = 0.135; worldTimer = 0; }
+    return;
+  }
+  if (bid === 'right') {
+    touchDir = 1;
+    if (executeAction('move_right')) { moveTimer = 0.135; worldTimer = 0; }
+    return;
+  }
+  if (bid === 'jump' || bid === 'fire' || bid === 'missile' || bid === 'dash' || bid === 'rest') {
+    if (executeAction(bid)) worldTimer = 0;
+    return;
+  }
+
+  // Direct arena touch: tap enemy side to fire, upper area to jump, lower area to run
+  dragAnchorX = p.x;
+  const pxScreen = wx(visPlayer.x);
+  const pyScreen = wy(visPlayer.y);
+  if (p.y < pyScreen - 34) {
+    if (executeAction('jump')) worldTimer = 0;
+  } else if (Math.abs(p.y - pyScreen) <= 34 && Math.abs(p.x - pxScreen) > 55) {
+    touchDir = p.x < pxScreen ? -1 : 1;
+    if (executeAction(touchDir < 0 ? 'move_left' : 'move_right')) { moveTimer = 0.135; worldTimer = 0; }
+  } else {
+    if (executeAction('fire')) worldTimer = 0;
+  }
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (activePointer !== e.pointerId || isOver(state)) return;
+  const p = toLogical(e);
+  const bid = hitBtn(p);
+  if (bid === 'left') { activeBtn = 'left'; touchDir = -1; return; }
+  if (bid === 'right') { activeBtn = 'right'; touchDir = 1; return; }
+  if (dragAnchorX !== null && p.y < 435) {
+    const dx = p.x - dragAnchorX;
+    if (Math.abs(dx) > 14) touchDir = dx < 0 ? -1 : 1;
+  }
+});
+
+function clearPointer() {
+  activePointer = null;
+  dragAnchorX = null;
+  touchDir = 0;
+  activeBtn = '';
+}
+canvas.addEventListener('pointerup', clearPointer);
+canvas.addEventListener('pointercancel', clearPointer);
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 350) restart();
+    return;
+  }
+  const wasDown = keys[e.key];
+  keys[e.key] = true;
+
+  if (!wasDown) {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+      e.preventDefault();
+      if (executeAction('move_left')) { moveTimer = 0.135; worldTimer = 0; }
+    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+      e.preventDefault();
+      if (executeAction('move_right')) { moveTimer = 0.135; worldTimer = 0; }
+    } else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+      e.preventDefault();
+      if (executeAction('jump')) worldTimer = 0;
+    } else if (e.key === ' ' || e.key === 'j' || e.key === 'J') {
+      e.preventDefault();
+      if (executeAction('fire')) worldTimer = 0;
+    } else if (e.key === 'k' || e.key === 'K') {
+      if (executeAction('missile')) worldTimer = 0;
+    } else if (e.key === 'l' || e.key === 'L' || e.key === 'Shift') {
+      e.preventDefault();
+      if (executeAction('dash')) worldTimer = 0;
+    } else if (e.key === 's' || e.key === 'S' || e.key === 'e' || e.key === 'E') {
+      if (executeAction('rest')) worldTimer = 0;
+    } else if (e.key === 'r' || e.key === 'R') {
+      restart();
+    }
+  }
+});
+
+addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+function updateSim(dt) {
+  animTime += dt;
+  if (shake > 0) shake = Math.max(0, shake - dt * 26);
+  if (moveTimer > 0) moveTimer = Math.max(0, moveTimer - dt);
+
+  if (!isOver(state)) {
+    let dir = touchDir;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) dir = -1;
+    else if (keys['ArrowRight'] || keys['d'] || keys['D']) dir = 1;
+
+    if (dir !== 0 && moveTimer <= 0) {
+      if (executeAction(dir < 0 ? 'move_left' : 'move_right')) {
+        moveTimer = 0.135;
+        worldTimer = 0;
       }
-
-      function updateUI() {
-        if (elScore) elScore.textContent = state.scoreVal;
-
-        const p = state.player;
-        if (barHp) barHp.style.width = (p.hp / p.maxHp * 100) + '%';
-        if (elMissiles) elMissiles.textContent = p.missiles;
-
-        if (badgeJump && badgeJump.classList) {
-          if (p.hasDoubleJump) badgeJump.classList.add('active');
-          else badgeJump.classList.remove('active');
-        }
-        if (badgeDash && badgeDash.classList) {
-          if (p.hasPhaseDash) badgeDash.classList.add('active');
-          else badgeDash.classList.remove('active');
-        }
-
-        if (ChasmCrawler.isOver(state)) {
-          if (overlay) {
-            overlay.style.display = 'flex';
-            if (state.won) {
-              if (overlayTitle) { overlayTitle.textContent = 'CORE STABILIZED'; overlayTitle.style.color = '#34d399'; }
-              if (overlaySub) overlaySub.textContent = `Mission Accomplished! Score: ${state.scoreVal}`;
-            } else {
-              if (overlayTitle) { overlayTitle.textContent = 'SIGNAL LOST'; overlayTitle.style.color = '#ef4444'; }
-              if (overlaySub) overlaySub.textContent = `Varia fell in the alien citadel. Score: ${state.scoreVal}`;
-            }
-          }
-        } else {
-          if (overlay) overlay.style.display = 'none';
-        }
+    } else if (dir === 0) {
+      worldTimer += dt;
+      if (worldTimer >= 0.52) {
+        worldTimer = 0;
+        executeAction('rest');
       }
+    }
+  }
 
-      function render() {
-        ctx.clearRect(0, 0, 400, 400);
+  // Smooth 60 FPS visual interpolation
+  const k = Math.min(1, dt * 18);
+  visPlayer.x += (state.player.x - visPlayer.x) * k;
+  visPlayer.y += (state.player.y - visPlayer.y) * k;
+  if (visPlayer.hop > 0) visPlayer.hop = Math.max(0, visPlayer.hop - dt * 4.5);
 
-        // Map Sectors Background & Ledges
-        // Sector 1: Landing Bay (x: 20..180, y: 280..380)
-        ctx.fillStyle = '#1e1138';
-        ctx.fillRect(20, 260, 160, 120);
+  for (const e of state.enemies) {
+    if (!visEnemies[e.id]) visEnemies[e.id] = { x: e.x, y: e.y };
+    visEnemies[e.id].x += (e.x - visEnemies[e.id].x) * k;
+    visEnemies[e.id].y += (e.y - visEnemies[e.id].y) * k;
+  }
 
-        // Sector 2: Magma Ledge (x: 180..380, y: 280..380)
-        ctx.fillStyle = '#2d111d';
-        ctx.fillRect(180, 260, 200, 120);
+  for (let i = beams.length - 1; i >= 0; i--) {
+    beams[i].life -= dt;
+    if (beams[i].life <= 0) beams.splice(i, 1);
+  }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.vy += 120 * dt;
+    pt.life -= dt;
+    if (pt.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = popups.length - 1; i >= 0; i--) {
+    popups[i].y -= 24 * dt;
+    popups[i].life -= dt;
+    if (popups[i].life <= 0) popups.splice(i, 1);
+  }
+}
 
-        // Sector 3: Ruins Corridor (x: 160..380, y: 120..240)
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(160, 120, 220, 120);
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#130826');
+  bg.addColorStop(1, '#080410');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
 
-        // Sector 4: Sanctuary Core (x: 20..160, y: 80..240)
-        ctx.fillStyle = '#2a0815';
-        ctx.fillRect(20, 80, 140, 160);
+  const p = state.player;
 
-        // Ground Floors
-        ctx.fillStyle = '#4c1d95';
-        ctx.fillRect(20, 360, 360, 20); // Base Ground
-        ctx.fillRect(160, 200, 220, 12); // Sector 3 Floor
-        ctx.fillRect(20, 160, 140, 12); // Sector 4 Floor
+  // Top HUD
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SUIT SHIELD', 16, 26);
+  ctx.textAlign = 'center';
+  ctx.fillText('SCORE', W / 2 + 12, 26);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 16, 26);
 
-        // Red Blast Door
-        const redDoor = state.gates.find(g => g.id === 'door_red');
-        if (redDoor && !redDoor.open) {
-          ctx.fillStyle = '#dc2626';
-          ctx.fillRect(redDoor.x - 4, 300, 8, 60);
-          ctx.strokeStyle = '#fca5a5';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(redDoor.x - 4, 300, 8, 60);
-        }
+  // HP Bar
+  ctx.fillStyle = '#2e1065';
+  rrect(16, 34, 108, 14, 7);
+  ctx.fill();
+  const hpFrac = Math.max(0, Math.min(1, p.hp / p.maxHp));
+  ctx.fillStyle = hpFrac > 0.4 ? '#10b981' : '#ef4444';
+  if (hpFrac > 0) {
+    rrect(16, 34, Math.max(10, 108 * hpFrac), 14, 7);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${p.hp}%`, 70, 44);
 
-        // Laser Security Gate
-        const laser = state.gates.find(g => g.id === 'laser_gate');
-        if (laser && !laser.open) {
-          ctx.strokeStyle = '#38bdf8';
-          ctx.lineWidth = 4;
-          ctx.beginPath();
-          ctx.moveTo(laser.x, 140);
-          ctx.lineTo(laser.x, 200);
-          ctx.stroke();
-        }
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 24px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(score(state), W / 2 + 12, 54);
 
-        // Upgrades Pedestals
-        for (const up of state.upgrades) {
-          if (!up.collected) {
-            ctx.save();
-            ctx.fillStyle = '#581c87';
-            ctx.fillRect(up.x - 12, up.y + 6, 24, 14);
+  ctx.fillStyle = '#c084fc';
+  ctx.font = 'bold 20px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 16, 52);
 
-            if (up.type === 'missile') {
-              ctx.fillStyle = '#ef4444';
-              ctx.beginPath();
-              ctx.arc(up.x, up.y, 8, 0, Math.PI * 2);
-              ctx.fill();
-            } else if (up.type === 'double_jump') {
-              ctx.fillStyle = '#10b981';
-              ctx.beginPath();
-              ctx.arc(up.x, up.y, 8, 0, Math.PI * 2);
-              ctx.fill();
-            } else {
-              ctx.fillStyle = '#38bdf8';
-              ctx.beginPath();
-              ctx.arc(up.x, up.y, 8, 0, Math.PI * 2);
-              ctx.fill();
-            }
-            ctx.restore();
-          }
-        }
+  // Ability Badges + Missiles + Reset
+  const badges = [
+    { txt: `🚀 x${p.missiles}`, on: p.missiles > 0, col: '#f87171' },
+    { txt: '2X JUMP', on: p.hasDoubleJump, col: '#34d399' },
+    { txt: 'PHASE DASH', on: p.hasPhaseDash, col: '#38bdf8' }
+  ];
+  let bx = 14;
+  for (const bd of badges) {
+    const bw = bd.txt.length * 6.8 + 14;
+    ctx.fillStyle = bd.on ? 'rgba(16, 185, 129, 0.2)' : '#170b2e';
+    rrect(bx, 74, bw, 24, 6);
+    ctx.fill();
+    ctx.strokeStyle = bd.on ? bd.col : '#3b0764';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.fillStyle = bd.on ? bd.col : '#64748b';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(bd.txt, bx + bw / 2, 90);
+    bx += bw + 6;
+  }
 
-        // FX Beams
-        const nextBeams = [];
-        for (const bm of fxBeams) {
-          ctx.save();
-          ctx.strokeStyle = bm.color;
-          ctx.lineWidth = bm.isMissile ? 6 : 3;
-          ctx.beginPath();
-          ctx.moveTo(bm.x1, bm.y1);
-          ctx.lineTo(bm.x2, bm.y2);
-          ctx.stroke();
-          ctx.restore();
-          bm.life--;
-          if (bm.life > 0) nextBeams.push(bm);
-        }
-        fxBeams = nextBeams;
+  ctx.fillStyle = '#2e1065';
+  rrect(W - 68, 74, 54, 24, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#6b21a8';
+  ctx.stroke();
+  ctx.fillStyle = '#e9d5ff';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.fillText('↺ RST', W - 41, 90);
 
-        // Enemies
-        for (const e of state.enemies) {
-          ctx.save();
-          if (e.type === 'guardian') {
-            // Core Guardian Boss
-            ctx.fillStyle = '#be123c';
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 22, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#fbbf24';
-            ctx.lineWidth = 3;
-            ctx.stroke();
+  // Citadel Map Frame
+  ctx.save();
+  if (shake > 0.1) {
+    ctx.translate(Math.sin(animTime * 55) * shake, Math.cos(animTime * 48) * shake * 0.6);
+  }
 
-            // Eye core
-            ctx.fillStyle = '#facc15';
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 8, 0, Math.PI * 2);
-            ctx.fill();
+  ctx.fillStyle = '#0c051a';
+  rrect(MAP_X - 2, MAP_Y - 2, MAP_W + 4, MAP_H + 4, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#581c87';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
-            // Boss HP Bar
-            ctx.fillStyle = '#450a0a';
-            ctx.fillRect(e.x - 30, e.y - 36, 60, 6);
-            ctx.fillStyle = '#22c55e';
-            ctx.fillRect(e.x - 30, e.y - 36, (e.hp / e.maxHp) * 60, 6);
-          } else if (e.type === 'skitter') {
-            ctx.fillStyle = '#0284c7';
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 10, 0, Math.PI * 2);
-            ctx.fill();
-          } else {
-            // Crawler
-            ctx.fillStyle = '#e11d48';
-            ctx.fillRect(e.x - 10, e.y, 20, 10);
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 8, Math.PI, 0);
-            ctx.fill();
-          }
-          ctx.restore();
-        }
+  // Sector 1: Landing Bay
+  ctx.fillStyle = '#1b0f36';
+  ctx.fillRect(wx(20), wy(255), wx(180) - wx(20), wy(380) - wy(255));
+  // Sector 2: Magma Shaft
+  ctx.fillStyle = '#29101c';
+  ctx.fillRect(wx(180), wy(255), wx(380) - wx(180), wy(380) - wy(255));
+  // Vertical Lift Shaft on right (x: 320..380)
+  ctx.fillStyle = 'rgba(56, 189, 248, 0.06)';
+  ctx.fillRect(wx(320), wy(180), wx(380) - wx(320), wy(360) - wy(180));
+  // Sector 3: Ruins Corridor
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(wx(160), wy(115), wx(380) - wx(160), wy(212) - wy(115));
+  // Sector 4: Core Sanctuary
+  ctx.fillStyle = '#2a0818';
+  ctx.fillRect(wx(20), wy(75), wx(160) - wx(20), wy(180) - wy(75));
 
-        // Operative (Player)
-        const p = state.player;
-        ctx.save();
-        ctx.fillStyle = '#e11d48';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y - 16, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#f43f5e';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+  // Sector labels
+  ctx.fillStyle = 'rgba(203, 213, 225, 0.28)';
+  ctx.font = 'bold 9px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('S1: LANDING BAY', wx(26), wy(272));
+  ctx.fillText('S2: MAGMA SHAFT', wx(190), wy(272));
+  ctx.fillText('S3: UPPER RUINS', wx(170), wy(130));
+  ctx.fillText('S4: CORE SANCTUARY', wx(26), wy(92));
 
-        // Visor
-        ctx.fillStyle = '#10b981';
-        ctx.fillRect(p.x + (p.facing === 1 ? 2 : -8), p.y - 19, 6, 4);
+  // Floors
+  ctx.fillStyle = '#581c87';
+  ctx.fillRect(wx(20), wy(356), wx(380) - wx(20), 14);
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(wx(160), wy(198), wx(380) - wx(160), 10);
+  ctx.fillStyle = '#881337';
+  ctx.fillRect(wx(20), wy(156), wx(162) - wx(20), 10);
 
-        // Body suit
-        ctx.fillStyle = '#f59e0b';
-        ctx.fillRect(p.x - 8, p.y - 6, 16, 16);
+  // Shaft jump chevrons at x=335
+  ctx.strokeStyle = p.hasDoubleJump ? 'rgba(52, 211, 153, 0.55)' : 'rgba(148, 163, 184, 0.2)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 3; i++) {
+    const cy = wy(320 - i * 40 - ((animTime * 35) % 40));
+    ctx.beginPath();
+    ctx.moveTo(wx(338), cy + 6);
+    ctx.lineTo(wx(348), cy);
+    ctx.lineTo(wx(358), cy + 6);
+    ctx.stroke();
+  }
 
-        // Arm Cannon
-        ctx.fillStyle = '#38bdf8';
-        ctx.fillRect(p.x + (p.facing === 1 ? 8 : -14), p.y - 12, 8, 5);
-        ctx.restore();
+  // Red Blast Door (Missile required)
+  const redDoor = state.gates.find((g) => g.id === 'door_red');
+  if (redDoor && !redDoor.open) {
+    ctx.fillStyle = '#dc2626';
+    rrect(wx(redDoor.x) - 5, wy(285), 10, wy(356) - wy(285), 3);
+    ctx.fill();
+    ctx.strokeStyle = '#fca5a5';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
 
-        if (fxBeams.length > 0) {
-          requestAnimationFrame(render);
-        }
-      }
+  // Laser Gate (Phase Dash required)
+  const laser = state.gates.find((g) => g.id === 'laser_gate');
+  if (laser && !laser.open) {
+    ctx.strokeStyle = Math.sin(animTime * 30) > 0 ? '#38bdf8' : '#7dd3fc';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(wx(laser.x), wy(120));
+    ctx.lineTo(wx(laser.x), wy(198));
+    ctx.stroke();
+  }
 
-      // Button listeners
-      const btnLeft = document.getElementById('btn-left');
-      const btnRight = document.getElementById('btn-right');
-      const btnJump = document.getElementById('btn-jump');
-      const btnFire = document.getElementById('btn-fire');
-      const btnMissile = document.getElementById('btn-missile');
-      const btnDash = document.getElementById('btn-dash');
-      const btnRest = document.getElementById('btn-rest');
+  // Ability Upgrade Orbs
+  for (const up of state.upgrades) {
+    if (up.collected) continue;
+    const ux = wx(up.x);
+    const uy = wy(up.y) + Math.sin(animTime * 4 + up.x) * 3;
+    ctx.fillStyle = '#4c1d95';
+    ctx.fillRect(ux - 10, wy(up.y) + 8, 20, 8);
+    ctx.fillStyle = up.type === 'missile' ? '#ef4444' : up.type === 'double_jump' ? '#10b981' : '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(ux, uy - 2, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
 
-      if (btnLeft) btnLeft.addEventListener('click', () => triggerAction('move_left'));
-      if (btnRight) btnRight.addEventListener('click', () => triggerAction('move_right'));
-      if (btnJump) btnJump.addEventListener('click', () => triggerAction('jump'));
-      if (btnFire) btnFire.addEventListener('click', () => triggerAction('fire'));
-      if (btnMissile) btnMissile.addEventListener('click', () => triggerAction('missile'));
-      if (btnDash) btnDash.addEventListener('click', () => triggerAction('dash'));
-      if (btnRest) btnRest.addEventListener('click', () => triggerAction('rest'));
+  // Beams & Missiles FX
+  for (const bm of beams) {
+    ctx.globalAlpha = Math.min(1, bm.life * 6);
+    ctx.strokeStyle = bm.color;
+    ctx.lineWidth = bm.width;
+    ctx.beginPath();
+    ctx.moveTo(bm.x1, bm.y1);
+    ctx.lineTo(bm.x2, bm.y2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 
-      if (btnRestart) {
-        btnRestart.addEventListener('click', () => {
-          state = ChasmCrawler.createState(Date.now() % 100000);
-          updateUI();
-          render();
-        });
-      }
+  // Enemies (smoothly interpolated)
+  for (const e of state.enemies) {
+    const ve = visEnemies[e.id] || e;
+    const ex = wx(ve.x);
+    const ey = wy(ve.y);
+    if (e.type === 'guardian') {
+      const pulse = 1 + Math.sin(animTime * 6) * 0.08;
+      ctx.save();
+      ctx.translate(ex, ey);
+      ctx.scale(pulse, pulse);
+      ctx.fillStyle = '#be123c';
+      ctx.beginPath();
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(0, 0, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
 
-      // Keyboard Controls
-      window.addEventListener('keydown', (e) => {
-        const k = e.key.toLowerCase();
-        if (k === 'arrowleft' || k === 'a') triggerAction('move_left');
-        else if (k === 'arrowright' || k === 'd') triggerAction('move_right');
-        else if (k === 'arrowup' || k === 'w') triggerAction('jump');
-        else if (k === ' ' || k === 'j') triggerAction('fire');
-        else if (k === 'k') triggerAction('missile');
-        else if (k === 'l') triggerAction('dash');
-        else if (k === 'r') triggerAction('rest');
-      });
+      ctx.fillStyle = '#450a0a';
+      ctx.fillRect(ex - 26, ey - 32, 52, 5);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(ex - 26, ey - 32, 52 * Math.max(0, e.hp / e.maxHp), 5);
+    } else if (e.type === 'skitter') {
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.arc(ex, ey, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#7dd3fc';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#e11d48';
+      rrect(ex - 9, ey + 2, 18, 10, 4);
+      ctx.fill();
+      ctx.fillStyle = '#fda4af';
+      ctx.fillRect(ex + (e.facing < 0 ? -6 : 2), ey + 4, 4, 3);
+    }
+  }
 
-      // PWA registration
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-      }
+  // Player Operative Varia (smoothly interpolated)
+  const px = wx(visPlayer.x);
+  const py = wy(visPlayer.y) - Math.sin(visPlayer.hop * Math.PI) * 14;
+  ctx.save();
+  ctx.translate(px, py);
+  // Helmet
+  ctx.fillStyle = '#e11d48';
+  ctx.beginPath();
+  ctx.arc(0, -14, 8.5, 0, Math.PI * 2);
+  ctx.fill();
+  // Visor
+  ctx.fillStyle = '#34d399';
+  ctx.fillRect(p.facing > 0 ? 1 : -7, -17, 6, 4);
+  // Power Suit Torso
+  ctx.fillStyle = '#f59e0b';
+  rrect(-7, -6, 14, 15, 3);
+  ctx.fill();
+  // Arm Cannon
+  ctx.fillStyle = '#38bdf8';
+  rrect(p.facing > 0 ? 6 : -14, -10, 8, 5, 2);
+  ctx.fill();
+  ctx.restore();
 
-      updateUI();
-      render();
-    })();
-  </script>
+  // Particles & Popups
+  for (const pt of particles) {
+    ctx.globalAlpha = Math.min(1, pt.life * 2.4);
+    ctx.fillStyle = pt.color;
+    ctx.fillRect(pt.x - 2, pt.y - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
+
+  for (const pop of popups) {
+    ctx.globalAlpha = Math.min(1, pop.life * 1.5);
+    ctx.fillStyle = pop.color;
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(pop.text, pop.x, pop.y);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+
+  // Objective Guide Ticker
+  let guide = 'Explore right to claim Missiles & blast the Red Door!';
+  if (!state.gates[0].open && p.missiles > 0) guide = 'Face the Red Door & fire MISSILE to breach Sector 2!';
+  else if (state.gates[0].open && !p.hasDoubleJump) guide = 'Head right across Sector 2 to unlock 2X JUMP!';
+  else if (p.hasDoubleJump && p.y > 220) guide = 'Stand in the right lift shaft (x>320) & press JUMP!';
+  else if (p.y <= 220 && !p.hasPhaseDash) guide = 'Claim PHASE DASH orb in Sector 3!';
+  else if (!state.gates[1].open && p.hasPhaseDash) guide = 'Face left & PHASE DASH through the cyan Laser Gate!';
+  else if (state.gates[1].open) guide = 'Destroy the Core Guardian in Sector 4 Sanctuary!';
+
+  ctx.fillStyle = '#c084fc';
+  ctx.font = '11.5px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(guide, W / 2, 424);
+
+  // Touch Controls
+  const legal = legalActions(state);
+  const holdL = keys['ArrowLeft'] || keys['a'] || keys['A'] || touchDir < 0;
+  const holdR = keys['ArrowRight'] || keys['d'] || keys['D'] || touchDir > 0;
+
+  for (const b of BTNS) {
+    let fill = '#1e1038';
+    let border = '#581c87';
+    let textCol = '#f3e8ff';
+
+    if (b.id === 'left' && holdL) { fill = '#6d28d9'; border = '#c084fc'; }
+    else if (b.id === 'right' && holdR) { fill = '#6d28d9'; border = '#c084fc'; }
+    else if (b.id === 'jump') { fill = '#065f46'; border = '#34d399'; }
+    else if (b.id === 'fire') { fill = '#0369a1'; border = '#38bdf8'; }
+    else if (b.id === 'missile') {
+      const ok = legal.includes('missile');
+      fill = ok ? '#991b1b' : '#140b24';
+      border = ok ? '#f87171' : '#2e1065';
+      textCol = ok ? '#fee2e2' : '#475569';
+    } else if (b.id === 'dash') {
+      const ok = legal.includes('dash');
+      fill = ok ? '#047857' : '#140b24';
+      border = ok ? '#34d399' : '#2e1065';
+      textCol = ok ? '#d1fae5' : '#475569';
+    }
+
+    ctx.fillStyle = fill;
+    rrect(b.x, b.y, b.w, b.h, 12);
+    ctx.fill();
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    ctx.fillStyle = textCol;
+    ctx.font = b.h > 58 ? 'bold 14px system-ui, sans-serif' : 'bold 11.5px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + 5);
+  }
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('A/D Move · W/Up Jump · Space/J Beam · K Missile · L/Shift Dash', W / 2, 602);
+
+  // End Overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(8, 4, 16, 0.9)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+
+    ctx.fillStyle = state.won ? '#34d399' : '#ef4444';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'CORE STABILIZED!' : 'SIGNAL LOST', W / 2, H / 2 - 40);
+
+    ctx.fillStyle = '#e9d5ff';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText(
+      state.won ? 'Core Guardian neutralized!' : 'Varia fell inside the alien citadel',
+      W / 2,
+      H / 2 - 6
+    );
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state), W / 2, H / 2 + 30);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere or press Space to descend again', W / 2, H / 2 + 72);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  updateSim(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

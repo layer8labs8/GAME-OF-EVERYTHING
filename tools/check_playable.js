@@ -11,7 +11,25 @@ const PLAYABLE = ['playable', 'polished', 'shipped'];
 
 function makeMockCanvas() {
   let drawCalls = 0;
-  const grad = () => ({ addColorStop() {} });
+  const makeGrad = () => ({
+    addColorStop(...args) {
+      if (args.length < 2) throw new TypeError('CanvasGradient.addColorStop requires 2 arguments');
+      const offset = Number(args[0]);
+      if (Number.isNaN(offset) || offset < 0 || offset > 1) {
+        throw new RangeError(`CanvasGradient.addColorStop invalid offset: ${args[0]}`);
+      }
+    },
+  });
+  const checkNums = (fn, args, count, startIdx = 0) => {
+    if (args.length < count) {
+      throw new TypeError(`ctx.${fn} requires at least ${count} arguments, but only ${args.length} present`);
+    }
+    for (let i = startIdx; i < count; i++) {
+      if (typeof args[i] === 'number' && Number.isNaN(args[i])) {
+        throw new TypeError(`ctx.${fn} argument ${i} is NaN`);
+      }
+    }
+  };
   const ctx = new Proxy(
     {
       fillStyle: '#000',
@@ -27,17 +45,59 @@ function makeMockCanvas() {
       shadowBlur: 0,
       shadowOffsetX: 0,
       shadowOffsetY: 0,
-      fillRect() { drawCalls++; },
-      strokeRect() { drawCalls++; },
-      clearRect() { drawCalls++; },
-      fillText() { drawCalls++; },
-      strokeText() { drawCalls++; },
+      fillRect(...args) { checkNums('fillRect', args, 4); drawCalls++; },
+      strokeRect(...args) { checkNums('strokeRect', args, 4); drawCalls++; },
+      clearRect(...args) { checkNums('clearRect', args, 4); drawCalls++; },
+      fillText(...args) { checkNums('fillText', args, 3, 1); drawCalls++; },
+      strokeText(...args) { checkNums('strokeText', args, 3, 1); drawCalls++; },
       fill() { drawCalls++; },
       stroke() { drawCalls++; },
-      drawImage() { drawCalls++; },
-      measureText(t) { return { width: String(t).length * 8 }; },
-      createLinearGradient: grad,
-      createRadialGradient: grad,
+      drawImage(...args) {
+        if (args.length < 3) throw new TypeError(`ctx.drawImage requires at least 3 arguments, got ${args.length}`);
+        drawCalls++;
+      },
+      arc(...args) {
+        checkNums('arc', args, 5);
+        if (args[2] < 0) throw new RangeError(`ctx.arc negative radius: ${args[2]}`);
+      },
+      arcTo(...args) {
+        checkNums('arcTo', args, 5);
+        if (args[4] < 0) throw new RangeError(`ctx.arcTo negative radius: ${args[4]}`);
+      },
+      ellipse(...args) {
+        checkNums('ellipse', args, 7);
+        if (args[2] < 0 || args[3] < 0) throw new RangeError(`ctx.ellipse negative radius: ${args[2]}, ${args[3]}`);
+      },
+      rect(...args) { checkNums('rect', args, 4); },
+      roundRect(...args) { checkNums('roundRect', args, 4); },
+      moveTo(...args) { checkNums('moveTo', args, 2); },
+      lineTo(...args) { checkNums('lineTo', args, 2); },
+      quadraticCurveTo(...args) { checkNums('quadraticCurveTo', args, 4); },
+      bezierCurveTo(...args) { checkNums('bezierCurveTo', args, 6); },
+      translate(...args) { checkNums('translate', args, 2); },
+      rotate(...args) { checkNums('rotate', args, 1); },
+      scale(...args) { checkNums('scale', args, 2); },
+      setTransform(...args) {
+        if (args.length !== 0 && args.length !== 1 && args.length < 6) {
+          throw new TypeError(`ctx.setTransform invalid argument count: ${args.length}`);
+        }
+      },
+      setLineDash(segments) {
+        if (!Array.isArray(segments)) throw new TypeError('ctx.setLineDash requires an array');
+      },
+      measureText(...args) {
+        if (args.length < 1) throw new TypeError('ctx.measureText requires 1 argument');
+        return { width: String(args[0]).length * 8 };
+      },
+      createLinearGradient(...args) {
+        checkNums('createLinearGradient', args, 4);
+        return makeGrad();
+      },
+      createRadialGradient(...args) {
+        checkNums('createRadialGradient', args, 6);
+        if (args[2] < 0 || args[5] < 0) throw new RangeError('ctx.createRadialGradient negative radius');
+        return makeGrad();
+      },
       getImageData(x, y, w, h) { return { data: new Uint8ClampedArray(Math.max(1, w * h * 4)) }; },
       putImageData() { drawCalls++; },
     },

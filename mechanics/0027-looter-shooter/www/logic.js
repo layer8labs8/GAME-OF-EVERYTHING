@@ -10,7 +10,7 @@
 
   const ARENA_MIN = 30;
   const ARENA_MAX = 370;
-  const MAX_STEPS = 160;
+  const MAX_STEPS = 550;
   const MAX_ROOMS = 4;
 
   const WEAPONS = {
@@ -109,7 +109,7 @@
   function legalActions(state) {
     if (isOver(state)) return [];
 
-    const actions = ['move_n', 'move_s', 'move_e', 'move_w'];
+    const actions = ['move_n', 'move_s', 'move_e', 'move_w', 'wait'];
     const p = state.player;
 
     if (p.ammo > 0) {
@@ -268,6 +268,10 @@
   }
 
   return {
+    ARENA_MIN,
+    ARENA_MAX,
+    MAX_STEPS,
+    MAX_ROOMS,
     createState,
     legalActions,
     step,

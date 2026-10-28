@@ -1,7 +1,7 @@
 (function (root) {
   const GRID_W = 10;
   const GRID_H = 8;
-  const MAX_STEPS = 120;
+  const MAX_STEPS = 300;
 
   const DIR_OFFSETS = {
     N: { x: 0, y: -1 },

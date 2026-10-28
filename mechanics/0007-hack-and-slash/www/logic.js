@@ -11,7 +11,7 @@
   const ARENA_WIDTH = 400;
   const FLOOR_Y = 320;
   const MAX_WAVES = 5;
-  const MAX_STEPS = 200;
+  const MAX_STEPS = 500;
 
   function nextRandom(state) {
     let s = (state.rng + 0x6d2b79f5) | 0;

@@ -1,589 +1,742 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Relic Rush - Collectathon</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#081326">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      background-color: #081326;
-      color: #f1f5f9;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      overflow-x: hidden;
-      touch-action: manipulation;
-    }
-    header {
-      width: 100%;
-      max-width: 480px;
-      padding: 10px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(15, 23, 42, 0.9);
-      border-bottom: 1px solid #1e293b;
-    }
-    .title-group h1 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #facc15;
-      letter-spacing: 0.5px;
-    }
-    .title-group .sub {
-      font-size: 0.72rem;
-      color: #94a3b8;
-    }
-    .score-badge {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #38bdf8;
-    }
-    .hud-bar {
-      width: 100%;
-      max-width: 480px;
-      padding: 8px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0f172a;
-      border-bottom: 1px solid #1e293b;
-      font-size: 0.8rem;
-    }
-    .relic-slots {
-      display: flex;
-      gap: 5px;
-    }
-    .relic-star {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #334155;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.65rem;
-      color: #64748b;
-    }
-    .relic-star.obtained {
-      background: #eab308;
-      color: #000;
-      box-shadow: 0 0 6px rgba(234, 179, 8, 0.8);
-      font-weight: 700;
-    }
-    .stamina-container {
-      width: 80px;
-      height: 8px;
-      background: #334155;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .stamina-fill {
-      height: 100%;
-      background: #22c55e;
-      transition: width 0.15s ease;
-    }
-    #gameCanvas {
-      background: #0b192e;
-      width: 100%;
-      max-width: 480px;
-      aspect-ratio: 1;
-      display: block;
-      border-bottom: 1px solid #1e293b;
-    }
-    .event-ticker {
-      width: 100%;
-      max-width: 480px;
-      padding: 6px 16px;
-      font-size: 0.75rem;
-      color: #facc15;
-      background: #0b1528;
-      border-bottom: 1px solid #1e293b;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .controls-panel {
-      width: 100%;
-      max-width: 480px;
-      padding: 10px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      background: #081326;
-      flex-grow: 1;
-    }
-    .control-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .dpad-btns {
-      display: flex;
-      gap: 6px;
-    }
-    .action-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      flex-grow: 1;
-    }
-    .btn-act {
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #f8fafc;
-      font-weight: 700;
-      font-size: 0.8rem;
-      border-radius: 6px;
-      padding: 10px 6px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-transform: uppercase;
-      transition: background 0.1s;
-    }
-    .btn-act:active {
-      background: #0284c7;
-      color: white;
-    }
-    .btn-jump {
-      background: #0284c7;
-      border-color: #38bdf8;
-    }
-    .btn-interact {
-      background: #eab308;
-      border-color: #facc15;
-      color: #0f172a;
-    }
-    .btn-glide {
-      background: #6366f1;
-      border-color: #818cf8;
-    }
-    .btn-pound {
-      background: #dc2626;
-      border-color: #f87171;
-    }
-    .bottom-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .btn-tool {
-      background: #1e293b;
-      color: #94a3b8;
-      border: 1px solid #334155;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      cursor: pointer;
-    }
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(3, 7, 18, 0.88);
-      backdrop-filter: blur(4px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
-      padding: 20px;
-    }
-    .modal-overlay.active {
-      display: flex;
-    }
-    .modal-box {
-      background: #0f172a;
-      border: 1px solid #facc15;
-      border-radius: 12px;
-      padding: 24px;
-      max-width: 340px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 8px 30px rgba(250, 204, 21, 0.2);
-    }
-    .modal-box h2 {
-      font-size: 1.3rem;
-      margin-bottom: 8px;
-    }
-    .modal-box.win h2 {
-      color: #facc15;
-    }
-    .modal-box.lose h2 {
-      color: #f43f5e;
-    }
-    .modal-box p {
-      color: #94a3b8;
-      font-size: 0.88rem;
-      margin-bottom: 16px;
-    }
-    .modal-box .btn-modal {
-      background: #eab308;
-      color: #0f172a;
-      border: none;
-      padding: 10px 20px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 100%;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#081326">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Relic Rush</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #081326; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <div class="title-group">
-      <h1>Relic Rush</h1>
-      <div class="sub">Celestial Sky Citadel</div>
-    </div>
-    <div class="score-badge" id="scoreDisp">0 PTS</div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const logic = window.RelicRush || window.GameLogic;
+const { PLATFORMS, createState, legalActions, step, isOver, score } = logic;
 
-  <div class="hud-bar">
-    <div class="relic-slots" id="relicSlots">
-      <div class="relic-star">&#9733;</div>
-      <div class="relic-star">&#9733;</div>
-      <div class="relic-star">&#9733;</div>
-      <div class="relic-star">&#9733;</div>
-      <div class="relic-star">&#9733;</div>
-    </div>
-    <div style="font-weight: 600; color: #38bdf8;" id="gemDisp">Gems: 0 / 40</div>
-    <div class="stamina-container">
-      <div class="stamina-fill" id="staminaFill" style="width: 100%;"></div>
-    </div>
-  </div>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <canvas id="gameCanvas" width="480" height="480"></canvas>
+const W = 360;
+const H = 640;
+const VIEW_Y = 98;
+const VIEW_H = 310;
+const SX = 16;
+const SY = 26;
 
-  <div class="event-ticker" id="eventTicker">Arrived at the Floating Citadel. 5 Celestial Relics await!</div>
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-  <div class="controls-panel">
-    <div class="control-row">
-      <div class="dpad-btns">
-        <button class="btn-act" id="btnLeft" style="width: 54px;">&larr;</button>
-        <button class="btn-act" id="btnRight" style="width: 54px;">&rarr;</button>
-      </div>
-      <div class="action-grid">
-        <button class="btn-act btn-jump" id="btnJump">Jump</button>
-        <button class="btn-act btn-interact" id="btnInteract">Act (E)</button>
-        <button class="btn-act btn-glide" id="btnGlide">Glide</button>
-      </div>
-    </div>
-    <div class="bottom-row">
-      <button class="btn-tool btn-pound" id="btnPound">Pound (S)</button>
-      <button class="btn-tool" id="btnRest">Rest (R)</button>
-      <button class="btn-tool" id="btnReset">Restart (Esc)</button>
-    </div>
-  </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0037-best') || 0; } catch (e) {}
 
-  <div class="modal-overlay" id="endModal">
-    <div class="modal-box" id="modalBox">
-      <h2 id="modalTitle">Victory!</h2>
-      <p id="modalMsg">All Relics restored.</p>
-      <button class="btn-modal" id="modalBtn">Replay Expedition</button>
-    </div>
-  </div>
+let state = createState(Date.now());
+let visX = state.player.x;
+let visY = state.player.y;
+let camX = visX * SX - W / 2;
+let camY = -visY * SY - VIEW_H * 0.58;
+let facing = 1;
+let animTime = 0;
+let shake = 0;
+let overAt = 0;
 
-  <script src="logic.js"></script>
-  <script>
-    (function () {
-      'use strict';
+let particles = [];
+let popups = [];
 
-      const canvas = document.getElementById('gameCanvas');
-      const ctx = canvas ? canvas.getContext('2d') : null;
+const keys = {};
+let touchDir = 0;
+let holdGlide = false;
+let activeBtn = '';
+let activePointer = null;
+let dragAnchorX = null;
+let moveTimer = 0;
+let airTimer = 0;
+let restTimer = 0;
 
-      let state = null;
+const BTNS = [
+  { id: 'left', x: 16, y: 504, w: 68, h: 68, label: '◀' },
+  { id: 'right', x: 92, y: 504, w: 68, h: 68, label: '▶' },
+  { id: 'jump', x: 174, y: 504, w: 86, h: 68, label: 'JUMP' },
+  { id: 'interact', x: 268, y: 504, w: 76, h: 68, label: 'ACT' },
+  { id: 'glide', x: 174, y: 442, w: 86, h: 52, label: 'GLIDE' },
+  { id: 'pound', x: 268, y: 442, w: 76, h: 52, label: 'POUND' },
+  { id: 'reset', x: 16, y: 442, w: 144, h: 52, label: '↺ NEW EXPEDITION' }
+];
 
-      function initGame() {
-        state = RelicRush.createState(12345);
-        updateUI();
-        render();
-      }
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
-      function updateUI() {
-        if (!state) return;
+function addBurst(wx, wy, color, count) {
+  for (let i = 0; i < count; i++) {
+    const a = (Math.PI * 2 * i) / count + (i % 3) * 0.22;
+    const sp = 35 + (i % 4) * 20;
+    particles.push({ x: wx * SX, y: -wy * SY - 10, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 15, color, life: 0.5 });
+  }
+}
 
-        const scoreDisp = document.getElementById('scoreDisp');
-        if (scoreDisp) scoreDisp.textContent = state.scoreVal + ' PTS';
+function addPopup(wx, wy, text, color) {
+  popups.push({ x: wx * SX, y: -wy * SY - 24, text, color, life: 0.95 });
+}
 
-        const gemDisp = document.getElementById('gemDisp');
-        if (gemDisp) gemDisp.textContent = 'Gems: ' + state.gemsCollected + ' / ' + state.totalGems;
+function restart() {
+  state = createState(Date.now());
+  visX = state.player.x;
+  visY = state.player.y;
+  camX = visX * SX - W / 2;
+  camY = -visY * SY - VIEW_H * 0.58;
+  facing = 1;
+  shake = 0;
+  overAt = 0;
+  particles = [];
+  popups = [];
+  touchDir = 0;
+  holdGlide = false;
+  activeBtn = '';
+  activePointer = null;
+  dragAnchorX = null;
+  moveTimer = 0;
+  airTimer = 0;
+  restTimer = 0;
+}
 
-        const staminaFill = document.getElementById('staminaFill');
-        if (staminaFill) staminaFill.style.width = Math.max(0, Math.min(100, state.player.stamina)) + '%';
+function executeAction(act) {
+  if (isOver(state)) return false;
+  const legal = legalActions(state);
+  if (!legal.includes(act)) return false;
 
-        const eventTicker = document.getElementById('eventTicker');
-        if (eventTicker && state.lastEvent) eventTicker.textContent = state.lastEvent;
+  const prevGems = state.gemsCollected;
+  const prevRelics = state.relicsCollected;
+  const prevHp = state.player.hp;
+  const prevPound = state.player.abilities.groundPound;
+  const prevGlide = state.player.abilities.glide;
+  const prevGate = state.tributeGateOpen;
 
-        // Relic Stars
-        const relicSlots = document.getElementById('relicSlots');
-        if (relicSlots) {
-          let html = '';
-          for (let i = 0; i < 5; i++) {
-            const has = state.relics[i] && state.relics[i].collected;
-            html += '<div class="relic-star' + (has ? ' obtained' : '') + '">&#9733;</div>';
-          }
-          relicSlots.innerHTML = html;
-        }
+  if (act === 'move_left') facing = -1;
+  else if (act === 'move_right' || act === 'glide') facing = 1;
 
-        // Modals
-        const modal = document.getElementById('endModal');
-        const modalBox = document.getElementById('modalBox');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalMsg = document.getElementById('modalMsg');
-        const modalBtn = document.getElementById('modalBtn');
+  if (act === 'jump' || act === 'double_jump') {
+    addBurst(state.player.x, state.player.y, '#38bdf8', 7);
+  } else if (act === 'ground_pound') {
+    shake = 6;
+  }
 
-        if (state.won) {
-          if (modal && modal.classList) modal.classList.add('active');
-          if (modalBox && modalBox.classList) {
-            modalBox.classList.remove('lose');
-            modalBox.classList.add('win');
-          }
-          if (modalTitle) modalTitle.textContent = 'CITADEL RESTORED!';
-          if (modalMsg) modalMsg.textContent = 'Found all 5 Relics and ' + state.gemsCollected + ' Gems! Score: ' + state.scoreVal;
-          if (modalBtn) modalBtn.onclick = () => {
-            if (modal && modal.classList) modal.classList.remove('active');
-            initGame();
-          };
-        } else if (state.lost) {
-          if (modal && modal.classList) modal.classList.add('active');
-          if (modalBox && modalBox.classList) {
-            modalBox.classList.remove('win');
-            modalBox.classList.add('lose');
-          }
-          if (modalTitle) modalTitle.textContent = 'EXPEDITION OVER';
-          if (modalMsg) modalMsg.textContent = state.player.hp <= 0 ? 'Fell into the void too many times.' : 'Expedition timed out.';
-          if (modalBtn) modalBtn.onclick = () => {
-            if (modal && modal.classList) modal.classList.remove('active');
-            initGame();
-          };
+  const res = step(state, act);
+
+  if (act === 'ground_pound') {
+    addBurst(state.player.x, state.player.y, '#fbbf24', 14);
+  }
+
+  if (state.gemsCollected > prevGems) {
+    addBurst(state.player.x, state.player.y, '#38bdf8', 8);
+    addPopup(state.player.x, state.player.y, '+15 GEM', '#38bdf8');
+  }
+  if (state.relicsCollected > prevRelics) {
+    addBurst(state.player.x, state.player.y, '#facc15', 18);
+    addPopup(state.player.x, state.player.y, '★ RELIC +250!', '#facc15');
+    shake = 4;
+  }
+  if (!prevPound && state.player.abilities.groundPound) {
+    addBurst(5, 3, '#ef4444', 14);
+    addPopup(5, 3, 'GROUND POUND!', '#f87171');
+  }
+  if (!prevGlide && state.player.abilities.glide) {
+    addBurst(14, 5, '#818cf8', 14);
+    addPopup(14, 5, 'GLIDER WINGS!', '#a5b4fc');
+  }
+  if (!prevGate && state.tributeGateOpen) {
+    addBurst(25, 2, '#34d399', 14);
+    addPopup(25, 2, 'GATE UNLOCKED!', '#34d399');
+  }
+  if (state.player.hp < prevHp) {
+    visX = state.player.x;
+    visY = state.player.y;
+    shake = 7;
+    addPopup(state.player.x, state.player.y, 'VOID FALL!', '#ef4444');
+  }
+
+  if (res.done) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0037-best', best); } catch (e) {}
+    }
+  }
+  return true;
+}
+
+function smartJump() {
+  if (state.player.onGround) {
+    if (state.player.stamina < 10) executeAction('rest');
+    if (executeAction('jump')) airTimer = 0;
+  } else {
+    if (executeAction('double_jump')) airTimer = 0;
+    else if (executeAction('glide')) airTimer = 0;
+  }
+}
+
+function isNearInteractable() {
+  const p = state.player;
+  if (Math.abs(p.x - 5) <= 1 && Math.abs(p.y - 3) <= 1 && !p.abilities.groundPound) return 'SHRINE: POUND';
+  if (Math.abs(p.x - 14) <= 1 && Math.abs(p.y - 5) <= 1 && !p.abilities.glide) return 'SHRINE: GLIDE';
+  if (Math.abs(p.x - 25) <= 1 && !state.tributeGateOpen) return `GATE (${state.gemsCollected}/20 GEMS)`;
+  if (Math.abs(p.x - 36) <= 1 && p.y >= 12) return `BEACON (${state.relicsCollected}/5★)`;
+  return '';
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function hitBtn(p) {
+  for (const b of BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) return b.id;
+  }
+  return '';
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 350) restart();
+    return;
+  }
+  canvas.setPointerCapture(e.pointerId);
+  activePointer = e.pointerId;
+
+  const bid = hitBtn(p);
+  activeBtn = bid;
+  if (bid === 'reset') { restart(); return; }
+  if (bid === 'left') {
+    touchDir = -1;
+    if (executeAction('move_left')) { moveTimer = 0.13; airTimer = 0; }
+    return;
+  }
+  if (bid === 'right') {
+    touchDir = 1;
+    if (executeAction('move_right')) { moveTimer = 0.13; airTimer = 0; }
+    return;
+  }
+  if (bid === 'jump') { smartJump(); return; }
+  if (bid === 'interact') { executeAction('interact'); return; }
+  if (bid === 'glide') { holdGlide = true; if (executeAction('glide')) airTimer = 0; return; }
+  if (bid === 'pound') { if (executeAction('ground_pound')) airTimer = 0; return; }
+
+  // Direct viewport touch: tap interactable if nearby, upper viewport jumps, lower steers
+  dragAnchorX = p.x;
+  if (isNearInteractable() && p.y >= VIEW_Y && p.y <= VIEW_Y + VIEW_H && Math.abs(p.x - W / 2) < 55) {
+    executeAction('interact');
+    return;
+  }
+  if (p.y < VIEW_Y + VIEW_H * 0.52) {
+    smartJump();
+  } else {
+    touchDir = p.x < W / 2 ? -1 : 1;
+    if (executeAction(touchDir < 0 ? 'move_left' : 'move_right')) { moveTimer = 0.13; airTimer = 0; }
+  }
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (activePointer !== e.pointerId || isOver(state)) return;
+  const p = toLogical(e);
+  const bid = hitBtn(p);
+  if (bid === 'left') { activeBtn = 'left'; touchDir = -1; return; }
+  if (bid === 'right') { activeBtn = 'right'; touchDir = 1; return; }
+  if (dragAnchorX !== null && p.y < 435) {
+    const dx = p.x - dragAnchorX;
+    if (Math.abs(dx) > 14) touchDir = dx < 0 ? -1 : 1;
+  }
+});
+
+function clearPointer() {
+  activePointer = null;
+  dragAnchorX = null;
+  touchDir = 0;
+  holdGlide = false;
+  activeBtn = '';
+}
+canvas.addEventListener('pointerup', clearPointer);
+canvas.addEventListener('pointercancel', clearPointer);
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 350) restart();
+    return;
+  }
+  const wasDown = keys[e.key];
+  keys[e.key] = true;
+
+  if (!wasDown) {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+      e.preventDefault();
+      if (executeAction('move_left')) { moveTimer = 0.13; airTimer = 0; }
+    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+      e.preventDefault();
+      if (executeAction('move_right')) { moveTimer = 0.13; airTimer = 0; }
+    } else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+      e.preventDefault();
+      smartJump();
+    } else if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') {
+      e.preventDefault();
+      executeAction('interact');
+    } else if (e.key === 'g' || e.key === 'G' || e.key === 'Shift') {
+      e.preventDefault();
+      if (executeAction('glide')) airTimer = 0;
+    } else if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (executeAction('ground_pound')) airTimer = 0;
+    } else if (e.key === 'r' || e.key === 'R') {
+      restart();
+    }
+  }
+});
+
+addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+function updateSim(dt) {
+  animTime += dt;
+  if (shake > 0) shake = Math.max(0, shake - dt * 26);
+  if (moveTimer > 0) moveTimer = Math.max(0, moveTimer - dt);
+
+  if (!isOver(state)) {
+    let dir = touchDir;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) dir = -1;
+    else if (keys['ArrowRight'] || keys['d'] || keys['D']) dir = 1;
+    const glidingNow = holdGlide || keys['g'] || keys['G'] || keys['Shift'];
+
+    if (!state.player.onGround) {
+      airTimer += dt;
+      const AIR_STEP = 0.14;
+      while (airTimer >= AIR_STEP && !isOver(state) && !state.player.onGround) {
+        airTimer -= AIR_STEP;
+        if (glidingNow && legalActions(state).includes('glide')) {
+          executeAction('glide');
+        } else if (dir < 0 && legalActions(state).includes('move_left')) {
+          executeAction('move_left');
+        } else if (dir > 0 && legalActions(state).includes('move_right')) {
+          executeAction('move_right');
         } else {
-          if (modal && modal.classList) modal.classList.remove('active');
+          // Pure vertical gravity tick when coasting mid-air
+          executeAction('interact');
         }
       }
-
-      function handleAction(action) {
-        if (!state || state.won || state.lost) return;
-        const legal = RelicRush.legalActions(state);
-        if (!legal.includes(action)) return;
-
-        RelicRush.step(state, action);
-        updateUI();
-        render();
+    } else {
+      airTimer = 0;
+      if (dir !== 0 && moveTimer <= 0) {
+        if (executeAction(dir < 0 ? 'move_left' : 'move_right')) {
+          moveTimer = 0.125;
+          restTimer = 0;
+        }
+      } else if (dir === 0 && state.player.stamina < state.player.maxStamina) {
+        restTimer += dt;
+        if (restTimer >= 0.28) {
+          restTimer = 0;
+          executeAction('rest');
+        }
       }
+    }
+  }
 
-      function render() {
-        if (!ctx || !state) return;
-        const w = canvas.width;
-        const h = canvas.height;
+  // Smooth 60 FPS player & camera interpolation
+  const k = Math.min(1, dt * 18);
+  visX += (state.player.x - visX) * k;
+  visY += (state.player.y - visY) * k;
 
-        // Camera tracking player horizontally and vertically
-        const camX = state.player.x * 12 - w / 2;
-        const camY = (14 - state.player.y) * 28 - h / 2;
+  const targetCamX = visX * SX - W / 2;
+  const targetCamY = -visY * SY - VIEW_H * 0.58;
+  camX += (targetCamX - camX) * Math.min(1, dt * 10);
+  camY += (targetCamY - camY) * Math.min(1, dt * 10);
 
-        ctx.fillStyle = '#081326';
-        ctx.fillRect(0, 0, w, h);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.vy += 120 * dt;
+    pt.life -= dt;
+    if (pt.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = popups.length - 1; i >= 0; i--) {
+    popups[i].y -= 26 * dt;
+    popups[i].life -= dt;
+    if (popups[i].life <= 0) popups.splice(i, 1);
+  }
+}
 
-        ctx.save();
-        ctx.translate(-camX, -camY);
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0f2447');
+  bg.addColorStop(0.55, '#081326');
+  bg.addColorStop(1, '#040914');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
 
-        // 1. Draw Floating Platforms
-        for (let i = 0; i < RelicRush.PLATFORMS.length; i++) {
-          const plat = RelicRush.PLATFORMS[i];
-          const px = plat.x1 * 12;
-          const pw = (plat.x2 - plat.x1) * 12;
-          const py = (14 - plat.y) * 28;
+  const p = state.player;
 
-          // Grass surface
-          ctx.fillStyle = '#22c55e';
-          ctx.fillRect(px, py, pw, 6);
+  // Top Header HUD
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('SCORE', 16, 26);
+  ctx.textAlign = 'center';
+  ctx.fillText('CELESTIAL RELICS', W / 2, 26);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST', W - 16, 26);
 
-          // Island earthen underbelly
-          ctx.fillStyle = '#78350f';
-          ctx.beginPath();
-          ctx.moveTo(px, py + 6);
-          ctx.lineTo(px + pw, py + 6);
-          ctx.lineTo(px + pw * 0.7, py + 36);
-          ctx.lineTo(px + pw * 0.3, py + 36);
-          ctx.closePath();
-          ctx.fill();
-        }
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 24px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(score(state), 16, 54);
 
-        // 2. Draw Shrines
-        // Ground pound shrine at x=5, y=3
-        const s1x = 5 * 12;
-        const s1y = (14 - 3) * 28 - 20;
-        ctx.fillStyle = state.player.abilities.groundPound ? '#475569' : '#dc2626';
-        ctx.fillRect(s1x - 8, s1y, 16, 20);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '10px sans-serif';
-        ctx.fillText('P', s1x - 3, s1y + 14);
+  // 5 Relic Stars
+  for (let i = 0; i < 5; i++) {
+    const has = state.relics[i] && state.relics[i].collected;
+    ctx.fillStyle = has ? '#facc15' : '#1e293b';
+    ctx.font = 'bold 19px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('★', W / 2 - 40 + i * 20, 53);
+  }
 
-        // Glide shrine at x=14, y=5
-        const s2x = 14 * 12;
-        const s2y = (14 - 5) * 28 - 20;
-        ctx.fillStyle = state.player.abilities.glide ? '#475569' : '#6366f1';
-        ctx.fillRect(s2x - 8, s2y, 16, 20);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText('G', s2x - 4, s2y + 14);
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 20px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(best, W - 16, 52);
 
-        // Stone chest at x=14, y=1
-        const cx = 14 * 12;
-        const cy = (14 - 1) * 28 - 14;
-        ctx.fillStyle = state.chestSmashed ? '#334155' : '#ca8a04';
-        ctx.fillRect(cx - 8, cy, 16, 14);
+  // Gems + HP + Stamina Bar Row
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`◆ ${state.gemsCollected}/${state.totalGems} Gems`, 16, 82);
 
-        // Tribute Gate at x=25, y=2
-        const gx = 25 * 12;
-        const gy = (14 - 2) * 28 - 36;
-        ctx.fillStyle = state.tributeGateOpen ? 'rgba(56, 189, 248, 0.2)' : '#0284c7';
-        ctx.fillRect(gx - 4, gy, 8, 36);
+  ctx.fillStyle = '#f43f5e';
+  ctx.textAlign = 'center';
+  ctx.fillText(`♥ ${p.hp}%`, W / 2 + 8, 82);
 
-        // Celestial Beacon at x=36, y=12
-        const bx = 36 * 12;
-        const by = (14 - 12) * 28 - 24;
-        ctx.fillStyle = state.relicsCollected >= 5 ? '#facc15' : '#475569';
-        ctx.beginPath();
-        ctx.arc(bx, by, 12, 0, Math.PI * 2);
-        ctx.fill();
+  ctx.fillStyle = '#1e293b';
+  rrect(W - 106, 72, 90, 12, 6);
+  ctx.fill();
+  ctx.fillStyle = '#22c55e';
+  if (p.stamina > 0) {
+    rrect(W - 106, 72, Math.max(8, 90 * (p.stamina / p.maxStamina)), 12, 6);
+    ctx.fill();
+  }
 
-        // 3. Draw Sky Gems
-        for (let i = 0; i < state.gems.length; i++) {
-          const g = state.gems[i];
-          if (!g.collected) {
-            const gx = g.x * 12;
-            const gy = (14 - g.y) * 28 - 10;
-            ctx.fillStyle = '#38bdf8';
-            ctx.beginPath();
-            ctx.moveTo(gx, gy - 6);
-            ctx.lineTo(gx + 5, gy);
-            ctx.lineTo(gx, gy + 6);
-            ctx.lineTo(gx - 5, gy);
-            ctx.closePath();
-            ctx.fill();
-          }
-        }
+  // Sky Citadel Viewport
+  ctx.save();
+  ctx.beginPath();
+  rrect(10, VIEW_Y, W - 20, VIEW_H, 12);
+  ctx.clip();
 
-        // 4. Draw Celestial Relics
-        for (let i = 0; i < state.relics.length; i++) {
-          const r = state.relics[i];
-          if (!r.collected && !r.insideChest) {
-            const rx = r.x * 12;
-            const ry = (14 - r.y) * 28 - 14;
-            ctx.fillStyle = '#facc15';
-            ctx.beginPath();
-            ctx.arc(rx, ry, 8, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
+  const sky = ctx.createLinearGradient(0, VIEW_Y, 0, VIEW_Y + VIEW_H);
+  sky.addColorStop(0, '#0c2348');
+  sky.addColorStop(0.65, '#133769');
+  sky.addColorStop(1, '#1e1b4b');
+  ctx.fillStyle = sky;
+  ctx.fillRect(10, VIEW_Y, W - 20, VIEW_H);
 
-        // 5. Draw Explorer Character
-        const ex = state.player.x * 12;
-        const ey = (14 - state.player.y) * 28 - 16;
+  // Parallax clouds
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  for (let i = 0; i < 6; i++) {
+    const cx = ((i * 95 - camX * 0.25 + animTime * 6) % 440 + 440) % 440 - 40;
+    const cy = VIEW_Y + 36 + (i % 3) * 65;
+    rrect(cx, cy, 64, 18, 9);
+    ctx.fill();
+  }
 
-        ctx.fillStyle = '#38bdf8';
-        ctx.beginPath();
-        ctx.arc(ex, ey - 6, 8, 0, Math.PI * 2); // head
-        ctx.fill();
+  if (shake > 0.1) {
+    ctx.translate(Math.sin(animTime * 55) * shake, Math.cos(animTime * 48) * shake * 0.6);
+  }
+  ctx.translate(-camX, VIEW_Y - camY);
 
-        ctx.fillStyle = '#eab308'; // backpack
-        ctx.fillRect(ex - 6, ey, 12, 14);
+  // Floating Islands
+  for (const plat of PLATFORMS) {
+    const px = plat.x1 * SX - 6;
+    const pw = (plat.x2 - plat.x1) * SX + 12;
+    const py = -plat.y * SY;
 
-        if (!state.player.onGround && state.player.abilities.glide) {
-          // Glider wings
-          ctx.strokeStyle = '#818cf8';
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(ex - 16, ey);
-          ctx.lineTo(ex + 16, ey);
-          ctx.stroke();
-        }
+    ctx.fillStyle = '#78350f';
+    ctx.beginPath();
+    ctx.moveTo(px + 2, py + 6);
+    ctx.lineTo(px + pw - 2, py + 6);
+    ctx.lineTo(px + pw * 0.72, py + 32);
+    ctx.lineTo(px + pw * 0.28, py + 32);
+    ctx.closePath();
+    ctx.fill();
 
-        ctx.restore();
-      }
+    ctx.fillStyle = '#22c55e';
+    rrect(px, py, pw, 8, 4);
+    ctx.fill();
+  }
 
-      // Action Handlers
-      const btnLeft = document.getElementById('btnLeft');
-      if (btnLeft) btnLeft.onclick = () => handleAction('move_left');
+  // Shrine 1: Ground Pound (x=5, y=3)
+  const s1x = 5 * SX;
+  const s1y = -3 * SY - 24;
+  ctx.fillStyle = p.abilities.groundPound ? '#475569' : '#dc2626';
+  rrect(s1x - 10, s1y, 20, 24, 5);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('P', s1x, s1y + 16);
 
-      const btnRight = document.getElementById('btnRight');
-      if (btnRight) btnRight.onclick = () => handleAction('move_right');
+  // Shrine 2: Glider Wings (x=14, y=5)
+  const s2x = 14 * SX;
+  const s2y = -5 * SY - 24;
+  ctx.fillStyle = p.abilities.glide ? '#475569' : '#6366f1';
+  rrect(s2x - 10, s2y, 20, 24, 5);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('G', s2x, s2y + 16);
 
-      const btnJump = document.getElementById('btnJump');
-      if (btnJump) btnJump.onclick = () => {
-        if (state && !state.player.onGround) handleAction('double_jump');
-        else handleAction('jump');
-      };
+  // Reinforced Stone Chest (x=14, y=1)
+  const chX = 14 * SX;
+  const chY = -1 * SY - 16;
+  ctx.fillStyle = state.chestSmashed ? '#334155' : '#ca8a04';
+  rrect(chX - 11, chY, 22, 16, 4);
+  ctx.fill();
+  if (!state.chestSmashed) {
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
 
-      const btnInteract = document.getElementById('btnInteract');
-      if (btnInteract) btnInteract.onclick = () => handleAction('interact');
+  // Tribute Gate (x=25, y=2)
+  const gtX = 25 * SX;
+  const gtY = -2 * SY - 44;
+  ctx.fillStyle = state.tributeGateOpen ? 'rgba(56, 189, 248, 0.22)' : '#0284c7';
+  rrect(gtX - 5, gtY, 10, 44, 3);
+  ctx.fill();
 
-      const btnGlide = document.getElementById('btnGlide');
-      if (btnGlide) btnGlide.onclick = () => handleAction('glide');
+  // Celestial Beacon (x=36, y=12)
+  const bcX = 36 * SX;
+  const bcY = -12 * SY - 26;
+  ctx.fillStyle = state.relicsCollected >= 5 ? '#facc15' : '#475569';
+  ctx.beginPath();
+  ctx.arc(bcX, bcY, 13 + Math.sin(animTime * 5) * 1.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = state.relicsCollected >= 5 ? '#fef08a' : '#94a3b8';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
-      const btnPound = document.getElementById('btnPound');
-      if (btnPound) btnPound.onclick = () => handleAction('ground_pound');
+  // Sky Gems (spinning & bobbing)
+  for (let i = 0; i < state.gems.length; i++) {
+    const g = state.gems[i];
+    if (g.collected) continue;
+    const gx = g.x * SX;
+    const gy = -g.y * SY - 12 + Math.sin(animTime * 4 + i * 0.7) * 2.5;
+    const spin = 0.4 + 0.6 * Math.abs(Math.cos(animTime * 3.2 + i));
+    ctx.save();
+    ctx.translate(gx, gy);
+    ctx.scale(spin, 1);
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(0, -6.5);
+    ctx.lineTo(5.5, 0);
+    ctx.lineTo(0, 6.5);
+    ctx.lineTo(-5.5, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
 
-      const btnRest = document.getElementById('btnRest');
-      if (btnRest) btnRest.onclick = () => handleAction('rest');
+  // Celestial Relics
+  for (const r of state.relics) {
+    if (r.collected || r.insideChest) continue;
+    const rx = r.x * SX;
+    const ry = -r.y * SY - 16 + Math.sin(animTime * 3.5 + r.id) * 3.5;
+    ctx.save();
+    ctx.translate(rx, ry);
+    ctx.rotate(animTime * 1.8);
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(0, 0, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
 
-      const btnReset = document.getElementById('btnReset');
-      if (btnReset) btnReset.onclick = initGame;
+  // Explorer Character (interpolated)
+  const ex = visX * SX;
+  const ey = -visY * SY - 16;
+  ctx.save();
+  ctx.translate(ex, ey);
+  if (!p.onGround && p.abilities.glide) {
+    ctx.strokeStyle = '#818cf8';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(-16, -2);
+    ctx.lineTo(0, -7);
+    ctx.lineTo(16, -2);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#eab308';
+  rrect(-6, -2, 12, 15, 4);
+  ctx.fill();
+  ctx.fillStyle = '#38bdf8';
+  ctx.beginPath();
+  ctx.arc(0, -8, 7.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(facing > 0 ? 1 : -5, -10, 4, 3);
+  ctx.restore();
 
-      // Keyboard Controls
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-          e.preventDefault();
-          handleAction('move_left');
-        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-          e.preventDefault();
-          handleAction('move_right');
-        } else if (e.key === ' ' || e.key === 'w' || e.key === 'W') {
-          e.preventDefault();
-          if (state && !state.player.onGround) handleAction('double_jump');
-          else handleAction('jump');
-        } else if (e.key === 'e' || e.key === 'E') {
-          e.preventDefault();
-          handleAction('interact');
-        } else if (e.key === 'g' || e.key === 'G') {
-          e.preventDefault();
-          handleAction('glide');
-        } else if (e.key === 's' || e.key === 'S') {
-          e.preventDefault();
-          handleAction('ground_pound');
-        } else if (e.key === 'r' || e.key === 'R') {
-          e.preventDefault();
-          handleAction('rest');
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          initGame();
-        }
-      });
+  // Particles & Popups in world space
+  for (const pt of particles) {
+    ctx.globalAlpha = Math.min(1, pt.life * 2.2);
+    ctx.fillStyle = pt.color;
+    ctx.fillRect(pt.x - 2, pt.y - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
 
-      // PWA service worker
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').catch(() => {});
-        });
-      }
+  for (const pop of popups) {
+    ctx.globalAlpha = Math.min(1, pop.life * 1.5);
+    ctx.fillStyle = pop.color;
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(pop.text, pop.x, pop.y);
+  }
+  ctx.globalAlpha = 1;
 
-      initGame();
-    })();
-  </script>
+  ctx.restore();
+
+  // Viewport border + nearby prompt pill
+  ctx.strokeStyle = '#1e3a5f';
+  ctx.lineWidth = 2;
+  rrect(10, VIEW_Y, W - 20, VIEW_H, 12);
+  ctx.stroke();
+
+  const promptLabel = isNearInteractable();
+  if (promptLabel) {
+    ctx.fillStyle = 'rgba(234, 179, 8, 0.92)';
+    rrect(W / 2 - 92, VIEW_Y + 10, 184, 24, 12);
+    ctx.fill();
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`TAP ACT [E]: ${promptLabel}`, W / 2, VIEW_Y + 26);
+  }
+
+  // Event ticker
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = '11.5px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.lastEvent.slice(0, 52), W / 2, 427);
+
+  // Touch Controls
+  const legal = legalActions(state);
+  const holdL = keys['ArrowLeft'] || keys['a'] || keys['A'] || touchDir < 0;
+  const holdR = keys['ArrowRight'] || keys['d'] || keys['D'] || touchDir > 0;
+
+  for (const b of BTNS) {
+    let fill = '#13233f';
+    let border = '#2b4570';
+    let textCol = '#f8fafc';
+
+    if (b.id === 'left' && holdL) { fill = '#0284c7'; border = '#7dd3fc'; }
+    else if (b.id === 'right' && holdR) { fill = '#0284c7'; border = '#7dd3fc'; }
+    else if (b.id === 'jump') {
+      fill = '#0369a1';
+      border = '#38bdf8';
+    } else if (b.id === 'interact') {
+      fill = promptLabel ? '#eab308' : '#854d0e';
+      border = '#facc15';
+      textCol = promptLabel ? '#0f172a' : '#fef08a';
+    } else if (b.id === 'glide') {
+      const ok = legal.includes('glide');
+      fill = ok ? '#4f46e5' : '#0f1b31';
+      border = ok ? '#818cf8' : '#1e293b';
+      textCol = ok ? '#e0e7ff' : '#475569';
+    } else if (b.id === 'pound') {
+      const ok = legal.includes('ground_pound');
+      fill = ok ? '#b91c1c' : '#0f1b31';
+      border = ok ? '#f87171' : '#1e293b';
+      textCol = ok ? '#fee2e2' : '#475569';
+    }
+
+    ctx.fillStyle = fill;
+    rrect(b.x, b.y, b.w, b.h, 12);
+    ctx.fill();
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    ctx.fillStyle = textCol;
+    ctx.font = b.h > 58 ? 'bold 14px system-ui, sans-serif' : 'bold 11.5px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    const lbl = b.id === 'jump' && !p.onGround ? '2X JUMP' : b.label;
+    ctx.fillText(lbl, b.x + b.w / 2, b.y + b.h / 2 + 5);
+  }
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('A/D Run · Space Jump/2xJump · E Act · G Glide · S Ground Pound', W / 2, 602);
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(4, 9, 20, 0.9)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+
+    ctx.fillStyle = state.won ? '#facc15' : '#f43f5e';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'CITADEL RESTORED!' : 'EXPEDITION OVER', W / 2, H / 2 - 42);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText(
+      `Relics: ${state.relicsCollected}/5 · Gems: ${state.gemsCollected}/${state.totalGems}`,
+      W / 2,
+      H / 2 - 6
+    );
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state), W / 2, H / 2 + 30);
+
+    ctx.fillStyle = '#34d399';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere or press Space to explore again', W / 2, H / 2 + 72);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  updateSim(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

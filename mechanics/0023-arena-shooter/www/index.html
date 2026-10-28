@@ -1,428 +1,928 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Crimson Arena - Arena Shooter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0d0912">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-    body {
-      background: #09060d;
-      color: #fce7f3;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      touch-action: none;
-    }
-    #game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      max-width: 440px;
-      padding: 10px;
-    }
-    header {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    h1 {
-      font-size: 1.15rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #e11d48;
-      text-shadow: 0 0 10px rgba(225, 29, 72, 0.4);
-    }
-    .hud {
-      display: flex;
-      gap: 12px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #cbd5e1;
-    }
-    .hud span { color: #f8fafc; }
-    canvas {
-      background: #140d1e;
-      border: 2px solid #3b1d3d;
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
-      width: 100%;
-      max-width: 400px;
-      aspect-ratio: 1 / 1;
-    }
-    .weapon-bar {
-      display: flex;
-      gap: 8px;
-      width: 100%;
-      max-width: 400px;
-      margin-top: 8px;
-    }
-    .wep-btn {
-      flex: 1;
-      background: #1f142b;
-      border: 1px solid #4a2850;
-      color: #e2e8f0;
-      border-radius: 6px;
-      padding: 6px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-align: center;
-      cursor: pointer;
-    }
-    .wep-btn.active {
-      background: #881337;
-      border-color: #f43f5e;
-      color: #fff;
-    }
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr) repeat(2, 1fr);
-      gap: 6px;
-      width: 100%;
-      max-width: 400px;
-      margin-top: 8px;
-    }
-    .btn {
-      background: #251636;
-      color: #f8fafc;
-      border: 1px solid #4c2859;
-      border-radius: 6px;
-      padding: 10px 4px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.08s ease;
-    }
-    .btn:active {
-      transform: translateY(2px);
-      background: #4c2859;
-      border-color: #f43f5e;
-    }
-    .btn-fire {
-      background: #831843;
-      border-color: #ec4899;
-      color: #fdf2f8;
-    }
-    .btn-dodge {
-      background: #3b0764;
-      border-color: #a855f7;
-      color: #f3e8ff;
-    }
-    .key-hint {
-      font-size: 0.65rem;
-      opacity: 0.6;
-      margin-top: 2px;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#09060d">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Crimson Arena</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #09060d;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+  }
+</style>
 </head>
 <body>
-  <div id="game-container">
-    <header>
-      <h1>Crimson Arena</h1>
-      <div class="hud">
-        <div>WAVE: <span id="hud-wave">1/5</span></div>
-        <div>SCORE: <span id="hud-score">0</span></div>
-      </div>
-    </header>
-    <canvas id="canvas" width="400" height="400"></canvas>
-    <div class="weapon-bar">
-      <div class="wep-btn active" id="wep-blaster">1: BLASTER [∞]</div>
-      <div class="wep-btn" id="wep-shotgun">2: SHOTGUN [<span id="ammo-shells">12</span>]</div>
-      <div class="wep-btn" id="wep-plasma">3: PLASMA [<span id="ammo-plasma">6</span>]</div>
-    </div>
-    <div class="controls">
-      <button class="btn" id="btn-up">▲<span class="key-hint">W</span></button>
-      <button class="btn" id="btn-down">▼<span class="key-hint">S</span></button>
-      <button class="btn" id="btn-left">◀<span class="key-hint">A</span></button>
-      <button class="btn" id="btn-right">▶<span class="key-hint">D</span></button>
-      <button class="btn btn-fire" id="btn-fire">🔥 Fire<span class="key-hint">Space / IJKL</span></button>
-      <button class="btn btn-dodge" id="btn-dodge">⚡ Dodge<span class="key-hint">Shift</span></button>
-    </div>
-  </div>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const {
+  ARENA_SIZE = 400,
+  ARENA_MIN = 30,
+  ARENA_MAX = 370,
+  MAX_WAVES = 5,
+  createState,
+  legalActions,
+  step,
+  isOver,
+  score
+} = CrimsonArena;
 
-  <script src="logic.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 360;
+const H = 640;
+
+const VIEW_X = 10;
+const VIEW_Y = 68;
+const VIEW_S = 340;
+const A_SCALE = VIEW_S / ARENA_SIZE;
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+let best = 0;
+try { best = +localStorage.getItem('goe-0023-best') || 0; } catch (e) {}
+
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function toArena(lx, ly) {
+  return {
+    x: (lx - VIEW_X) / A_SCALE,
+    y: (ly - VIEW_Y) / A_SCALE
+  };
+}
+
+let state = createState(Date.now());
+let overAt = 0;
+let lastFacing = 'n';
+let visPlayer = { x: state.player.x, y: state.player.y, angle: -Math.PI / 2 };
+let visEnemies = new Map();
+let visProjectiles = new Map();
+let particles = [];
+let popups = [];
+let ghosts = [];
+let muzzleFlash = 0;
+let hurtFlash = 0;
+
+function syncEntitiesInstant() {
+  visPlayer.x = state.player.x;
+  visPlayer.y = state.player.y;
+  visEnemies.clear();
+  for (const e of state.enemies) {
+    visEnemies.set(e.id, { x: e.x, y: e.y, hp: e.hp, flash: 0 });
+  }
+  visProjectiles.clear();
+  for (const pr of state.projectiles) {
+    visProjectiles.set(pr.id, { x: pr.x, y: pr.y });
+  }
+}
+syncEntitiesInstant();
+
+function restart() {
+  state = createState(Date.now());
+  overAt = 0;
+  lastFacing = 'n';
+  particles = [];
+  popups = [];
+  ghosts = [];
+  muzzleFlash = 0;
+  hurtFlash = 0;
+  moveAcc = 0;
+  fireAcc = 0;
+  ambientAcc = 0;
+  syncEntitiesInstant();
+}
+
+function dirToAngle(dir) {
+  if (dir === 'n') return -Math.PI / 2;
+  if (dir === 's') return Math.PI / 2;
+  if (dir === 'w') return Math.PI;
+  return 0;
+}
+
+function closestCardinal(dx, dy) {
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'e' : 'w';
+  return dy >= 0 ? 's' : 'n';
+}
+
+function bestAutoAimDir() {
+  if (!state.enemies.length) return lastFacing;
+  const p = state.player;
+  let bestE = null;
+  let bestScore = Infinity;
+  for (const e of state.enemies) {
+    const dx = e.x - p.x;
+    const dy = e.y - p.y;
+    const d = Math.hypot(dx, dy);
+    const axisOff = Math.min(Math.abs(dx), Math.abs(dy));
+    const metric = d + axisOff * 1.4;
+    if (metric < bestScore) {
+      bestScore = metric;
+      bestE = e;
     }
+  }
+  if (!bestE) return lastFacing;
+  return closestCardinal(bestE.x - p.x, bestE.y - p.y);
+}
 
-    const logic = window.CrimsonArena;
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
-    const hudWave = document.getElementById('hud-wave');
-    const hudScore = document.getElementById('hud-score');
-    const ammoShells = document.getElementById('ammo-shells');
-    const ammoPlasma = document.getElementById('ammo-plasma');
-    const wepBlaster = document.getElementById('wep-blaster');
-    const wepShotgun = document.getElementById('wep-shotgun');
-    const wepPlasma = document.getElementById('wep-plasma');
-
-    let state = logic.createState(Math.floor(Math.random() * 100000));
-    let lastFacing = 'n';
-
-    function triggerAction(action) {
-      if (logic.isOver(state)) {
-        state = logic.createState(Math.floor(Math.random() * 100000));
-        render();
-        return;
-      }
-      const legal = logic.legalActions(state);
-      if (legal.includes(action)) {
-        logic.step(state, action);
-        render();
-      }
-    }
-
-    function move(dir) {
-      lastFacing = dir;
-      triggerAction(`move_${dir}`);
-    }
-
-    function fire(dir) {
-      triggerAction(`fire_${dir || lastFacing}`);
-    }
-
-    // Keyboard bindings
-    window.addEventListener('keydown', (e) => {
-      const code = e.code;
-      if (code === 'KeyW' || code === 'ArrowUp') move('n');
-      else if (code === 'KeyS' || code === 'ArrowDown') move('s');
-      else if (code === 'KeyA' || code === 'ArrowLeft') move('w');
-      else if (code === 'KeyD' || code === 'ArrowRight') move('e');
-      else if (code === 'KeyI') fire('n');
-      else if (code === 'KeyK') fire('s');
-      else if (code === 'KeyJ') fire('w');
-      else if (code === 'KeyL') fire('e');
-      else if (code === 'Space') fire(lastFacing);
-      else if (code === 'ShiftLeft' || code === 'ShiftRight') triggerAction('dodge');
-      else if (code === 'Digit1') triggerAction('select_blaster');
-      else if (code === 'Digit2') triggerAction('select_shotgun');
-      else if (code === 'Digit3') triggerAction('select_plasma');
-      else if (code === 'KeyR' && logic.isOver(state)) {
-        state = logic.createState(Math.floor(Math.random() * 100000));
-        render();
-      }
+function spawnBurst(ax, ay, col, count, spd = 85) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const s = spd * (0.35 + Math.random() * 0.8);
+    particles.push({
+      x: ax,
+      y: ay,
+      vx: Math.cos(a) * s,
+      vy: Math.sin(a) * s,
+      life: 0.28 + Math.random() * 0.2,
+      maxLife: 0.45,
+      col,
+      r: 2 + Math.random() * 2.5
     });
+  }
+}
 
-    // Touch bindings
-    document.getElementById('btn-up').addEventListener('pointerdown', () => move('n'));
-    document.getElementById('btn-down').addEventListener('pointerdown', () => move('s'));
-    document.getElementById('btn-left').addEventListener('pointerdown', () => move('w'));
-    document.getElementById('btn-right').addEventListener('pointerdown', () => move('e'));
-    document.getElementById('btn-fire').addEventListener('pointerdown', () => fire(lastFacing));
-    document.getElementById('btn-dodge').addEventListener('pointerdown', () => triggerAction('dodge'));
+function addPopup(ax, ay, txt, col) {
+  popups.push({ x: ax, y: ay, txt, col, life: 0.65 });
+}
 
-    wepBlaster.addEventListener('pointerdown', () => triggerAction('select_blaster'));
-    wepShotgun.addEventListener('pointerdown', () => triggerAction('select_shotgun'));
-    wepPlasma.addEventListener('pointerdown', () => triggerAction('select_plasma'));
+let moveAcc = 0;
+let fireAcc = 0;
+let ambientAcc = 0;
+let arenaTurnToggle = false;
 
-    function render() {
-      hudWave.textContent = `${state.wave}/5`;
-      hudScore.textContent = logic.score(state);
-      ammoShells.textContent = state.player.shells;
-      ammoPlasma.textContent = state.player.plasma;
+function execAction(act) {
+  if (isOver(state)) return false;
+  const legal = legalActions(state);
+  if (!legal.includes(act)) return false;
 
-      if (wepBlaster && wepBlaster.classList) {
-        wepBlaster.classList.toggle('active', state.player.weapon === 'blaster');
-        wepShotgun.classList.toggle('active', state.player.weapon === 'shotgun');
-        wepPlasma.classList.toggle('active', state.player.weapon === 'plasma');
-      }
+  const prevHp = state.player.hp;
+  const prevWave = state.wave;
+  const prevScore = score(state);
+  const prevEnemies = new Map();
+  for (const e of state.enemies) prevEnemies.set(e.id, { x: e.x, y: e.y, hp: e.hp, type: e.type });
+  const prevPx = state.player.x;
+  const prevPy = state.player.y;
 
-      // Arena background
-      ctx.fillStyle = '#0f0a17';
-      ctx.fillRect(0, 0, 400, 400);
+  if (act.startsWith('move_')) lastFacing = act.slice(5);
+  if (act.startsWith('fire_')) {
+    lastFacing = act.slice(5);
+    muzzleFlash = 0.12;
+  }
+  if (act === 'dodge') {
+    ghosts.push({ x: prevPx, y: prevPy, life: 0.28 });
+  }
 
-      // Arena perimeter
-      ctx.strokeStyle = '#4c1d42';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(30, 30, 340, 340);
+  const res = step(state, act);
+  ambientAcc = 0;
 
-      // Hazard Lines
-      ctx.strokeStyle = 'rgba(225, 29, 72, 0.15)';
-      ctx.lineWidth = 1;
-      for (let i = 60; i < 370; i += 40) {
-        ctx.beginPath();
-        ctx.moveTo(i, 30);
-        ctx.lineTo(i, 370);
-        ctx.stroke();
+  if (act === 'dodge') {
+    ghosts.push({ x: (prevPx + state.player.x) / 2, y: (prevPy + state.player.y) / 2, life: 0.22 });
+    spawnBurst(state.player.x, state.player.y, '#c084fc', 10, 90);
+  }
 
-        ctx.beginPath();
-        ctx.moveTo(30, i);
-        ctx.lineTo(370, i);
-        ctx.stroke();
-      }
-
-      // Pickups
-      for (const pk of state.pickups) {
-        ctx.save();
-        ctx.translate(pk.x, pk.y);
-        if (pk.type === 'medkit') {
-          ctx.fillStyle = '#22c55e';
-          ctx.fillRect(-8, -8, 16, 16);
-          ctx.fillStyle = '#fff';
-          ctx.fillRect(-6, -2, 12, 4);
-          ctx.fillRect(-2, -6, 4, 12);
-        } else if (pk.type === 'shells') {
-          ctx.fillStyle = '#eab308';
-          ctx.fillRect(-7, -7, 14, 14);
-        } else if (pk.type === 'plasma') {
-          ctx.fillStyle = '#06b6d4';
-          ctx.beginPath();
-          ctx.arc(0, 0, 8, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
-      }
-
-      // Projectiles
-      for (const pr of state.projectiles) {
-        ctx.save();
-        if (pr.owner === 'player') {
-          if (pr.pierce) {
-            ctx.fillStyle = '#22d3ee';
-            ctx.shadowColor = '#06b6d4';
-            ctx.shadowBlur = 8;
-            ctx.fillRect(pr.x - 4, pr.y - 4, 8, 8);
-          } else {
-            ctx.fillStyle = '#f43f5e';
-            ctx.shadowColor = '#e11d48';
-            ctx.shadowBlur = 6;
-            ctx.beginPath();
-            ctx.arc(pr.x, pr.y, 4, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        } else {
-          ctx.fillStyle = '#84cc16';
-          ctx.shadowColor = '#65a30d';
-          ctx.shadowBlur = 6;
-          ctx.beginPath();
-          ctx.arc(pr.x, pr.y, 5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
-      }
-
-      // Enemies
-      for (const e of state.enemies) {
-        ctx.save();
-        ctx.translate(e.x, e.y);
-
-        if (e.type === 'drone') {
-          ctx.fillStyle = '#e11d48';
-          ctx.beginPath();
-          ctx.arc(0, 0, 10, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#fda4af';
-          ctx.stroke();
-        } else if (e.type === 'spitter') {
-          ctx.fillStyle = '#84cc16';
-          ctx.beginPath();
-          ctx.arc(0, 0, 13, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#bef264';
-          ctx.stroke();
-        } else if (e.type === 'juggernaut') {
-          ctx.fillStyle = '#581c87';
-          ctx.beginPath();
-          ctx.arc(0, 0, 20, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#c084fc';
-          ctx.lineWidth = 3;
-          ctx.stroke();
-
-          // Health bar
-          const barW = 32;
-          ctx.fillStyle = 'rgba(0,0,0,0.6)';
-          ctx.fillRect(-barW / 2, -28, barW, 4);
-          ctx.fillStyle = '#ef4444';
-          ctx.fillRect(-barW / 2, -28, barW * (e.hp / e.maxHp), 4);
-        }
-
-        ctx.restore();
-      }
-
-      // Player
-      const p = state.player;
-      ctx.save();
-      ctx.translate(p.x, p.y);
-
-      // Body
-      ctx.fillStyle = '#0284c7';
-      ctx.beginPath();
-      ctx.arc(0, 0, 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-
-      // Gun Turret
-      ctx.strokeStyle = '#f8fafc';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      let gx = 0, gy = 0;
-      if (lastFacing === 'n') gy = -18;
-      else if (lastFacing === 's') gy = 18;
-      else if (lastFacing === 'w') gx = -18;
-      else if (lastFacing === 'e') gx = 18;
-      ctx.lineTo(gx, gy);
-      ctx.stroke();
-
-      ctx.restore();
-
-      // Top HUD: Health Bar
-      ctx.fillStyle = 'rgba(15, 10, 23, 0.8)';
-      ctx.fillRect(16, 12, 130, 10);
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(16, 12, 130 * (p.hp / p.maxHp), 10);
-      ctx.strokeStyle = '#4a2850';
-      ctx.strokeRect(16, 12, 130, 10);
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 9px sans-serif';
-      ctx.fillText(`HP ${p.hp}`, 20, 20);
-
-      // Overlays
-      if (state.won) {
-        ctx.fillStyle = 'rgba(9, 6, 13, 0.88)';
-        ctx.fillRect(0, 0, 400, 400);
-        ctx.fillStyle = '#4ade80';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('ARENA CONQUERED', 200, 180);
-        ctx.fillStyle = '#fce7f3';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`Final Score: ${logic.score(state)}`, 200, 210);
-        ctx.fillText('Tap or press R to battle again', 200, 240);
-      } else if (state.lost) {
-        ctx.fillStyle = 'rgba(9, 6, 13, 0.88)';
-        ctx.fillRect(0, 0, 400, 400);
-        ctx.fillStyle = '#f43f5e';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('WARRIOR DEFEATED', 200, 180);
-        ctx.fillStyle = '#fce7f3';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`Slain on Wave ${state.wave}`, 200, 210);
-        ctx.fillText('Tap or press R to restart', 200, 240);
+  // Detect enemy hits and kills
+  const aliveIds = new Set(state.enemies.map(e => e.id));
+  for (const [id, old] of prevEnemies) {
+    if (!aliveIds.has(id) && state.wave === prevWave) {
+      const col = old.type === 'juggernaut' ? '#c084fc' : old.type === 'spitter' ? '#a3e635' : '#fb7185';
+      spawnBurst(old.x, old.y, col, old.type === 'juggernaut' ? 18 : 11, 110);
+      const pts = old.type === 'juggernaut' ? 300 : old.type === 'spitter' ? 150 : 80;
+      addPopup(old.x, old.y - 10, '+' + pts, '#fde047');
+    } else if (aliveIds.has(id)) {
+      const cur = state.enemies.find(e => e.id === id);
+      if (cur && cur.hp < old.hp) {
+        const ve = visEnemies.get(id);
+        if (ve) ve.flash = 0.14;
+        spawnBurst(cur.x, cur.y, '#38bdf8', 5, 65);
+        addPopup(cur.x, cur.y - 12, '-' + (old.hp - cur.hp), '#f43f5e');
       }
     }
+  }
 
-    render();
-  </script>
+  if (state.wave > prevWave) {
+    addPopup(200, 170, 'WAVE ' + state.wave + '!', '#4ade80');
+    syncEntitiesInstant();
+  }
+
+  if (state.player.hp < prevHp) {
+    hurtFlash = 0.25;
+    spawnBurst(state.player.x, state.player.y, '#ef4444', 8, 80);
+  } else if (state.player.hp > prevHp && state.wave === prevWave) {
+    addPopup(state.player.x, state.player.y - 16, '+' + (state.player.hp - prevHp) + ' HP', '#4ade80');
+  }
+
+  const curScore = score(state);
+  if (curScore > best) {
+    best = curScore;
+    try { localStorage.setItem('goe-0023-best', best); } catch (e) {}
+  }
+  if (res.done) {
+    overAt = performance.now();
+  }
+  return true;
+}
+
+// Button definitions on 360x640 canvas
+const WEP_BTNS = [
+  { id: 'select_blaster', wep: 'blaster', x: 10, y: 416, w: 108, h: 34, label: '1 BLASTER' },
+  { id: 'select_shotgun', wep: 'shotgun', x: 126, y: 416, w: 108, h: 34, label: '2 SHOTGUN' },
+  { id: 'select_plasma', wep: 'plasma', x: 242, y: 416, w: 108, h: 34, label: '3 PLASMA' }
+];
+
+const DPAD_CX = 88;
+const DPAD_CY = 540;
+const DPAD_R = 64;
+
+const BTN_FIRE = { x: 232, y: 472, w: 116, h: 74 };
+const BTN_DODGE = { x: 232, y: 556, w: 116, h: 52 };
+
+// Multi-pointer tracking
+const pointers = new Map();
+
+function classifyPoint(p) {
+  for (const wb of WEP_BTNS) {
+    if (p.x >= wb.x && p.x <= wb.x + wb.w && p.y >= wb.y && p.y <= wb.y + wb.h) {
+      return { zone: 'wep', act: wb.id };
+    }
+  }
+  if (p.x >= BTN_FIRE.x && p.x <= BTN_FIRE.x + BTN_FIRE.w && p.y >= BTN_FIRE.y && p.y <= BTN_FIRE.y + BTN_FIRE.h) {
+    return { zone: 'fire' };
+  }
+  if (p.x >= BTN_DODGE.x && p.x <= BTN_DODGE.x + BTN_DODGE.w && p.y >= BTN_DODGE.y && p.y <= BTN_DODGE.y + BTN_DODGE.h) {
+    return { zone: 'dodge' };
+  }
+  if (Math.hypot(p.x - DPAD_CX, p.y - DPAD_CY) <= DPAD_R + 14) {
+    return { zone: 'dpad', x: p.x, y: p.y };
+  }
+  if (p.x >= VIEW_X && p.x <= VIEW_X + VIEW_S && p.y >= VIEW_Y && p.y <= VIEW_Y + VIEW_S) {
+    return { zone: 'arena', a: toArena(p.x, p.y) };
+  }
+  return { zone: 'none' };
+}
+
+function getDpadDir(px, py) {
+  const dx = px - DPAD_CX;
+  const dy = py - DPAD_CY;
+  if (Math.hypot(dx, dy) < 10) return null;
+  return closestCardinal(dx, dy);
+}
+
+function stepArenaTouchImmediate(a) {
+  const p = state.player;
+  // Check if tapped right on an enemy -> fire immediately toward it
+  for (const e of state.enemies) {
+    if (Math.hypot(a.x - e.x, a.y - e.y) <= 32) {
+      const fdir = closestCardinal(e.x - p.x, e.y - p.y);
+      execAction('fire_' + fdir);
+      return;
+    }
+  }
+  const dx = a.x - p.x;
+  const dy = a.y - p.y;
+  if (Math.hypot(dx, dy) > 14) {
+    execAction('move_' + closestCardinal(dx, dy));
+  } else {
+    execAction('fire_' + bestAutoAimDir());
+  }
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 350) restart();
+    return;
+  }
+  const info = classifyPoint(p);
+  pointers.set(e.pointerId, info);
+
+  if (info.zone === 'wep') {
+    execAction(info.act);
+  } else if (info.zone === 'dodge') {
+    execAction('dodge');
+  } else if (info.zone === 'fire') {
+    execAction('fire_' + bestAutoAimDir());
+    fireAcc = 0;
+  } else if (info.zone === 'dpad') {
+    const dir = getDpadDir(p.x, p.y);
+    if (dir) {
+      execAction('move_' + dir);
+      moveAcc = 0;
+    }
+  } else if (info.zone === 'arena') {
+    stepArenaTouchImmediate(info.a);
+    moveAcc = 0;
+  }
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointers.has(e.pointerId) || isOver(state)) return;
+  const p = toLogical(e);
+  const prev = pointers.get(e.pointerId);
+  if (prev.zone === 'dpad') {
+    pointers.set(e.pointerId, { zone: 'dpad', x: p.x, y: p.y });
+  } else if (prev.zone === 'arena') {
+    const clampedX = Math.max(VIEW_X, Math.min(VIEW_X + VIEW_S, p.x));
+    const clampedY = Math.max(VIEW_Y, Math.min(VIEW_Y + VIEW_S, p.y));
+    pointers.set(e.pointerId, { zone: 'arena', a: toArena(clampedX, clampedY) });
+  } else {
+    const next = classifyPoint(p);
+    if (next.zone === 'dpad' || next.zone === 'fire') pointers.set(e.pointerId, next);
+  }
+});
+
+function clearPointer(e) {
+  pointers.delete(e.pointerId);
+}
+canvas.addEventListener('pointerup', clearPointer);
+canvas.addEventListener('pointercancel', clearPointer);
+addEventListener('pointerup', clearPointer);
+addEventListener('pointercancel', clearPointer);
+
+const keys = {};
+addEventListener('keydown', (e) => {
+  const k = (e.key || '').toLowerCase();
+  if (isOver(state)) {
+    if ((k === ' ' || k === 'enter' || k === 'r') && performance.now() - overAt > 350) restart();
+    return;
+  }
+  const wasDown = !!keys[k];
+  keys[k] = true;
+
+  if (!wasDown) {
+    if (k === '1') execAction('select_blaster');
+    else if (k === '2') execAction('select_shotgun');
+    else if (k === '3') execAction('select_plasma');
+    else if (k === 'shift') execAction('dodge');
+    else if (k === 'w' || k === 'arrowup') { execAction('move_n'); moveAcc = 0; }
+    else if (k === 's' || k === 'arrowdown') { execAction('move_s'); moveAcc = 0; }
+    else if (k === 'a' || k === 'arrowleft') { execAction('move_w'); moveAcc = 0; }
+    else if (k === 'd' || k === 'arrowright') { execAction('move_e'); moveAcc = 0; }
+    else if (k === 'i') { execAction('fire_n'); fireAcc = 0; }
+    else if (k === 'k') { execAction('fire_s'); fireAcc = 0; }
+    else if (k === 'j') { execAction('fire_w'); fireAcc = 0; }
+    else if (k === 'l') { execAction('fire_e'); fireAcc = 0; }
+    else if (k === ' ') { execAction('fire_' + bestAutoAimDir()); fireAcc = 0; }
+  }
+});
+
+addEventListener('keyup', (e) => {
+  const k = (e.key || '').toLowerCase();
+  keys[k] = false;
+});
+
+function getHeldMoveDir() {
+  if (keys['w'] || keys['arrowup']) return 'n';
+  if (keys['s'] || keys['arrowdown']) return 's';
+  if (keys['a'] || keys['arrowleft']) return 'w';
+  if (keys['d'] || keys['arrowright']) return 'e';
+  for (const info of pointers.values()) {
+    if (info.zone === 'dpad') {
+      const d = getDpadDir(info.x, info.y);
+      if (d) return d;
+    }
+  }
+  return null;
+}
+
+function getHeldFireDir() {
+  if (keys['i']) return 'n';
+  if (keys['k']) return 's';
+  if (keys['j']) return 'w';
+  if (keys['l']) return 'e';
+  if (keys[' ']) return bestAutoAimDir();
+  for (const info of pointers.values()) {
+    if (info.zone === 'fire') return bestAutoAimDir();
+  }
+  return null;
+}
+
+function getArenaDragTarget() {
+  for (const info of pointers.values()) {
+    if (info.zone === 'arena') return info.a;
+  }
+  return null;
+}
+
+function update(dt) {
+  if (!isOver(state)) {
+    const heldMove = getHeldMoveDir();
+    const heldFire = getHeldFireDir();
+    const dragTarget = getArenaDragTarget();
+
+    const REPEAT = 0.135;
+    if (heldFire) {
+      fireAcc += dt;
+      while (fireAcc >= REPEAT && !isOver(state)) {
+        fireAcc -= REPEAT;
+        execAction('fire_' + heldFire);
+      }
+    } else {
+      fireAcc = 0;
+    }
+
+    if (heldMove) {
+      moveAcc += dt;
+      while (moveAcc >= REPEAT && !isOver(state)) {
+        moveAcc -= REPEAT;
+        execAction('move_' + heldMove);
+      }
+    } else if (dragTarget) {
+      moveAcc += dt;
+      while (moveAcc >= REPEAT && !isOver(state)) {
+        moveAcc -= REPEAT;
+        const p = state.player;
+        const dx = dragTarget.x - p.x;
+        const dy = dragTarget.y - p.y;
+        const dist = Math.hypot(dx, dy);
+        arenaTurnToggle = !arenaTurnToggle;
+        if (dist > 18 && (arenaTurnToggle || state.enemies.length === 0)) {
+          execAction('move_' + closestCardinal(dx, dy));
+        } else {
+          execAction('fire_' + bestAutoAimDir());
+        }
+      }
+    } else {
+      moveAcc = 0;
+    }
+
+    ambientAcc += dt;
+    if (ambientAcc >= 0.42 && !isOver(state)) {
+      ambientAcc = 0;
+      execAction('wait');
+    }
+  }
+
+  // Smooth 60 FPS Visual Interpolation
+  const lerpK = 1 - Math.exp(-22 * dt);
+  if (Math.hypot(state.player.x - visPlayer.x, state.player.y - visPlayer.y) > 120) {
+    visPlayer.x = state.player.x;
+    visPlayer.y = state.player.y;
+  } else {
+    visPlayer.x += (state.player.x - visPlayer.x) * lerpK;
+    visPlayer.y += (state.player.y - visPlayer.y) * lerpK;
+  }
+
+  const targetAngle = dirToAngle(bestAutoAimDir());
+  let da = targetAngle - visPlayer.angle;
+  while (da > Math.PI) da -= Math.PI * 2;
+  while (da < -Math.PI) da += Math.PI * 2;
+  visPlayer.angle += da * lerpK;
+
+  const activeEnemyIds = new Set();
+  for (const e of state.enemies) {
+    activeEnemyIds.add(e.id);
+    if (!visEnemies.has(e.id)) {
+      visEnemies.set(e.id, { x: e.x, y: e.y, flash: 0 });
+    } else {
+      const ve = visEnemies.get(e.id);
+      ve.x += (e.x - ve.x) * lerpK;
+      ve.y += (e.y - ve.y) * lerpK;
+      if (ve.flash > 0) ve.flash = Math.max(0, ve.flash - dt);
+    }
+  }
+  for (const id of visEnemies.keys()) {
+    if (!activeEnemyIds.has(id)) visEnemies.delete(id);
+  }
+
+  const projLerp = 1 - Math.exp(-28 * dt);
+  const activeProjIds = new Set();
+  for (const pr of state.projectiles) {
+    activeProjIds.add(pr.id);
+    if (!visProjectiles.has(pr.id)) {
+      visProjectiles.set(pr.id, { x: pr.x - pr.vx * 0.4, y: pr.y - pr.vy * 0.4 });
+    } else {
+      const vp = visProjectiles.get(pr.id);
+      vp.x += (pr.x - vp.x) * projLerp;
+      vp.y += (pr.y - vp.y) * projLerp;
+    }
+  }
+  for (const id of visProjectiles.keys()) {
+    if (!activeProjIds.has(id)) visProjectiles.delete(id);
+  }
+
+  if (muzzleFlash > 0) muzzleFlash = Math.max(0, muzzleFlash - dt);
+  if (hurtFlash > 0) hurtFlash = Math.max(0, hurtFlash - dt);
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.life -= dt;
+    if (pt.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = popups.length - 1; i >= 0; i--) {
+    const pp = popups[i];
+    pp.y -= 28 * dt;
+    pp.life -= dt;
+    if (pp.life <= 0) popups.splice(i, 1);
+  }
+  for (let i = ghosts.length - 1; i >= 0; i--) {
+    ghosts[i].life -= dt;
+    if (ghosts[i].life <= 0) ghosts.splice(i, 1);
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#09060d';
+  ctx.fillRect(0, 0, W, H);
+
+  const p = state.player;
+
+  // Top HUD Bar
+  ctx.fillStyle = '#150d21';
+  rrect(10, 8, W - 20, 52, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#3b1d4a';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#f43f5e';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('CRIMSON ARENA', 20, 26);
+
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`WAVE ${state.wave}/${MAX_WAVES}`, W / 2 + 12, 26);
+
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${score(state)}`, W - 20, 26);
+
+  // HP Bar in HUD
+  const hpPct = Math.max(0, Math.min(1, p.hp / p.maxHp));
+  ctx.fillStyle = '#271533';
+  rrect(20, 36, 150, 14, 5);
+  ctx.fill();
+  ctx.fillStyle = hpPct > 0.35 ? '#e11d48' : '#ef4444';
+  if (hpPct > 0) {
+    rrect(20, 36, Math.max(10, 150 * hpPct), 14, 5);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 9px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`HP ${p.hp}/${p.maxHp}`, 26, 46);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`KILLS ${state.kills} · BEST ${best}`, W - 20, 46);
+
+  // Arena Viewport
+  ctx.save();
+  ctx.translate(VIEW_X, VIEW_Y);
+  ctx.scale(A_SCALE, A_SCALE);
+
+  ctx.fillStyle = '#110a1c';
+  ctx.fillRect(0, 0, ARENA_SIZE, ARENA_SIZE);
+
+  // Hazard floor grid
+  ctx.strokeStyle = 'rgba(225, 29, 72, 0.13)';
+  ctx.lineWidth = 1;
+  for (let g = 60; g < ARENA_MAX; g += 40) {
+    ctx.beginPath(); ctx.moveTo(g, ARENA_MIN); ctx.lineTo(g, ARENA_MAX); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ARENA_MIN, g); ctx.lineTo(ARENA_MAX, g); ctx.stroke();
+  }
+
+  // Arena perimeter
+  ctx.strokeStyle = '#9f1239';
+  ctx.lineWidth = 3.5;
+  ctx.strokeRect(ARENA_MIN, ARENA_MIN, ARENA_MAX - ARENA_MIN, ARENA_MAX - ARENA_MIN);
+
+  // Drag target indicator
+  const dragTarget = getArenaDragTarget();
+  if (dragTarget && !isOver(state)) {
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(visPlayer.x, visPlayer.y);
+    ctx.lineTo(dragTarget.x, dragTarget.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(dragTarget.x, dragTarget.y, 12, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Pickups
+  const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.12;
+  for (const pk of state.pickups) {
+    ctx.save();
+    ctx.translate(pk.x, pk.y);
+    ctx.scale(pulse, pulse);
+    if (pk.type === 'medkit') {
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(-9, -9, 18, 18);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-6, -2, 12, 4);
+      ctx.fillRect(-2, -6, 4, 12);
+    } else if (pk.type === 'shells') {
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(-8, -8, 16, 16);
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-8, -8, 16, 16);
+    } else {
+      ctx.fillStyle = '#06b6d4';
+      ctx.beginPath();
+      ctx.arc(0, 0, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#cffafe';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Dodge afterimage ghosts
+  for (const g of ghosts) {
+    ctx.fillStyle = `rgba(192, 132, 252, ${g.life * 1.8})`;
+    ctx.beginPath();
+    ctx.arc(g.x, g.y, 13, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Projectiles
+  for (const pr of state.projectiles) {
+    const vp = visProjectiles.get(pr.id) || pr;
+    ctx.save();
+    if (pr.owner === 'player') {
+      ctx.strokeStyle = pr.pierce ? 'rgba(34,211,238,0.45)' : 'rgba(244,63,94,0.45)';
+      ctx.lineWidth = pr.pierce ? 6 : 3.5;
+      ctx.beginPath();
+      ctx.moveTo(vp.x, vp.y);
+      ctx.lineTo(vp.x - pr.vx * 0.25, vp.y - pr.vy * 0.25);
+      ctx.stroke();
+
+      ctx.fillStyle = pr.pierce ? '#22d3ee' : '#fb7185';
+      ctx.beginPath();
+      ctx.arc(vp.x, vp.y, pr.pierce ? 5.5 : 4.2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#a3e635';
+      ctx.beginPath();
+      ctx.arc(vp.x, vp.y, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Enemies
+  for (const e of state.enemies) {
+    const ve = visEnemies.get(e.id) || e;
+    ctx.save();
+    ctx.translate(ve.x, ve.y);
+
+    const flash = ve.flash && ve.flash > 0;
+    if (e.type === 'drone') {
+      ctx.fillStyle = flash ? '#ffffff' : '#e11d48';
+      ctx.beginPath();
+      ctx.arc(0, 0, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fda4af';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (e.type === 'spitter') {
+      ctx.fillStyle = flash ? '#ffffff' : '#65a30d';
+      ctx.beginPath();
+      ctx.arc(0, 0, 13.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#bef264';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = flash ? '#ffffff' : '#581c87';
+      ctx.beginPath();
+      ctx.arc(0, 0, 21, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    if (e.hp < e.maxHp || e.type === 'juggernaut') {
+      const bw = e.type === 'juggernaut' ? 34 : 24;
+      const by = e.type === 'juggernaut' ? -29 : -19;
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillRect(-bw / 2, by, bw, 4);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-bw / 2, by, bw * Math.max(0, e.hp / e.maxHp), 4);
+    }
+    ctx.restore();
+  }
+
+  // Player Warrior
+  ctx.save();
+  ctx.translate(visPlayer.x, visPlayer.y);
+
+  ctx.fillStyle = '#0284c7';
+  ctx.beginPath();
+  ctx.arc(0, 0, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.rotate(visPlayer.angle);
+  ctx.strokeStyle = '#f8fafc';
+  ctx.lineWidth = 4.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(19, 0);
+  ctx.stroke();
+
+  if (muzzleFlash > 0) {
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.arc(22, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Particles
+  for (const pt of particles) {
+    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+    ctx.fillStyle = pt.col;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Floating popups
+  for (const pp of popups) {
+    ctx.globalAlpha = Math.min(1, pp.life * 2);
+    ctx.fillStyle = pp.col;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(pp.txt, pp.x, pp.y);
+  }
+  ctx.globalAlpha = 1;
+
+  if (hurtFlash > 0) {
+    ctx.fillStyle = `rgba(239, 68, 68, ${hurtFlash * 0.6})`;
+    ctx.fillRect(0, 0, ARENA_SIZE, ARENA_SIZE);
+  }
+
+  ctx.restore();
+
+  // Weapon Selector Strip
+  for (const wb of WEP_BTNS) {
+    const active = p.weapon === wb.wep;
+    const ammoTxt = wb.wep === 'blaster' ? '∞' : wb.wep === 'shotgun' ? p.shells : p.plasma;
+    ctx.fillStyle = active ? '#881337' : '#1b1128';
+    rrect(wb.x, wb.y, wb.w, wb.h, 7);
+    ctx.fill();
+    ctx.strokeStyle = active ? '#fb7185' : '#4a2850';
+    ctx.lineWidth = active ? 2 : 1;
+    ctx.stroke();
+
+    ctx.fillStyle = active ? '#ffffff' : '#cbd5e1';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${wb.label} [${ammoTxt}]`, wb.x + wb.w / 2, wb.y + 21);
+  }
+
+  // Left Virtual D-Pad / Thumbstick
+  const heldMove = getHeldMoveDir();
+  ctx.fillStyle = '#140c1f';
+  ctx.beginPath();
+  ctx.arc(DPAD_CX, DPAD_CY, DPAD_R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#3b1d4a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const dirs = [
+    { d: 'n', dx: 0, dy: -38, lbl: '▲' },
+    { d: 's', dx: 0, dy: 38, lbl: '▼' },
+    { d: 'w', dx: -38, dy: 0, lbl: '◀' },
+    { d: 'e', dx: 38, dy: 0, lbl: '▶' }
+  ];
+  for (const item of dirs) {
+    const isHi = heldMove === item.d;
+    ctx.fillStyle = isHi ? '#e11d48' : '#261738';
+    rrect(DPAD_CX + item.dx - 18, DPAD_CY + item.dy - 18, 36, 36, 8);
+    ctx.fill();
+    ctx.fillStyle = isHi ? '#fff' : '#cbd5e1';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(item.lbl, DPAD_CX + item.dx, DPAD_CY + item.dy + 5);
+  }
+
+  // Right Action Buttons: FIRE & DODGE
+  const fireActive = !!getHeldFireDir();
+  ctx.fillStyle = fireActive ? '#be123c' : '#831843';
+  rrect(BTN_FIRE.x, BTN_FIRE.y, BTN_FIRE.w, BTN_FIRE.h, 12);
+  ctx.fill();
+  ctx.strokeStyle = fireActive ? '#fda4af' : '#f43f5e';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 17px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('AUTO FIRE', BTN_FIRE.x + BTN_FIRE.w / 2, BTN_FIRE.y + 34);
+  ctx.fillStyle = '#fbcfe8';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillText('Hold Space / IJKL', BTN_FIRE.x + BTN_FIRE.w / 2, BTN_FIRE.y + 54);
+
+  const dodgeReady = p.dodgeCooldown === 0;
+  ctx.fillStyle = dodgeReady ? '#4c1d95' : '#1e162b';
+  rrect(BTN_DODGE.x, BTN_DODGE.y, BTN_DODGE.w, BTN_DODGE.h, 10);
+  ctx.fill();
+  ctx.strokeStyle = dodgeReady ? '#c084fc' : '#3b2854';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = dodgeReady ? '#f3e8ff' : '#64748b';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.fillText(dodgeReady ? '⚡ DODGE [SHIFT]' : `COOLDOWN (${p.dodgeCooldown})`, BTN_DODGE.x + BTN_DODGE.w / 2, BTN_DODGE.y + 31);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Drag arena to move & auto-fire · Tap enemy to shoot', W / 2, H - 8);
+
+  // Game Over / Victory Overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(9, 6, 13, 0.9)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = state.won ? '#4ade80' : '#f43f5e';
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'ARENA CONQUERED!' : 'WARRIOR DEFEATED', W / 2, H / 2 - 48);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText(`Wave Reached: ${state.wave}/${MAX_WAVES} · Kills: ${state.kills}`, W / 2, H / 2 - 12);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText(`Score: ${score(state)}`, W / 2, H / 2 + 28);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere or press Space to battle again', W / 2, H / 2 + 74);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

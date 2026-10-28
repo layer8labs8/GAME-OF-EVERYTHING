@@ -1,14 +1,16 @@
 // Portal Shift - Puzzle Platformer deterministic logic
 (function (root, factory) {
+  const api = factory();
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    module.exports = api;
   } else {
-    root.PortalShift = factory();
+    root.PortalShift = api;
+    root.GameLogic = api;
   }
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const MAX_STEPS = 120;
+  const MAX_STEPS = 400;
 
   const DEFAULT_LEVELS = [
     {

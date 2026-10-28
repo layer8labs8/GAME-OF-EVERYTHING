@@ -42,7 +42,7 @@ function createState(seed = 12345) {
     seed: s,
     prngState: s,
     turns: 0,
-    maxTurns: 120,
+    maxTurns: 800,
     energy: 25,
     neutrons: 0,
     darkMatter: 0,
@@ -88,6 +88,9 @@ function legalActions(state) {
 
   // Manual core pulse is always legal
   actions.push('action:pulse_reactor_core');
+
+  // Automated idle harvest tick
+  actions.push('action:idle_cycle');
 
   // Coolant cycle is always accessible
   actions.push('action:cycle_cryo_coolant');
@@ -137,6 +140,8 @@ function step(state, action) {
     state.energy += gain;
     state.coreTemp = Math.min(100, state.coreTemp + 3);
     state.gameMessage = 'Triggered manual plasma pulse: +' + gain + ' Energy generated.';
+  } else if (action === 'action:idle_cycle') {
+    state.gameMessage = 'Reactor containment steady. Harvesting continuous fusion output.';
   } else if (action === 'action:cycle_cryo_coolant') {
     state.coreTemp = Math.max(10, state.coreTemp - 35);
     state.gameMessage = 'Circulated sub-zero cryogenic helium. Core temperature dropped 35%.';

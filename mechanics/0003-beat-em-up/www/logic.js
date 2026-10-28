@@ -1,6 +1,6 @@
 (function (root) {
   const WIDTH = 360;
-  const MAX_STEPS = 160;
+  const MAX_STEPS = 450;
   const TOTAL_THUGS = 8;
   const PLAYER_MAX_HP = 100;
 

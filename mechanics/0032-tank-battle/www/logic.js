@@ -1,6 +1,6 @@
 (function (root) {
   const GRID_SIZE = 10;
-  const MAX_STEPS = 200;
+  const MAX_STEPS = 600;
   const TOTAL_ENEMIES = 6;
 
   const DIR_DELTAS = {

@@ -1,474 +1,496 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Quantum Forge - Incremental Engine</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      background-color: #030014;
-      color: #f1f5f9;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 12px;
-      background: #1e103a;
-      border: 1px solid #7c3aed;
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #c084fc;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: #4c1d95;
-      color: #ede9fe;
-      font-weight: 600;
-    }
-    #game-container {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 4/3;
-      background: #060218;
-      border: 2px solid #581c87;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.25);
-    }
-    .resources-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .res-card {
-      background: #0f0728;
-      border: 1px solid #3b0764;
-      padding: 4px 6px;
-      border-radius: 6px;
-      text-align: center;
-    }
-    .res-title {
-      font-size: 0.62rem;
-      color: #c084fc;
-      text-transform: uppercase;
-    }
-    .res-val {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-top: 1px;
-    }
-    .log-box {
-      background: #0c0520;
-      border: 1px solid #6b21a8;
-      border-left: 4px solid #a855f7;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 0.78rem;
-      color: #e2e8f0;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-    }
-    .actions-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 6px;
-      margin-top: 2px;
-    }
-    .btn {
-      background: #170b33;
-      border: 1px solid #4c1d95;
-      color: #f1f5f9;
-      padding: 8px 6px;
-      font-family: inherit;
-      font-size: 0.72rem;
-      border-radius: 6px;
-      cursor: pointer;
-      text-transform: uppercase;
-      font-weight: 600;
-      transition: all 0.15s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-    .btn:hover {
-      background: #2e1065;
-      border-color: #a855f7;
-      color: #fff;
-    }
-    .btn:active {
-      transform: scale(0.97);
-    }
-    .btn-tap {
-      background: #581c87;
-      border-color: #a855f7;
-      color: #faf5ff;
-    }
-    .btn-tap:hover {
-      background: #6b21a8;
-    }
-    .btn-res {
-      border-color: #2563eb;
-      color: #93c5fd;
-    }
-    .btn-res:hover {
-      background: #1e3a8a;
-    }
-    .btn-prestige {
-      background: #831843;
-      border-color: #f43f5e;
-      color: #ffe4e6;
-    }
-    .btn-prestige:hover {
-      background: #9f1239;
-    }
-    .btn-gold {
-      background: #78350f;
-      border-color: #d97706;
-      color: #fde68a;
-    }
-    .btn-gold:hover {
-      background: #b45309;
-    }
-    .footer-bar {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 6px;
-      width: 100%;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#09071a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Quantum Forge</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #09071a; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; font-family: system-ui, -apple-system, sans-serif; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>🌌 Quantum Forge</h1>
-    <div>
-      <span id="turn-badge" class="badge">STEP 0 / 120</span>
-      <span id="score-badge" class="badge" style="background:#6b21a8; color:#f5d0fe;">0 PTS</span>
-    </div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <div id="game-container">
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+const W = 360;
+const H = 640;
+const CORE_X = 180;
+const CORE_Y = 172;
+const CORE_R = 72;
 
-    <div class="resources-grid">
-      <div class="res-card">
-        <div class="res-title">Subatomic Matter</div>
-        <div id="val-matter" class="res-val" style="color: #c084fc;">20</div>
-      </div>
-      <div class="res-card">
-        <div class="res-title">Concentrated Energy</div>
-        <div id="val-energy" class="res-val" style="color: #38bdf8;">0</div>
-      </div>
-      <div class="res-card">
-        <div class="res-title">Entangled Cubits</div>
-        <div id="val-cubits" class="res-val" style="color: #f472b6;">0 (1.0x)</div>
-      </div>
-    </div>
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-    <div id="game-log" class="log-box">
-      Quantum Forge initialized. Harvest subatomic matter and construct particle facilities.
-    </div>
+function rrect(x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
 
-    <div id="actions-panel" class="actions-grid">
-      <!-- Injected dynamically -->
-    </div>
+let audioCtx = null;
+function playSfx(freq, freq2, dur, type, vol) {
+  try {
+    const AC = typeof AudioContext !== 'undefined' ? AudioContext : (typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null);
+    if (!AC) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    if (freq2) osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq2), t + dur);
+    gain.gain.setValueAtTime(vol || 0.09, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + dur);
+  } catch (e) {}
+}
 
-    <div class="footer-bar">
-      <div id="facilities-summary" style="font-size:0.7rem; color:#a78bfa;">Tier 1: 0 Synthesizers | 0 Splitters</div>
-      <button id="bot-toggle-btn" class="btn" style="padding: 4px 10px; font-size: 0.68rem;" onclick="window.toggleBot()">BOT: OFF</button>
-    </div>
-  </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0168-best') || 0; } catch (e) {}
 
-  <script src="logic.js"></script>
-  <script>
-    let state = createState(Date.now ? Date.now() : 12345);
-    let botRunning = false;
-    let botInterval = null;
+const FAC_META = [
+  { id: 'synthesizer', name: 'Quark Synthesizer', yieldTxt: '+2⚛️/tick', color: '#a855f7' },
+  { id: 'splitter', name: 'Boson Splitter', yieldTxt: '+10⚛️ +1⚡', color: '#38bdf8' },
+  { id: 'accelerator', name: 'Hadron Collider', yieldTxt: '+40⚛️ +5⚡', color: '#22d3ee' },
+  { id: 'quantumComputer', name: 'Quantum Lattice', yieldTxt: '+150⚛️ +20⚡', color: '#f472b6' },
+  { id: 'singularityEngine', name: 'Singularity Engine', yieldTxt: '+800⚛️ +100⚡', color: '#fbbf24' }
+];
 
-    // Web Audio Synthesizer
-    let audioCtx = null;
-    function playSfx(type) {
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const t = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+let state = createState(Date.now());
+let phase = 0;
+let coreScale = 1;
+let idleAcc = 0;
+let holdCore = false;
+let holdAcc = 0;
+let overAt = 0;
+let rings = [];
+let floaters = [];
 
-        if (type === 'tap') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(320, t);
-          osc.frequency.exponentialRampToValueAtTime(120, t + 0.1);
-          gain.gain.setValueAtTime(0.25, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
-          osc.start(t);
-          osc.stop(t + 0.12);
-        } else if (type === 'buy') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(440, t);
-          osc.frequency.setValueAtTime(659.25, t + 0.08);
-          gain.gain.setValueAtTime(0.2, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-          osc.start(t);
-          osc.stop(t + 0.2);
-        } else if (type === 'prestige') {
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(80, t);
-          osc.frequency.linearRampToValueAtTime(350, t + 0.35);
-          gain.gain.setValueAtTime(0.4, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
-          osc.start(t);
-          osc.stop(t + 0.4);
-        }
-      } catch (e) {}
+function fmt(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+  if (n >= 10000) return (n / 1000).toFixed(1) + 'k';
+  return Math.floor(n).toLocaleString();
+}
+
+function restart() {
+  state = createState(Date.now());
+  coreScale = 1;
+  idleAcc = 0;
+  holdCore = false;
+  holdAcc = 0;
+  overAt = 0;
+  rings = [];
+  floaters = [];
+}
+
+function execStep(act) {
+  if (isOver(state)) return null;
+  const valid = legalActions(state);
+  if (!valid.includes(act)) return null;
+  const prevM = state.matter;
+  const res = step(state, act);
+  const diffM = state.matter - prevM;
+  const sc = score(state);
+  if (sc > best) {
+    best = sc;
+    try { localStorage.setItem('goe-0168-best', best); } catch (e) {}
+  }
+  if (res.done) overAt = performance.now();
+  return { diffM };
+}
+
+function triggerTap(px, py) {
+  const out = execStep('action:synthesize_matter');
+  if (!out) return;
+  coreScale = 1.15;
+  rings.push({ r: 22, maxR: 92, alpha: 0.9, color: '#c084fc' });
+  floaters.push({ text: '+' + fmt(Math.max(6, out.diffM)) + ' ⚛️', x: px || CORE_X, y: (py || CORE_Y) - 16, t: 0, color: '#e9d5ff' });
+  playSfx(320 + (state.cubits * 60), 540, 0.08, 'triangle', 0.09);
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  const valid = legalActions(state);
+
+  // Universal Genesis Victory Button
+  if (valid.includes('action:trigger_universal_genesis') && p.x >= 20 && p.x <= 340 && p.y >= 248 && p.y <= 282) {
+    execStep('action:trigger_universal_genesis');
+    playSfx(523, 1568, 0.4, 'triangle', 0.2);
+    return;
+  }
+
+  // Forge Core Tap / Hold
+  const dx = p.x - CORE_X;
+  const dy = p.y - CORE_Y;
+  if (dx * dx + dy * dy <= (CORE_R + 24) * (CORE_R + 24) && p.y < 284) {
+    canvas.setPointerCapture(e.pointerId);
+    holdCore = true;
+    holdAcc = 0;
+    triggerTap(p.x, p.y);
+    return;
+  }
+
+  // Research & Prestige Row (y = 288..340, 4 buttons width 80)
+  if (p.y >= 288 && p.y <= 340 && p.x >= 12 && p.x <= 348) {
+    const idx = Math.min(3, Math.max(0, Math.floor((p.x - 12) / 85)));
+    const acts = [
+      'action:research_matter_compression',
+      'action:research_superconductivity',
+      'action:research_quantum_resonance',
+      'action:quantum_inversion_prestige'
+    ];
+    if (execStep(acts[idx])) {
+      rings.push({ r: 16, maxR: 130, alpha: 1, color: idx === 3 ? '#38bdf8' : '#34d399' });
+      floaters.push({ text: idx === 3 ? '+1 CUBIT!' : 'RESEARCHED!', x: p.x, y: 280, t: 0, color: '#6ee7b7' });
+      playSfx(idx === 3 ? 180 : 520, idx === 3 ? 920 : 880, 0.24, 'sawtooth', 0.14);
+    }
+    return;
+  }
+
+  // 5 Facility Cards (y = 348..618)
+  if (p.y >= 348 && p.y <= 618 && p.x >= 16 && p.x <= 344) {
+    const idx = Math.floor((p.y - 348) / 54);
+    if (FAC_META[idx]) {
+      if (execStep('action:purchase_facility:' + FAC_META[idx].id)) {
+        rings.push({ r: 28, maxR: 88, alpha: 0.75, color: FAC_META[idx].color });
+        floaters.push({ text: '+1 ' + FAC_META[idx].name.split(' ')[1], x: p.x, y: p.y - 10, t: 0, color: FAC_META[idx].color });
+        playSfx(420, 700, 0.11, 'sine', 0.11);
+      }
+    }
+  }
+});
+
+addEventListener('pointerup', () => { holdCore = false; });
+addEventListener('pointercancel', () => { holdCore = false; });
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const valid = legalActions(state);
+  if (e.key === ' ' || e.key === 'Enter') {
+    if (valid.includes('action:trigger_universal_genesis')) execStep('action:trigger_universal_genesis');
+    else triggerTap(CORE_X, CORE_Y);
+  } else if (e.key >= '1' && e.key <= '5') {
+    const idx = parseInt(e.key, 10) - 1;
+    if (execStep('action:purchase_facility:' + FAC_META[idx].id)) playSfx(420, 700, 0.11, 'sine', 0.11);
+  } else if (e.key === 'q' || e.key === 'Q') {
+    execStep('action:research_matter_compression');
+  } else if (e.key === 'w' || e.key === 'W') {
+    execStep('action:research_superconductivity');
+  } else if (e.key === 'e' || e.key === 'E') {
+    execStep('action:research_quantum_resonance');
+  } else if (e.key === 'p' || e.key === 'P') {
+    execStep('action:quantum_inversion_prestige');
+  } else if (e.key === 'r' || e.key === 'R') {
+    restart();
+  }
+});
+
+function drawHex(r, rot) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = rot + (i * Math.PI) / 3;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function update(dt) {
+  phase += dt * (1.7 + state.cubits * 0.4);
+  coreScale += (1 - coreScale) * Math.min(1, dt * 14);
+
+  if (!isOver(state)) {
+    if (holdCore) {
+      holdAcc += dt;
+      if (holdAcc >= 0.11) {
+        holdAcc = 0;
+        triggerTap(CORE_X + Math.cos(phase * 4) * 16, CORE_Y + Math.sin(phase * 5) * 14);
+      }
     }
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    let tesseractAngle = 0;
-
-    function render() {
-      // Status badges
-      document.getElementById('turn-badge').textContent = 'STEP ' + state.turns + ' / ' + state.maxTurns;
-      document.getElementById('score-badge').textContent = score(state) + ' PTS';
-      document.getElementById('game-log').textContent = state.gameMessage;
-
-      document.getElementById('val-matter').textContent = state.matter.toLocaleString();
-      document.getElementById('val-energy').textContent = state.energy.toLocaleString();
-
-      const cubitBonus = state.researches.quantumResonance ? 1.5 : 1.0;
-      const mult = (1 + state.cubits * cubitBonus).toFixed(1);
-      document.getElementById('val-cubits').textContent = state.cubits + ' (' + mult + 'x)';
-
-      const f = state.facilities;
-      document.getElementById('facilities-summary').textContent =
-        'Synths: ' + f.synthesizer + ' | Splitters: ' + f.splitter + ' | Accels: ' + f.accelerator +
-        ' | Q-Computers: ' + f.quantumComputer + ' | Singularity: ' + f.singularityEngine;
-
-      // Canvas Tesseract Animation
-      const w = canvas.width;
-      const h = canvas.height;
-      const cx = w / 2;
-      const cy = h / 2;
-
-      ctx.fillStyle = '#060218';
-      ctx.fillRect(0, 0, w, h);
-
-      tesseractAngle += 0.02;
-
-      // Rotating Hypercube Vertices
-      ctx.save();
-      ctx.translate(cx, cy);
-
-      const rOuter = 130;
-      const rInner = 75;
-      const sides = 6;
-
-      ctx.strokeStyle = '#7c3aed';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      for (let i = 0; i <= sides; i++) {
-        const a = tesseractAngle + (i * Math.PI * 2) / sides;
-        const x = Math.cos(a) * rOuter;
-        const y = Math.sin(a) * rOuter;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    idleAcc += dt;
+    if (idleAcc >= 0.60) {
+      idleAcc -= 0.60;
+      const prevM = state.matter;
+      execStep('action:idle_cycle');
+      const gain = state.matter - prevM;
+      if (gain > 0) {
+        floaters.push({ text: '+' + fmt(gain), x: CORE_X + 48, y: CORE_Y - 36, t: 0, color: '#c084fc' });
       }
-      ctx.stroke();
-
-      ctx.strokeStyle = '#c084fc';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let i = 0; i <= sides; i++) {
-        const a = -tesseractAngle + (i * Math.PI * 2) / sides;
-        const x = Math.cos(a) * rInner;
-        const y = Math.sin(a) * rInner;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      // Connecting spokes
-      for (let i = 0; i < sides; i++) {
-        const a1 = tesseractAngle + (i * Math.PI * 2) / sides;
-        const a2 = -tesseractAngle + (i * Math.PI * 2) / sides;
-        ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(a1) * rOuter, Math.sin(a1) * rOuter);
-        ctx.lineTo(Math.cos(a2) * rInner, Math.sin(a2) * rInner);
-        ctx.stroke();
-      }
-
-      // Singularity core
-      const coreR = 25 + Math.sin(tesseractAngle * 4) * 4;
-      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, coreR);
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.5, '#c084fc');
-      grad.addColorStop(1, '#4c1d95');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(0, 0, coreR, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-
-      // Game Over Screen
-      if (isOver(state)) {
-        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(state.victory ? 'UNIVERSAL GENESIS ACHIEVED!' : 'QUANTUM MANIFOLD COLLAPSED', cx, cy - 20);
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Final Quantum Value: ' + score(state), cx, cy + 15);
-      }
-
-      updateActions();
     }
+  }
 
-    function updateActions() {
-      const panel = document.getElementById('actions-panel');
-      if (isOver(state)) {
-        panel.innerHTML = '<button class="btn btn-gold" onclick="window.restartGame()">NEW FORGE UNIVERSE</button>';
-        return;
-      }
+  for (const r of rings) {
+    r.r += (r.maxR - r.r) * Math.min(1, dt * 9);
+    r.alpha -= dt * 2.1;
+  }
+  rings = rings.filter((r) => r.alpha > 0.02);
 
-      const actions = legalActions(state);
-      let html = '';
+  for (const f of floaters) f.t += dt;
+  floaters = floaters.filter((f) => f.t < 0.75);
+}
 
-      for (const act of actions) {
-        let cls = 'btn';
-        let label = act;
-        let sub = '';
+function draw() {
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#130d2e');
+  bg.addColorStop(1, '#060412');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
 
-        if (act === 'action:synthesize_matter') {
-          cls += ' btn-tap';
-          label = '⚛️ Extract Subatomic Matter';
-          sub = 'Manual Quantum Tap';
-        } else if (act === 'action:research_matter_compression') {
-          cls += ' btn-res';
-          label = '🔬 Matter Compression';
-          sub = '2x Manual Extract (150 Matter)';
-        } else if (act === 'action:research_superconductivity') {
-          cls += ' btn-res';
-          label = '⚡ Superconductivity';
-          sub = '+50% Global Yield (600 M, 40 E)';
-        } else if (act === 'action:research_quantum_resonance') {
-          cls += ' btn-res';
-          label = '🔮 Quantum Resonance';
-          sub = '+150% Per Cubit (2.5k M, 150 E)';
-        } else if (act === 'action:quantum_inversion_prestige') {
-          cls += ' btn-prestige';
-          label = '🌀 Quantum Inversion';
-          sub = '+1 Entangled Cubit';
-        } else if (act === 'action:trigger_universal_genesis') {
-          cls += ' btn-gold';
-          label = '🌌 TRIGGER UNIVERSAL GENESIS!';
-          sub = 'Victory';
-        } else if (act.startsWith('action:purchase_facility:')) {
-          const type = act.split(':')[2];
-          const cost = getFacilityCost(type, state.facilities[type]);
-          label = '+1 ' + type.toUpperCase();
-          sub = cost.matter + ' Matter' + (cost.energy > 0 ? ', ' + cost.energy + ' Energy' : '');
-        }
+  const cubitBonus = state.researches.quantumResonance ? 1.5 : 1.0;
+  const mult = (1 + state.cubits * cubitBonus) * (state.researches.superconductivity ? 1.5 : 1.0);
 
-        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
-      }
+  // Top Resource HUD
+  const cards = [
+    { label: 'MATTER', val: fmt(state.matter), col: '#c084fc' },
+    { label: 'ENERGY', val: fmt(state.energy), col: '#38bdf8' },
+    { label: 'CUBITS', val: state.cubits + ' (' + mult.toFixed(1) + 'x)', col: '#34d399' },
+    { label: 'SCORE', val: fmt(score(state)), col: '#fbbf24' }
+  ];
+  for (let i = 0; i < 4; i++) {
+    const cx = 12 + i * 86;
+    ctx.fillStyle = '#171136';
+    rrect(cx, 10, 80, 46, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#312566';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 9px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(cards[i].label, cx + 40, 25);
+    ctx.fillStyle = cards[i].col;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.fillText(cards[i].val, cx + 40, 45);
+  }
 
-      panel.innerHTML = html;
-    }
+  // Quantum Singularity Core
+  ctx.save();
+  ctx.translate(CORE_X, CORE_Y);
+  ctx.scale(coreScale, coreScale);
 
-    window.triggerAction = function(act) {
-      if (isOver(state)) return;
-      if (act.includes('synthesize')) playSfx('tap');
-      else if (act.includes('purchase') || act.includes('research')) playSfx('buy');
-      else if (act.includes('inversion') || act.includes('genesis')) playSfx('prestige');
+  const glow = ctx.createRadialGradient(0, 0, 8, 0, 0, 96);
+  glow.addColorStop(0, 'rgba(168, 85, 247, 0.45)');
+  glow.addColorStop(0.6, 'rgba(56, 189, 248, 0.18)');
+  glow.addColorStop(1, 'rgba(6, 4, 18, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 96, 0, Math.PI * 2);
+  ctx.fill();
 
-      step(state, act);
-      render();
-    };
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2.5;
+  drawHex(66, phase * 0.7);
 
-    window.restartGame = function() {
-      state = createState(Date.now ? Date.now() : 12345);
-      render();
-    };
+  ctx.strokeStyle = '#c084fc';
+  ctx.lineWidth = 2.5;
+  drawHex(52, -phase * 1.1);
 
-    window.toggleBot = function() {
-      botRunning = !botRunning;
-      document.getElementById('bot-toggle-btn').textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
-      document.getElementById('bot-toggle-btn').style.background = botRunning ? '#6b21a8' : '#170b33';
+  const orbs = Math.min(14, 3 + state.facilities.synthesizer + state.facilities.splitter * 2 + state.facilities.accelerator * 2);
+  for (let i = 0; i < orbs; i++) {
+    const a = phase * 1.6 + (i / orbs) * Math.PI * 2;
+    const rad = 44 + Math.sin(phase * 3 + i) * 12;
+    ctx.fillStyle = i % 2 === 0 ? '#67e8f9' : '#f0abfc';
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * rad, Math.sin(a) * rad, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-      if (botRunning) {
-        botInterval = setInterval(() => {
-          if (isOver(state)) {
-            state = createState(Date.now ? Date.now() : 9999);
-            render();
-            return;
-          }
-          const acts = legalActions(state);
-          if (acts.length > 0) {
-            let choice = acts[0];
-            if (acts.includes('action:trigger_universal_genesis')) choice = 'action:trigger_universal_genesis';
-            else if (acts.includes('action:quantum_inversion_prestige') && state.energy >= 150) choice = 'action:quantum_inversion_prestige';
-            else if (acts.includes('action:research_quantum_resonance')) choice = 'action:research_quantum_resonance';
-            else if (acts.includes('action:research_superconductivity')) choice = 'action:research_superconductivity';
-            else if (acts.includes('action:research_matter_compression')) choice = 'action:research_matter_compression';
-            else if (acts.includes('action:purchase_facility:singularityEngine')) choice = 'action:purchase_facility:singularityEngine';
-            else if (acts.includes('action:purchase_facility:quantumComputer')) choice = 'action:purchase_facility:quantumComputer';
-            else if (acts.includes('action:purchase_facility:accelerator')) choice = 'action:purchase_facility:accelerator';
-            else if (acts.includes('action:purchase_facility:splitter')) choice = 'action:purchase_facility:splitter';
-            else if (acts.includes('action:purchase_facility:synthesizer')) choice = 'action:purchase_facility:synthesizer';
-            else choice = 'action:synthesize_matter';
-            window.triggerAction(choice);
-          }
-        }, 300);
-      } else {
-        clearInterval(botInterval);
-      }
-    };
+  const coreGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 34);
+  coreGrad.addColorStop(0, '#ffffff');
+  coreGrad.addColorStop(0.5, '#a855f7');
+  coreGrad.addColorStop(1, '#3b0764');
+  ctx.fillStyle = coreGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, 33 + Math.sin(phase * 4) * 2, 0, Math.PI * 2);
+  ctx.fill();
 
-    render();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('FORGE TAP', 0, 4);
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-  </script>
+  ctx.restore();
+
+  for (const r of rings) {
+    ctx.globalAlpha = Math.max(0, r.alpha);
+    ctx.strokeStyle = r.color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(CORE_X, CORE_Y, r.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  const valid = legalActions(state);
+  if (valid.includes('action:trigger_universal_genesis')) {
+    ctx.fillStyle = '#d97706';
+    rrect(20, 248, 320, 34, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🌟 TRIGGER UNIVERSAL GENESIS!', W / 2, 270);
+  } else {
+    ctx.fillStyle = '#a78bfa';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Hold Core to extract Quantum Foam • Auto-tick active', W / 2, 272);
+  }
+
+  // Research & Prestige Row (4 chips)
+  const resItems = [
+    { name: 'COMPRESS', cost: '150⚛️', done: state.researches.matterCompression, ok: valid.includes('action:research_matter_compression'), col: '#34d399' },
+    { name: 'SUPERCOND', cost: '600⚛️ 40⚡', done: state.researches.superconductivity, ok: valid.includes('action:research_superconductivity'), col: '#38bdf8' },
+    { name: 'RESONANCE', cost: '2.5k⚛️ 150⚡', done: state.researches.quantumResonance, ok: valid.includes('action:research_quantum_resonance'), col: '#f472b6' },
+    { name: 'INVERT', cost: '120⚡→+1💠', done: false, ok: valid.includes('action:quantum_inversion_prestige'), col: '#fbbf24' }
+  ];
+  for (let i = 0; i < 4; i++) {
+    const it = resItems[i];
+    const bx = 12 + i * 85;
+    ctx.fillStyle = it.done ? 'rgba(52,211,153,0.18)' : (it.ok ? '#1e1646' : '#100c26');
+    rrect(bx, 288, 81, 48, 7);
+    ctx.fill();
+    ctx.strokeStyle = it.done ? '#34d399' : (it.ok ? it.col : '#261e4d');
+    ctx.lineWidth = it.ok || it.done ? 1.8 : 1;
+    ctx.stroke();
+    ctx.fillStyle = it.done ? '#34d399' : (it.ok ? '#ffffff' : '#64748b');
+    ctx.font = 'bold 9.5px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(it.name + (it.done ? ' ✓' : ''), bx + 40.5, 307);
+    ctx.fillStyle = it.done ? '#6ee7b7' : (it.ok ? it.col : '#475569');
+    ctx.font = '9px system-ui, sans-serif';
+    ctx.fillText(it.done ? 'ACTIVE' : it.cost, bx + 40.5, 325);
+  }
+
+  // 5 Facility Cards
+  for (let i = 0; i < FAC_META.length; i++) {
+    const f = FAC_META[i];
+    const count = state.facilities[f.id];
+    const cost = getFacilityCost(f.id, count);
+    const canBuy = valid.includes('action:purchase_facility:' + f.id);
+    const cy = 348 + i * 54;
+
+    ctx.fillStyle = canBuy ? '#1b1440' : '#0f0b24';
+    rrect(16, cy, 328, 48, 8);
+    ctx.fill();
+    ctx.strokeStyle = canBuy ? f.color : '#231b47';
+    ctx.lineWidth = canBuy ? 1.8 : 1;
+    ctx.stroke();
+
+    ctx.fillStyle = canBuy ? f.color : '#231b47';
+    rrect(24, cy + 8, 36, 32, 6);
+    ctx.fill();
+    ctx.fillStyle = canBuy ? '#09071a' : '#94a3b8';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(count, 42, cy + 29);
+
+    ctx.fillStyle = canBuy ? '#f8fafc' : '#94a3b8';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(f.name, 70, cy + 21);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.fillText(f.yieldTxt, 70, cy + 37);
+
+    const costStr = fmt(cost.matter) + '⚛️' + (cost.energy > 0 ? ' ' + fmt(cost.energy) + '⚡' : '');
+    ctx.fillStyle = canBuy ? '#fde047' : '#475569';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(costStr, 334, cy + 28);
+  }
+
+  for (const f of floaters) {
+    ctx.globalAlpha = Math.max(0, 1 - f.t / 0.75);
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y - f.t * 36);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Goal: 1 Singularity + 2💠 + 40k⚛️ • Cycle ' + state.turns + '/' + state.maxTurns + ' • Best ' + fmt(best), W / 2, 632);
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(9, 7, 26, 0.88)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.victory ? '#34d399' : '#f87171';
+    ctx.font = 'bold 25px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.victory ? 'UNIVERSAL GENESIS!' : 'MANIFOLD COLLAPSED', W / 2, H / 2 - 36);
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.fillText('Score: ' + fmt(score(state)), W / 2, H / 2 + 6);
+    ctx.fillStyle = '#c084fc';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to forge again', W / 2, H / 2 + 48);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

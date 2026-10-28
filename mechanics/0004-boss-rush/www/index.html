@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#0d1117">
+<meta name="theme-color" content="#0c0a14">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Titan Trials</title>
@@ -11,12 +11,11 @@
   html, body {
     margin: 0;
     height: 100%;
-    background: #0d1117;
+    background: #0c0a14;
     overflow: hidden;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   canvas {
     display: block;
@@ -59,27 +58,51 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
+let best = 0;
+try { best = +localStorage.getItem('goe-0004-best') || 0; } catch (e) {}
+
 let state = createState(Date.now());
 let overAt = 0;
 
-function restart() {
-  state = createState(Date.now());
-  overAt = 0;
-}
+// Smooth 60 FPS visual state
+let visPlayerHp = state.player.hp;
+let visPlayerSta = state.player.stamina;
+let visBossHp = state.boss.hp;
+let visHeroX = 95;
+let visBossX = 258;
+let bossFlash = 0;
+let heroFlash = 0;
+let shakeTime = 0;
+let animTime = 0;
+let fxList = [];
+let popups = [];
 
-function toLogical(e) {
-  const rect = canvas.getBoundingClientRect();
-  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
-}
+const HOLD_INTERVAL = 0.17;
+const AMBIENT_INTERVAL = 0.52;
+let holdAcc = 0;
+let ambientAcc = 0;
+let pointerDown = false;
+let activeBtn = null;
+let arenaTouchStart = null;
+const keys = {};
 
-function doAction(actionName) {
-  if (isOver(state)) return;
-  if (!legalActions(state).includes(actionName)) return;
-  const res = step(state, actionName);
-  if (res.done) overAt = performance.now();
-}
+const BUTTONS = [
+  { id: 'light_slash', label: 'LIGHT SLASH', sub: '15 STA [J/1]', col: 0, row: 0, color: '#2563eb', border: '#60a5fa' },
+  { id: 'heavy_smash', label: 'HEAVY SMASH', sub: '35 STA [K/2]', col: 1, row: 0, color: '#7c3aed', border: '#c084fc' },
+  { id: 'parry', label: 'PARRY SHIELD', sub: '10 STA [L/3]', col: 0, row: 1, color: '#b45309', border: '#fbbf24' },
+  { id: 'dodge', label: 'EVADE ROLL', sub: '20 STA [A/4]', col: 1, row: 1, color: '#047857', border: '#34d399' },
+  { id: 'heal', label: 'ELIXIR +35', sub: 'Potion [H/5]', col: 0, row: 2, color: '#be123c', border: '#fda4af' },
+  { id: 'rest', label: 'BREATHE', sub: '+40 STA [SPC]', col: 1, row: 2, color: '#334155', border: '#94a3b8' }
+];
 
-function drawRoundedRect(x, y, w, h, r) {
+const BTN_W = 152;
+const BTN_H = 50;
+const BTN_X0 = 22;
+const BTN_Y0 = 434;
+const BTN_GAP_X = 12;
+const BTN_GAP_Y = 8;
+
+function rrect(x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -89,21 +112,124 @@ function drawRoundedRect(x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Button layout: 2 columns x 3 rows
-const BUTTONS = [
-  { action: 'light_slash', label: 'Light Slash', cost: '15 STA', col: 0, row: 0 },
-  { action: 'heavy_smash', label: 'Heavy Smash', cost: '35 STA', col: 1, row: 0 },
-  { action: 'parry', label: 'Parry Stance', cost: '10 STA', col: 0, row: 1 },
-  { action: 'dodge', label: 'Evade Roll', cost: '20 STA', col: 1, row: 1 },
-  { action: 'heal', label: 'Heal Potion', cost: '+35 HP', col: 0, row: 2 },
-  { action: 'rest', label: 'Catch Breath', cost: '+40 STA', col: 1, row: 2 },
-];
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
 
-const BTN_W = 150;
-const BTN_H = 50;
-const BTN_X0 = 24;
-const BTN_Y0 = 440;
-const BTN_GAP = 12;
+function restart() {
+  state = createState(Date.now());
+  visPlayerHp = state.player.hp;
+  visPlayerSta = state.player.stamina;
+  visBossHp = state.boss.hp;
+  visHeroX = 95;
+  visBossX = 258;
+  bossFlash = 0;
+  heroFlash = 0;
+  shakeTime = 0;
+  fxList = [];
+  popups = [];
+  holdAcc = 0;
+  ambientAcc = 0;
+  activeBtn = null;
+  arenaTouchStart = null;
+  overAt = 0;
+}
+
+function addPopup(x, y, text, color) {
+  popups.push({ x, y, text, color, life: 0.85, maxLife: 0.85 });
+}
+
+function hitButton(p) {
+  for (const b of BUTTONS) {
+    const bx = BTN_X0 + b.col * (BTN_W + BTN_GAP_X);
+    const by = BTN_Y0 + b.row * (BTN_H + BTN_GAP_Y);
+    if (p.x >= bx && p.x <= bx + BTN_W && p.y >= by && p.y <= by + BTN_H) {
+      return b.id;
+    }
+  }
+  return null;
+}
+
+function executeAction(act) {
+  if (isOver(state)) return false;
+  const legals = legalActions(state);
+  if (!legals.includes(act)) return false;
+
+  const prevBossIdx = state.bossIdx;
+  const prevBossHp = state.boss.hp;
+  const prevPlayerHp = state.player.hp;
+  const wasWindup = state.boss.windup;
+
+  if (act === 'light_slash') {
+    visHeroX = 155;
+    fxList.push({ type: 'slash', x: 235, y: 215, color: '#60a5fa', life: 0.24, maxLife: 0.24 });
+  } else if (act === 'heavy_smash') {
+    visHeroX = 175;
+    fxList.push({ type: 'smash', x: 245, y: 215, color: '#c084fc', life: 0.34, maxLife: 0.34 });
+    shakeTime = 0.16;
+  } else if (act === 'parry') {
+    fxList.push({ type: 'shield', x: 112, y: 225, color: '#fbbf24', life: 0.28, maxLife: 0.28 });
+  } else if (act === 'dodge') {
+    visHeroX = 52;
+    fxList.push({ type: 'ghost', x: 95, y: 255, life: 0.28, maxLife: 0.28 });
+  } else if (act === 'heal') {
+    fxList.push({ type: 'heal', x: 95, y: 225, life: 0.35, maxLife: 0.35 });
+  }
+
+  const res = step(state, act);
+  ambientAcc = 0;
+
+  if (state.bossIdx > prevBossIdx || state.won) {
+    addPopup(255, 155, 'TITAN SLAIN! +100', '#4ade80');
+    visBossHp = state.boss.hp;
+    shakeTime = 0.28;
+  } else if (state.boss.hp < prevBossHp) {
+    const dmg = prevBossHp - state.boss.hp;
+    addPopup(255, 165, '-' + dmg, act === 'heavy_smash' ? '#e879f9' : '#60a5fa');
+    bossFlash = 0.2;
+  }
+
+  if (wasWindup) {
+    visBossX = 195;
+    if (act === 'parry' && state.boss.stunned > 0) {
+      addPopup(155, 175, 'PERFECT PARRY!', '#fbbf24');
+      shakeTime = 0.22;
+    } else if (act === 'dodge') {
+      addPopup(90, 185, 'EVADED!', '#34d399');
+    }
+  }
+
+  if (state.player.hp < prevPlayerHp) {
+    addPopup(95, 180, '-' + (prevPlayerHp - state.player.hp), '#ef4444');
+    heroFlash = 0.28;
+    shakeTime = Math.max(shakeTime, 0.2);
+  } else if (state.player.hp > prevPlayerHp && prevBossIdx === state.bossIdx) {
+    addPopup(95, 180, '+' + (state.player.hp - prevPlayerHp) + ' HP', '#4ade80');
+  }
+
+  const sc = score(state);
+  if (sc > best) {
+    best = sc;
+    try { localStorage.setItem('goe-0004-best', best); } catch (e) {}
+  }
+
+  if (res.done || isOver(state)) {
+    overAt = performance.now();
+  }
+  return true;
+}
+
+function getHeldAction() {
+  if (activeBtn) return activeBtn;
+  if (keys['1'] || keys['j'] || keys['J'] || keys['q'] || keys['Q']) return 'light_slash';
+  if (keys['2'] || keys['k'] || keys['K'] || keys['w'] || keys['W']) return 'heavy_smash';
+  if (keys['3'] || keys['l'] || keys['L'] || keys['e'] || keys['E']) return 'parry';
+  if (keys['4'] || keys['a'] || keys['A'] || keys['ArrowLeft']) return 'dodge';
+  if (keys['5'] || keys['h'] || keys['H'] || keys['s'] || keys['S']) return 'heal';
+  if (keys['6'] || keys['d'] || keys['D'] || keys[' ']) return 'rest';
+  return null;
+}
 
 canvas.addEventListener('pointerdown', (e) => {
   const p = toLogical(e);
@@ -111,220 +237,524 @@ canvas.addEventListener('pointerdown', (e) => {
     if (performance.now() - overAt > 400) restart();
     return;
   }
-
-  for (const b of BUTTONS) {
-    const bx = BTN_X0 + b.col * (BTN_W + BTN_GAP);
-    const by = BTN_Y0 + b.row * (BTN_H + 8);
-    if (p.x >= bx && p.x <= bx + BTN_W && p.y >= by && p.y <= by + BTN_H) {
-      doAction(b.action);
-      return;
-    }
+  if (canvas.setPointerCapture && e.pointerId != null) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
   }
-});
+  pointerDown = true;
 
-addEventListener('keydown', (e) => {
-  if (isOver(state)) {
-    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+  const btn = hitButton(p);
+  if (btn) {
+    activeBtn = btn;
+    arenaTouchStart = null;
+    executeAction(btn);
+    holdAcc = 0;
     return;
   }
 
-  if (e.key === '1' || e.key === 'q') doAction('light_slash');
-  else if (e.key === '2' || e.key === 'w') doAction('heavy_smash');
-  else if (e.key === '3' || e.key === 'e') doAction('parry');
-  else if (e.key === '4' || e.key === 'a') doAction('dodge');
-  else if (e.key === '5' || e.key === 's') doAction('heal');
-  else if (e.key === '6' || e.key === 'd' || e.key === ' ') doAction('rest');
-  else if (e.key === 'r') restart();
+  // Direct arena touch: tap hero side to parry/defend, tap boss side to strike!
+  if (p.y >= 65 && p.y <= 325) {
+    arenaTouchStart = p;
+    const legals = legalActions(state);
+    if (p.x < 165) {
+      if (state.boss.windup && legals.includes('parry')) executeAction('parry');
+      else if (legals.includes('parry')) executeAction('parry');
+      else executeAction('rest');
+    } else {
+      if (state.boss.windup && legals.includes('parry') && p.x < 205) {
+        executeAction('parry');
+      } else if (state.boss.stunned > 0 && legals.includes('heavy_smash')) {
+        executeAction('heavy_smash');
+      } else if (legals.includes('light_slash')) {
+        executeAction('light_slash');
+      } else {
+        executeAction('rest');
+      }
+    }
+    holdAcc = 0;
+  }
 });
 
-function draw() {
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#171424');
-  bg.addColorStop(1, '#09080e');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointerDown || isOver(state)) return;
+  const p = toLogical(e);
+  const btn = hitButton(p);
+  if (btn) {
+    if (btn !== activeBtn) {
+      activeBtn = btn;
+      executeAction(btn);
+      holdAcc = 0;
+    }
+  } else {
+    activeBtn = null;
+    if (arenaTouchStart && p.x - arenaTouchStart.x < -36) {
+      arenaTouchStart = null;
+      executeAction('dodge');
+    }
+  }
+});
 
-  // Top Arena Header
-  ctx.fillStyle = '#64748b';
-  ctx.font = '11px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('GAUNTLET PROGRESS', 24, 28);
-  ctx.textAlign = 'right';
-  ctx.fillText('SCORE', W - 24, 28);
+function clearPointer() {
+  pointerDown = false;
+  activeBtn = null;
+  arenaTouchStart = null;
+}
+canvas.addEventListener('pointerup', clearPointer);
+canvas.addEventListener('pointercancel', clearPointer);
+addEventListener('pointerup', clearPointer);
+addEventListener('pointercancel', clearPointer);
 
-  ctx.fillStyle = '#f59e0b';
-  ctx.font = 'bold 15px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(`TITAN ${state.bossIdx + 1} / ${BOSS_ROSTER.length}: ${state.boss.name}`, 24, 50);
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter' || e.key === 'r' || e.key === 'R') && performance.now() - overAt > 400) {
+      restart();
+    }
+    return;
+  }
+  if (e.key === 'r' || e.key === 'R') {
+    restart();
+    return;
+  }
+  if (!keys[e.key]) {
+    keys[e.key] = true;
+    const act = getHeldAction();
+    if (act) {
+      executeAction(act);
+      holdAcc = 0;
+    }
+  }
+});
 
-  ctx.fillStyle = '#38bdf8';
-  ctx.textAlign = 'right';
-  ctx.fillText(score(state), W - 24, 50);
+addEventListener('keyup', (e) => {
+  keys[e.key] = false;
+});
 
-  // Boss Health Bar Card
-  ctx.fillStyle = '#1e1b2e';
-  drawRoundedRect(24, 68, W - 48, 140, 12);
+function update(dt) {
+  animTime += dt;
+  if (bossFlash > 0) bossFlash = Math.max(0, bossFlash - dt);
+  if (heroFlash > 0) heroFlash = Math.max(0, heroFlash - dt);
+  if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
+
+  if (!isOver(state)) {
+    const held = getHeldAction();
+    if (held) {
+      holdAcc += dt;
+      while (holdAcc >= HOLD_INTERVAL && !isOver(state)) {
+        holdAcc -= HOLD_INTERVAL;
+        const nextAct = getHeldAction();
+        if (!nextAct || !executeAction(nextAct)) break;
+      }
+    } else {
+      holdAcc = 0;
+      ambientAcc += dt;
+      if (ambientAcc >= AMBIENT_INTERVAL) {
+        ambientAcc -= AMBIENT_INTERVAL;
+        executeAction('rest');
+      }
+    }
+  }
+
+  const rate = Math.min(1, dt * 15);
+  visPlayerHp += (state.player.hp - visPlayerHp) * rate;
+  visPlayerSta += (state.player.stamina - visPlayerSta) * rate;
+  visBossHp += (state.boss.hp - visBossHp) * rate;
+  visHeroX += (95 - visHeroX) * Math.min(1, dt * 12);
+  visBossX += (258 - visBossX) * Math.min(1, dt * 10);
+
+  fxList = fxList.filter(f => { f.life -= dt; return f.life > 0; });
+  popups = popups.filter(p => { p.life -= dt; p.y -= 26 * dt; return p.life > 0; });
+}
+
+function drawArena() {
+  // Arena frame
+  ctx.fillStyle = '#151224';
+  rrect(16, 62, W - 32, 240, 12);
   ctx.fill();
-  ctx.strokeStyle = '#332e4d';
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = state.boss.windup ? '#ef4444' : '#2d2648';
+  ctx.lineWidth = state.boss.windup ? 2 : 1.5;
   ctx.stroke();
 
-  // Boss Avatar / Icon
-  ctx.fillStyle = state.boss.stunned > 0 ? '#38bdf8' : state.boss.windup ? '#ef4444' : '#e2e8f0';
+  // Arena pillars & floor
+  ctx.fillStyle = '#1d1832';
+  ctx.fillRect(36, 78, 18, 180);
+  ctx.fillRect(170, 78, 18, 180);
+  ctx.fillRect(304, 78, 18, 180);
+
+  const floorY = 258;
+  ctx.fillStyle = '#221c38';
+  ctx.fillRect(20, floorY, W - 40, 40);
+  ctx.strokeStyle = '#4c3f78';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(64, 112, 28, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(20, floorY);
+  ctx.lineTo(W - 20, floorY);
+  ctx.stroke();
 
-  ctx.fillStyle = '#0f172a';
-  ctx.font = 'bold 22px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(state.boss.stunned > 0 ? '★' : state.boss.windup ? '!' : '⚔', 64, 120);
-
-  // Boss HP Bar
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '12px sans-serif';
+  // Boss HP Bar inside top of arena
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = 'bold 12px system-ui, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(`HP: ${state.boss.hp} / ${state.boss.maxHp}`, 105, 96);
+  ctx.fillText(state.boss.name.toUpperCase(), 28, 82);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.fillText(state.boss.hp + ' / ' + state.boss.maxHp, W - 28, 82);
 
-  ctx.fillStyle = '#0f172a';
-  drawRoundedRect(105, 104, 210, 16, 6);
+  ctx.fillStyle = '#090812';
+  rrect(28, 88, W - 56, 11, 5);
   ctx.fill();
-
-  const bossHpRatio = Math.max(0, state.boss.hp / state.boss.maxHp);
+  const bRatio = Math.max(0, Math.min(1, visBossHp / state.boss.maxHp));
   ctx.fillStyle = state.boss.windup ? '#ef4444' : '#f59e0b';
-  drawRoundedRect(105, 104, 210 * bossHpRatio, 16, 6);
-  ctx.fill();
+  if (bRatio > 0) {
+    rrect(28, 88, Math.max(8, (W - 56) * bRatio), 11, 5);
+    ctx.fill();
+  }
 
-  // Boss State Indicator
-  ctx.font = 'bold 13px sans-serif';
+  // Real-time Boss Windup / Pace Progress bar
+  const paceRatio = Math.min(1, ambientAcc / AMBIENT_INTERVAL);
+  ctx.fillStyle = state.boss.windup ? 'rgba(239,68,68,0.85)' : 'rgba(148,163,184,0.35)';
+  ctx.fillRect(28, 102, (W - 56) * paceRatio, 3);
+
+  // Boss Status Banner
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 11px system-ui, sans-serif';
   if (state.boss.stunned > 0) {
     ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`STUNNED (${state.boss.stunned} turns remaining)`, 105, 142);
+    ctx.fillText('★ STUNNED (' + state.boss.stunned + ' TURNS) — TAP TITAN TO SMASH! ★', W / 2, 119);
   } else if (state.boss.windup) {
-    ctx.fillStyle = '#ef4444';
-    ctx.fillText(`⚠ WINDING UP: ${state.boss.intent}!`, 105, 142);
+    ctx.fillStyle = '#f87171';
+    ctx.fillText('⚠ TELEGRAPH: ' + state.boss.intent.toUpperCase() + ' — PARRY OR DODGE! ⚠', W / 2, 119);
   } else {
     ctx.fillStyle = '#94a3b8';
-    ctx.fillText('Poised for strike...', 105, 142);
+    ctx.fillText('Tap Titan to strike · Tap Hero to parry', W / 2, 119);
   }
 
-  // Combat Log Banner
-  ctx.fillStyle = '#141220';
-  drawRoundedRect(24, 220, W - 48, 54, 8);
-  ctx.fill();
-  ctx.strokeStyle = '#2a2640';
-  ctx.stroke();
+  // Draw Colossal Titan
+  const bob = Math.sin(animTime * 4) * 3;
+  ctx.save();
+  ctx.translate(visBossX, floorY);
 
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(state.lastEvent, W / 2, 252);
-
-  // Player Stats Card
-  ctx.fillStyle = '#1e1b2e';
-  drawRoundedRect(24, 286, W - 48, 136, 12);
-  ctx.fill();
-  ctx.strokeStyle = '#332e4d';
-  ctx.stroke();
-
-  // HP Bar
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(`PLAYER HP: ${state.player.hp} / ${PLAYER_MAX_HP}`, 40, 312);
-
-  ctx.fillStyle = '#0f172a';
-  drawRoundedRect(40, 320, W - 80, 14, 5);
-  ctx.fill();
-  const hpRatio = Math.max(0, state.player.hp / PLAYER_MAX_HP);
-  ctx.fillStyle = hpRatio > 0.3 ? '#22c55e' : '#ef4444';
-  drawRoundedRect(40, 320, (W - 80) * hpRatio, 14, 5);
-  ctx.fill();
-
-  // Stamina Bar
-  ctx.fillStyle = '#94a3b8';
-  ctx.fillText(`STAMINA: ${state.player.stamina} / ${PLAYER_MAX_STAMINA}`, 40, 354);
-
-  ctx.fillStyle = '#0f172a';
-  drawRoundedRect(40, 362, W - 80, 14, 5);
-  ctx.fill();
-  const staRatio = Math.max(0, state.player.stamina / PLAYER_MAX_STAMINA);
-  ctx.fillStyle = '#38bdf8';
-  drawRoundedRect(40, 362, (W - 80) * staRatio, 14, 5);
-  ctx.fill();
-
-  // Potions & Combo
-  ctx.fillStyle = '#fbbf24';
-  ctx.font = 'bold 13px sans-serif';
-  ctx.fillText(`Potions: ${'🧪 '.repeat(state.player.potions) || 'EMPTY'}`, 40, 400);
-
-  ctx.fillStyle = '#ec4899';
-  ctx.textAlign = 'right';
-  ctx.fillText(`Combo: x${state.player.combo}`, W - 40, 400);
-
-  // Action Buttons
-  const legals = legalActions(state);
-  for (const b of BUTTONS) {
-    const isAvail = legals.includes(b.action);
-    const bx = BTN_X0 + b.col * (BTN_W + BTN_GAP);
-    const by = BTN_Y0 + b.row * (BTN_H + 8);
-
-    ctx.fillStyle = isAvail ? '#2d2847' : '#141220';
-    drawRoundedRect(bx, by, BTN_W, BTN_H, 8);
-    ctx.fill();
-
-    ctx.strokeStyle = isAvail ? '#4f46e5' : '#232035';
-    ctx.lineWidth = 1.2;
+  // Windup danger ring
+  if (state.boss.windup) {
+    ctx.strokeStyle = 'rgba(239, 68, 68, ' + (0.45 + Math.sin(animTime * 16) * 0.3) + ')';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, -48 + bob, 48, 0, Math.PI * 2);
     ctx.stroke();
-
-    ctx.fillStyle = isAvail ? '#ffffff' : '#475569';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(b.label, bx + 12, by + 24);
-
-    ctx.fillStyle = isAvail ? '#38bdf8' : '#334155';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(b.cost, bx + 12, by + 40);
   }
 
-  ctx.fillStyle = '#64748b';
-  ctx.font = '10px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Tap cards or press 1-6 / Q-D to act', W / 2, 622);
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 34, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Game Over / Victory Modal
-  if (isOver(state)) {
-    ctx.fillStyle = 'rgba(9, 8, 14, 0.94)';
-    ctx.fillRect(0, 0, W, H);
+  const palette = state.bossIdx === 0
+    ? { body: '#475569', trim: '#f59e0b', eye: '#fde047' }
+    : state.bossIdx === 1
+      ? { body: '#4c1d95', trim: '#38bdf8', eye: '#67e8f9' }
+      : { body: '#7f1d1d', trim: '#f97316', eye: '#fef08a' };
 
-    ctx.textAlign = 'center';
-    if (state.won) {
-      ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillText('TRIALS CONQUERED', W / 2, H / 2 - 40);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '16px sans-serif';
-      ctx.fillText('All colossal titans slain!', W / 2, H / 2 - 8);
-    } else {
-      ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillText('FALLEN IN COMBAT', W / 2, H / 2 - 40);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '16px sans-serif';
-      ctx.fillText(`Defeated by ${state.boss.name}`, W / 2, H / 2 - 8);
-    }
+  ctx.fillStyle = bossFlash > 0 ? '#ffffff' : palette.body;
+  rrect(-26, -86 + bob, 52, 86, 10);
+  ctx.fill();
+  ctx.strokeStyle = palette.trim;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
 
+  // Horns / Crest
+  ctx.fillStyle = palette.trim;
+  ctx.beginPath();
+  ctx.moveTo(-20, -86 + bob);
+  ctx.lineTo(-32, -108 + bob);
+  ctx.lineTo(-8, -86 + bob);
+  ctx.moveTo(20, -86 + bob);
+  ctx.lineTo(32, -108 + bob);
+  ctx.lineTo(8, -86 + bob);
+  ctx.fill();
+
+  // Glowing Eyes
+  ctx.fillStyle = state.boss.windup ? '#ef4444' : palette.eye;
+  ctx.fillRect(-14, -70 + bob, 9, 5);
+  ctx.fillRect(5, -70 + bob, 9, 5);
+
+  // Titan Weapon
+  ctx.strokeStyle = palette.trim;
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(-22, -46 + bob);
+  ctx.lineTo(-56, state.boss.windup ? -84 + bob : -30 + bob);
+  ctx.stroke();
+
+  if (state.boss.stunned > 0) {
     ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 30);
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('★  ★  ★', 0, -112 + bob);
+  }
+  ctx.restore();
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('Tap anywhere to challenge again', W / 2, H / 2 + 75);
+  // Draw Challenger Hero
+  const hBob = Math.sin(animTime * 7) * 1.5;
+  ctx.save();
+  ctx.translate(visHeroX, floorY);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 18, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cape
+  ctx.fillStyle = '#be123c';
+  ctx.beginPath();
+  ctx.moveTo(-6, -42 + hBob);
+  ctx.lineTo(-22, -6 + Math.sin(animTime * 10) * 2);
+  ctx.lineTo(-4, -10);
+  ctx.closePath();
+  ctx.fill();
+
+  // Armor
+  ctx.fillStyle = heroFlash > 0 ? '#fca5a5' : '#cbd5e1';
+  rrect(-10, -44 + hBob, 20, 44, 5);
+  ctx.fill();
+
+  // Helm
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath();
+  ctx.arc(0, -51 + hBob, 8.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillRect(1, -53 + hBob, 7, 3);
+
+  // Shield & Blade
+  ctx.fillStyle = '#f59e0b';
+  rrect(6, -38 + hBob, 7, 22, 3);
+  ctx.fill();
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.moveTo(8, -28 + hBob);
+  ctx.lineTo(32, -46 + hBob);
+  ctx.stroke();
+
+  ctx.restore();
+
+  // FX
+  for (const fx of fxList) {
+    const a = Math.max(0, fx.life / fx.maxLife);
+    ctx.save();
+    ctx.globalAlpha = a;
+    if (fx.type === 'slash') {
+      ctx.strokeStyle = fx.color;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, 34, -2.4, -0.4);
+      ctx.stroke();
+    } else if (fx.type === 'smash') {
+      ctx.strokeStyle = fx.color;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, 48 * (1.2 - a * 0.5), 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (fx.type === 'shield') {
+      ctx.strokeStyle = fx.color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, 26, -1.1, 1.1);
+      ctx.stroke();
+    } else if (fx.type === 'ghost') {
+      ctx.fillStyle = 'rgba(52, 211, 153, 0.45)';
+      rrect(fx.x - 10, fx.y - 44, 20, 44, 5);
+      ctx.fill();
+    } else if (fx.type === 'heal') {
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, 28 * (1.3 - a * 0.5), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Popups
+  for (const p of popups) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.restore();
   }
 }
 
-function frame() {
+function draw() {
+  ctx.save();
+  if (shakeTime > 0) {
+    const mag = shakeTime * 15;
+    ctx.translate(Math.sin(animTime * 55) * mag, Math.cos(animTime * 45) * mag * 0.6);
+  }
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#161224');
+  bg.addColorStop(1, '#09080f');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('GAUNTLET TRIAL ' + (state.bossIdx + 1) + ' OF ' + BOSS_ROSTER.length, 20, 24);
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST ' + best, W - 20, 24);
+
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 17px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(state.boss.name, 20, 46);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE ' + score(state), W - 20, 46);
+
+  drawArena();
+
+  // Event Log Ticker
+  ctx.fillStyle = '#141122';
+  rrect(16, 310, W - 32, 30, 7);
+  ctx.fill();
+  ctx.strokeStyle = '#2a2444';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  const msg = state.lastEvent.length > 48 ? state.lastEvent.slice(0, 46) + '...' : state.lastEvent;
+  ctx.fillText(msg, W / 2, 329);
+
+  // Player Vitals Panel
+  ctx.fillStyle = '#181429';
+  rrect(16, 348, W - 32, 76, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#2d2648';
+  ctx.stroke();
+
+  // HP
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('HP ' + state.player.hp + '/' + PLAYER_MAX_HP, 28, 367);
+  ctx.fillStyle = '#090812';
+  rrect(112, 357, 132, 12, 5);
+  ctx.fill();
+  const hpRatio = Math.max(0, Math.min(1, visPlayerHp / PLAYER_MAX_HP));
+  ctx.fillStyle = hpRatio > 0.3 ? '#22c55e' : '#ef4444';
+  if (hpRatio > 0) {
+    rrect(112, 357, Math.max(6, 132 * hpRatio), 12, 5);
+    ctx.fill();
+  }
+
+  // Potions
+  ctx.fillStyle = '#fbbf24';
+  ctx.textAlign = 'right';
+  ctx.fillText('ELIXIR x' + state.player.potions, W - 28, 367);
+
+  // Stamina
+  ctx.fillStyle = '#cbd5e1';
+  ctx.textAlign = 'left';
+  ctx.fillText('STA ' + state.player.stamina + '/' + PLAYER_MAX_STAMINA, 28, 392);
+  ctx.fillStyle = '#090812';
+  rrect(112, 382, 132, 12, 5);
+  ctx.fill();
+  const staRatio = Math.max(0, Math.min(1, visPlayerSta / PLAYER_MAX_STAMINA));
+  ctx.fillStyle = '#38bdf8';
+  if (staRatio > 0) {
+    rrect(112, 382, Math.max(6, 132 * staRatio), 12, 5);
+    ctx.fill();
+  }
+
+  // Combo
+  ctx.fillStyle = '#ec4899';
+  ctx.textAlign = 'right';
+  ctx.fillText('COMBO x' + state.player.combo, W - 28, 392);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Parry during WINDUP to stun Titan & restore +35 Stamina!', W / 2, 414);
+
+  // Action Buttons Deck
+  const legals = legalActions(state);
+  const heldAct = getHeldAction();
+  for (const b of BUTTONS) {
+    const isAvail = legals.includes(b.id);
+    const isPressed = heldAct === b.id;
+    const bx = BTN_X0 + b.col * (BTN_W + BTN_GAP_X);
+    const by = BTN_Y0 + b.row * (BTN_H + BTN_GAP_Y);
+
+    const urgentDefend = state.boss.windup && (b.id === 'parry' || b.id === 'dodge') && isAvail;
+
+    ctx.fillStyle = isPressed ? '#ffffff' : (isAvail ? b.color : '#141122');
+    rrect(bx, by, BTN_W, BTN_H, 9);
+    ctx.fill();
+
+    ctx.strokeStyle = isPressed ? '#ffffff' : (urgentDefend ? '#fde047' : (isAvail ? b.border : '#241f38'));
+    ctx.lineWidth = urgentDefend ? 2.5 : 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = isPressed ? '#0f172a' : (isAvail ? '#ffffff' : '#475569');
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(b.label, bx + 12, by + 22);
+
+    ctx.fillStyle = isPressed ? '#334155' : (isAvail ? '#e2e8f0' : '#334155');
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.fillText(b.sub, bx + 12, by + 39);
+  }
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Hold/Tap buttons or arena · Keys 1-6 / J K L A H Space', W / 2, 620);
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(9, 8, 15, 0.92)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = state.won ? '#4ade80' : '#ef4444';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'TRIALS CONQUERED!' : 'FALLEN IN COMBAT', W / 2, H / 2 - 48);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(
+      state.won ? 'All 3 Colossal Titans vanquished!' : 'Defeated by ' + state.boss.name,
+      W / 2,
+      H / 2 - 14
+    );
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 26);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText('Best: ' + best, W / 2, H / 2 + 52);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap or press Space to challenge again', W / 2, H / 2 + 94);
+  }
+
+  ctx.restore();
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
   draw();
   requestAnimationFrame(frame);
 }

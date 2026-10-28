@@ -1,7 +1,7 @@
 (function (root) {
   const GRID_W = 16;
   const GRID_H = 12;
-  const MAX_STEPS = 180;
+  const MAX_STEPS = 1200;
   const GRAVITY = 0.3;
   const TERMINAL_VEL = 1.8;
 
@@ -73,7 +73,7 @@
     }
 
     if (state.player.dashes > 0) {
-      actions.push('dash_right', 'dash_left', 'dash_up', 'dash_up_right');
+      actions.push('dash_right', 'dash_left', 'dash_up', 'dash_up_right', 'dash_up_left');
     }
 
     return actions;
@@ -139,6 +139,10 @@
       state.player.dashes -= 1;
     } else if (action === 'dash_up_right') {
       state.player.vx = 1.4;
+      state.player.vy = -1.4;
+      state.player.dashes -= 1;
+    } else if (action === 'dash_up_left') {
+      state.player.vx = -1.4;
       state.player.vy = -1.4;
       state.player.dashes -= 1;
     }

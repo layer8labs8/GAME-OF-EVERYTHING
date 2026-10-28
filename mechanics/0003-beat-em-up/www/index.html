@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#0d0f17">
+<meta name="theme-color" content="#0b0e18">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Street Brawler</title>
@@ -11,12 +11,11 @@
   html, body {
     margin: 0;
     height: 100%;
-    background: #0d0f17;
+    background: #0b0e18;
     overflow: hidden;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   canvas {
     display: block;
@@ -31,6 +30,7 @@
 <script>
 const {
   WIDTH,
+  MAX_STEPS,
   TOTAL_THUGS,
   PLAYER_MAX_HP,
   createState,
@@ -45,6 +45,7 @@ const ctx = canvas.getContext('2d');
 
 const W = 360;
 const H = 640;
+const LANE_Y = [235, 305, 375];
 
 let scale = 1;
 function resize() {
@@ -59,29 +60,36 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
+let best = 0;
+try { best = +localStorage.getItem('goe-0003-best') || 0; } catch (e) {}
+
 let state = createState(Date.now());
 let overAt = 0;
 
-function restart() {
-  state = createState(Date.now());
-  overAt = 0;
-}
+// Smooth 60 FPS visual state
+let visPlayerX = state.player.x;
+let visPlayerY = LANE_Y[state.player.lane];
+let playerFacing = 1;
+let visHp = state.player.hp;
+let visSuper = state.player.superGauge;
+let hurtFlash = 0;
+let shakeTime = 0;
+let animTime = 0;
+const enemyVis = new Map();
+let fxList = [];
+let popups = [];
 
-const LANE_Y = [220, 285, 350];
+// Real-time input & pacing state
+const HOLD_INTERVAL = 0.13;
+const AMBIENT_INTERVAL = 0.45;
+let holdAcc = 0;
+let ambientAcc = 0;
+let pointerDown = false;
+let activeBtn = null;
+let dragTarget = null;
+const keys = {};
 
-function toLogical(e) {
-  const rect = canvas.getBoundingClientRect();
-  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
-}
-
-function doAction(actionName) {
-  if (isOver(state)) return;
-  if (!legalActions(state).includes(actionName)) return;
-  const res = step(state, actionName);
-  if (res.done) overAt = performance.now();
-}
-
-function drawRoundedRect(x, y, w, h, r) {
+function rrect(x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -91,316 +99,755 @@ function drawRoundedRect(x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Touch controls
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function restart() {
+  state = createState(Date.now());
+  visPlayerX = state.player.x;
+  visPlayerY = LANE_Y[state.player.lane];
+  playerFacing = 1;
+  visHp = state.player.hp;
+  visSuper = state.player.superGauge;
+  hurtFlash = 0;
+  shakeTime = 0;
+  enemyVis.clear();
+  fxList = [];
+  popups = [];
+  holdAcc = 0;
+  ambientAcc = 0;
+  activeBtn = null;
+  dragTarget = null;
+  overAt = 0;
+}
+
+function addPopup(x, y, text, color) {
+  popups.push({ x, y, text, color, life: 0.75, maxLife: 0.75 });
+}
+
+// Control button definitions in bottom deck
+const CONTROLS = [
+  { id: 'lane_up', x: 68, y: 462, w: 46, h: 40, label: '▲', sub: '' },
+  { id: 'lane_down', x: 68, y: 550, w: 46, h: 40, label: '▼', sub: '' },
+  { id: 'left', x: 20, y: 504, w: 46, h: 44, label: '◀', sub: '' },
+  { id: 'right', x: 116, y: 504, w: 46, h: 44, label: '▶', sub: '' },
+  { id: 'punch', x: 180, y: 466, w: 78, h: 54, label: 'PUNCH', sub: 'Combo [J]', color: '#dc2626', border: '#f87171' },
+  { id: 'jump_kick', x: 266, y: 466, w: 78, h: 54, label: 'KICK', sub: 'Fly [K]', color: '#059669', border: '#34d399' },
+  { id: 'super', x: 180, y: 530, w: 78, h: 54, label: 'SUPER', sub: 'Upper [L]', color: '#d97706', border: '#facc15' },
+  { id: 'pick_food', x: 266, y: 530, w: 78, h: 54, label: 'EAT', sub: 'Food [E]', color: '#4338ca', border: '#818cf8' }
+];
+
+function hitButton(p) {
+  for (const b of CONTROLS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      return b.id;
+    }
+  }
+  return null;
+}
+
+function executeAction(act) {
+  if (isOver(state)) return false;
+  const legals = legalActions(state);
+  if (!legals.includes(act)) return false;
+
+  const prevHp = state.player.hp;
+  const prevEnemies = state.enemies.map(e => ({ id: e.id, x: e.x, lane: e.lane, hp: e.hp }));
+
+  if (act === 'left') playerFacing = -1;
+  else if (act === 'right') playerFacing = 1;
+  else if (act === 'punch' || act === 'jump_kick' || act === 'super') {
+    const nearest = state.enemies.reduce((bestEn, e) => {
+      const d = Math.abs(e.x - state.player.x) + Math.abs(e.lane - state.player.lane) * 35;
+      return !bestEn || d < bestEn.d ? { e, d } : bestEn;
+    }, null);
+    if (nearest && Math.abs(nearest.e.x - state.player.x) > 4) {
+      playerFacing = nearest.e.x >= state.player.x ? 1 : -1;
+    }
+  }
+
+  const px = state.player.x;
+  const py = LANE_Y[state.player.lane];
+
+  if (act === 'punch') {
+    fxList.push({ type: 'punch', x: px, y: py - 24, dir: playerFacing, combo: state.player.combo, life: 0.22, maxLife: 0.22 });
+  } else if (act === 'jump_kick') {
+    fxList.push({ type: 'kick', x: px, y: py - 26, dir: playerFacing, life: 0.28, maxLife: 0.28 });
+  } else if (act === 'super') {
+    fxList.push({ type: 'super', x: px, y: py - 20, life: 0.42, maxLife: 0.42 });
+    shakeTime = 0.25;
+  }
+
+  const res = step(state, act);
+  ambientAcc = 0;
+
+  // Detect enemy damage & KOs for popups & hit flashes
+  for (const old of prevEnemies) {
+    const cur = state.enemies.find(e => e.id === old.id);
+    const ex = (cur ? cur.x : old.x);
+    const ey = LANE_Y[cur ? cur.lane : old.lane];
+    if (!cur) {
+      addPopup(ex, ey - 50, 'KO! +40', '#fbbf24');
+      fxList.push({ type: 'ko', x: ex, y: ey - 24, life: 0.3, maxLife: 0.3 });
+      shakeTime = Math.max(shakeTime, 0.12);
+    } else if (cur.hp < old.hp) {
+      const dmg = old.hp - cur.hp;
+      addPopup(ex, ey - 48, '-' + dmg, '#38bdf8');
+      const v = enemyVis.get(cur.id);
+      if (v) v.flash = 0.18;
+      shakeTime = Math.max(shakeTime, 0.08);
+    }
+  }
+
+  // Detect player heal or hurt
+  if (state.player.hp > prevHp) {
+    addPopup(state.player.x, LANE_Y[state.player.lane] - 54, '+' + (state.player.hp - prevHp) + ' HP', '#4ade80');
+  } else if (state.player.hp < prevHp) {
+    addPopup(state.player.x, LANE_Y[state.player.lane] - 54, '-' + (prevHp - state.player.hp), '#ef4444');
+    hurtFlash = 0.28;
+    shakeTime = Math.max(shakeTime, 0.16);
+  }
+
+  const sc = score(state);
+  if (sc > best) {
+    best = sc;
+    try { localStorage.setItem('goe-0003-best', best); } catch (e) {}
+  }
+
+  if (res.done || isOver(state)) {
+    overAt = performance.now();
+  }
+  return true;
+}
+
+function actionFromPlayfieldPoint(p, isInitialTap) {
+  const legals = legalActions(state);
+  const px = state.player.x;
+  const pLane = state.player.lane;
+
+  // Check if tapping directly on dropped food when pickable
+  if (legals.includes('pick_food')) {
+    for (const it of state.items) {
+      if (Math.abs(p.x - it.x) <= 28 && Math.abs(p.y - LANE_Y[it.lane]) <= 32) {
+        return 'pick_food';
+      }
+    }
+    if (!isInitialTap && state.player.hp < PLAYER_MAX_HP) {
+      return 'pick_food';
+    }
+  }
+
+  // Check if tapping/holding on an enemy in strike range
+  for (const en of state.enemies) {
+    const ey = LANE_Y[en.lane];
+    if (Math.abs(p.x - en.x) <= 36 && Math.abs(p.y - (ey - 22)) <= 38) {
+      if (en.lane === pLane && Math.abs(en.x - px) <= 38) return 'punch';
+      if (Math.abs(en.lane - pLane) <= 1 && Math.abs(en.x - px) <= 45) return 'jump_kick';
+    }
+  }
+
+  // Desired lane from Y coordinate
+  let targetLane = 1;
+  if (p.y < 268) targetLane = 0;
+  else if (p.y > 340) targetLane = 2;
+
+  if (targetLane < pLane && legals.includes('lane_up')) return 'lane_up';
+  if (targetLane > pLane && legals.includes('lane_down')) return 'lane_down';
+
+  const dx = p.x - px;
+  if (dx < -14 && legals.includes('left')) return 'left';
+  if (dx > 14 && legals.includes('right')) return 'right';
+
+  // If finger is right on player and enemy is in punch range on initial tap, throw a punch!
+  if (isInitialTap) {
+    const closeSame = state.enemies.some(e => e.lane === pLane && Math.abs(e.x - px) <= 38);
+    if (closeSame) return 'punch';
+    const closeAdj = state.enemies.some(e => Math.abs(e.lane - pLane) <= 1 && Math.abs(e.x - px) <= 45);
+    if (closeAdj) return 'jump_kick';
+  }
+  return null;
+}
+
+function getHeldAction() {
+  if (activeBtn) return activeBtn;
+
+  if (keys['l'] || keys['L'] || keys[' ']) {
+    if (legalActions(state).includes('super')) return 'super';
+  }
+  if (keys['e'] || keys['E']) {
+    if (legalActions(state).includes('pick_food')) return 'pick_food';
+  }
+  if (keys['j'] || keys['J']) return 'punch';
+  if (keys['k'] || keys['K']) return 'jump_kick';
+  if (keys['ArrowUp'] || keys['w'] || keys['W']) return 'lane_up';
+  if (keys['ArrowDown'] || keys['s'] || keys['S']) return 'lane_down';
+  if (keys['ArrowLeft'] || keys['a'] || keys['A']) return 'left';
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) return 'right';
+
+  if (dragTarget) {
+    return actionFromPlayfieldPoint(dragTarget, false);
+  }
+  return null;
+}
+
 canvas.addEventListener('pointerdown', (e) => {
   const p = toLogical(e);
   if (isOver(state)) {
     if (performance.now() - overAt > 400) restart();
     return;
   }
+  if (canvas.setPointerCapture && e.pointerId != null) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+  pointerDown = true;
 
-  // D-pad around (100, 530)
-  const cx = 95;
-  const cy = 525;
-  if (p.x >= cx - 25 && p.x <= cx + 25 && p.y >= cy - 65 && p.y <= cy - 20) {
-    doAction('lane_up');
-    return;
-  }
-  if (p.x >= cx - 25 && p.x <= cx + 25 && p.y >= cy + 20 && p.y <= cy + 65) {
-    doAction('lane_down');
-    return;
-  }
-  if (p.x >= cx - 65 && p.x <= cx - 20 && p.y >= cy - 25 && p.y <= cy + 25) {
-    doAction('left');
-    return;
-  }
-  if (p.x >= cx + 20 && p.x <= cx + 65 && p.y >= cy - 25 && p.y <= cy + 25) {
-    doAction('right');
-    return;
-  }
-  if (p.x >= cx - 18 && p.x <= cx + 18 && p.y >= cy - 18 && p.y <= cy + 18) {
-    doAction('wait');
+  const btn = hitButton(p);
+  if (btn) {
+    activeBtn = btn;
+    dragTarget = null;
+    executeAction(btn);
+    holdAcc = 0;
     return;
   }
 
-  // Action Buttons
-  // Punch (Red, 195, 490)
-  if (p.x >= 180 && p.x <= 255 && p.y >= 465 && p.y <= 525) {
-    doAction('punch');
-    return;
-  }
-  // Jump Kick (Green, 270, 490)
-  if (p.x >= 265 && p.x <= 340 && p.y >= 465 && p.y <= 525) {
-    doAction('jump_kick');
-    return;
-  }
-  // Super (Gold, 180, 545)
-  if (p.x >= 180 && p.x <= 255 && p.y >= 535 && p.y <= 590) {
-    doAction('super');
-    return;
-  }
-  // Pick Food (Yellow, 265, 545)
-  if (p.x >= 265 && p.x <= 340 && p.y >= 535 && p.y <= 590) {
-    doAction('pick_food');
-    return;
+  if (p.y >= 60 && p.y <= 445) {
+    activeBtn = null;
+    dragTarget = p;
+    const act = actionFromPlayfieldPoint(p, true);
+    if (act) {
+      executeAction(act);
+      holdAcc = 0;
+    }
   }
 });
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointerDown || isOver(state)) return;
+  const p = toLogical(e);
+  const btn = hitButton(p);
+  if (btn) {
+    if (btn !== activeBtn) {
+      activeBtn = btn;
+      dragTarget = null;
+      executeAction(btn);
+      holdAcc = 0;
+    }
+  } else if (p.y <= 450) {
+    activeBtn = null;
+    dragTarget = p;
+  } else {
+    activeBtn = null;
+  }
+});
+
+function clearPointer() {
+  pointerDown = false;
+  activeBtn = null;
+  dragTarget = null;
+}
+canvas.addEventListener('pointerup', clearPointer);
+canvas.addEventListener('pointercancel', clearPointer);
+addEventListener('pointerup', clearPointer);
+addEventListener('pointercancel', clearPointer);
 
 addEventListener('keydown', (e) => {
   if (isOver(state)) {
-    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    if ((e.key === ' ' || e.key === 'Enter' || e.key === 'r' || e.key === 'R') && performance.now() - overAt > 400) {
+      restart();
+    }
     return;
   }
-
-  if (e.key === 'ArrowLeft' || e.key === 'a') doAction('left');
-  else if (e.key === 'ArrowRight' || e.key === 'd') doAction('right');
-  else if (e.key === 'ArrowUp' || e.key === 'w') doAction('lane_up');
-  else if (e.key === 'ArrowDown' || e.key === 's') doAction('lane_down');
-  else if (e.key === 'j') doAction('punch');
-  else if (e.key === 'k') doAction('jump_kick');
-  else if (e.key === 'l' || e.key === ' ') doAction('super');
-  else if (e.key === 'e') doAction('pick_food');
-  else if (e.key === 'r') restart();
+  if (e.key === 'r' || e.key === 'R') {
+    restart();
+    return;
+  }
+  if (!keys[e.key]) {
+    keys[e.key] = true;
+    const act = getHeldAction();
+    if (act) {
+      executeAction(act);
+      holdAcc = 0;
+    }
+  }
 });
 
-function draw() {
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#121626');
-  bg.addColorStop(1, '#080a10');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+addEventListener('keyup', (e) => {
+  keys[e.key] = false;
+});
 
-  // Top HUD
-  ctx.fillStyle = '#64748b';
-  ctx.font = '11px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('HEALTH', 20, 24);
-  ctx.textAlign = 'center';
-  ctx.fillText('SUPER GAUGE', W / 2, 24);
-  ctx.textAlign = 'right';
-  ctx.fillText('THUGS', W - 20, 24);
+function update(dt) {
+  animTime += dt;
+  if (hurtFlash > 0) hurtFlash = Math.max(0, hurtFlash - dt);
+  if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
 
-  // Health bar
-  ctx.fillStyle = '#1e293b';
-  drawRoundedRect(20, 32, 100, 14, 4);
-  ctx.fill();
-  const hpRatio = Math.max(0, state.player.hp / PLAYER_MAX_HP);
-  ctx.fillStyle = hpRatio > 0.3 ? '#22c55e' : '#ef4444';
-  drawRoundedRect(20, 32, 100 * hpRatio, 14, 4);
-  ctx.fill();
-
-  // Super gauge
-  ctx.fillStyle = '#1e293b';
-  drawRoundedRect(W / 2 - 50, 32, 100, 14, 4);
-  ctx.fill();
-  const superRatio = Math.min(1, state.player.superGauge / 100);
-  ctx.fillStyle = state.player.superGauge >= 50 ? '#f59e0b' : '#38bdf8';
-  drawRoundedRect(W / 2 - 50, 32, 100 * superRatio, 14, 4);
-  ctx.fill();
-
-  // Thugs defeated
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 14px sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText(`${state.thugsDefeated} / ${TOTAL_THUGS}`, W - 20, 44);
-
-  // City Skyline
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 60, W, 100);
-  ctx.fillStyle = '#1e293b';
-  ctx.fillRect(30, 80, 45, 80);
-  ctx.fillRect(100, 70, 60, 90);
-  ctx.fillRect(190, 85, 50, 75);
-  ctx.fillRect(270, 75, 55, 85);
-
-  // Street Pavement (Lanes)
-  ctx.fillStyle = '#1a1f2e';
-  ctx.fillRect(0, 160, W, 240);
-
-  // Lane separator dashed lines
-  ctx.strokeStyle = '#334155';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([12, 10]);
-
-  ctx.beginPath();
-  ctx.moveTo(0, 250);
-  ctx.lineTo(W, 250);
-  ctx.moveTo(0, 315);
-  ctx.lineTo(W, 315);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Draw Items (Food)
-  for (const it of state.items) {
-    const iy = LANE_Y[it.lane];
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath();
-    ctx.arc(it.x, iy - 6, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🍗', it.x, iy - 2);
+  if (!isOver(state)) {
+    const held = getHeldAction();
+    if (held) {
+      holdAcc += dt;
+      while (holdAcc >= HOLD_INTERVAL && !isOver(state)) {
+        holdAcc -= HOLD_INTERVAL;
+        const nextAct = getHeldAction();
+        if (!nextAct || !executeAction(nextAct)) break;
+      }
+    } else {
+      holdAcc = 0;
+      ambientAcc += dt;
+      if (ambientAcc >= AMBIENT_INTERVAL) {
+        ambientAcc -= AMBIENT_INTERVAL;
+        executeAction('wait');
+      }
+    }
   }
 
-  // Draw Thugs
+  // Smooth visual interpolation at 60 FPS
+  const rate = Math.min(1, dt * 18);
+  visPlayerX += (state.player.x - visPlayerX) * rate;
+  visPlayerY += (LANE_Y[state.player.lane] - visPlayerY) * rate;
+  visHp += (state.player.hp - visHp) * Math.min(1, dt * 14);
+  visSuper += (state.player.superGauge - visSuper) * Math.min(1, dt * 14);
+
+  const liveIds = new Set();
   for (const en of state.enemies) {
-    const ey = LANE_Y[en.lane];
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath();
-    ctx.ellipse(en.x, ey, 14, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Thug body (red mohawk, dark leather)
-    ctx.fillStyle = '#7f1d1d';
-    drawRoundedRect(en.x - 8, ey - 34, 16, 26, 4);
-    ctx.fill();
-
-    // Head
-    ctx.fillStyle = '#fbcfe8';
-    ctx.beginPath();
-    ctx.arc(en.x, ey - 38, 7, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Mohawk
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(en.x - 2, ey - 48, 4, 10);
-
-    // HP Mini-bar
-    ctx.fillStyle = '#450a0a';
-    ctx.fillRect(en.x - 12, ey - 54, 24, 4);
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(en.x - 12, ey - 54, Math.max(0, (en.hp / 35) * 24), 4);
+    liveIds.add(en.id);
+    const targetY = LANE_Y[en.lane];
+    if (!enemyVis.has(en.id)) {
+      enemyVis.set(en.id, { x: en.x, y: targetY, hp: en.hp, flash: 0 });
+    } else {
+      const v = enemyVis.get(en.id);
+      v.x += (en.x - v.x) * rate;
+      v.y += (targetY - v.y) * rate;
+      v.hp += (en.hp - v.hp) * rate;
+      if (v.flash > 0) v.flash = Math.max(0, v.flash - dt);
+    }
+  }
+  for (const id of enemyVis.keys()) {
+    if (!liveIds.has(id)) enemyVis.delete(id);
   }
 
-  // Draw Player Brawler
-  const py = LANE_Y[state.player.lane];
+  // Update FX & popups
+  fxList = fxList.filter(fx => {
+    fx.life -= dt;
+    return fx.life > 0;
+  });
+  popups = popups.filter(p => {
+    p.life -= dt;
+    p.y -= 28 * dt;
+    return p.life > 0;
+  });
+}
+
+function drawFighter(x, y, facing, combo, isSuperReady) {
+  const bob = Math.sin(animTime * 9) * 1.5;
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Super aura if >= 50
+  if (isSuperReady) {
+    ctx.strokeStyle = 'rgba(250, 204, 21, ' + (0.35 + Math.sin(animTime * 8) * 0.2) + ')';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, -18, 19, 26, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillStyle = 'rgba(0,0,0,0.42)';
   ctx.beginPath();
-  ctx.ellipse(state.player.x, py, 16, 6, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, 16, 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Legs (Jeans)
-  ctx.fillStyle = '#1e3a8a';
-  ctx.fillRect(state.player.x - 7, py - 16, 6, 16);
-  ctx.fillRect(state.player.x + 1, py - 16, 6, 16);
+  // Jeans
+  ctx.fillStyle = '#1d4ed8';
+  ctx.fillRect(-7, -16, 6, 16);
+  ctx.fillRect(1, -16, 6, 16);
 
-  // Torso (White muscle tee)
-  ctx.fillStyle = '#f8fafc';
-  drawRoundedRect(state.player.x - 9, py - 36, 18, 22, 4);
+  // Muscle Tee
+  ctx.fillStyle = hurtFlash > 0 ? '#fca5a5' : '#f8fafc';
+  rrect(-10, -37 + bob, 20, 22, 4);
   ctx.fill();
 
   // Head
   ctx.fillStyle = '#fed7aa';
   ctx.beginPath();
-  ctx.arc(state.player.x, py - 40, 7.5, 0, Math.PI * 2);
+  ctx.arc(0, -42 + bob, 8, 0, Math.PI * 2);
   ctx.fill();
 
-  // Red Bandana
+  // Red Bandana + flowing tail
   ctx.fillStyle = '#ef4444';
-  ctx.fillRect(state.player.x - 8, py - 44, 16, 4);
+  ctx.fillRect(-8, -46 + bob, 16, 4);
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(-facing * 8, -44 + bob);
+  ctx.lineTo(-facing * 15, -41 + Math.sin(animTime * 12) * 2);
+  ctx.stroke();
 
   // Boxing Gloves
   ctx.fillStyle = '#dc2626';
   ctx.beginPath();
-  ctx.arc(state.player.x + 12, py - 28, 5, 0, Math.PI * 2);
+  ctx.arc(facing * 12, -28 + bob, 5.5, 0, Math.PI * 2);
+  ctx.arc(-facing * 6, -26 + bob, 4.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // Event Log Ticker
+  ctx.restore();
+}
+
+function drawThug(en, v) {
+  const bob = Math.sin(animTime * 7 + en.id) * 1.2;
+  const dir = visPlayerX < v.x ? -1 : 1;
+  ctx.save();
+  ctx.translate(v.x, v.y);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.36)';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 14, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Attack warning indicator when cooldown == 0 and close
+  if (en.attackCooldown === 0 && Math.abs(en.x - state.player.x) <= 46 && en.lane === state.player.lane) {
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('!', 0, -56);
+  }
+
+  // Jacket
+  ctx.fillStyle = v.flash > 0 ? '#ffffff' : '#7f1d1d';
+  rrect(-9, -34 + bob, 18, 25, 4);
+  ctx.fill();
+
+  // Pants
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(-6, -12, 5, 12);
+  ctx.fillRect(1, -12, 5, 12);
+
+  // Head
+  ctx.fillStyle = v.flash > 0 ? '#ffffff' : '#fbcfe8';
+  ctx.beginPath();
+  ctx.arc(0, -39 + bob, 7, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Neon Punk Mohawk
+  ctx.fillStyle = '#f43f5e';
+  ctx.fillRect(-2, -49 + bob, 4, 10);
+
+  // Lead Pipe weapon
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(dir * 8, -24 + bob);
+  ctx.lineTo(dir * 18, -32 + bob);
+  ctx.stroke();
+
+  // HP Mini-bar
   ctx.fillStyle = '#1e293b';
-  drawRoundedRect(20, 410, W - 40, 36, 8);
+  ctx.fillRect(-13, -55, 26, 4);
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(-13, -55, Math.max(0, (v.hp / 35) * 26), 4);
+
+  ctx.restore();
+}
+
+function draw() {
+  ctx.save();
+  if (shakeTime > 0) {
+    const mag = shakeTime * 16;
+    ctx.translate(Math.sin(animTime * 60) * mag, Math.cos(animTime * 48) * mag * 0.6);
+  }
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#121629');
+  bg.addColorStop(1, '#080a12');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top HUD Panel
+  ctx.fillStyle = '#111827';
+  rrect(12, 10, W - 24, 54, 10);
   ctx.fill();
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = '12px sans-serif';
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('HP ' + Math.ceil(state.player.hp), 22, 25);
   ctx.textAlign = 'center';
-  ctx.fillText(state.lastEvent, W / 2, 432);
+  ctx.fillText('SUPER ' + state.player.superGauge + '%', W / 2 - 12, 25);
+  ctx.textAlign = 'right';
+  ctx.fillText('SCORE ' + score(state) + ' · BEST ' + best, W - 22, 25);
 
-  // Bottom Controls
-  const cx = 95;
-  const cy = 525;
-
-  function drawPad(bx, by, bw, bh, txt) {
-    ctx.fillStyle = '#1e293b';
-    drawRoundedRect(bx, by, bw, bh, 6);
+  // Health Bar
+  ctx.fillStyle = '#0f172a';
+  rrect(22, 32, 96, 12, 4);
+  ctx.fill();
+  const hpRatio = Math.max(0, Math.min(1, visHp / PLAYER_MAX_HP));
+  ctx.fillStyle = hpRatio > 0.3 ? '#22c55e' : '#ef4444';
+  if (hpRatio > 0) {
+    rrect(22, 32, Math.max(6, 96 * hpRatio), 12, 4);
     ctx.fill();
-    ctx.strokeStyle = '#334155';
-    ctx.stroke();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(txt, bx + bw / 2, by + bh / 2 + 5);
   }
 
-  drawPad(cx - 20, cy - 60, 40, 35, '▲');
-  drawPad(cx - 20, cy + 25, 40, 35, '▼');
-  drawPad(cx - 60, cy - 18, 35, 40, '◀');
-  drawPad(cx + 25, cy - 18, 35, 40, '▶');
-  drawPad(cx - 15, cy - 15, 30, 30, '●');
-
-  // Action Buttons
-  function drawActBtn(bx, by, bw, bh, title, sub, bgCol, borderCol) {
-    ctx.fillStyle = bgCol;
-    drawRoundedRect(bx, by, bw, bh, 8);
+  // Super Bar
+  ctx.fillStyle = '#0f172a';
+  rrect(128, 32, 92, 12, 4);
+  ctx.fill();
+  const supRatio = Math.max(0, Math.min(1, visSuper / 100));
+  ctx.fillStyle = state.player.superGauge >= 50 ? '#f59e0b' : '#38bdf8';
+  if (supRatio > 0) {
+    rrect(128, 32, Math.max(6, 92 * supRatio), 12, 4);
     ctx.fill();
-    ctx.strokeStyle = borderCol;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(title, bx + bw / 2, by + 20);
-    ctx.font = '10px sans-serif';
-    ctx.fillStyle = '#cbd5e1';
-    ctx.fillText(sub, bx + bw / 2, by + 36);
   }
 
-  drawActBtn(180, 465, 75, 48, 'PUNCH', 'Combo J', '#dc2626', '#f87171');
-  drawActBtn(265, 465, 75, 48, 'KICK', 'Fly K', '#059669', '#34d399');
+  // Thugs Counter
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('KO ' + state.thugsDefeated + '/' + TOTAL_THUGS, W - 22, 43);
 
-  const superOk = state.player.superGauge >= 50;
-  drawActBtn(180, 525, 75, 48, 'SUPER', 'Dragon L', superOk ? '#d97706' : '#334155', superOk ? '#facc15' : '#475569');
-  drawActBtn(265, 525, 75, 48, 'EAT', 'Pick E', '#4338ca', '#818cf8');
+  // Combo badge if active
+  if (state.player.combo > 0) {
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('CHAIN x' + (state.player.combo + 1), 22, 57);
+  }
+
+  // City Skyline Backdrop
+  ctx.fillStyle = '#0d1324';
+  ctx.fillRect(0, 70, W, 105);
+  const bldgs = [[12, 92, 48, 83], [68, 78, 58, 97], [136, 96, 46, 79], [192, 82, 64, 93], [266, 88, 52, 87], [324, 98, 30, 77]];
+  for (const [bx, by, bw, bh] of bldgs) {
+    ctx.fillStyle = '#162038';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+    for (let wy = by + 10; wy < by + bh - 12; wy += 16) {
+      for (let wx = bx + 8; wx < bx + bw - 10; wx += 14) {
+        ctx.fillRect(wx, wy, 6, 8);
+      }
+    }
+  }
+
+  // Neon Diner Sign
+  ctx.strokeStyle = '#f43f5e';
+  ctx.lineWidth = 1.5;
+  rrect(202, 92, 44, 16, 4);
+  ctx.stroke();
+  ctx.fillStyle = '#fda4af';
+  ctx.font = 'bold 9px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ARCADE', 224, 103);
+
+  // Sidewalk curb & Street Lanes
+  ctx.fillStyle = '#242c42';
+  ctx.fillRect(0, 168, W, 14);
+  ctx.fillStyle = '#181e2e';
+  ctx.fillRect(0, 182, W, 228);
+
+  // Lane dividers
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([14, 12]);
+  ctx.beginPath();
+  ctx.moveTo(0, 262); ctx.lineTo(W, 262);
+  ctx.moveTo(0, 332); ctx.lineTo(W, 332);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Drag target indicator on street
+  if (dragTarget && !isOver(state)) {
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(dragTarget.x, dragTarget.y, 12 + Math.sin(animTime * 10) * 2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Depth-sorted entities (items, thugs, player)
+  const renderables = [];
+  for (const it of state.items) {
+    renderables.push({ y: LANE_Y[it.lane] - 1, kind: 'item', it });
+  }
+  for (const en of state.enemies) {
+    const v = enemyVis.get(en.id) || { x: en.x, y: LANE_Y[en.lane], hp: en.hp, flash: 0 };
+    renderables.push({ y: v.y, kind: 'enemy', en, v });
+  }
+  renderables.push({ y: visPlayerY + 0.5, kind: 'player' });
+  renderables.sort((a, b) => a.y - b.y);
+
+  for (const obj of renderables) {
+    if (obj.kind === 'item') {
+      const iy = LANE_Y[obj.it.lane];
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.25)';
+      ctx.beginPath();
+      ctx.arc(obj.it.x, iy - 6, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(obj.it.x, iy - 6, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('+HP', obj.it.x, iy - 2);
+    } else if (obj.kind === 'enemy') {
+      drawThug(obj.en, obj.v);
+    } else {
+      drawFighter(visPlayerX, visPlayerY, playerFacing, state.player.combo, state.player.superGauge >= 50);
+    }
+  }
+
+  // Combat Visual FX
+  for (const fx of fxList) {
+    const alpha = Math.max(0, fx.life / fx.maxLife);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    if (fx.type === 'punch') {
+      ctx.strokeStyle = fx.combo === 2 ? '#fbbf24' : '#38bdf8';
+      ctx.lineWidth = fx.combo === 2 ? 6 : 4;
+      ctx.beginPath();
+      ctx.arc(fx.x + fx.dir * 16, fx.y, 24, -0.7, 0.7, fx.dir < 0);
+      ctx.stroke();
+    } else if (fx.type === 'kick') {
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(fx.x - fx.dir * 10, fx.y + 8);
+      ctx.lineTo(fx.x + fx.dir * 38, fx.y - 10);
+      ctx.stroke();
+    } else if (fx.type === 'super') {
+      const r = 64 * (1 - alpha * 0.4);
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.35)';
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    } else if (fx.type === 'ko') {
+      ctx.strokeStyle = '#f87171';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, 26 * (1.2 - alpha), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Floating Popups
+  for (const p of popups) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.restore();
+  }
+
+  //Hurt vignette
+  if (hurtFlash > 0) {
+    ctx.fillStyle = 'rgba(239, 68, 68, ' + (hurtFlash * 0.45) + ')';
+    ctx.fillRect(0, 70, W, 340);
+  }
+
+  // Event Ticker
+  ctx.fillStyle = '#13192a';
+  rrect(14, 416, W - 28, 34, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#25314d';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(state.lastEvent, W / 2, 437);
+
+  // Bottom Control Deck
+  const legals = legalActions(state);
+  const heldAct = getHeldAction();
+  for (const b of CONTROLS) {
+    const isPressed = heldAct === b.id;
+    const isAvail = legals.includes(b.id);
+    if (b.sub === '') {
+      // D-pad button
+      ctx.fillStyle = isPressed ? '#0284c7' : '#1e293b';
+      rrect(b.x, b.y, b.w, b.h, 8);
+      ctx.fill();
+      ctx.strokeStyle = isPressed ? '#7dd3fc' : '#334155';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = isAvail ? '#ffffff' : '#64748b';
+      ctx.font = 'bold 16px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + 6);
+    } else {
+      // Action button
+      ctx.fillStyle = isPressed ? '#ffffff' : (isAvail ? b.color : '#1e293b');
+      rrect(b.x, b.y, b.w, b.h, 9);
+      ctx.fill();
+      ctx.strokeStyle = isPressed ? '#ffffff' : (isAvail ? b.border : '#334155');
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      ctx.fillStyle = isPressed ? '#0f172a' : (isAvail ? '#ffffff' : '#64748b');
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(b.label, b.x + b.w / 2, b.y + 23);
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillStyle = isPressed ? '#334155' : (isAvail ? '#e2e8f0' : '#475569');
+      ctx.fillText(b.sub, b.x + b.w / 2, b.y + 40);
+    }
+  }
 
   ctx.fillStyle = '#64748b';
-  ctx.font = '10px sans-serif';
+  ctx.font = '10px system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('WASD / Arrows to walk · J Punch · K Kick · L / Space Super', W / 2, 610);
+  ctx.fillText('Drag street or hold D-Pad / WASD · Tap thugs or hold J / K / L', W / 2, 616);
 
-  // Overlay
+  // Game Over Overlay
   if (isOver(state)) {
-    ctx.fillStyle = 'rgba(8, 10, 16, 0.94)';
+    ctx.fillStyle = 'rgba(8, 10, 18, 0.9)';
     ctx.fillRect(0, 0, W, H);
 
     ctx.textAlign = 'center';
-    if (state.won) {
-      ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillText('STREETS RECLAIMED', W / 2, H / 2 - 35);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '16px sans-serif';
-      ctx.fillText('Syndicate thugs completely defeated!', W / 2, H / 2 - 5);
-    } else {
-      ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillText('KNOCKED OUT', W / 2, H / 2 - 35);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '16px sans-serif';
-      ctx.fillText('Fallen in the back alleys!', W / 2, H / 2 - 5);
-    }
+    ctx.fillStyle = state.won ? '#4ade80' : '#ef4444';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'STREETS RECLAIMED!' : 'KNOCKED OUT', W / 2, H / 2 - 48);
 
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.fillText(`Score: ${score(state)}`, W / 2, H / 2 + 30);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(
+      state.won ? 'All 8 syndicate thugs defeated!' : 'Thugs defeated: ' + state.thugsDefeated + ' / ' + TOTAL_THUGS,
+      W / 2,
+      H / 2 - 14
+    );
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state), W / 2, H / 2 + 26);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('Tap anywhere to brawl again', W / 2, H / 2 + 75);
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText('Best: ' + best, W / 2, H / 2 + 52);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap or press Space to brawl again', W / 2, H / 2 + 94);
   }
+
+  ctx.restore();
 }
 
-function frame() {
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
   draw();
   requestAnimationFrame(frame);
 }

@@ -1,14 +1,16 @@
 // Relic Rush - Collectathon Platformer deterministic logic
 (function (root, factory) {
+  const api = factory();
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    module.exports = api;
   } else {
-    root.RelicRush = factory();
+    root.RelicRush = api;
+    root.GameLogic = api;
   }
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const MAX_STEPS = 120;
+  const MAX_STEPS = 1000;
 
   const PLATFORMS = [
     { id: 1, x1: 0, x2: 12, y: 0 },    // Low Meadow Hub

@@ -43,17 +43,21 @@ let best = 0;
 try { best = +localStorage.getItem('goe-0016-best') || 0; } catch (e) {}
 
 let state = createState(Date.now());
+let prevSnake = state.snake.map((s) => ({ x: s.x, y: s.y }));
 let queue = [];
 let accum = 0;
 let pulse = 0;
 let overAt = 0;
 let swipeStart = null;
+let heldDir = null;
 
 function restart() {
   state = createState(Date.now());
+  prevSnake = state.snake.map((s) => ({ x: s.x, y: s.y }));
   queue = [];
   accum = 0;
   overAt = 0;
+  heldDir = null;
 }
 
 function queueDir(dir) {
@@ -94,26 +98,53 @@ canvas.addEventListener('pointerdown', (e) => {
   }
   for (const b of DPAD) {
     if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      heldDir = b.dir;
       queueDir(b.dir);
       return;
     }
   }
+  canvas.setPointerCapture(e.pointerId);
   swipeStart = p;
 });
 
+canvas.addEventListener('pointermove', (e) => {
+  if (isOver(state)) return;
+  const p = toLogical(e);
+  if (e.buttons || e.pointerType === 'touch') {
+    for (const b of DPAD) {
+      if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+        if (heldDir !== b.dir) {
+          heldDir = b.dir;
+          queueDir(b.dir);
+        }
+        return;
+      }
+    }
+  }
+  if (!swipeStart) return;
+  const dx = p.x - swipeStart.x;
+  const dy = p.y - swipeStart.y;
+  if (Math.hypot(dx, dy) >= 20) {
+    if (Math.abs(dx) > Math.abs(dy)) queueDir(dx > 0 ? 'R' : 'L');
+    else queueDir(dy > 0 ? 'D' : 'U');
+    swipeStart = p;
+  }
+});
+
 canvas.addEventListener('pointerup', (e) => {
+  heldDir = null;
   if (!swipeStart) return;
   const p = toLogical(e);
   const dx = p.x - swipeStart.x;
   const dy = p.y - swipeStart.y;
   swipeStart = null;
-  if (Math.hypot(dx, dy) >= 20) {
+  if (Math.hypot(dx, dy) >= 16) {
     if (Math.abs(dx) > Math.abs(dy)) queueDir(dx > 0 ? 'R' : 'L');
     else queueDir(dy > 0 ? 'D' : 'U');
   }
 });
 
-canvas.addEventListener('pointercancel', () => { swipeStart = null; });
+canvas.addEventListener('pointercancel', () => { swipeStart = null; heldDir = null; });
 
 addEventListener('keydown', (e) => {
   if (isOver(state)) {
@@ -185,10 +216,14 @@ function draw() {
     ctx.fill();
   }
 
+  const alpha = isOver(state) ? 1 : Math.min(1, accum / tickInterval());
   for (let i = state.snake.length - 1; i >= 0; i--) {
     const seg = state.snake[i];
-    const x = BX + seg.x * CELL;
-    const y = BY + seg.y * CELL;
+    const prev = prevSnake[i] || prevSnake[prevSnake.length - 1] || seg;
+    const gx = Math.abs(seg.x - prev.x) <= 1 ? prev.x + (seg.x - prev.x) * alpha : seg.x;
+    const gy = Math.abs(seg.y - prev.y) <= 1 ? prev.y + (seg.y - prev.y) * alpha : seg.y;
+    const x = BX + gx * CELL;
+    const y = BY + gy * CELL;
     ctx.fillStyle = i === 0 ? '#4fd1c5' : i % 2 === 0 ? '#38b2ac' : '#2c9a94';
     rrect(x + 2, y + 2, CELL - 4, CELL - 4, i === 0 ? 7 : 5);
     ctx.fill();
@@ -202,10 +237,11 @@ function draw() {
   }
 
   for (const b of DPAD) {
-    ctx.fillStyle = '#1c2848';
+    const active = heldDir === b.dir || state.dir === b.dir;
+    ctx.fillStyle = active ? '#263a68' : '#1c2848';
     rrect(b.x, b.y, b.w, b.h, 10);
     ctx.fill();
-    ctx.strokeStyle = '#2f4273';
+    ctx.strokeStyle = active ? '#4fd1c5' : '#2f4273';
     ctx.lineWidth = 1.5;
     rrect(b.x, b.y, b.w, b.h, 10);
     ctx.stroke();
@@ -243,6 +279,7 @@ function frame(now) {
     const stepDt = tickInterval();
     while (accum >= stepDt && !isOver(state)) {
       accum -= stepDt;
+      prevSnake = state.snake.map((s) => ({ x: s.x, y: s.y }));
       const legal = legalActions(state);
       let act = queue.shift() || state.dir;
       if (!legal.includes(act)) act = legal[0];

@@ -125,7 +125,7 @@ test('0168-incremental: bot contract fuzzing to completion', () => {
   const state = createState(999);
   let steps = 0;
 
-  while (!isOver(state) && steps < 200) {
+  while (!isOver(state) && steps < state.maxTurns + 50) {
     const actions = legalActions(state);
     assert.ok(actions.length > 0, 'Legal actions must not be empty');
     const act = actions[steps % actions.length];

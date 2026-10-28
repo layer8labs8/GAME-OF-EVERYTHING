@@ -136,6 +136,7 @@ function toLogical(e) {
 }
 
 let pointerDownPos = null;
+let dragOffset = { idx: -1, dx: 0, dy: 0 };
 
 canvas.addEventListener('pointerdown', (e) => {
   const p = toLogical(e);
@@ -148,22 +149,39 @@ canvas.addEventListener('pointerdown', (e) => {
     const r = Math.min(SIZE - 1, Math.floor((p.y - BY) / CELL));
     const idx = r * SIZE + c;
     cursorIdx = idx;
+    canvas.setPointerCapture(e.pointerId);
     pointerDownPos = { x: p.x, y: p.y, idx };
+    dragOffset = { idx, dx: 0, dy: 0 };
     if (selectedIdx === -1) {
       selectedIdx = idx;
-    } else {
+    } else if (selectedIdx !== idx) {
       trySwap(selectedIdx, idx);
+      pointerDownPos = null;
+      dragOffset = { idx: -1, dx: 0, dy: 0 };
     }
   } else if (p.x >= 115 && p.x <= 245 && p.y >= 560 && p.y <= 605) {
     restart();
   }
 });
 
-canvas.addEventListener('pointerup', (e) => {
-  if (!pointerDownPos || isOver(state)) return;
+canvas.addEventListener('pointermove', (e) => {
+  if (isOver(state)) return;
   const p = toLogical(e);
+  if (!pointerDownPos) {
+    if (p.x >= BX && p.x <= BX + SIZE * CELL && p.y >= BY && p.y <= BY + SIZE * CELL) {
+      const c = Math.min(SIZE - 1, Math.floor((p.x - BX) / CELL));
+      const r = Math.min(SIZE - 1, Math.floor((p.y - BY) / CELL));
+      cursorIdx = r * SIZE + c;
+    }
+    return;
+  }
   const dx = p.x - pointerDownPos.x;
   const dy = p.y - pointerDownPos.y;
+  dragOffset = {
+    idx: pointerDownPos.idx,
+    dx: Math.max(-22, Math.min(22, dx)),
+    dy: Math.max(-22, Math.min(22, dy)),
+  };
   if (Math.abs(dx) > 18 || Math.abs(dy) > 18) {
     const r = Math.floor(pointerDownPos.idx / SIZE);
     const c = pointerDownPos.idx % SIZE;
@@ -175,11 +193,23 @@ canvas.addEventListener('pointerup', (e) => {
       if (dy > 0 && r < SIZE - 1) target = (r + 1) * SIZE + c;
       else if (dy < 0 && r > 0) target = (r - 1) * SIZE + c;
     }
+    const originIdx = pointerDownPos.idx;
+    pointerDownPos = null;
+    dragOffset = { idx: -1, dx: 0, dy: 0 };
     if (target !== -1) {
-      trySwap(pointerDownPos.idx, target);
+      trySwap(originIdx, target);
     }
   }
+});
+
+canvas.addEventListener('pointerup', () => {
   pointerDownPos = null;
+  dragOffset = { idx: -1, dx: 0, dy: 0 };
+});
+
+canvas.addEventListener('pointercancel', () => {
+  pointerDownPos = null;
+  dragOffset = { idx: -1, dx: 0, dy: 0 };
 });
 
 addEventListener('keydown', (e) => {
@@ -333,10 +363,15 @@ function draw() {
       }
 
       const gem = state.board[idx];
-      if (gem > 0) {
+      if (gem > 0 && idx !== dragOffset.idx) {
         drawGem(gem, x + CELL / 2, y + CELL / 2, 16);
       }
     }
+  }
+  if (dragOffset.idx !== -1 && state.board[dragOffset.idx] > 0) {
+    const dr = Math.floor(dragOffset.idx / SIZE);
+    const dc = dragOffset.idx % SIZE;
+    drawGem(state.board[dragOffset.idx], BX + dc * CELL + CELL / 2 + dragOffset.dx, BY + dr * CELL + CELL / 2 + dragOffset.dy, 18.5);
   }
 
   // Popups

@@ -8,7 +8,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const MAX_STEPS = 100;
+  const MAX_STEPS = 220;
 
   function nextRandom(state) {
     let s = (state.rng + 0x6d2b79f5) | 0;

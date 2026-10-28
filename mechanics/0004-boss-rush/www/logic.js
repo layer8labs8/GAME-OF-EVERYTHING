@@ -1,5 +1,5 @@
 (function (root) {
-  const MAX_STEPS = 150;
+  const MAX_STEPS = 400;
   const PLAYER_MAX_HP = 100;
   const PLAYER_MAX_STAMINA = 100;
 

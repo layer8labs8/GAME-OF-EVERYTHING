@@ -9,7 +9,7 @@
   'use strict';
 
   const TARGET_DISTANCE = 1000;
-  const MAX_STEPS = 100;
+  const MAX_STEPS = 160;
 
   function nextRandom(state) {
     let s = (state.rng + 0x6d2b79f5) | 0;

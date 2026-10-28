@@ -11,7 +11,7 @@
   const ARENA_MIN = 30;
   const ARENA_MAX = 370;
   const MAX_WAVES = 5;
-  const MAX_STEPS = 250;
+  const MAX_STEPS = 650;
 
   const AIM_DIRS = {
     n:  { dx: 0, dy: -1 },
@@ -302,6 +302,10 @@
   }
 
   return {
+    ARENA_MIN,
+    ARENA_MAX,
+    MAX_WAVES,
+    MAX_STEPS,
     createState,
     legalActions,
     step,

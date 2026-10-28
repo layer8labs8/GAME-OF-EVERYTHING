@@ -1,430 +1,533 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Physics Toybox - Particle Sandbox</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      background-color: #030712;
-      color: #e2e8f0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 12px;
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #38bdf8;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: #1e293b;
-      color: #94a3b8;
-      font-weight: 600;
-    }
-    #game-container {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 4/3;
-      background: #020617;
-      border: 2px solid #1e293b;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
-      image-rendering: pixelated;
-      cursor: crosshair;
-    }
-    .milestones-bar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .ms-card {
-      background: #0b1329;
-      border: 1px solid #1e293b;
-      padding: 4px 6px;
-      border-radius: 6px;
-      text-align: center;
-      font-size: 0.65rem;
-    }
-    .ms-active {
-      border-color: #38bdf8;
-      background: #072a4a;
-      color: #7dd3fc;
-      font-weight: bold;
-    }
-    .log-box {
-      background: #090e17;
-      border: 1px solid #1e293b;
-      border-left: 4px solid #38bdf8;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 0.78rem;
-      color: #cbd5e1;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-    }
-    .actions-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 6px;
-      margin-top: 2px;
-    }
-    .btn {
-      background: #111827;
-      border: 1px solid #374151;
-      color: #e5e7eb;
-      padding: 8px 6px;
-      font-family: inherit;
-      font-size: 0.72rem;
-      border-radius: 6px;
-      cursor: pointer;
-      text-transform: uppercase;
-      font-weight: 600;
-      transition: all 0.15s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-    .btn:hover {
-      background: #1f2937;
-      border-color: #38bdf8;
-      color: #fff;
-    }
-    .btn:active {
-      transform: scale(0.97);
-    }
-    .btn-sand { border-color: #d97706; color: #fde68a; }
-    .btn-water { border-color: #0284c7; color: #7dd3fc; }
-    .btn-fire { border-color: #dc2626; color: #fca5a5; }
-    .btn-plant { border-color: #16a34a; color: #86efac; }
-    .btn-dynamite { border-color: #e11d48; color: #fda4af; }
-    .btn-gold {
-      background: #78350f;
-      border-color: #d97706;
-      color: #fde68a;
-    }
-    .btn-gold:hover {
-      background: #b45309;
-      border-color: #f59e0b;
-    }
-    .footer-bar {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 6px;
-      width: 100%;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#070b16">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Physics Toybox</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #070b16; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; font-family: system-ui, -apple-system, sans-serif; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>🧪 Physics Toybox</h1>
-    <div>
-      <span id="turn-badge" class="badge">STEP 0 / 120</span>
-      <span id="score-badge" class="badge" style="background:#0369a1; color:#e0f2fe;">0 PTS</span>
-    </div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <div id="game-container">
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+const W = 360;
+const H = 640;
+const GX = 20;
+const GY = 98;
+const CELL = 20; // 16 * 20 = 320, 18 * 20 = 360
+const GW = COLS * CELL;
+const GH = ROWS * CELL;
 
-    <div class="milestones-bar">
-      <div id="ms-oasis" class="ms-card">🌿 Verdant Oasis<br><span id="ms-oasis-val">0 / 8</span></div>
-      <div id="ms-kiln" class="ms-card">🔮 Silica Kiln<br><span id="ms-kiln-val">0 / 4</span></div>
-      <div id="ms-demo" class="ms-card">💥 Demolition<br><span id="ms-demo-val">0 / 2</span></div>
-      <div id="ms-arc" class="ms-card">⚡ Arc Shock<br><span id="ms-arc-val">0 / 5</span></div>
-    </div>
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-    <div id="game-log" class="log-box">
-      Creative Physics Toybox active. Drop elements to trigger reactions and fulfill research milestones.
-    </div>
+function rrect(x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
 
-    <div id="actions-panel" class="actions-grid">
-      <!-- Injected dynamically -->
-    </div>
+let audioCtx = null;
+function playSfx(freq, freq2, dur, type, vol) {
+  try {
+    const AC = typeof AudioContext !== 'undefined' ? AudioContext : (typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null);
+    if (!AC) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    if (freq2) osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq2), t + dur);
+    gain.gain.setValueAtTime(vol || 0.08, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + dur);
+  } catch (e) {}
+}
 
-    <div class="footer-bar">
-      <div id="stats-summary" style="font-size:0.7rem; color:#94a3b8;">Particles Active: 0</div>
-      <button id="bot-toggle-btn" class="btn" style="padding: 4px 10px; font-size: 0.68rem;" onclick="window.toggleBot()">BOT: OFF</button>
-    </div>
-  </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0165-best') || 0; } catch (e) {}
 
-  <script src="logic.js"></script>
-  <script>
-    let state = createState(Date.now ? Date.now() : 12345);
-    let botRunning = false;
-    let botInterval = null;
+const PALETTE = [
+  { id: 'sand', label: 'SAND', color: '#f59e0b', sub: 'Glass Kiln' },
+  { id: 'water', label: 'WATER', color: '#0ea5e9', sub: 'Irrigate' },
+  { id: 'plant', label: 'PLANT', color: '#22c55e', sub: 'Grow x8' },
+  { id: 'fire', label: 'FIRE', color: '#ef4444', sub: 'Ignite' },
+  { id: 'stone', label: 'STONE', color: '#94a3b8', sub: 'Wall' },
+  { id: 'acid', label: 'ACID', color: '#a3e635', sub: 'Dissolve' },
+  { id: 'dynamite', label: 'TNT', color: '#f43f5e', sub: 'Blast x2' },
+  { id: 'lightning', label: 'BOLT', color: '#fde047', sub: 'Zap x5' }
+];
 
-    // Web Audio Synthesizer
-    let audioCtx = null;
-    function playSfx(type) {
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const t = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+const EL_COLOR = {
+  empty: '#0a0f1f',
+  sand: '#f59e0b',
+  water: '#0ea5e9',
+  plant: '#22c55e',
+  fire: '#ef4444',
+  stone: '#64748b',
+  acid: '#a3e635',
+  dynamite: '#f43f5e',
+  glass: '#67e8f9',
+  spark: '#fef08a'
+};
 
-        if (type === 'drop') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(400, t);
-          osc.frequency.exponentialRampToValueAtTime(150, t + 0.08);
-          gain.gain.setValueAtTime(0.2, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-          osc.start(t);
-          osc.stop(t + 0.1);
-        } else if (type === 'boom') {
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(100, t);
-          osc.frequency.exponentialRampToValueAtTime(25, t + 0.3);
-          gain.gain.setValueAtTime(0.5, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
-          osc.start(t);
-          osc.stop(t + 0.35);
-        } else if (type === 'zap') {
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(700, t);
-          osc.frequency.exponentialRampToValueAtTime(120, t + 0.15);
-          gain.gain.setValueAtTime(0.3, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
-          osc.start(t);
-          osc.stop(t + 0.18);
-        }
-      } catch (e) {}
+let state = createState(Date.now());
+let selectedEl = 'sand';
+let painting = false;
+let lastCell = null;
+let pointerPos = { x: W / 2, y: GY + GH / 2 };
+let simAcc = 0;
+let overAt = 0;
+let shake = 0;
+let sparks = [];
+let prevExplosions = 0;
+let prevGlass = 0;
+let sfxCooldown = 0;
+
+function restart() {
+  state = createState(Date.now());
+  painting = false;
+  lastCell = null;
+  simAcc = 0;
+  overAt = 0;
+  shake = 0;
+  sparks = [];
+  prevExplosions = 0;
+  prevGlass = 0;
+}
+
+function recordBest() {
+  const sc = score(state);
+  if (sc > best) {
+    best = sc;
+    try { localStorage.setItem('goe-0165-best', best); } catch (e) {}
+  }
+}
+
+function execAction(act) {
+  if (isOver(state)) return;
+  const valid = legalActions(state);
+  if (!valid.includes(act)) return;
+  const res = step(state, act);
+  if (state.explosionsDetonated > prevExplosions) {
+    prevExplosions = state.explosionsDetonated;
+    shake = 7;
+    playSfx(120, 28, 0.28, 'sawtooth', 0.18);
+  }
+  if (state.glassCreated > prevGlass) {
+    prevGlass = state.glassCreated;
+    playSfx(880, 1320, 0.1, 'triangle', 0.08);
+  }
+  recordBest();
+  if (res.done) overAt = performance.now();
+}
+
+function spawnSparks(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2 + (sparks.length * 0.7);
+    const sp = 35 + (i % 3) * 28;
+    sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 20, color, life: 0.35 });
+  }
+}
+
+function paintAtGrid(r, c, isInitialTap) {
+  if (isOver(state)) return;
+  if (r < 0 || r >= ROWS - 1 || c < 0 || c >= COLS) return;
+  if (selectedEl === 'lightning' && !isInitialTap && lastCell && lastCell.c === c) return;
+  paintCell(state, selectedEl, r, c);
+  recordBest();
+  const px = GX + (c + 0.5) * CELL;
+  const py = GY + (r + 0.5) * CELL;
+  spawnSparks(px, py, EL_COLOR[selectedEl] || '#fde047', selectedEl === 'lightning' ? 10 : 3);
+  if (selectedEl === 'lightning') {
+    shake = 5;
+    playSfx(740, 140, 0.16, 'square', 0.14);
+  } else if (sfxCooldown <= 0) {
+    sfxCooldown = 0.055;
+    playSfx(320 + c * 18, 220, 0.05, 'sine', 0.06);
+  }
+}
+
+function paintSegment(r0, c0, r1, c1, initial) {
+  const steps = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0), 1);
+  for (let i = 0; i <= steps; i++) {
+    const t = steps === 0 ? 0 : i / steps;
+    const rr = Math.round(r0 + (r1 - r0) * t);
+    const cc = Math.round(c0 + (c1 - c0) * t);
+    paintAtGrid(rr, cc, initial && i === 0);
+  }
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function canMasterwork() {
+  const m = state.milestones;
+  return !isOver(state) && m.verdantOasis && m.silicaKiln && m.kineticDemolition && m.arcConduction;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  pointerPos = p;
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  // Clear button top-right
+  if (p.x >= 296 && p.x <= 346 && p.y >= 10 && p.y <= 38) {
+    execAction('action:clear_sandbox');
+    playSfx(300, 150, 0.12, 'triangle', 0.1);
+    return;
+  }
+
+  // Masterwork victory banner button
+  if (canMasterwork() && p.x >= 20 && p.x <= 340 && p.y >= 462 && p.y <= 496) {
+    execAction('action:finalize_masterwork');
+    playSfx(523, 1046, 0.35, 'triangle', 0.2);
+    return;
+  }
+
+  // Palette buttons (2 rows of 4)
+  const palY = canMasterwork() ? 502 : 472;
+  if (p.y >= palY && p.y <= palY + 114 && p.x >= 16 && p.x <= 344) {
+    const col = Math.min(3, Math.max(0, Math.floor((p.x - 16) / 82)));
+    const row = p.y < palY + 57 ? 0 : 1;
+    const idx = row * 4 + col;
+    if (PALETTE[idx]) {
+      selectedEl = PALETTE[idx].id;
+      playSfx(520, 660, 0.06, 'sine', 0.08);
     }
+    return;
+  }
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+  // Grid painting
+  if (p.x >= GX && p.x < GX + GW && p.y >= GY && p.y < GY + GH - CELL) {
+    canvas.setPointerCapture(e.pointerId);
+    painting = true;
+    const c = Math.floor((p.x - GX) / CELL);
+    const r = Math.floor((p.y - GY) / CELL);
+    paintAtGrid(r, c, true);
+    lastCell = { r, c };
+  }
+});
 
-    const ELEMENT_COLORS = {
-      empty: '#030712',
-      sand: '#f59e0b',
-      water: '#0ea5e9',
-      plant: '#22c55e',
-      fire: '#ef4444',
-      stone: '#64748b',
-      acid: '#a3e635',
-      dynamite: '#f43f5e',
-      glass: '#a5f3fc',
-      spark: '#fef08a'
-    };
-
-    function render() {
-      // Status badges
-      document.getElementById('turn-badge').textContent = 'STEP ' + state.turns + ' / ' + state.maxTurns;
-      document.getElementById('score-badge').textContent = score(state) + ' PTS';
-      document.getElementById('game-log').textContent = state.gameMessage;
-
-      // Milestones UI
-      const oEl = document.getElementById('ms-oasis');
-      oEl.className = 'ms-card' + (state.milestones.verdantOasis ? ' ms-active' : '');
-      document.getElementById('ms-oasis-val').textContent = state.plantsGrown + ' / 8 ' + (state.milestones.verdantOasis ? '✓' : '');
-
-      const kEl = document.getElementById('ms-kiln');
-      kEl.className = 'ms-card' + (state.milestones.silicaKiln ? ' ms-active' : '');
-      document.getElementById('ms-kiln-val').textContent = state.glassCreated + ' / 4 ' + (state.milestones.silicaKiln ? '✓' : '');
-
-      const dEl = document.getElementById('ms-demo');
-      dEl.className = 'ms-card' + (state.milestones.kineticDemolition ? ' ms-active' : '');
-      document.getElementById('ms-demo-val').textContent = state.explosionsDetonated + ' / 2 ' + (state.milestones.kineticDemolition ? '✓' : '');
-
-      const aEl = document.getElementById('ms-arc');
-      aEl.className = 'ms-card' + (state.milestones.arcConduction ? ' ms-active' : '');
-      document.getElementById('ms-arc-val').textContent = state.electricalArcs + ' / 5 ' + (state.milestones.arcConduction ? '✓' : '');
-
-      // Canvas Rendering
-      const w = canvas.width;
-      const h = canvas.height;
-      const cellW = w / COLS;
-      const cellH = h / ROWS;
-
-      let particleCount = 0;
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const el = state.grid[r][c];
-          if (el !== 'empty') particleCount++;
-          ctx.fillStyle = ELEMENT_COLORS[el] || '#030712';
-          ctx.fillRect(c * cellW, r * cellH, cellW - 1, cellH - 1);
-
-          // Subtle particle texture
-          if (el === 'glass') {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-            ctx.fillRect(c * cellW + 4, r * cellH + 4, 8, 8);
-          } else if (el === 'spark') {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(c * cellW + cellW / 3, r * cellH + cellH / 3, cellW / 3, cellH / 3);
-          }
-        }
-      }
-
-      document.getElementById('stats-summary').textContent = 'Placed: ' + state.elementsPlaced + ' | Canvas Active: ' + particleCount;
-
-      // Target columns markers at the top
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
-      for (const tc of TARGET_COLS) {
-        ctx.fillRect(tc * cellW, 0, cellW, 6);
-      }
-
-      // Game Over Overlay
-      if (isOver(state)) {
-        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.88)' : 'rgba(69, 10, 10, 0.9)';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(state.victory ? 'ALCHEMICAL MASTERWORK COMPLETE!' : 'SIMULATION EXHAUSTED', w / 2, h / 2 - 20);
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Final Sandbox Evaluation: ' + score(state), w / 2, h / 2 + 15);
-      }
-
-      updateActions();
+canvas.addEventListener('pointermove', (e) => {
+  const p = toLogical(e);
+  pointerPos = p;
+  if (!painting || isOver(state)) return;
+  if (p.x >= GX && p.x < GX + GW && p.y >= GY && p.y < GY + GH - CELL) {
+    const c = Math.floor((p.x - GX) / CELL);
+    const r = Math.floor((p.y - GY) / CELL);
+    if (lastCell) {
+      paintSegment(lastCell.r, lastCell.c, r, c, false);
+    } else {
+      paintAtGrid(r, c, false);
     }
+    lastCell = { r, c };
+  }
+});
 
-    function updateActions() {
-      const panel = document.getElementById('actions-panel');
-      if (isOver(state)) {
-        panel.innerHTML = '<button class="btn btn-gold" onclick="window.restartGame()">NEW EXPERIMENT SESSION</button>';
-        return;
-      }
+function stopPaint() {
+  painting = false;
+  lastCell = null;
+}
+addEventListener('pointerup', stopPaint);
+addEventListener('pointercancel', stopPaint);
 
-      const actions = legalActions(state);
-      let html = '';
-
-      for (const act of actions) {
-        let cls = 'btn';
-        let label = act;
-        let sub = '';
-
-        if (act === 'action:step_simulation') {
-          cls += ' btn-water';
-          label = '⏩ Step Physics';
-          sub = 'Evaluate Gravity & Flow';
-        } else if (act === 'action:trigger_lightning_strike') {
-          cls += ' btn-gold';
-          label = '⚡ Lightning Strike';
-          sub = 'High-Voltage Discharge';
-        } else if (act === 'action:clear_sandbox') {
-          label = '🧹 Clear Canvas';
-          sub = 'Wipe Elements';
-        } else if (act === 'action:finalize_masterwork') {
-          cls += ' btn-gold';
-          label = '🏆 Finalize Masterwork!';
-          sub = 'Victory Exhibition';
-        } else if (act.startsWith('action:place_element:')) {
-          const parts = act.split(':');
-          const el = parts[2];
-          const col = parts[3];
-          if (el === 'sand') { cls += ' btn-sand'; label = '⏳ Sand (Col ' + col + ')'; sub = 'Melts into Glass'; }
-          else if (el === 'water') { cls += ' btn-water'; label = '💧 Water (Col ' + col + ')'; sub = 'Irrigates Plants'; }
-          else if (el === 'fire') { cls += ' btn-fire'; label = '🔥 Fire (Col ' + col + ')'; sub = 'Burns & Explodes'; }
-          else if (el === 'plant') { cls += ' btn-plant'; label = '🌿 Plant (Col ' + col + ')'; sub = 'Vegetation'; }
-          else if (el === 'dynamite') { cls += ' btn-dynamite'; label = '🧨 Dynamite (Col ' + col + ')'; sub = 'Explosive'; }
-          else if (el === 'acid') { label = '🧪 Acid (Col ' + col + ')'; sub = 'Corrosive'; }
-          else { label = el.toUpperCase() + ' (Col ' + col + ')'; }
-        }
-
-        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
-      }
-
-      panel.innerHTML = html;
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 8) {
+    selectedEl = PALETTE[n - 1].id;
+    playSfx(520, 660, 0.06, 'sine', 0.08);
+  } else if (e.key === 'c' || e.key === 'C') {
+    execAction('action:clear_sandbox');
+  } else if (e.key === ' ') {
+    if (canMasterwork()) execAction('action:finalize_masterwork');
+    else {
+      execAction('action:trigger_lightning_strike');
+      shake = 5;
+      playSfx(740, 140, 0.16, 'square', 0.14);
     }
+  } else if (e.key === 'Enter' && canMasterwork()) {
+    execAction('action:finalize_masterwork');
+  } else if (e.key === 'r' || e.key === 'R') {
+    restart();
+  }
+});
 
-    window.triggerAction = function(act) {
-      if (isOver(state)) return;
-      if (act.includes('lightning')) playSfx('zap');
-      else if (act.includes('dynamite') || act.includes('explode')) playSfx('boom');
-      else if (act.includes('place')) playSfx('drop');
+function update(dt) {
+  sfxCooldown = Math.max(0, sfxCooldown - dt);
+  shake = Math.max(0, shake - dt * 28);
 
-      step(state, act);
-      render();
-    };
-
-    window.restartGame = function() {
-      state = createState(Date.now ? Date.now() : 12345);
-      render();
-    };
-
-    window.toggleBot = function() {
-      botRunning = !botRunning;
-      document.getElementById('bot-toggle-btn').textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
-      document.getElementById('bot-toggle-btn').style.background = botRunning ? '#0284c7' : '#111827';
-
-      if (botRunning) {
-        botInterval = setInterval(() => {
-          if (isOver(state)) {
-            state = createState(Date.now ? Date.now() : 9999);
-            render();
-            return;
-          }
-          const acts = legalActions(state);
-          if (acts.length > 0) {
-            let choice = acts[0];
-            if (acts.includes('action:finalize_masterwork')) choice = 'action:finalize_masterwork';
-            else if (acts.includes('action:trigger_lightning_strike') && state.electricalArcs < 5) choice = 'action:trigger_lightning_strike';
-            else if (!state.milestones.silicaKiln && acts.find(a => a.startsWith('action:place_element:sand:'))) {
-              choice = acts.find(a => a.startsWith('action:place_element:sand:'));
-            } else if (!state.milestones.verdantOasis && acts.find(a => a.startsWith('action:place_element:plant:'))) {
-              choice = acts.find(a => a.startsWith('action:place_element:plant:'));
-            } else if (!state.milestones.kineticDemolition && acts.find(a => a.startsWith('action:place_element:dynamite:'))) {
-              choice = acts.find(a => a.startsWith('action:place_element:dynamite:'));
-            } else if (acts.includes('action:step_simulation')) {
-              choice = 'action:step_simulation';
-            }
-            window.triggerAction(choice);
-          }
-        }, 300);
-      } else {
-        clearInterval(botInterval);
-      }
-    };
-
-    render();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (!isOver(state)) {
+    simAcc += dt;
+    const STEP_DT = 0.14;
+    while (simAcc >= STEP_DT && !isOver(state)) {
+      simAcc -= STEP_DT;
+      execAction('action:step_simulation');
     }
-  </script>
+  }
+
+  for (const s of sparks) {
+    s.life -= dt;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+    s.vy += 180 * dt;
+  }
+  sparks = sparks.filter((s) => s.life > 0);
+}
+
+function draw(now) {
+  ctx.save();
+  if (shake > 0.2) {
+    ctx.translate(Math.sin(now * 0.09) * shake, Math.cos(now * 0.11) * shake);
+  }
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0f172a');
+  bg.addColorStop(1, '#050811');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('PHYSICS TOYBOX', 20, 26);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.fillText('SCORE ' + score(state) + '  •  BEST ' + best, 20, 42);
+
+  // Clear button
+  ctx.fillStyle = '#1e293b';
+  rrect(296, 10, 48, 28, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('CLEAR', 320, 28);
+
+  // 4 Milestone badges
+  const ms = [
+    { name: 'OASIS', val: Math.min(8, state.plantsGrown) + '/8', ok: state.milestones.verdantOasis, col: '#22c55e' },
+    { name: 'KILN', val: Math.min(4, state.glassCreated) + '/4', ok: state.milestones.silicaKiln, col: '#67e8f9' },
+    { name: 'TNT', val: Math.min(2, state.explosionsDetonated) + '/2', ok: state.milestones.kineticDemolition, col: '#f43f5e' },
+    { name: 'ARC', val: Math.min(5, state.electricalArcs) + '/5', ok: state.milestones.arcConduction, col: '#fde047' }
+  ];
+  for (let i = 0; i < 4; i++) {
+    const mx = 20 + i * 82;
+    const my = 50;
+    ctx.fillStyle = ms[i].ok ? 'rgba(16, 185, 129, 0.22)' : '#111827';
+    rrect(mx, my, 76, 38, 7);
+    ctx.fill();
+    ctx.strokeStyle = ms[i].ok ? ms[i].col : '#1f2937';
+    ctx.lineWidth = ms[i].ok ? 1.8 : 1;
+    ctx.stroke();
+    ctx.fillStyle = ms[i].ok ? ms[i].col : '#94a3b8';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(ms[i].name + (ms[i].ok ? ' ✓' : ''), mx + 38, my + 15);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.fillText(ms[i].val, mx + 38, my + 31);
+  }
+
+  // Sandbox Grid Frame
+  ctx.fillStyle = '#070b16';
+  rrect(GX - 3, GY - 3, GW + 6, GH + 6, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const pulse = Math.sin(now * 0.008);
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const el = state.grid[r][c];
+      const cx = GX + c * CELL;
+      const cy = GY + r * CELL;
+      if (el === 'empty') {
+        ctx.fillStyle = (r + c) % 2 === 0 ? '#0a1020' : '#0c1326';
+        ctx.fillRect(cx, cy, CELL, CELL);
+        continue;
+      }
+      ctx.fillStyle = EL_COLOR[el] || '#ffffff';
+      ctx.fillRect(cx + 0.5, cy + 0.5, CELL - 1, CELL - 1);
+
+      if (el === 'water') {
+        ctx.fillStyle = 'rgba(186, 230, 253, 0.35)';
+        ctx.fillRect(cx + 2, cy + 2 + ((c + Math.floor(now * 0.01)) % 3), CELL - 4, 3);
+      } else if (el === 'sand') {
+        ctx.fillStyle = 'rgba(254, 243, 199, 0.35)';
+        ctx.fillRect(cx + 4, cy + 4, 4, 4);
+      } else if (el === 'glass') {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.fillRect(cx + 3, cy + 3, 6, 6);
+      } else if (el === 'fire' || el === 'spark') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(cx + 5, cy + 5, CELL - 10, CELL - 10);
+      } else if (el === 'plant') {
+        ctx.fillStyle = '#86efac';
+        ctx.fillRect(cx + 6, cy + 3, 6, 6);
+      } else if (el === 'dynamite') {
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(cx + 8, cy + 2, 4, 5);
+      } else if (el === 'stone' && r === ROWS - 1) {
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(cx + 2, cy + 12, CELL - 4, 5);
+      }
+    }
+  }
+
+  // Brush hover outline on grid
+  if (!isOver(state) && pointerPos.x >= GX && pointerPos.x < GX + GW && pointerPos.y >= GY && pointerPos.y < GY + GH - CELL) {
+    const hc = Math.floor((pointerPos.x - GX) / CELL);
+    const hr = Math.floor((pointerPos.y - GY) / CELL);
+    ctx.strokeStyle = EL_COLOR[selectedEl] || '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(GX + hc * CELL + 1, GY + hr * CELL + 1, CELL - 2, CELL - 2);
+  }
+
+  // Sparks
+  for (const s of sparks) {
+    ctx.globalAlpha = Math.max(0, s.life / 0.35);
+    ctx.fillStyle = s.color;
+    ctx.fillRect(s.x - 2, s.y - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
+
+  // Masterwork Victory Banner if unlocked
+  const mw = canMasterwork();
+  if (mw) {
+    ctx.fillStyle = pulse > 0 ? '#d97706' : '#b45309';
+    rrect(20, 462, 320, 34, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏆 CLAIM MASTERWORK VICTORY! (+3000)', W / 2, 484);
+  }
+
+  // Element Palette (2x4)
+  const palY = mw ? 502 : 472;
+  for (let i = 0; i < PALETTE.length; i++) {
+    const item = PALETTE[i];
+    const col = i % 4;
+    const row = Math.floor(i / 4);
+    const bx = 20 + col * 82;
+    const by = palY + row * 56;
+    const active = selectedEl === item.id;
+
+    ctx.fillStyle = active ? '#1e293b' : '#0f172a';
+    rrect(bx, by, 76, 50, 8);
+    ctx.fill();
+    ctx.strokeStyle = active ? item.color : '#1e293b';
+    ctx.lineWidth = active ? 2.5 : 1;
+    ctx.stroke();
+
+    ctx.fillStyle = item.color;
+    ctx.beginPath();
+    ctx.arc(bx + 15, by + 18, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = active ? '#ffffff' : '#cbd5e1';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(item.label, bx + 25, by + 22);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '9px system-ui, sans-serif';
+    ctx.fillText(item.sub, bx + 10, by + 39);
+  }
+
+  // Footer hint / cycle progress
+  if (!mw) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Drag on grid to paint • Cycle ' + state.turns + '/' + state.maxTurns, W / 2, 614);
+  } else {
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Tap Golden Banner above or press SPACE to finish!', W / 2, 628);
+  }
+
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(7, 11, 22, 0.86)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.victory ? '#34d399' : '#f87171';
+    ctx.font = 'bold 26px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.victory ? 'MASTERWORK COMPLETE!' : 'SIMULATION ENDED', W / 2, H / 2 - 36);
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state), W / 2, H / 2 + 4);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText('Tap anywhere to play again', W / 2, H / 2 + 44);
+  }
+
+  ctx.restore();
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  draw(now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

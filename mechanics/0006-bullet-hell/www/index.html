@@ -16,7 +16,6 @@
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   canvas {
     display: block;
@@ -32,6 +31,8 @@
 const {
   WIDTH,
   HEIGHT,
+  BOSS_MAX_HP,
+  GRAZE_DIST,
   createState,
   legalActions,
   step,
@@ -58,112 +59,53 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
+let best = 0;
+try { best = +localStorage.getItem('goe-0006-best') || 0; } catch (e) {}
+
 let state = createState(Date.now());
 let focusMode = false;
 let overAt = 0;
 
-function restart() {
-  state = createState(Date.now());
-  focusMode = false;
-  overAt = 0;
+// Smooth 60 FPS visual state
+let visPlayerX = state.player.x;
+let visPlayerY = state.player.y;
+let visBossX = state.boss.x;
+let visBossHp = state.boss.hp;
+let visBomb = state.bombMeter;
+let bombFlash = 0;
+let hitFlash = 0;
+let animTime = 0;
+let popups = [];
+
+// Deterministic parallax starfield
+const STARS = [];
+for (let i = 0; i < 42; i++) {
+  STARS.push({
+    x: (i * 89 + 17) % W,
+    y: (i * 137 + 31) % HEIGHT,
+    speed: 25 + (i % 4) * 22,
+    size: 1 + (i % 2)
+  });
 }
 
-function toLogical(e) {
-  const rect = canvas.getBoundingClientRect();
-  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
-}
+const STEP_DT = 0.075;
+let tickAcc = 0;
+let pointerDown = false;
+let activeBtn = null;
+let dragTarget = null;
+let lastTapAt = 0;
+const keys = {};
 
-function doAction(actionName) {
-  if (isOver(state)) return;
-  if (!legalActions(state).includes(actionName)) return;
-  const res = step(state, actionName);
-  if (res.done) overAt = performance.now();
-}
+const PAD_BTNS = [
+  { id: 'up', x: 66, y: 508, w: 44, h: 36, label: '▲' },
+  { id: 'down', x: 66, y: 584, w: 44, h: 36, label: '▼' },
+  { id: 'left', x: 20, y: 544, w: 44, h: 40, label: '◀' },
+  { id: 'right', x: 112, y: 544, w: 44, h: 40, label: '▶' },
+  { id: 'focus', x: 174, y: 534, w: 78, h: 58, label: 'FOCUS' },
+  { id: 'bomb', x: 264, y: 534, w: 80, h: 58, label: 'BOMB' }
+];
 
-function handleMove(dir) {
-  if (focusMode) {
-    if (dir === 'left') doAction('focus_left');
-    else if (dir === 'right') doAction('focus_right');
-    else doAction(dir);
-  } else {
-    doAction(dir);
-  }
-}
-
-// Touch Handling
-canvas.addEventListener('pointerdown', (e) => {
-  const p = toLogical(e);
-  if (isOver(state)) {
-    if (performance.now() - overAt > 400) restart();
-    return;
-  }
-
-  // D-pad controls around (110, 560)
-  const cx = 100;
-  const cy = 560;
-
-  if (p.x >= cx - 25 && p.x <= cx + 25 && p.y >= cy - 65 && p.y <= cy - 20) {
-    handleMove('up');
-    return;
-  }
-  if (p.x >= cx - 25 && p.x <= cx + 25 && p.y >= cy + 20 && p.y <= cy + 65) {
-    handleMove('down');
-    return;
-  }
-  if (p.x >= cx - 65 && p.x <= cx - 20 && p.y >= cy - 25 && p.y <= cy + 25) {
-    handleMove('left');
-    return;
-  }
-  if (p.x >= cx + 20 && p.x <= cx + 65 && p.y >= cy - 25 && p.y <= cy + 25) {
-    handleMove('right');
-    return;
-  }
-  if (p.x >= cx - 18 && p.x <= cx + 18 && p.y >= cy - 18 && p.y <= cy + 18) {
-    doAction('wait');
-    return;
-  }
-
-  // Focus Button (205, 560)
-  if (p.x >= 180 && p.x <= 250 && p.y >= 530 && p.y <= 590) {
-    focusMode = !focusMode;
-    return;
-  }
-
-  // Bomb Button (295, 560)
-  if (p.x >= 270 && p.x <= 345 && p.y >= 530 && p.y <= 590) {
-    doAction('bomb');
-    return;
-  }
-
-  // Touch glide across playfield
-  if (p.y >= 60 && p.y <= 490) {
-    const dx = p.x - state.player.x;
-    const dy = p.y - state.player.y;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      handleMove(dx > 0 ? 'right' : 'left');
-    } else {
-      handleMove(dy > 0 ? 'down' : 'up');
-    }
-  }
-});
-
-addEventListener('keydown', (e) => {
-  if (isOver(state)) {
-    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
-    return;
-  }
-
-  if (e.key === 'ArrowLeft' || e.key === 'a') handleMove('left');
-  else if (e.key === 'ArrowRight' || e.key === 'd') handleMove('right');
-  else if (e.key === 'ArrowUp' || e.key === 'w') handleMove('up');
-  else if (e.key === 'ArrowDown' || e.key === 's') handleMove('down');
-  else if (e.key === 'Shift') focusMode = !focusMode;
-  else if (e.key === 'x' || e.key === 'b') doAction('bomb');
-  else if (e.key === ' ' || e.key === 'e') doAction('wait');
-  else if (e.key === 'r') restart();
-});
-
-function drawRoundedRect(x, y, w, h, r) {
+function rrect(x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -173,210 +115,517 @@ function drawRoundedRect(x, y, w, h, r) {
   ctx.closePath();
 }
 
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function restart() {
+  state = createState(Date.now());
+  visPlayerX = state.player.x;
+  visPlayerY = state.player.y;
+  visBossX = state.boss.x;
+  visBossHp = state.boss.hp;
+  visBomb = state.bombMeter;
+  bombFlash = 0;
+  hitFlash = 0;
+  popups = [];
+  tickAcc = 0;
+  activeBtn = null;
+  dragTarget = null;
+  overAt = 0;
+}
+
+function hitPad(p) {
+  for (const b of PAD_BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      return b.id;
+    }
+  }
+  return null;
+}
+
+function mapHorizontal(dir) {
+  const isFocusing = focusMode || keys['Shift'] || activeBtn === 'focus';
+  if (isFocusing) return dir === 'left' ? 'focus_left' : 'focus_right';
+  return dir;
+}
+
+function pickAction() {
+  const legals = legalActions(state);
+  if (legals.length === 0) return 'wait';
+
+  if ((activeBtn === 'bomb' || keys['x'] || keys['X'] || keys['b'] || keys['B'] || keys[' ']) && legals.includes('bomb')) {
+    return 'bomb';
+  }
+
+  if (activeBtn === 'left' || keys['ArrowLeft'] || keys['a'] || keys['A']) {
+    const a = mapHorizontal('left');
+    if (legals.includes(a)) return a;
+  }
+  if (activeBtn === 'right' || keys['ArrowRight'] || keys['d'] || keys['D']) {
+    const a = mapHorizontal('right');
+    if (legals.includes(a)) return a;
+  }
+  if (activeBtn === 'up' || keys['ArrowUp'] || keys['w'] || keys['W']) {
+    if (legals.includes('up')) return 'up';
+  }
+  if (activeBtn === 'down' || keys['ArrowDown'] || keys['s'] || keys['S']) {
+    if (legals.includes('down')) return 'down';
+  }
+
+  if (dragTarget) {
+    const dx = dragTarget.x - state.player.x;
+    const dy = dragTarget.y - state.player.y;
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+
+    if (ax >= ay && ax > 5) {
+      // Fine micro-dodge automatically when finger is close!
+      if (ax < 13) {
+        const fine = dx > 0 ? 'focus_right' : 'focus_left';
+        if (legals.includes(fine)) return fine;
+      }
+      const fast = mapHorizontal(dx > 0 ? 'right' : 'left');
+      if (legals.includes(fast)) return fast;
+    } else if (ay > 6) {
+      const vert = dy > 0 ? 'down' : 'up';
+      if (legals.includes(vert)) return vert;
+    }
+  }
+
+  return 'wait';
+}
+
+function doSimStep(act) {
+  if (isOver(state)) return;
+  const legals = legalActions(state);
+  const chosen = legals.includes(act) ? act : 'wait';
+
+  const prevLives = state.player.lives;
+  const prevGraze = state.grazeCount;
+  if (chosen === 'bomb') {
+    bombFlash = 0.45;
+    popups.push({ x: W / 2, y: 240, text: 'CELESTIAL BOMB!', color: '#fde047', life: 0.8, maxLife: 0.8 });
+  }
+
+  const res = step(state, chosen);
+
+  if (state.player.lives < prevLives) {
+    hitFlash = 0.35;
+    popups.push({ x: state.player.x, y: state.player.y - 22, text: 'SHIELD HIT!', color: '#ef4444', life: 0.7, maxLife: 0.7 });
+  } else if (state.grazeCount > prevGraze) {
+    popups.push({ x: state.player.x, y: state.player.y - 18, text: 'GRAZE +' + ((state.grazeCount - prevGraze) * 5), color: '#38bdf8', life: 0.45, maxLife: 0.45 });
+  }
+
+  const sc = score(state);
+  if (sc > best) {
+    best = sc;
+    try { localStorage.setItem('goe-0006-best', best); } catch (e) {}
+  }
+
+  if (res.done || isOver(state)) {
+    overAt = performance.now();
+  }
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  if (canvas.setPointerCapture && e.pointerId != null) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+  pointerDown = true;
+
+  const btn = hitPad(p);
+  if (btn) {
+    dragTarget = null;
+    if (btn === 'focus') {
+      focusMode = !focusMode;
+      activeBtn = null;
+      return;
+    }
+    if (btn === 'bomb') {
+      activeBtn = 'bomb';
+      if (legalActions(state).includes('bomb')) {
+        doSimStep('bomb');
+        tickAcc = 0;
+      }
+      return;
+    }
+    activeBtn = btn;
+    doSimStep(pickAction());
+    tickAcc = 0;
+    return;
+  }
+
+  if (p.y <= 504) {
+    activeBtn = null;
+    const now = performance.now();
+    if (now - lastTapAt < 280 && legalActions(state).includes('bomb')) {
+      doSimStep('bomb');
+      tickAcc = 0;
+      lastTapAt = 0;
+      return;
+    }
+    lastTapAt = now;
+    dragTarget = { x: p.x, y: Math.max(52, Math.min(HEIGHT - 18, p.y - 18)) };
+    const act = pickAction();
+    if (act !== 'wait') {
+      doSimStep(act);
+      tickAcc = 0;
+    }
+  }
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointerDown || isOver(state)) return;
+  const p = toLogical(e);
+  const btn = hitPad(p);
+  if (btn && btn !== 'focus' && btn !== 'bomb') {
+    activeBtn = btn;
+    dragTarget = null;
+  } else if (p.y <= 506) {
+    activeBtn = null;
+    dragTarget = { x: p.x, y: Math.max(52, Math.min(HEIGHT - 18, p.y - 18)) };
+  }
+});
+
+function clearPointer() {
+  pointerDown = false;
+  activeBtn = null;
+  dragTarget = null;
+}
+canvas.addEventListener('pointerup', clearPointer);
+canvas.addEventListener('pointercancel', clearPointer);
+addEventListener('pointerup', clearPointer);
+addEventListener('pointercancel', clearPointer);
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter' || e.key === 'r' || e.key === 'R') && performance.now() - overAt > 400) {
+      restart();
+    }
+    return;
+  }
+  if (e.key === 'r' || e.key === 'R') {
+    restart();
+    return;
+  }
+  if (!keys[e.key]) {
+    keys[e.key] = true;
+    if ((e.key === 'x' || e.key === 'X' || e.key === 'b' || e.key === 'B' || e.key === ' ') && legalActions(state).includes('bomb')) {
+      doSimStep('bomb');
+      tickAcc = 0;
+    } else if (tickAcc > 0.025) {
+      const act = pickAction();
+      if (act !== 'wait') {
+        doSimStep(act);
+        tickAcc = 0;
+      }
+    }
+  }
+});
+
+addEventListener('keyup', (e) => {
+  keys[e.key] = false;
+});
+
+function update(dt) {
+  animTime += dt;
+  if (bombFlash > 0) bombFlash = Math.max(0, bombFlash - dt);
+  if (hitFlash > 0) hitFlash = Math.max(0, hitFlash - dt);
+
+  for (const st of STARS) {
+    st.y += st.speed * dt;
+    if (st.y > HEIGHT) st.y -= HEIGHT;
+  }
+
+  if (!isOver(state)) {
+    tickAcc += dt;
+    while (tickAcc >= STEP_DT && !isOver(state)) {
+      tickAcc -= STEP_DT;
+      doSimStep(pickAction());
+    }
+  }
+
+  const rate = Math.min(1, dt * 22);
+  visPlayerX += (state.player.x - visPlayerX) * rate;
+  visPlayerY += (state.player.y - visPlayerY) * rate;
+  visBossX += (state.boss.x - visBossX) * Math.min(1, dt * 16);
+  visBossHp += (state.boss.hp - visBossHp) * Math.min(1, dt * 14);
+  visBomb += (state.bombMeter - visBomb) * Math.min(1, dt * 14);
+
+  popups = popups.filter(p => {
+    p.life -= dt;
+    p.y -= 24 * dt;
+    return p.life > 0;
+  });
+}
+
 function draw() {
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#130c24');
-  bg.addColorStop(1, '#070814');
+  bg.addColorStop(0, '#120a24');
+  bg.addColorStop(1, '#060712');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Boss HP Bar across top
-  const hpRatio = Math.max(0, state.boss.hp / state.boss.maxHp);
+  // Starfield inside playfield
+  ctx.fillStyle = 'rgba(148, 163, 184, 0.45)';
+  for (const st of STARS) {
+    if (st.y > 52) ctx.fillRect(st.x, st.y, st.size, st.size);
+  }
+
+  // Boss HP Bar across very top
+  const hpRatio = Math.max(0, Math.min(1, visBossHp / BOSS_MAX_HP));
   ctx.fillStyle = '#1e1b2e';
   ctx.fillRect(0, 0, W, 8);
-  ctx.fillStyle = hpRatio > 0.5 ? '#f43f5e' : hpRatio > 0.25 ? '#a855f7' : '#ec4899';
+  ctx.fillStyle = hpRatio > 0.66 ? '#f43f5e' : hpRatio > 0.33 ? '#a855f7' : '#ec4899';
   ctx.fillRect(0, 0, W * hpRatio, 8);
 
-  // Header HUD
+  // Top HUD
   ctx.fillStyle = '#64748b';
-  ctx.font = '11px sans-serif';
+  ctx.font = 'bold 10px system-ui, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('SHIELDS', 20, 26);
+  ctx.fillText('SHIELDS', 16, 24);
   ctx.textAlign = 'center';
-  ctx.fillText('GRAZE', W / 2, 26);
+  ctx.fillText('GRAZE', W / 2, 24);
   ctx.textAlign = 'right';
-  ctx.fillText('SCORE', W - 20, 26);
+  ctx.fillText('SCORE · BEST ' + best, W - 16, 24);
 
+  ctx.font = 'bold 15px system-ui, sans-serif';
   ctx.fillStyle = '#ef4444';
-  ctx.font = 'bold 15px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('♥ '.repeat(state.player.lives) || 'CRITICAL', 20, 46);
+  ctx.fillText('♥ '.repeat(Math.max(0, state.player.lives)) || 'CRITICAL', 16, 44);
 
   ctx.fillStyle = '#38bdf8';
   ctx.textAlign = 'center';
-  ctx.fillText(`⚡ ${state.grazeCount}`, W / 2, 46);
+  ctx.fillText('⚡ ' + state.grazeCount, W / 2, 44);
 
   ctx.fillStyle = '#f8fafc';
   ctx.textAlign = 'right';
-  ctx.fillText(score(state), W - 20, 46);
+  ctx.fillText(score(state), W - 16, 44);
 
-  // Playfield separator line
-  ctx.strokeStyle = '#1e293b';
-  ctx.lineWidth = 1;
+  // Sub-step interpolation factor for silky 60 FPS bullet motion
+  const sub = isOver(state) ? 0 : Math.min(1, tickAcc / STEP_DT);
+
+  // Draw Crimson Core Boss
+  const bx = visBossX;
+  const by = state.boss.y;
+  ctx.strokeStyle = 'rgba(244, 63, 94, 0.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(bx, by, 34, animTime * 2.5, animTime * 2.5 + Math.PI * 1.4);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(bx, by, 40, -animTime * 1.8, -animTime * 1.8 + Math.PI);
+  ctx.stroke();
+
+  ctx.fillStyle = '#881337';
+  ctx.beginPath();
+  ctx.arc(bx, by, 25, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#f43f5e';
+  ctx.beginPath();
+  ctx.arc(bx, by, 15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(bx, by, 6.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Player Auto-Cannon Lasers (with sub-step motion)
+  ctx.fillStyle = '#38bdf8';
+  for (const pb of state.playerBullets) {
+    const py = pb.y - 26 * sub;
+    if (py > 8) {
+      ctx.fillRect(pb.x - 1.8, py - 7, 3.6, 14);
+    }
+  }
+
+  // Hostile Danmaku Curtain (with sub-step motion)
+  for (const b of state.bullets) {
+    const x = b.x + b.vx * sub;
+    const y = b.y + b.vy * sub;
+    if (y > 498 || y < 8) continue;
+    ctx.fillStyle = b.color || '#f43f5e';
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw Player Starfighter
+  const isFocusing = focusMode || Boolean(keys['Shift']);
+  const invulnBlink = state.player.invuln > 0 && Math.floor(animTime * 20) % 2 === 0;
+  ctx.save();
+  ctx.translate(visPlayerX, visPlayerY);
+
+  // Graze ring
+  ctx.strokeStyle = isFocusing ? 'rgba(56, 189, 248, 0.55)' : 'rgba(56, 189, 248, 0.16)';
+  ctx.lineWidth = isFocusing ? 1.5 : 1;
+  ctx.beginPath();
+  ctx.arc(0, 0, GRAZE_DIST, 0, Math.PI * 2);
+  ctx.stroke();
+
+  if (!invulnBlink) {
+    // Thruster flame
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(-4, 9);
+    ctx.lineTo(0, 16 + Math.sin(animTime * 40) * 3);
+    ctx.lineTo(4, 9);
+    ctx.fill();
+
+    // Wings
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.moveTo(0, -15);
+    ctx.lineTo(13, 10);
+    ctx.lineTo(0, 6);
+    ctx.lineTo(-13, 10);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Glowing Micro-Core Hitbox
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+
+  // Bomb shockwave & hit flash
+  if (bombFlash > 0) {
+    ctx.fillStyle = 'rgba(253, 224, 71, ' + (bombFlash * 0.7) + ')';
+    ctx.fillRect(0, 0, W, HEIGHT);
+  }
+  if (hitFlash > 0) {
+    ctx.fillStyle = 'rgba(239, 68, 68, ' + (hitFlash * 0.5) + ')';
+    ctx.fillRect(0, 0, W, HEIGHT);
+  }
+
+  // Popups
+  for (const p of popups) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.restore();
+  }
+
+  // Bottom Control Deck Background
+  ctx.fillStyle = '#0b0c1c';
+  ctx.fillRect(0, 500, W, H - 500);
+  ctx.strokeStyle = '#252140';
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(0, 500);
   ctx.lineTo(W, 500);
   ctx.stroke();
 
-  // Draw Boss Crimson Core
-  const bx = state.boss.x;
-  const by = state.boss.y;
-  ctx.fillStyle = '#881337';
-  ctx.beginPath();
-  ctx.arc(bx, by, 26, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#f43f5e';
-  ctx.beginPath();
-  ctx.arc(bx, by, 16, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(bx, by, 7, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Orbiting rings
-  ctx.strokeStyle = '#fda4af';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(bx, by, 34, state.stepCount * 0.1, state.stepCount * 0.1 + Math.PI * 1.5);
-  ctx.stroke();
-
-  // Draw Player Bullets
-  ctx.fillStyle = '#38bdf8';
-  for (const pb of state.playerBullets) {
-    ctx.fillRect(pb.x - 1.5, pb.y - 6, 3, 12);
-  }
-
-  // Draw Hostile Danmaku Bullets
-  for (const b of state.bullets) {
-    ctx.fillStyle = b.color || '#f43f5e';
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 4.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Draw Player Ship
-  const px = state.player.x;
-  const py = state.player.y;
-  ctx.fillStyle = state.player.invuln > 0 ? '#94a3b8' : '#0284c7';
-  ctx.beginPath();
-  ctx.moveTo(px, py - 14);
-  ctx.lineTo(px + 12, py + 10);
-  ctx.lineTo(px, py + 6);
-  ctx.lineTo(px - 12, py + 10);
-  ctx.closePath();
-  ctx.fill();
-
-  // Glowing Micro-Core Hitbox (4px)
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(px, py, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#ef4444';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Graze Aura when focusing
-  if (focusMode) {
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(px, py, 19, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  // Bottom Controls Panel
-  const cx = 100;
-  const cy = 560;
-
-  function drawPad(bx, by, bw, bh, txt) {
-    ctx.fillStyle = '#1e1b2e';
-    drawRoundedRect(bx, by, bw, bh, 6);
-    ctx.fill();
-    ctx.strokeStyle = '#332e4d';
-    ctx.stroke();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(txt, bx + bw / 2, by + bh / 2 + 5);
-  }
-
-  drawPad(cx - 20, cy - 60, 40, 35, '▲');
-  drawPad(cx - 20, cy + 25, 40, 35, '▼');
-  drawPad(cx - 60, cy - 18, 35, 40, '◀');
-  drawPad(cx + 25, cy - 18, 35, 40, '▶');
-  drawPad(cx - 15, cy - 15, 30, 30, '●');
-
-  // Focus Button
-  ctx.fillStyle = focusMode ? '#0284c7' : '#1e1b2e';
-  drawRoundedRect(180, 535, 68, 50, 8);
-  ctx.fill();
-  ctx.strokeStyle = focusMode ? '#38bdf8' : '#332e4d';
-  ctx.stroke();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('FOCUS', 214, 560);
-  ctx.font = '10px sans-serif';
-  ctx.fillStyle = '#94a3b8';
-  ctx.fillText(focusMode ? 'SLOW ON' : 'OFF', 214, 574);
-
-  // Bomb Button
   const bombReady = state.bombMeter >= 100;
-  ctx.fillStyle = bombReady ? '#f59e0b' : '#1e1b2e';
-  drawRoundedRect(268, 535, 74, 50, 8);
-  ctx.fill();
-  ctx.strokeStyle = bombReady ? '#fde047' : '#332e4d';
-  ctx.stroke();
-  ctx.fillStyle = bombReady ? '#0f172a' : '#ffffff';
-  ctx.font = 'bold 13px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('BOMB', 305, 560);
-  ctx.font = '10px sans-serif';
-  ctx.fillStyle = bombReady ? '#78350f' : '#64748b';
-  ctx.fillText(`${state.bombMeter}%`, 305, 574);
+  for (const b of PAD_BTNS) {
+    if (b.id === 'focus') {
+      const on = isFocusing;
+      ctx.fillStyle = on ? '#0284c7' : '#18162b';
+      rrect(b.x, b.y, b.w, b.h, 9);
+      ctx.fill();
+      ctx.strokeStyle = on ? '#7dd3fc' : '#332e4d';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('FOCUS', b.x + b.w / 2, b.y + 25);
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillStyle = on ? '#e0f2fe' : '#94a3b8';
+      ctx.fillText(on ? 'SLOW ON' : 'SHIFT', b.x + b.w / 2, b.y + 42);
+    } else if (b.id === 'bomb') {
+      ctx.fillStyle = bombReady ? '#f59e0b' : '#18162b';
+      rrect(b.x, b.y, b.w, b.h, 9);
+      ctx.fill();
+      ctx.strokeStyle = bombReady ? '#fef08a' : '#332e4d';
+      ctx.lineWidth = bombReady ? 2.2 : 1.6;
+      ctx.stroke();
+      ctx.fillStyle = bombReady ? '#0f172a' : '#e2e8f0';
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('BOMB', b.x + b.w / 2, b.y + 25);
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.fillStyle = bombReady ? '#78350f' : '#38bdf8';
+      ctx.fillText(Math.round(visBomb) + '% [X]', b.x + b.w / 2, b.y + 42);
+    } else {
+      const pressed = activeBtn === b.id ||
+        (b.id === 'left' && (keys['ArrowLeft'] || keys['a'] || keys['A'])) ||
+        (b.id === 'right' && (keys['ArrowRight'] || keys['d'] || keys['D'])) ||
+        (b.id === 'up' && (keys['ArrowUp'] || keys['w'] || keys['W'])) ||
+        (b.id === 'down' && (keys['ArrowDown'] || keys['s'] || keys['S']));
+      ctx.fillStyle = pressed ? '#0284c7' : '#18162b';
+      rrect(b.x, b.y, b.w, b.h, 7);
+      ctx.fill();
+      ctx.strokeStyle = pressed ? '#7dd3fc' : '#332e4d';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2 + 5);
+    }
+  }
 
   ctx.fillStyle = '#64748b';
-  ctx.font = '10px sans-serif';
-  ctx.fillText('Arrows / WASD glide · Shift Focus · X / Bomb blast', W / 2, 622);
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Drag ship directly on space · Double-tap or press X for Bomb', W / 2, 632);
 
-  // Overlay
   if (isOver(state)) {
-    ctx.fillStyle = 'rgba(7, 8, 20, 0.94)';
+    ctx.fillStyle = 'rgba(7, 8, 20, 0.92)';
     ctx.fillRect(0, 0, W, H);
 
     ctx.textAlign = 'center';
-    if (state.won) {
-      ctx.fillStyle = '#10b981';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillText('CRIMSON CORE DOWN', W / 2, H / 2 - 35);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '16px sans-serif';
-      ctx.fillText('Danmaku curtain vanquished!', W / 2, H / 2 - 5);
-    } else {
-      ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillText('CORE OVERHEAT', W / 2, H / 2 - 35);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '16px sans-serif';
-      ctx.fillText('All fighter shields obliterated!', W / 2, H / 2 - 5);
-    }
+    ctx.fillStyle = state.won ? '#4ade80' : '#ef4444';
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.fillText(state.won ? 'CRIMSON CORE DOWN!' : 'CORE SHATTERED', W / 2, H / 2 - 48);
 
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.fillText(`Final Score: ${score(state)}`, W / 2, H / 2 + 30);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText(
+      state.won ? 'Danmaku curtain vanquished! Graze: ' + state.grazeCount : 'Bullets grazed: ' + state.grazeCount,
+      W / 2,
+      H / 2 - 14
+    );
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 26);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('Tap anywhere to sortie again', W / 2, H / 2 + 75);
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText('Best: ' + best, W / 2, H / 2 + 52);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap or press Space to sortie again', W / 2, H / 2 + 94);
   }
 }
 
-function frame() {
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
   draw();
   requestAnimationFrame(frame);
 }

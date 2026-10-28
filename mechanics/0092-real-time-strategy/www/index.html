@@ -1,437 +1,806 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Iron Siege: Real-Time Strategy</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="manifest.json">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-    body {
-      background: #09090b;
-      color: #f4f4f5;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 10px;
-    }
-    header {
-      width: 100%;
-      max-width: 480px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #18181b;
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid #27272a;
-      margin-bottom: 8px;
-      font-size: 13px;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .stat-badge {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-weight: 600;
-    }
-    .min-val { color: #38bdf8; }
-    .wrk-val { color: #facc15; }
-    .arm-val { color: #4ade80; }
-    #canvas-wrap {
-      width: 100%;
-      max-width: 480px;
-      aspect-ratio: 1;
-      position: relative;
-    }
-    canvas {
-      width: 100%;
-      height: 100%;
-      background: #09090b;
-      border: 2px solid #27272a;
-      border-radius: 12px;
-      display: block;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
-    }
-    #controls {
-      width: 100%;
-      max-width: 480px;
-      margin-top: 8px;
-      background: #18181b;
-      border: 1px solid #27272a;
-      border-radius: 8px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .action-row {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    button {
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      padding: 7px 10px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 11px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    button:hover:not(:disabled) { background: #1d4ed8; }
-    button:disabled { background: #27272a; color: #71717a; cursor: not-allowed; }
-    #btn-worker { background: #d97706; }
-    #btn-worker:hover:not(:disabled) { background: #b45309; }
-    #btn-marine { background: #059669; }
-    #btn-marine:hover:not(:disabled) { background: #047857; }
-    #btn-tank { background: #7c3aed; }
-    #btn-tank:hover:not(:disabled) { background: #6d28d9; }
-    #btn-advance { background: #dc2626; }
-    #btn-advance:hover:not(:disabled) { background: #b91c1c; }
-    #btn-retreat { background: #4b5563; }
-    #btn-retreat:hover:not(:disabled) { background: #374151; }
-    #btn-tick { background: #0284c7; }
-    #btn-tick:hover:not(:disabled) { background: #0369a1; }
-    #log-box {
-      width: 100%;
-      max-width: 480px;
-      margin-top: 8px;
-      font-size: 12px;
-      color: #a1a1aa;
-      background: #18181b;
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1px solid #27272a;
-      min-height: 36px;
-      display: flex;
-      align-items: center;
-    }
-    #game-over-banner {
-      display: none;
-      width: 100%;
-      max-width: 480px;
-      margin-top: 8px;
-      padding: 12px;
-      border-radius: 8px;
-      text-align: center;
-      font-weight: 700;
-      font-size: 15px;
-    }
-    .victory-bg { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
-    .defeat-bg { background: #4c0519; color: #fda4af; border: 1px solid #f43f5e; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Iron Siege: Real-Time Strategy</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <div class="stat-badge">Tick: <span id="ui-tick" style="color:#f4f4f5;">1/150</span></div>
-    <div class="stat-badge">Minerals: <span id="ui-min" class="min-val">100</span></div>
-    <div class="stat-badge">Workers: <span id="ui-wrk" class="wrk-val">2/6</span></div>
-    <div class="stat-badge">Army: <span id="ui-arm" class="arm-val">0</span></div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <div id="canvas-wrap">
-    <canvas id="gameCanvas" width="480" height="480"></canvas>
-  </div>
+const W = 360;
+const H = 640;
+const TICK_S = 0.55;
+const HOLD_S = 0.14;
 
-  <div id="controls">
-    <div class="action-row">
-      <button id="btn-worker">Harvester (50m)</button>
-      <button id="btn-barracks">Barracks (100m)</button>
-      <button id="btn-factory">Factory (150m)</button>
-      <button id="btn-turret">Turret (75m)</button>
-      <button id="btn-marine">Marine (50m)</button>
-      <button id="btn-tank">Tank (100m)</button>
-    </div>
-    <div class="action-row">
-      <button id="btn-advance">Advance ⏩</button>
-      <button id="btn-retreat">Retreat ⏪</button>
-      <button id="btn-tick">Tick (+1s)</button>
-      <button id="btn-play">Auto-Play ▶</button>
-      <button id="btn-reset" style="background:#3f3f46;">Restart</button>
-    </div>
-  </div>
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-  <div id="log-box">Command Core online. Deploy harvesters and construct barracks.</div>
-  <div id="game-over-banner"></div>
+const AC = typeof AudioContext !== 'undefined' ? AudioContext : (typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null);
+let audioCtx = null;
+function beep(freq, dur, type, vol) {
+  try {
+    if (!AC) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type || 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(vol || 0.04, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
 
-  <script src="logic.js"></script>
-  <script>
-    (function() {
-      let state = createState(Date.now() & 0xffff);
-      let autoPlayInterval = null;
+let best = 0;
+try { best = +localStorage.getItem('goe_0092_best') || 0; } catch (e) {}
 
-      const canvas = document.getElementById('gameCanvas');
-      const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+let state = createState(Date.now() & 0xffff);
+let paused = false;
+let tickAcc = 0;
+let overAt = 0;
+let shake = 0;
+let animTime = 0;
 
-      const uiTick = document.getElementById('ui-tick');
-      const uiMin = document.getElementById('ui-min');
-      const uiWrk = document.getElementById('ui-wrk');
-      const uiArm = document.getElementById('ui-arm');
+let vis = {
+  pArmyX: 66,
+  eArmyX: 294,
+  pCoreHp: BASE_MAX_HP,
+  eCoreHp: BASE_MAX_HP,
+  minerals: 100
+};
+let tracers = [];
+let floaters = [];
+let rings = [];
 
-      const btnWorker = document.getElementById('btn-worker');
-      const btnBarracks = document.getElementById('btn-barracks');
-      const btnFactory = document.getElementById('btn-factory');
-      const btnTurret = document.getElementById('btn-turret');
-      const btnMarine = document.getElementById('btn-marine');
-      const btnTank = document.getElementById('btn-tank');
-      const btnAdvance = document.getElementById('btn-advance');
-      const btnRetreat = document.getElementById('btn-retreat');
-      const btnTick = document.getElementById('btn-tick');
-      const btnPlay = document.getElementById('btn-play');
-      const btnReset = document.getElementById('btn-reset');
-      const logBox = document.getElementById('log-box');
-      const gameOverBanner = document.getElementById('game-over-banner');
+let pointer = { down: false, x: -1, y: -1, holdAcc: 0, activeAction: null, dragSector: -1 };
+const keys = {};
+let keyHoldAcc = 0;
 
-      function updateUI() {
-        if (uiTick) uiTick.textContent = state.tick + '/' + state.maxTicks;
-        if (uiMin) uiMin.textContent = state.player.minerals;
-        if (uiWrk) uiWrk.textContent = state.player.workers + '/6';
-        if (uiArm) uiArm.textContent = state.player.marines + 'M • ' + state.player.tanks + 'T';
+function rrect(x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
 
-        if (logBox && state.history && state.history.length > 0) {
-          logBox.textContent = state.history[state.history.length - 1];
-        }
+function circle(x, y, r) {
+  ctx.beginPath();
+  ctx.arc(x, y, Math.max(0, r), 0, Math.PI * 2);
+}
 
-        const legals = legalActions(state);
-        if (btnWorker) btnWorker.disabled = !legals.includes('train_worker') || state.done;
-        if (btnBarracks) btnBarracks.disabled = !legals.includes('build_barracks') || state.done;
-        if (btnFactory) btnFactory.disabled = !legals.includes('build_factory') || state.done;
-        if (btnTurret) btnTurret.disabled = !legals.includes('build_turret') || state.done;
-        if (btnMarine) btnMarine.disabled = !legals.includes('train_marine') || state.done;
-        if (btnTank) btnTank.disabled = !legals.includes('train_tank') || state.done;
-        if (btnAdvance) btnAdvance.disabled = !legals.includes('order_advance') || state.done;
-        if (btnRetreat) btnRetreat.disabled = !legals.includes('order_retreat') || state.done;
-        if (btnTick) btnTick.disabled = state.done;
+function sectorCenterX(sec) {
+  return 66 + sec * 114;
+}
 
-        if (state.done) {
-          if (autoPlayInterval) {
-            clearInterval(autoPlayInterval);
-            autoPlayInterval = null;
-            if (btnPlay) btnPlay.textContent = 'Auto-Play ▶';
-          }
-          if (gameOverBanner) {
-            gameOverBanner.style.display = 'block';
-            if (state.winner === 'player') {
-              gameOverBanner.className = 'victory-bg';
-              gameOverBanner.textContent = 'VICTORY! Enemy Command Core obliterated!';
-            } else {
-              gameOverBanner.className = 'defeat-bg';
-              gameOverBanner.textContent = 'DEFEAT! Your Command Core was destroyed.';
-            }
-          }
-        } else if (gameOverBanner) {
-          gameOverBanner.style.display = 'none';
-        }
+const CARDS = [
+  { key: '1', action: 'train_worker', title: 'Harvester', cost: WORKER_COST, color: '#f59e0b', sub: (s) => s.player.workers + '/' + MAX_WORKERS + ' (+3m)' },
+  { key: '2', action: 'build_barracks', title: 'Barracks', cost: BARRACKS_COST, color: '#3b82f6', sub: (s) => s.player.barracks + '/2 Built' },
+  { key: '3', action: 'build_factory', title: 'Factory', cost: FACTORY_COST, color: '#8b5cf6', sub: (s) => s.player.barracks < 1 ? 'Need Barracks' : s.player.factory + '/2 Built' },
+  { key: '4', action: 'build_turret', title: 'Turret', cost: TURRET_COST, color: '#06b6d4', sub: (s) => s.player.turrets + '/3 Defense' },
+  { key: '5', action: 'train_marine', title: 'Marine', cost: MARINE_COST, color: '#10b981', sub: (s) => s.player.barracks < 1 ? 'Need Barracks' : s.player.marines + ' Active' },
+  { key: '6', action: 'train_tank', title: 'Siege Tank', cost: TANK_COST, color: '#ec4899', sub: (s) => s.player.factory < 1 ? 'Need Factory' : s.player.tanks + ' Active' }
+];
+
+const MANEUVERS = [
+  { x: 10, y: 382, w: 108, h: 38, action: 'order_retreat', label: '<< RETREAT', color: '#475569' },
+  { x: 126, y: 382, w: 108, h: 38, action: 'tick', label: 'PULSE (+1)', color: '#0284c7' },
+  { x: 242, y: 382, w: 108, h: 38, action: 'order_advance', label: 'ADVANCE >>', color: '#dc2626' }
+];
+
+function cardRect(idx) {
+  const col = idx % 3;
+  const row = Math.floor(idx / 3);
+  const w = 108;
+  const h = 76;
+  return { x: 10 + col * 116, y: 428 + row * 82, w, h };
+}
+
+function restart() {
+  state = createState(Date.now() & 0xffff);
+  tickAcc = 0;
+  shake = 0;
+  tracers = [];
+  floaters = [];
+  rings = [];
+  vis.pArmyX = sectorCenterX(state.player.armyPosition);
+  vis.eArmyX = sectorCenterX(state.enemy.armyPosition);
+  vis.pCoreHp = state.player.coreHp;
+  vis.eCoreHp = state.enemy.coreHp;
+  vis.minerals = state.player.minerals;
+  beep(480, 0.08, 'triangle', 0.05);
+}
+
+function addFloater(text, x, y, color) {
+  floaters.push({ text, x, y, color: color || '#fde047', t: 0 });
+}
+
+function doAction(act, isPlayer) {
+  if (isOver(state)) return false;
+  const legals = legalActions(state);
+  if (!legals.includes(act)) return false;
+
+  const prevPCore = state.player.coreHp;
+  const prevECore = state.enemy.coreHp;
+  const prevPMar = state.player.marines;
+  const prevPTank = state.player.tanks;
+  const prevEMar = state.enemy.marines;
+  const prevETank = state.enemy.tanks;
+
+  step(state, act);
+  if (isPlayer) {
+    tickAcc = 0;
+    if (act === 'order_advance') beep(560, 0.06, 'sawtooth', 0.04);
+    else if (act === 'order_retreat') beep(320, 0.06, 'sine', 0.04);
+    else if (act !== 'tick') beep(640, 0.07, 'triangle', 0.05);
+  }
+
+  const px = sectorCenterX(state.player.armyPosition);
+  const ex = sectorCenterX(state.enemy.armyPosition);
+
+  // Combat visual feedback
+  if (state.player.armyPosition === state.enemy.armyPosition &&
+      (prevPMar + prevPTank > 0) && (prevEMar + prevETank > 0)) {
+    tracers.push({ x1: px - 14, y1: 274, x2: ex + 14, y2: 320, color: '#38bdf8', t: 0 });
+    tracers.push({ x1: ex + 14, y1: 320, x2: px - 14, y2: 274, color: '#f87171', t: 0 });
+    rings.push({ x: px, y: 296, maxR: 26, color: '#fbbf24', t: 0 });
+    shake = Math.min(5, shake + 2.2);
+  }
+  if (state.enemy.coreHp < prevECore) {
+    const dmg = prevECore - state.enemy.coreHp;
+    tracers.push({ x1: px, y1: 274, x2: 294, y2: 145, color: '#38bdf8', t: 0 });
+    rings.push({ x: 294, y: 145, maxR: 30, color: '#ef4444', t: 0 });
+    addFloater('-' + dmg, 294, 130, '#fb7185');
+    shake = Math.min(6, shake + 3);
+  }
+  if (state.player.coreHp < prevPCore) {
+    const dmg = prevPCore - state.player.coreHp;
+    tracers.push({ x1: ex, y1: 320, x2: 66, y2: 145, color: '#f87171', t: 0 });
+    rings.push({ x: 66, y: 145, maxR: 30, color: '#ef4444', t: 0 });
+    addFloater('-' + dmg, 66, 130, '#f87171');
+    shake = Math.min(6, shake + 3);
+  }
+  if (state.enemy.marines < prevEMar || state.enemy.tanks < prevETank) {
+    addFloater('KILL!', ex, 305, '#4ade80');
+  }
+  if (act === 'train_worker') addFloater('+Harvester', 66, 98, '#fbbf24');
+  else if (act === 'build_barracks') addFloater('+Barracks', 66, 195, '#60a5fa');
+  else if (act === 'build_factory') addFloater('+Factory', 66, 210, '#c084fc');
+  else if (act === 'build_turret') addFloater('+Turret', 95, 195, '#22d3ee');
+  else if (act === 'train_marine') addFloater('+Marine', px, 255, '#34d399');
+  else if (act === 'train_tank') addFloater('+Siege Tank', px, 255, '#f472b6');
+
+  if (isOver(state)) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe_0092_best', best); } catch (e) {}
+    }
+    beep(state.winner === 'player' ? 780 : 190, 0.25, 'sawtooth', 0.06);
+  }
+  return true;
+}
+
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
+
+function hitTestAction(x, y) {
+  // Top buttons: LIVE/PAUSE pill (236..304, 10..34) & Restart (310..350, 10..34)
+  if (y >= 8 && y <= 38) {
+    if (x >= 234 && x <= 306) return { type: 'pause' };
+    if (x >= 310 && x <= 352) return { type: 'restart' };
+  }
+  // Battlefield direct interaction (y: 68..372)
+  if (y >= 68 && y <= 372 && x >= 10 && x <= 350) {
+    const sec = Math.min(2, Math.max(0, Math.floor((x - 10) / 113.4)));
+    // Tapping mineral field in Sector 0 top area trains worker if legal
+    if (sec === 0 && y >= 72 && y <= 112 && legalActions(state).includes('train_worker')) {
+      return { type: 'action', action: 'train_worker' };
+    }
+    if (sec > state.player.armyPosition) return { type: 'sector', sec, action: 'order_advance' };
+    if (sec < state.player.armyPosition) return { type: 'sector', sec, action: 'order_retreat' };
+    return { type: 'sector', sec, action: 'tick' };
+  }
+  // Maneuver buttons
+  for (const m of MANEUVERS) {
+    if (x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h) {
+      return { type: 'action', action: m.action };
+    }
+  }
+  // Production cards
+  for (let i = 0; i < CARDS.length; i++) {
+    const r = cardRect(i);
+    if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+      return { type: 'action', action: CARDS[i].action };
+    }
+  }
+  return null;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  pointer.down = true;
+  pointer.x = p.x;
+  pointer.y = p.y;
+  pointer.holdAcc = 0;
+  if (canvas.setPointerCapture) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+
+  const hit = hitTestAction(p.x, p.y);
+  if (!hit) return;
+  if (hit.type === 'pause') {
+    paused = !paused;
+    beep(paused ? 300 : 520, 0.05, 'sine', 0.04);
+    return;
+  }
+  if (hit.type === 'restart') {
+    restart();
+    return;
+  }
+  if (hit.action) {
+    pointer.activeAction = hit.action;
+    pointer.dragSector = hit.sec !== undefined ? hit.sec : -1;
+    doAction(hit.action, true);
+  }
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  const p = toLogical(e);
+  pointer.x = p.x;
+  pointer.y = p.y;
+  if (!pointer.down || isOver(state)) return;
+
+  // Dragging across sectors dynamically commands army toward finger sector
+  if (p.y >= 68 && p.y <= 372 && p.x >= 10 && p.x <= 350) {
+    const sec = Math.min(2, Math.max(0, Math.floor((p.x - 10) / 113.4)));
+    if (sec !== pointer.dragSector) {
+      pointer.dragSector = sec;
+      if (sec > state.player.armyPosition) doAction('order_advance', true);
+      else if (sec < state.player.armyPosition) doAction('order_retreat', true);
+    }
+  } else {
+    const hit = hitTestAction(p.x, p.y);
+    pointer.activeAction = hit && hit.action ? hit.action : null;
+  }
+});
+
+function clearPointer() {
+  pointer.down = false;
+  pointer.activeAction = null;
+  pointer.dragSector = -1;
+}
+canvas.addEventListener('pointerup', clearPointer);
+canvas.addEventListener('pointercancel', clearPointer);
+
+function keyToAction(key) {
+  const k = key.toLowerCase();
+  if (k === '1') return 'train_worker';
+  if (k === '2') return 'build_barracks';
+  if (k === '3') return 'build_factory';
+  if (k === '4') return 'build_turret';
+  if (k === '5') return 'train_marine';
+  if (k === '6') return 'train_tank';
+  if (k === 'arrowright' || k === 'd') return 'order_advance';
+  if (k === 'arrowleft' || k === 'a') return 'order_retreat';
+  if (k === ' ' || k === 'enter' || k === 'w' || k === 'arrowup') return 'tick';
+  return null;
+}
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter' || e.key.toLowerCase() === 'r') && performance.now() - overAt > 400) {
+      restart();
+    }
+    return;
+  }
+  if (e.key.toLowerCase() === 'p') {
+    paused = !paused;
+    return;
+  }
+  if (e.key.toLowerCase() === 'r') {
+    restart();
+    return;
+  }
+  const act = keyToAction(e.key);
+  if (act && !keys[e.key]) {
+    keys[e.key] = act;
+    keyHoldAcc = 0;
+    doAction(act, true);
+  }
+});
+
+addEventListener('keyup', (e) => {
+  delete keys[e.key];
+});
+
+function drawStructureBadge(x, y, label, count, maxCount, color) {
+  ctx.fillStyle = count > 0 ? 'rgba(15,23,42,0.9)' : 'rgba(15,23,42,0.5)';
+  rrect(x, y, 92, 18, 4);
+  ctx.fill();
+  ctx.strokeStyle = count > 0 ? color : '#334155';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = count > 0 ? '#e2e8f0' : '#64748b';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x + 5, y + 12.5);
+  ctx.fillStyle = count > 0 ? color : '#64748b';
+  ctx.textAlign = 'right';
+  ctx.fillText(count + (maxCount ? '/' + maxCount : ''), x + 87, y + 12.5);
+}
+
+function draw(dt) {
+  const sx = shake > 0 ? (Math.sin(animTime * 60) * shake) : 0;
+  const sy = shake > 0 ? (Math.cos(animTime * 53) * shake) : 0;
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0f172a');
+  bg.addColorStop(1, '#090d1a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top Header
+  ctx.fillStyle = '#111827';
+  rrect(8, 6, W - 16, 56, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#1f2937';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = 'bold 13px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('IRON SIEGE RTS', 18, 24);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.fillText('Tick ' + state.tick + '/' + state.maxTicks + '  •  Best ' + best, 18, 40);
+
+  // Mineral & Army pill
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 12px system-ui, sans-serif';
+  ctx.fillText('Minerals: ' + Math.round(vis.minerals) + ' (+' + (state.player.workers * 3) + ')', 18, 55);
+
+  const curScore = score(state);
+  ctx.fillStyle = '#a7f3d0';
+  ctx.textAlign = 'right';
+  ctx.fillText('Score ' + curScore, W - 18, 55);
+
+  // LIVE / PAUSED button
+  ctx.fillStyle = paused ? '#78350f' : '#065f46';
+  rrect(236, 10, 68, 24, 12);
+  ctx.fill();
+  ctx.strokeStyle = paused ? '#f59e0b' : '#10b981';
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(paused ? 'PAUSED' : 'LIVE', 270, 25.5);
+
+  // Restart button
+  ctx.fillStyle = '#1e293b';
+  rrect(310, 10, 36, 24, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#475569';
+  ctx.stroke();
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillText('RST', 328, 25.5);
+
+  // Ambient tick progress bar
+  const prog = paused || isOver(state) ? 0 : Math.min(1, Math.max(0, tickAcc / TICK_S));
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(14, 63, W - 28, 2.5);
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillRect(14, 63, (W - 28) * prog, 2.5);
+
+  // Battlefield Map (y: 68..372)
+  const sectorColors = ['#0c1933', '#151926', '#261219'];
+  const sectorTitles = ['BLUE BASE', 'MID RIDGE', 'RED CITADEL'];
+  const hoveredSec = (pointer.y >= 68 && pointer.y <= 372 && pointer.x >= 10 && pointer.x <= 350)
+    ? Math.min(2, Math.max(0, Math.floor((pointer.x - 10) / 113.4)))
+    : -1;
+
+  for (let s = 0; s < 3; s++) {
+    const sx0 = 10 + s * 114;
+    ctx.fillStyle = sectorColors[s];
+    rrect(sx0, 68, 112, 304, 8);
+    ctx.fill();
+    ctx.strokeStyle = hoveredSec === s ? '#60a5fa' : '#26324d';
+    ctx.lineWidth = hoveredSec === s ? 2 : 1;
+    ctx.stroke();
+
+    ctx.fillStyle = s === 0 ? '#60a5fa' : (s === 2 ? '#f87171' : '#94a3b8');
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(sectorTitles[s], sx0 + 56, 83);
+  }
+
+  // Ridge tactical terrain ridges in Sector 1
+  ctx.fillStyle = '#1e293b';
+  rrect(144, 130, 72, 16, 6);
+  ctx.fill();
+  rrect(152, 200, 56, 16, 6);
+  ctx.fill();
+  ctx.fillStyle = '#64748b';
+  ctx.font = '9px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('TAP SECTOR TO MARCH', 180, 174);
+
+  // Mineral crystals + animated worker drones (Sector 0 & Sector 2)
+  for (let i = 0; i < 4; i++) {
+    ctx.fillStyle = '#38bdf8';
+    circle(28 + i * 22, 96, 5);
+    ctx.fill();
+    ctx.fillStyle = '#f59e0b';
+    circle(256 + i * 22, 96, 5);
+    ctx.fill();
+  }
+  for (let w = 0; w < state.player.workers; w++) {
+    const phase = (animTime * 2.2 + w * 1.1) % (Math.PI * 2);
+    const wy = 103 + (Math.sin(phase) * 0.5 + 0.5) * 20;
+    const wx = 26 + (w % 5) * 18;
+    ctx.fillStyle = '#facc15';
+    circle(wx, wy, 3.2);
+    ctx.fill();
+  }
+  for (let w = 0; w < state.enemy.workers; w++) {
+    const phase = (animTime * 2.2 + w * 1.3) % (Math.PI * 2);
+    const wy = 103 + (Math.sin(phase) * 0.5 + 0.5) * 20;
+    const wx = 256 + (w % 5) * 18;
+    ctx.fillStyle = '#fb923c';
+    circle(wx, wy, 3.2);
+    ctx.fill();
+  }
+
+  // Player Command Core
+  ctx.fillStyle = '#1e3a8a';
+  rrect(20, 126, 92, 42, 7);
+  ctx.fill();
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('BLUE CORE', 66, 143);
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#93c5fd';
+  ctx.fillText(Math.max(0, state.player.coreHp) + ' HP', 66, 157);
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(20, 172, 92, 6);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillRect(20, 172, 92 * Math.max(0, Math.min(1, vis.pCoreHp / BASE_MAX_HP)), 6);
+
+  drawStructureBadge(20, 184, 'Barracks', state.player.barracks, 2, '#60a5fa');
+  drawStructureBadge(20, 205, 'Factory', state.player.factory, 2, '#a78bfa');
+  drawStructureBadge(20, 226, 'Turrets', state.player.turrets, 3, '#22d3ee');
+
+  // Enemy Citadel Core
+  ctx.fillStyle = '#7f1d1d';
+  rrect(248, 126, 92, 42, 7);
+  ctx.fill();
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('RED CORE', 294, 143);
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#fca5a5';
+  ctx.fillText(Math.max(0, state.enemy.coreHp) + ' HP', 294, 157);
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(248, 172, 92, 6);
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(248, 172, 92 * Math.max(0, Math.min(1, vis.eCoreHp / BASE_MAX_HP)), 6);
+
+  drawStructureBadge(248, 184, 'Barracks', state.enemy.barracks, 2, '#f87171');
+  drawStructureBadge(248, 205, 'Factory', state.enemy.factory, 2, '#fb923c');
+  drawStructureBadge(248, 226, 'Turrets', state.enemy.turrets, 3, '#fbbf24');
+
+  // Player Strike Force (lerped X)
+  const pCount = state.player.marines + state.player.tanks;
+  if (pCount > 0) {
+    ctx.fillStyle = 'rgba(37, 99, 235, 0.28)';
+    circle(vis.pArmyX, 276, 26);
+    ctx.fill();
+    ctx.strokeStyle = '#60a5fa';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw individual unit pips
+    for (let i = 0; i < Math.min(6, state.player.marines); i++) {
+      ctx.fillStyle = '#34d399';
+      circle(vis.pArmyX - 18 + i * 7, 268, 2.8);
+      ctx.fill();
+    }
+    for (let i = 0; i < Math.min(4, state.player.tanks); i++) {
+      ctx.fillStyle = '#f472b6';
+      rrect(vis.pArmyX - 18 + i * 10, 274, 8, 6, 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#e0f2fe';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.player.marines + 'M • ' + state.player.tanks + 'T', vis.pArmyX, 294);
+  } else {
+    ctx.fillStyle = '#475569';
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No Blue Force', 66, 280);
+  }
+
+  // Enemy Strike Force (lerped X)
+  const eCount = state.enemy.marines + state.enemy.tanks;
+  if (eCount > 0) {
+    ctx.fillStyle = 'rgba(220, 38, 38, 0.28)';
+    circle(vis.eArmyX, 334, 26);
+    ctx.fill();
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    for (let i = 0; i < Math.min(6, state.enemy.marines); i++) {
+      ctx.fillStyle = '#fca5a5';
+      circle(vis.eArmyX - 18 + i * 7, 326, 2.8);
+      ctx.fill();
+    }
+    for (let i = 0; i < Math.min(4, state.enemy.tanks); i++) {
+      ctx.fillStyle = '#fb923c';
+      rrect(vis.eArmyX - 18 + i * 10, 332, 8, 6, 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#fee2e2';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.enemy.marines + 'M • ' + state.enemy.tanks + 'T', vis.eArmyX, 352);
+  }
+
+  // Tracers & Explosion Rings
+  for (const tr of tracers) {
+    ctx.globalAlpha = Math.max(0, 1 - tr.t / 0.25);
+    ctx.strokeStyle = tr.color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(tr.x1, tr.y1);
+    ctx.lineTo(tr.x2, tr.y2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  for (const rg of rings) {
+    const p = Math.min(1, rg.t / 0.35);
+    ctx.globalAlpha = Math.max(0, 1 - p);
+    ctx.strokeStyle = rg.color;
+    ctx.lineWidth = 2;
+    circle(rg.x, rg.y, rg.maxR * p);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Maneuver Row
+  const legals = legalActions(state);
+  for (const m of MANEUVERS) {
+    const ok = legals.includes(m.action);
+    const hov = pointer.x >= m.x && pointer.x <= m.x + m.w && pointer.y >= m.y && pointer.y <= m.y + m.h;
+    ctx.fillStyle = ok ? m.color : '#1e293b';
+    ctx.globalAlpha = ok ? (hov ? 1 : 0.9) : 0.45;
+    rrect(m.x, m.y, m.w, m.h, 8);
+    ctx.fill();
+    ctx.strokeStyle = ok && hov ? '#ffffff' : '#334155';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = ok ? '#ffffff' : '#64748b';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(m.label, m.x + m.w / 2, m.y + 23);
+  }
+
+  // 6 Production Cards
+  for (let i = 0; i < CARDS.length; i++) {
+    const c = CARDS[i];
+    const r = cardRect(i);
+    const ok = legals.includes(c.action);
+    const hov = pointer.x >= r.x && pointer.x <= r.x + r.w && pointer.y >= r.y && pointer.y <= r.y + r.h;
+
+    ctx.fillStyle = ok ? '#172036' : '#111827';
+    rrect(r.x, r.y, r.w, r.h, 9);
+    ctx.fill();
+    ctx.strokeStyle = ok ? (hov ? '#ffffff' : c.color) : '#1f2937';
+    ctx.lineWidth = ok ? 1.8 : 1;
+    ctx.stroke();
+
+    // Hotkey badge
+    ctx.fillStyle = ok ? c.color : '#334155';
+    rrect(r.x + 6, r.y + 6, 18, 16, 4);
+    ctx.fill();
+    ctx.fillStyle = '#0b1020';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(c.key, r.x + 15, r.y + 17.5);
+
+    // Cost
+    ctx.fillStyle = state.player.minerals >= c.cost ? '#38bdf8' : '#64748b';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(c.cost + 'm', r.x + r.w - 7, r.y + 18);
+
+    // Title & status
+    ctx.fillStyle = ok ? '#f1f5f9' : '#64748b';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(c.title, r.x + 8, r.y + 43);
+
+    ctx.fillStyle = ok ? '#94a3b8' : '#475569';
+    ctx.font = '10px system-ui, sans-serif';
+    ctx.fillText(c.sub(state), r.x + 8, r.y + 62);
+  }
+
+  // Comms Log Footer
+  ctx.fillStyle = '#111827';
+  rrect(10, 598, W - 20, 34, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  const msg = state.history && state.history.length ? state.history[state.history.length - 1] : '';
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = '10.5px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(msg.slice(0, 52), 18, 619);
+
+  // Floaters
+  for (const f of floaters) {
+    ctx.globalAlpha = Math.max(0, 1 - f.t / 0.85);
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y - f.t * 28);
+  }
+  ctx.globalAlpha = 1;
+
+  // Game Over Overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(9, 13, 26, 0.84)';
+    ctx.fillRect(0, 0, W, H);
+
+    const won = state.winner === 'player';
+    ctx.fillStyle = '#111827';
+    rrect(30, 190, W - 60, 240, 16);
+    ctx.fill();
+    ctx.strokeStyle = won ? '#10b981' : '#ef4444';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    ctx.fillStyle = won ? '#34d399' : '#f87171';
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(won ? 'SECTOR SECURED!' : 'CORE DESTROYED', W / 2, 242);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state), W / 2, 286);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = '15px system-ui, sans-serif';
+    ctx.fillText('Best: ' + best, W / 2, 314);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillText('Ticks: ' + state.tick + '  •  Army: ' + state.player.marines + 'M ' + state.player.tanks + 'T', W / 2, 348);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.fillText('Tap or Press Space to Deploy Again', W / 2, 396);
+  }
+
+  ctx.restore();
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+  last = now;
+  animTime += dt;
+
+  // Smooth visual lerps
+  const k = Math.min(1, dt * 12);
+  vis.pArmyX += (sectorCenterX(state.player.armyPosition) - vis.pArmyX) * k;
+  vis.eArmyX += (sectorCenterX(state.enemy.armyPosition) - vis.eArmyX) * k;
+  vis.pCoreHp += (state.player.coreHp - vis.pCoreHp) * k;
+  vis.eCoreHp += (state.enemy.coreHp - vis.eCoreHp) * k;
+  vis.minerals += (state.player.minerals - vis.minerals) * Math.min(1, dt * 16);
+  shake = Math.max(0, shake - dt * 18);
+
+  for (const tr of tracers) tr.t += dt;
+  tracers = tracers.filter((tr) => tr.t < 0.25);
+  for (const rg of rings) rg.t += dt;
+  rings = rings.filter((rg) => rg.t < 0.35);
+  for (const f of floaters) f.t += dt;
+  floaters = floaters.filter((f) => f.t < 0.85);
+
+  if (!isOver(state)) {
+    // Pointer hold repeat
+    if (pointer.down && pointer.activeAction) {
+      pointer.holdAcc += dt;
+      while (pointer.holdAcc >= HOLD_S) {
+        pointer.holdAcc -= HOLD_S;
+        doAction(pointer.activeAction, true);
       }
-
-      function draw() {
-        if (!ctx) return;
-        ctx.clearRect(0, 0, 480, 480);
-
-        // Background Sectors
-        // Sector 0: Blue Base (0..160)
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(0, 0, 160, 480);
-        // Sector 1: Contested Ridge (160..320)
-        ctx.fillStyle = '#18181b';
-        ctx.fillRect(160, 0, 160, 480);
-        // Sector 2: Red Base (320..480)
-        ctx.fillStyle = '#1c1917';
-        ctx.fillRect(320, 0, 160, 480);
-
-        // Dividing trenches / borders
-        ctx.strokeStyle = '#27272a';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(160, 0); ctx.lineTo(160, 480);
-        ctx.moveTo(320, 0); ctx.lineTo(320, 480);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Sector Labels
-        ctx.fillStyle = '#52525b';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('BLUE COMMAND BASE', 80, 30);
-        ctx.fillText('CONTESTED RIDGE', 240, 30);
-        ctx.fillText('RED SIEGE CITADEL', 400, 30);
-
-        // Draw Player Base Core (Sector 0)
-        const pCoreHpRatio = Math.max(0, state.player.coreHp / BASE_MAX_HP);
-        ctx.fillStyle = '#1e3a8a';
-        ctx.fillRect(30, 80, 100, 90);
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(30, 80, 100, 90);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText('CORE: ' + state.player.coreHp + ' HP', 80, 120);
-
-        // Player Core HP bar
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(30, 180, 100, 8);
-        ctx.fillStyle = '#3b82f6';
-        ctx.fillRect(30, 180, 100 * pCoreHpRatio, 8);
-
-        // Player Base Infrastructure Indicators
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('🚜 Harvesters: ' + state.player.workers, 30, 215);
-        ctx.fillText('🏢 Barracks: ' + state.player.barracks, 30, 235);
-        ctx.fillText('🏭 Factory: ' + state.player.factory, 30, 255);
-        ctx.fillText('🛡️ Turrets: ' + state.player.turrets, 30, 275);
-
-        // Draw Enemy Base Core (Sector 2)
-        const eCoreHpRatio = Math.max(0, state.enemy.coreHp / BASE_MAX_HP);
-        ctx.fillStyle = '#7f1d1d';
-        ctx.fillRect(350, 80, 100, 90);
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(350, 80, 100, 90);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('CORE: ' + state.enemy.coreHp + ' HP', 400, 120);
-
-        // Enemy Core HP bar
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(350, 180, 100, 8);
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(350, 180, 100 * eCoreHpRatio, 8);
-
-        // Enemy Infrastructure Indicators
-        ctx.fillStyle = '#a8a29e';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('🚜 Harvesters: ' + state.enemy.workers, 350, 215);
-        ctx.fillText('🏢 Barracks: ' + state.enemy.barracks, 350, 235);
-        ctx.fillText('🏭 Factory: ' + state.enemy.factory, 350, 255);
-        ctx.fillText('🛡️ Turrets: ' + state.enemy.turrets, 350, 275);
-
-        // --- DRAW ACTIVE STRIKE ARMIES ---
-        // Player Army Position
-        const pSectorX = 80 + state.player.armyPosition * 160;
-        const pArmyY = 360;
-
-        if (state.player.marines > 0 || state.player.tanks > 0) {
-          ctx.beginPath();
-          ctx.arc(pSectorX, pArmyY, 32, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
-          ctx.fill();
-          ctx.strokeStyle = '#60a5fa';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-
-          ctx.fillStyle = '#38bdf8';
-          ctx.font = 'bold 13px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('🛡️ BLUE FORCE', pSectorX, pArmyY - 10);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '11px sans-serif';
-          ctx.fillText(state.player.marines + ' Marines • ' + state.player.tanks + ' Tanks', pSectorX, pArmyY + 12);
-        }
-
-        // Enemy Army Position
-        const eSectorX = 80 + state.enemy.armyPosition * 160;
-        const eArmyY = 425;
-
-        if (state.enemy.marines > 0 || state.enemy.tanks > 0) {
-          ctx.beginPath();
-          ctx.arc(eSectorX, eArmyY, 32, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
-          ctx.fill();
-          ctx.strokeStyle = '#f87171';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-
-          ctx.fillStyle = '#f87171';
-          ctx.font = 'bold 13px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('⚔️ RED FORCE', eSectorX, eArmyY - 10);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '11px sans-serif';
-          ctx.fillText(state.enemy.marines + ' Marines • ' + state.enemy.tanks + ' Tanks', eSectorX, eArmyY + 12);
-        }
-
-        // Combat Tracers
-        if (state.player.armyPosition === state.enemy.armyPosition &&
-            (state.player.marines + state.player.tanks > 0) &&
-            (state.enemy.marines + state.enemy.tanks > 0)) {
-          ctx.strokeStyle = '#fbbf24';
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(pSectorX - 10, pArmyY);
-          ctx.lineTo(eSectorX + 10, eArmyY);
-          ctx.stroke();
-        }
+    }
+    // Keyboard hold repeat
+    const activeKeys = Object.values(keys);
+    if (activeKeys.length > 0) {
+      keyHoldAcc += dt;
+      while (keyHoldAcc >= HOLD_S) {
+        keyHoldAcc -= HOLD_S;
+        doAction(activeKeys[activeKeys.length - 1], true);
       }
-
-      function executeAction(act) {
-        try {
-          step(state, act);
-          updateUI();
-          draw();
-        } catch(e) { console.error(e); }
+    }
+    // Ambient real-time heartbeat
+    if (!paused) {
+      tickAcc += dt;
+      while (tickAcc >= TICK_S && !isOver(state)) {
+        tickAcc -= TICK_S;
+        doAction('tick', false);
       }
+    }
+  }
 
-      if (btnWorker) btnWorker.onclick = function() { executeAction('train_worker'); };
-      if (btnBarracks) btnBarracks.onclick = function() { executeAction('build_barracks'); };
-      if (btnFactory) btnFactory.onclick = function() { executeAction('build_factory'); };
-      if (btnTurret) btnTurret.onclick = function() { executeAction('build_turret'); };
-      if (btnMarine) btnMarine.onclick = function() { executeAction('train_marine'); };
-      if (btnTank) btnTank.onclick = function() { executeAction('train_tank'); };
-      if (btnAdvance) btnAdvance.onclick = function() { executeAction('order_advance'); };
-      if (btnRetreat) btnRetreat.onclick = function() { executeAction('order_retreat'); };
-      if (btnTick) btnTick.onclick = function() { executeAction('tick'); };
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 
-      if (btnPlay) {
-        btnPlay.onclick = function() {
-          if (autoPlayInterval) {
-            clearInterval(autoPlayInterval);
-            autoPlayInterval = null;
-            btnPlay.textContent = 'Auto-Play ▶';
-          } else {
-            autoPlayInterval = setInterval(function() {
-              if (state.done) {
-                clearInterval(autoPlayInterval);
-                autoPlayInterval = null;
-                btnPlay.textContent = 'Auto-Play ▶';
-                return;
-              }
-              executeAction('tick');
-            }, 600);
-            btnPlay.textContent = 'Pause ⏸';
-          }
-        };
-      }
-
-      if (btnReset) {
-        btnReset.onclick = function() {
-          if (autoPlayInterval) {
-            clearInterval(autoPlayInterval);
-            autoPlayInterval = null;
-            if (btnPlay) btnPlay.textContent = 'Auto-Play ▶';
-          }
-          state = createState(Date.now() & 0xffff);
-          updateUI();
-          draw();
-        };
-      }
-
-      // Initial render
-      updateUI();
-      draw();
-    })();
-  </script>
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

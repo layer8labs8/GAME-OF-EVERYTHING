@@ -1,7 +1,7 @@
 (function (root) {
   const WIDTH = 360;
   const HEIGHT = 500;
-  const MAX_STEPS = 160;
+  const MAX_STEPS = 600;
   const BOSS_MAX_HP = 150;
   const CORE_HIT_DIST = 7;
   const GRAZE_DIST = 19;
