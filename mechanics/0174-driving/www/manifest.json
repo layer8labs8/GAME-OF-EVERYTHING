@@ -1,0 +1,12 @@
+{
+  "name": "Highway Hauler: Semi-Truck Driving",
+  "short_name": "HighwayHauler",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#38bdf8",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

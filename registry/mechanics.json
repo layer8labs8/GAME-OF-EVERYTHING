@@ -1847,9 +1847,11 @@
       "slug": "driving",
       "name": "Driving",
       "family": "Racing",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Highway Hauler",
+      "levels": "endless"
     },
     {
       "id": "0175",

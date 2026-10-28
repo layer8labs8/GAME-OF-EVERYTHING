@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <radialGradient id="haulerBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="60%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </radialGradient>
+    <linearGradient id="chromeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="50%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#475569" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#haulerBg)" />
+  <!-- Semi Truck Cab Profile / Front -->
+  <rect x="140" y="110" width="232" height="280" rx="24" fill="#0284c7" stroke="#38bdf8" stroke-width="8" />
+  <!-- Windshield -->
+  <rect x="165" y="135" width="182" height="95" rx="12" fill="#0369a1" stroke="#bae6fd" stroke-width="4" />
+  <!-- Chrome Grille -->
+  <rect x="175" y="255" width="162" height="110" rx="10" fill="url(#chromeGrad)" stroke="#cbd5e1" stroke-width="4" />
+  <line x1="175" y1="275" x2="337" y2="275" stroke="#334155" stroke-width="4" />
+  <line x1="175" y1="295" x2="337" y2="295" stroke="#334155" stroke-width="4" />
+  <line x1="175" y1="315" x2="337" y2="315" stroke="#334155" stroke-width="4" />
+  <line x1="175" y1="335" x2="337" y2="335" stroke="#334155" stroke-width="4" />
+  <!-- Headlights -->
+  <circle cx="160" cy="360" r="18" fill="#fef08a" stroke="#ca8a04" stroke-width="3" />
+  <circle cx="352" cy="360" r="18" fill="#fef08a" stroke="#ca8a04" stroke-width="3" />
+  <!-- Roof Clearance Lights -->
+  <circle cx="216" cy="118" r="6" fill="#f97316" />
+  <circle cx="256" cy="118" r="6" fill="#f97316" />
+  <circle cx="296" cy="118" r="6" fill="#f97316" />
+</svg>
