@@ -1858,8 +1858,10 @@
       "slug": "hill-climb-racing",
       "name": "Hill Climb Racing",
       "family": "Racing",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "endless",
+      "title": "Peak Climber",
       "source": "classic"
     },
     {

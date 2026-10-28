@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Peak Climber - Hill Climb Racing</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #064e3b;
+      color: #f0fdf4;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #065f46;
+      border: 1px solid #10b981;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #6ee7b7;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #047857;
+      color: #ecfdf5;
+      font-weight: 600;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4/3;
+      background: #022c22;
+      border: 2px solid #10b981;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+    }
+    .vitals-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .vital-card {
+      background: #065f46;
+      border: 1px solid #047857;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .vital-title {
+      font-size: 0.65rem;
+      color: #a7f3d0;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .vital-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #fff;
+    }
+    .meter-bar {
+      height: 4px;
+      background: #022c22;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .meter-fill {
+      height: 100%;
+      background: #10b981;
+      transition: width 0.2s ease;
+    }
+    #message-box {
+      background: #047857;
+      border-left: 4px solid #34d399;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      color: #ecfdf5;
+    }
+    #actions-panel {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .btn {
+      background: #065f46;
+      border: 1px solid #10b981;
+      color: #fff;
+      padding: 10px 8px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: all 0.1s ease;
+    }
+    .btn:active {
+      transform: scale(0.97);
+      filter: brightness(1.2);
+    }
+    .btn-gas {
+      background: #15803d;
+      border-color: #22c55e;
+      color: #f0fdf4;
+    }
+    .btn-brake {
+      background: #991b1b;
+      border-color: #ef4444;
+      color: #fef2f2;
+    }
+    .btn-tilt {
+      background: #1e3a8a;
+      border-color: #3b82f6;
+      color: #eff6ff;
+    }
+    .btn-upgrade {
+      background: #854d0e;
+      border-color: #eab308;
+      color: #fefce8;
+    }
+    .top-controls {
+      display: flex;
+      gap: 6px;
+    }
+    .ctrl-btn {
+      background: #065f46;
+      border: 1px solid #10b981;
+      color: #6ee7b7;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Peak Climber</h1>
+    <div class="top-controls">
+      <button class="ctrl-btn" id="bot-toggle-btn" onclick="window.toggleBot()">BOT: OFF</button>
+      <button class="ctrl-btn" onclick="window.restartGame()">RESTART</button>
+      <span class="badge" id="turn-badge">TURN 0/120</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+
+    <div class="vitals-grid">
+      <div class="vital-card">
+        <span class="vital-title">Summit Progress</span>
+        <span class="vital-val" id="val-distance">0 / 1000m</span>
+        <div class="meter-bar"><div class="meter-fill" id="fill-distance" style="width:0%"></div></div>
+      </div>
+      <div class="vital-card">
+        <span class="vital-title">Fuel Level</span>
+        <span class="vital-val" id="val-fuel">100%</span>
+        <div class="meter-bar"><div class="meter-fill" id="fill-fuel" style="width:100%;background:#ef4444"></div></div>
+      </div>
+      <div class="vital-card">
+        <span class="vital-title">Pitch & Speed</span>
+        <span class="vital-val" id="val-pitch">0° (8 m/s)</span>
+        <div class="meter-bar"><div class="meter-fill" id="fill-speed" style="width:32%;background:#38bdf8"></div></div>
+      </div>
+      <div class="vital-card">
+        <span class="vital-title">Garage Coins</span>
+        <span class="vital-val" id="val-coins">$30</span>
+        <div class="meter-bar"><div class="meter-fill" id="fill-coins" style="width:30%;background:#eab308"></div></div>
+      </div>
+    </div>
+
+    <div id="message-box">4x4 Off-roader idling at trail base. Scale the 1,000m peak without flipping!</div>
+
+    <div id="actions-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now ? Date.now() : 12345);
+    let botRunning = false;
+    let botInterval = null;
+
+    // Web Audio Synthesizer
+    const audioCtx = (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')
+      ? new (window.AudioContext || window.webkitAudioContext)()
+      : null;
+
+    function playSfx(type) {
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const t = audioCtx.currentTime;
+
+      if (type === 'gas') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(80, t);
+        osc.frequency.exponentialRampToValueAtTime(220, t + 0.15);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.15);
+        osc.start(t);
+        osc.stop(t + 0.15);
+      } else if (type === 'brake') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, t);
+        osc.frequency.linearRampToValueAtTime(120, t + 0.2);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.2);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      } else if (type === 'upgrade') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, t);
+        osc.frequency.setValueAtTime(660, t + 0.08);
+        osc.frequency.setValueAtTime(880, t + 0.16);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.24);
+        osc.start(t);
+        osc.stop(t + 0.24);
+      } else if (type === 'crash') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(100, t);
+        osc.frequency.linearRampToValueAtTime(30, t + 0.35);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.35);
+        osc.start(t);
+        osc.stop(t + 0.35);
+      }
+    }
+
+    function render() {
+      // Vitals UI
+      document.getElementById('turn-badge').textContent = 'TURN ' + state.turns + '/' + state.maxTurns;
+      document.getElementById('val-distance').textContent = state.distance + ' / ' + SUMMIT_DISTANCE + 'm';
+      document.getElementById('fill-distance').style.width = Math.min(100, (state.distance / SUMMIT_DISTANCE) * 100) + '%';
+
+      document.getElementById('val-fuel').textContent = state.fuel + '%';
+      document.getElementById('fill-fuel').style.width = Math.max(0, state.fuel) + '%';
+
+      document.getElementById('val-pitch').textContent = state.pitchAngle + '° (' + state.velocity + ' m/s)';
+      document.getElementById('fill-speed').style.width = Math.min(100, (state.velocity / 25) * 100) + '%';
+
+      document.getElementById('val-coins').textContent = '$' + state.coins + ' (E:' + state.upgrades.engine + ' S:' + state.upgrades.suspension + ' T:' + state.upgrades.tires + ')';
+      document.getElementById('fill-coins').style.width = Math.min(100, (state.coins / 150) * 100) + '%';
+
+      document.getElementById('message-box').textContent = state.gameMessage;
+
+      // Canvas Rendering
+      const canvas = document.getElementById('gameCanvas');
+      if (!canvas || !canvas.getContext) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // 1. Sky & Mountain Background
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+      skyGrad.addColorStop(0, '#38bdf8');
+      skyGrad.addColorStop(0.6, '#bae6fd');
+      skyGrad.addColorStop(1, '#dcfce7');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Distant mountains
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.moveTo(0, h * 0.7);
+      ctx.lineTo(w * 0.25, h * 0.35);
+      ctx.lineTo(w * 0.55, h * 0.65);
+      ctx.lineTo(w * 0.8, h * 0.3);
+      ctx.lineTo(w, h * 0.7);
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. Rolling Terrain Curve
+      const carScreenX = w * 0.35;
+      const carDist = state.distance;
+      const groundY = h * 0.65;
+
+      ctx.fillStyle = '#16a34a';
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+
+      for (let x = 0; x <= w; x += 10) {
+        const worldD = carDist + (x - carScreenX) * 0.5;
+        const elevation = Math.sin(worldD * 0.04) * 45 + Math.sin(worldD * 0.015) * 35;
+        const y = groundY - elevation;
+        if (x === 0) ctx.lineTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.lineTo(w, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // Dirt slope trim
+      ctx.strokeStyle = '#854d0e';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 10) {
+        const worldD = carDist + (x - carScreenX) * 0.5;
+        const elevation = Math.sin(worldD * 0.04) * 45 + Math.sin(worldD * 0.015) * 35;
+        const y = groundY - elevation;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Roadside fuel canisters and coins
+      for (let marker = Math.floor(carDist / 100) * 100; marker <= carDist + 400; marker += 100) {
+        const sx = carScreenX + (marker - carDist) * 2.0;
+        if (sx >= -50 && sx <= w + 50) {
+          const elev = Math.sin(marker * 0.04) * 45 + Math.sin(marker * 0.015) * 35;
+          const sy = groundY - elev - 25;
+
+          // Red fuel can
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(sx - 10, sy - 15, 20, 24);
+          ctx.fillStyle = '#fef08a';
+          ctx.fillRect(sx - 3, sy - 21, 6, 6);
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('GAS', sx, sy);
+        }
+      }
+
+      // Summit Flag at 1000m
+      if (carDist >= 700) {
+        const sx = carScreenX + (SUMMIT_DISTANCE - carDist) * 2.0;
+        const elev = Math.sin(SUMMIT_DISTANCE * 0.04) * 45 + Math.sin(SUMMIT_DISTANCE * 0.015) * 35;
+        const sy = groundY - elev;
+        // Flagpole
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx, sy - 90);
+        ctx.stroke();
+        // Checkered victory banner
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(sx, sy - 90, 50, 30);
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('PEAK', sx + 25, sy - 72);
+      }
+
+      // 3. 4x4 Off-Roader Vehicle
+      const carElev = Math.sin(carDist * 0.04) * 45 + Math.sin(carDist * 0.015) * 35;
+      const carScreenY = groundY - carElev - 25;
+
+      ctx.save();
+      ctx.translate(carScreenX, carScreenY);
+      ctx.rotate((state.pitchAngle * Math.PI) / 180);
+
+      // Chassis Body
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.roundRect(-45, -20, 90, 28, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#991b1b';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Cabin / Roll cage
+      ctx.fillStyle = '#b91c1c';
+      ctx.beginPath();
+      ctx.moveTo(-30, -20);
+      ctx.lineTo(-10, -45);
+      ctx.lineTo(25, -45);
+      ctx.lineTo(35, -20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#fca5a5';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Driver helmet
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(8, -32, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Headlight beam
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.35)';
+      ctx.beginPath();
+      ctx.moveTo(45, -10);
+      ctx.lineTo(120, -35);
+      ctx.lineTo(120, 15);
+      ctx.closePath();
+      ctx.fill();
+
+      // Wheels & Tires
+      const tireRadius = 18 + state.upgrades.tires * 2;
+      // Rear tire
+      ctx.fillStyle = '#18181b';
+      ctx.beginPath();
+      ctx.arc(-30, 12, tireRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#cbd5e1';
+      ctx.beginPath();
+      ctx.arc(-30, 12, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Front tire
+      ctx.fillStyle = '#18181b';
+      ctx.beginPath();
+      ctx.arc(30, 12, tireRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#cbd5e1';
+      ctx.beginPath();
+      ctx.arc(30, 12, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+
+      // Game Over Screen Overlay
+      if (isOver(state)) {
+        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(state.victory ? 'SUMMIT CONQUERED! VICTORY!' : 'EXPEDITION FAILED', w / 2, h / 2 - 20);
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Final Expedition Score: ' + score(state), w / 2, h / 2 + 15);
+      }
+
+      updateActions();
+    }
+
+    function updateActions() {
+      const panel = document.getElementById('actions-panel');
+      if (isOver(state)) {
+        panel.innerHTML = '<button class="btn btn-gas" onclick="window.restartGame()">NEW EXPEDITION</button>';
+        return;
+      }
+
+      const actions = legalActions(state);
+      let html = '';
+
+      for (const act of actions) {
+        let cls = 'btn';
+        let label = act;
+        let sub = '';
+
+        if (act === 'action:gas_accelerate') {
+          cls += ' btn-gas';
+          label = '⚡ Gas Throttle';
+          sub = '+Speed, Pitch Up, -3% Fuel';
+        } else if (act === 'action:brake_reverse') {
+          cls += ' btn-brake';
+          label = '🛑 Brake / Reverse';
+          sub = '-Speed, Pitch Down';
+        } else if (act === 'action:tilt_forward') {
+          cls += ' btn-tilt';
+          label = '◀ Tilt Forward';
+          sub = 'Balance -18° Pitch';
+        } else if (act === 'action:tilt_backward') {
+          cls += ' btn-tilt';
+          label = '▶ Tilt Backward';
+          sub = 'Balance +18° Pitch';
+        } else if (act.startsWith('action:upgrade_vehicle:')) {
+          const u = act.split(':')[2];
+          cls += ' btn-upgrade';
+          const cost = getUpgradeCost(state.upgrades[u]);
+          label = '🔧 Upgrade ' + u.toUpperCase();
+          sub = '$' + cost + ' (Next: Lv' + (state.upgrades[u] + 1) + ')';
+        }
+
+        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
+      }
+
+      panel.innerHTML = html;
+    }
+
+    window.triggerAction = function(act) {
+      if (isOver(state)) return;
+      if (act.includes('gas')) playSfx('gas');
+      else if (act.includes('brake')) playSfx('brake');
+      else if (act.includes('upgrade')) playSfx('upgrade');
+
+      step(state, act);
+      if (state.defeat) playSfx('crash');
+      render();
+    };
+
+    window.restartGame = function() {
+      state = createState(Date.now ? Date.now() : 12345);
+      render();
+    };
+
+    window.toggleBot = function() {
+      botRunning = !botRunning;
+      const btn = document.getElementById('bot-toggle-btn');
+      if (btn) {
+        btn.textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
+        btn.style.background = botRunning ? '#047857' : '#065f46';
+      }
+
+      if (botRunning) {
+        botInterval = setInterval(() => {
+          if (isOver(state)) {
+            state = createState(Date.now ? Date.now() : 9999);
+            render();
+            return;
+          }
+          const acts = legalActions(state);
+          if (acts.length > 0) {
+            let choice = acts[0];
+            // Intelligent bot heuristic
+            if (state.pitchAngle > 40 && acts.includes('action:tilt_forward')) choice = 'action:tilt_forward';
+            else if (state.pitchAngle < -20 && acts.includes('action:tilt_backward')) choice = 'action:tilt_backward';
+            else if (acts.some(a => a.startsWith('action:upgrade_vehicle:engine'))) choice = acts.find(a => a.startsWith('action:upgrade_vehicle:engine'));
+            else if (acts.includes('action:gas_accelerate')) choice = 'action:gas_accelerate';
+            else choice = acts[0];
+
+            window.triggerAction(choice);
+          }
+        }, 250);
+      } else {
+        clearInterval(botInterval);
+      }
+    };
+
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
