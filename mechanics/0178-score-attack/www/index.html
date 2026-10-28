@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Arcade Blast - Score Attack</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #09090b;
+      color: #fafafa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #18181b;
+      border: 1px solid #ec4899;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ec4899;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #be185d;
+      color: #fdf2f8;
+      font-weight: 600;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4/3;
+      background: #030712;
+      border: 2px solid #ec4899;
+      border-radius: 8px;
+      box-shadow: 0 4px 25px rgba(236, 72, 153, 0.25);
+    }
+    .vitals-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .vital-card {
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .vital-title {
+      font-size: 0.65rem;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .vital-val {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #fff;
+    }
+    .meter-bar {
+      height: 4px;
+      background: #09090b;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .meter-fill {
+      height: 100%;
+      background: #ec4899;
+      transition: width 0.2s ease;
+    }
+    #message-box {
+      background: #18181b;
+      border-left: 4px solid #ec4899;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      color: #f472b6;
+    }
+    #actions-panel {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .btn {
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      color: #fff;
+      padding: 10px 8px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: all 0.1s ease;
+    }
+    .btn:active {
+      transform: scale(0.97);
+      filter: brightness(1.2);
+    }
+    .btn-blast {
+      background: #831843;
+      border-color: #ec4899;
+      color: #fdf2f8;
+    }
+    .btn-laser {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #f0f9ff;
+    }
+    .btn-frenzy {
+      background: #a21caf;
+      border-color: #f472b6;
+      color: #fdf4ff;
+    }
+    .btn-refresh {
+      background: #27272a;
+      border-color: #71717a;
+      color: #e4e4e7;
+    }
+    .top-controls {
+      display: flex;
+      gap: 6px;
+    }
+    .ctrl-btn {
+      background: #18181b;
+      border: 1px solid #ec4899;
+      color: #ec4899;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Arcade Blast</h1>
+    <div class="top-controls">
+      <button class="ctrl-btn" id="bot-toggle-btn" onclick="window.toggleBot()">BOT: OFF</button>
+      <button class="ctrl-btn" onclick="window.restartGame()">RESTART</button>
+      <span class="badge" id="turn-badge">TURN 0/80</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+
+    <div class="vitals-grid">
+      <div class="vital-card">
+        <span class="vital-title">Arcade Score</span>
+        <span class="vital-val" id="val-score">0 pts</span>
+        <div class="meter-bar"><div class="meter-fill" id="fill-score" style="width:0%"></div></div>
+      </div>
+      <div class="vital-card">
+        <span class="vital-title">Combo Multiplier</span>
+        <span class="vital-val" id="val-combo">1x (0 Combo)</span>
+        <div class="meter-bar"><div class="meter-fill" id="fill-combo" style="width:10%;background:#eab308"></div></div>
+      </div>
+      <div class="vital-card">
+        <span class="vital-title">Frenzy Meter</span>
+        <span class="vital-val" id="val-frenzy">0%</span>
+        <div class="meter-bar"><div class="meter-fill" id="fill-frenzy" style="width:0%;background:#a855f7"></div></div>
+      </div>
+      <div class="vital-card">
+        <span class="vital-title">Shield Integrity</span>
+        <span class="vital-val" id="val-shield">3 / 3</span>
+        <div class="meter-bar"><div class="meter-fill" id="fill-shield" style="width:100%;background:#22c55e"></div></div>
+      </div>
+    </div>
+
+    <div id="message-box">Neon Arcade Matrix primed. Chain gems, avoid hazard skulls, and reach 75,000 points!</div>
+
+    <div id="actions-panel"></div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now ? Date.now() : 12345);
+    let botRunning = false;
+    let botInterval = null;
+
+    // Web Audio Synthesizer
+    const audioCtx = (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')
+      ? new (window.AudioContext || window.webkitAudioContext)()
+      : null;
+
+    function playSfx(type, pitchTier) {
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const t = audioCtx.currentTime;
+
+      if (type === 'gem') {
+        const baseFreq = 300 + (pitchTier || 1) * 70;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq, t);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, t + 0.1);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.15);
+        osc.start(t);
+        osc.stop(t + 0.15);
+      } else if (type === 'skull') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.linearRampToValueAtTime(50, t + 0.25);
+        gain.gain.setValueAtTime(0.25, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.25);
+        osc.start(t);
+        osc.stop(t + 0.25);
+      } else if (type === 'laser') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, t);
+        osc.frequency.linearRampToValueAtTime(200, t + 0.2);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.2);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      } else if (type === 'frenzy') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, t);
+        osc.frequency.exponentialRampToValueAtTime(1200, t + 0.35);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.35);
+        osc.start(t);
+        osc.stop(t + 0.35);
+      }
+    }
+
+    function render() {
+      // Vitals UI
+      document.getElementById('turn-badge').textContent = 'TURN ' + state.turns + '/' + state.maxTurns;
+      document.getElementById('val-score').textContent = state.points.toLocaleString() + ' pts';
+      document.getElementById('fill-score').style.width = Math.min(100, (state.points / PLATINUM_THRESHOLD) * 100) + '%';
+
+      document.getElementById('val-combo').textContent = state.comboMultiplier + 'x (' + state.combo + ' streak)';
+      document.getElementById('fill-combo').style.width = Math.min(100, (state.comboMultiplier / 10) * 100) + '%';
+
+      document.getElementById('val-frenzy').textContent = state.frenzyActive > 0 ? 'FRENZY (' + state.frenzyActive + ')' : state.frenzyMeter + '%';
+      document.getElementById('fill-frenzy').style.width = (state.frenzyActive > 0 ? 100 : state.frenzyMeter) + '%';
+
+      document.getElementById('val-shield').textContent = state.shield + ' / 3';
+      document.getElementById('fill-shield').style.width = ((state.shield / 3) * 100) + '%';
+      document.getElementById('fill-shield').style.background = state.shield === 1 ? '#ef4444' : '#22c55e';
+
+      document.getElementById('message-box').textContent = state.gameMessage;
+
+      // Canvas Rendering
+      const canvas = document.getElementById('gameCanvas');
+      if (!canvas || !canvas.getContext) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // 1. Neon Matrix Background
+      ctx.fillStyle = '#050508';
+      ctx.fillRect(0, 0, w, h);
+
+      // Background grid lines
+      ctx.strokeStyle = state.frenzyActive > 0 ? 'rgba(236, 72, 153, 0.25)' : 'rgba(56, 189, 248, 0.15)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Frenzy plasma border glow
+      if (state.frenzyActive > 0) {
+        ctx.strokeStyle = '#f472b6';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(4, 4, w - 8, h - 8);
+      }
+
+      // 2. Render 4 Target Pads
+      const padW = 120;
+      const padH = 140;
+      const padY = h / 2 - 70;
+      const padGap = (w - padW * 4) / 5;
+
+      for (let i = 0; i < state.slots.length; i++) {
+        const slot = state.slots[i];
+        const px = padGap + i * (padW + padGap);
+
+        // Pad Bezel
+        ctx.fillStyle = '#111827';
+        ctx.beginPath();
+        ctx.roundRect(px, padY, padW, padH, 8);
+        ctx.fill();
+
+        let borderCol = '#38bdf8';
+        if (slot.type === 'ruby') borderCol = '#ef4444';
+        else if (slot.type === 'sapphire') borderCol = '#38bdf8';
+        else if (slot.type === 'emerald') borderCol = '#22c55e';
+        else if (slot.type === 'diamond') borderCol = '#e879f9';
+        else if (slot.type === 'skull') borderCol = '#f97316';
+
+        ctx.strokeStyle = borderCol;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Slot Number Badge
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('SLOT ' + (i + 1), px + 8, padY + 16);
+
+        // Target Gem Graphic
+        const cx = px + padW / 2;
+        const cy = padY + padH / 2 - 6;
+
+        if (slot.type === 'skull') {
+          // Hazard Skull
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.arc(cx, cy - 4, 22, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(cx - 12, cy + 10, 24, 14);
+          // Eye sockets
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(cx - 8, cy - 4, 6, 0, Math.PI * 2);
+          ctx.arc(cx + 8, cy - 4, 6, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // Gem Diamond polygon
+          ctx.fillStyle = borderCol;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 26);
+          ctx.lineTo(cx + 26, cy);
+          ctx.lineTo(cx, cy + 26);
+          ctx.lineTo(cx - 26, cy);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Target Name & Score
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(slot.name, cx, padY + padH - 24);
+        ctx.fillStyle = slot.type === 'skull' ? '#ef4444' : '#fde047';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText(slot.type === 'skull' ? '-400 pts (HAZARD)' : '+' + slot.baseScore + ' pts', cx, padY + padH - 10);
+      }
+
+      // 3. Milestone Progress Bar at Top
+      const mbY = 30;
+      const mbW = w - 80;
+      const mbX = 40;
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(mbX, mbY, mbW, 10);
+
+      const ratio = Math.min(1, state.points / PLATINUM_THRESHOLD);
+      ctx.fillStyle = '#ec4899';
+      ctx.fillRect(mbX, mbY, mbW * ratio, 10);
+
+      // Milestone flags
+      ctx.fillStyle = '#fef08a';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+      // Gold (50k)
+      const goldX = mbX + mbW * (GOLD_THRESHOLD / PLATINUM_THRESHOLD);
+      ctx.fillRect(goldX - 1, mbY - 4, 2, 18);
+      ctx.fillText('GOLD (50k)', goldX, mbY - 8);
+      // Plat (75k)
+      ctx.fillRect(mbX + mbW - 1, mbY - 4, 2, 18);
+      ctx.fillText('PLATINUM (75k)', mbX + mbW, mbY - 8);
+
+      // Game Over Screen Overlay
+      if (isOver(state)) {
+        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.92)' : 'rgba(69, 10, 10, 0.92)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(state.victory ? 'ARCADE MASTER! PLATINUM TROPHY!' : 'ARCADE RUN OVER', w / 2, h / 2 - 20);
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Final Arcade Score: ' + score(state).toLocaleString() + ' pts', w / 2, h / 2 + 15);
+      }
+
+      updateActions();
+    }
+
+    function updateActions() {
+      const panel = document.getElementById('actions-panel');
+      if (isOver(state)) {
+        panel.innerHTML = '<button class="btn btn-blast" onclick="window.restartGame()">NEW SCORE RUN</button>';
+        return;
+      }
+
+      const actions = legalActions(state);
+      let html = '';
+
+      for (const act of actions) {
+        let cls = 'btn';
+        let label = act;
+        let sub = '';
+
+        if (act.startsWith('action:blast_target:')) {
+          const idx = parseInt(act.split(':')[2], 10);
+          const t = state.slots[idx];
+          cls += ' btn-blast';
+          label = '💥 Blast Slot ' + (idx + 1) + ': ' + (t ? t.name : '');
+          sub = t ? (t.type === 'skull' ? 'DANGER: Hazard Skull!' : '+' + (t.baseScore * state.comboMultiplier) + ' Pts') : '';
+        } else if (act === 'action:charge_overdrive_laser') {
+          cls += ' btn-laser';
+          label = '⚡ Overdrive Laser Beam';
+          sub = 'Sweep Entire Matrix (-40% Frenzy)';
+        } else if (act === 'action:trigger_frenzy_burst') {
+          cls += ' btn-frenzy';
+          label = '🌟 HYPER FRENZY BURST!';
+          sub = 'Max 10x Multiplier for 5 Turns!';
+        } else if (act === 'action:refresh_targets') {
+          cls += ' btn-refresh';
+          label = '🔄 Scramble Matrix';
+          sub = 'Re-roll Target Spawns';
+        }
+
+        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
+      }
+
+      panel.innerHTML = html;
+    }
+
+    window.triggerAction = function(act) {
+      if (isOver(state)) return;
+      if (act.startsWith('action:blast_target:')) {
+        const idx = parseInt(act.split(':')[2], 10);
+        const t = state.slots[idx];
+        if (t && t.type === 'skull') playSfx('skull');
+        else playSfx('gem', state.comboMultiplier);
+      } else if (act === 'action:charge_overdrive_laser') {
+        playSfx('laser');
+      } else if (act === 'action:trigger_frenzy_burst') {
+        playSfx('frenzy');
+      }
+
+      step(state, act);
+      render();
+    };
+
+    window.restartGame = function() {
+      state = createState(Date.now ? Date.now() : 12345);
+      render();
+    };
+
+    window.toggleBot = function() {
+      botRunning = !botRunning;
+      const btn = document.getElementById('bot-toggle-btn');
+      if (btn) {
+        btn.textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
+        btn.style.background = botRunning ? '#be185d' : '#18181b';
+      }
+
+      if (botRunning) {
+        botInterval = setInterval(() => {
+          if (isOver(state)) {
+            state = createState(Date.now ? Date.now() : 9999);
+            render();
+            return;
+          }
+          const acts = legalActions(state);
+          if (acts.length > 0) {
+            let choice = acts[0];
+            // Intelligent score bot: prioritize frenzy, laser, then safe gems over skulls
+            if (acts.includes('action:trigger_frenzy_burst')) choice = 'action:trigger_frenzy_burst';
+            else if (acts.includes('action:charge_overdrive_laser')) choice = 'action:charge_overdrive_laser';
+            else {
+              // Find best gem slot that is not a skull
+              let bestIdx = -1;
+              let bestPts = -999;
+              for (let i = 0; i < state.slots.length; i++) {
+                const t = state.slots[i];
+                if (t.type !== 'skull' && t.baseScore > bestPts) {
+                  bestPts = t.baseScore;
+                  bestIdx = i;
+                }
+              }
+              if (bestIdx >= 0 && acts.includes('action:blast_target:' + bestIdx)) {
+                choice = 'action:blast_target:' + bestIdx;
+              } else if (acts.includes('action:refresh_targets')) {
+                choice = 'action:refresh_targets';
+              }
+            }
+
+            window.triggerAction(choice);
+          }
+        }, 250);
+      } else {
+        clearInterval(botInterval);
+      }
+    };
+
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

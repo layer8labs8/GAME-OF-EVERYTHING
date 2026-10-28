@@ -1,0 +1,12 @@
+{
+  "name": "Arcade Blast: Score Attack",
+  "short_name": "ArcadeBlast",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#18181b",
+  "theme_color": "#ec4899",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

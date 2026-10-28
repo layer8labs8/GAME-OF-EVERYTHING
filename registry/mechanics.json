@@ -1891,8 +1891,10 @@
       "slug": "score-attack",
       "name": "Score Attack",
       "family": "Other",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "none",
+      "title": "Arcade Blast",
       "source": "steam-tag"
     },
     {
