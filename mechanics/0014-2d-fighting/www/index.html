@@ -337,7 +337,65 @@
       }
     }
 
-    render();
+    // Touch / Swipe bindings on Canvas
+    let swipeStartX = null;
+    let swipeStartY = null;
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = 360 / rect.width;
+      const scaleY = 320 / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      swipeStartX = x;
+      swipeStartY = y;
+
+      if (x > 180) {
+        // Tapped opponent side
+        if (state.player.superGauge >= 100) triggerAction('super_combo');
+        else if (y < 160) triggerAction('heavy_kick');
+        else triggerAction('punch');
+      } else {
+        // Tapped player side
+        if (y < 160) triggerAction('jump');
+        else triggerAction('block');
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (swipeStartX === null || logic.isOver(state)) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (360 / rect.width);
+      const y = (e.clientY - rect.top) * (320 / rect.height);
+      const dx = x - swipeStartX;
+      const dy = y - swipeStartY;
+      if (Math.abs(dx) > 25) {
+        if (dx > 0) triggerAction('dash_forward');
+        else triggerAction('retreat');
+        swipeStartX = null;
+      } else if (Math.abs(dy) > 25) {
+        if (dy < 0) triggerAction('jump');
+        else triggerAction('crouch');
+        swipeStartX = null;
+      }
+    });
+
+    canvas.addEventListener('pointerup', () => { swipeStartX = null; });
+    canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
+
+    // 60 FPS requestAnimationFrame Loop
+    let last = performance.now();
+    function frame(now) {
+      last = now;
+      render();
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   </script>
 </body>
 </html>

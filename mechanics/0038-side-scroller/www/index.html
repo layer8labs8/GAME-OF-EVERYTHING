@@ -494,6 +494,65 @@
         ctx.restore();
       }
 
+      // Direct Canvas Touch & Drag Controls
+      let swipeStartX = null;
+      let swipeStartY = null;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        if (CyberRonin.isOver(state)) {
+          initGame();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        swipeStartX = x;
+        swipeStartY = y;
+
+        const p = state.player;
+        const screenPx = p.x - state.cameraX + 80;
+
+        if (y < 220) {
+          handleAction('jump');
+        } else if (Math.abs(x - screenPx) < 50) {
+          handleAction('slash');
+        } else if (x > screenPx) {
+          handleAction('move_right');
+        } else {
+          handleAction('move_left');
+        }
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (swipeStartX === null || CyberRonin.isOver(state)) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        const dx = x - swipeStartX;
+        const dy = y - swipeStartY;
+        if (Math.hypot(dx, dy) > 30) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > 0) handleAction('phase_dash');
+            else handleAction('deflect');
+          } else {
+            if (dy < 0) handleAction('jump');
+          }
+          swipeStartX = null;
+        }
+      });
+
+      canvas.addEventListener('pointerup', () => { swipeStartX = null; swipeStartY = null; });
+      canvas.addEventListener('pointercancel', () => { swipeStartX = null; swipeStartY = null; });
+
+      // Continuous 60 FPS Animation Loop
+      function animLoop() {
+        render();
+        requestAnimationFrame(animLoop);
+      }
+      requestAnimationFrame(animLoop);
+
       // Action Handlers
       const btnLeft = document.getElementById('btnLeft');
       if (btnLeft) btnLeft.onclick = () => handleAction('move_left');

@@ -408,7 +408,7 @@
     }
 
     if (canvas) {
-      canvas.addEventListener("click", (e) => {
+      const handleMinionTap = (e) => {
         const rect = canvas.getBoundingClientRect();
         const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
         const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -434,7 +434,9 @@
             doStep(actionStr);
           }
         }
-      });
+      };
+      canvas.addEventListener("click", handleMinionTap);
+      canvas.addEventListener("pointerdown", handleMinionTap);
     }
 
     const toolButtons = document.querySelectorAll(".tool-btn");
@@ -470,12 +472,30 @@
       });
     }
 
-    function restartLoop() {
-      if (timerId) clearInterval(timerId);
-      timerId = null;
+    // Continuous 60 FPS Animation & Tick Loop
+    let lastTime = performance.now();
+    let tickAccum = 0;
+
+    function animLoop(now) {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
       if (autoPlaying && !state.done) {
-        timerId = setInterval(() => doStep("wait"), 600 / speed);
+        tickAccum += dt;
+        const tickInterval = 0.6 / speed;
+        while (tickAccum >= tickInterval && autoPlaying && !state.done) {
+          tickAccum -= tickInterval;
+          doStep("wait");
+        }
       }
+
+      render();
+      requestAnimationFrame(animLoop);
+    }
+    requestAnimationFrame(animLoop);
+
+    function restartLoop() {
+      tickAccum = 0;
     }
 
     const restartBtn = document.getElementById("restartBtn");

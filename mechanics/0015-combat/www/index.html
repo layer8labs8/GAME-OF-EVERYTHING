@@ -410,10 +410,64 @@
 
         ctx.restore();
 
-        if (fxList.length > 0) {
-          requestAnimationFrame(render);
-        }
+        requestAnimationFrame(render);
       }
+
+      // Direct Canvas Touch and Swipe Controls
+      let swipeStartX = null;
+      let swipeStartY = null;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        if (BrawlerStrike.isOver(state)) {
+          state = BrawlerStrike.createState(Date.now() % 100000);
+          fxList = [];
+          updateUI();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = 400 / rect.width;
+        const scaleY = 400 / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        swipeStartX = x;
+        swipeStartY = y;
+
+        if (x > 200) {
+          // Tapped Opponent
+          if (y < 200) {
+            if (state.player.stance === 'high') triggerAction('heavy_kick');
+            else triggerAction('sweep');
+          } else {
+            triggerAction('jab');
+          }
+        } else {
+          // Tapped Player
+          if (state.player.stamina < 30) triggerAction('breathe');
+          else triggerAction('counter_parry');
+        }
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (swipeStartX === null || BrawlerStrike.isOver(state)) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (400 / rect.width);
+        const y = (e.clientY - rect.top) * (400 / rect.height);
+        const dx = x - swipeStartX;
+        const dy = y - swipeStartY;
+        if (Math.hypot(dx, dy) > 30) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > 0) triggerAction('grab_throw');
+            else triggerAction('dodge');
+          } else {
+            if (dy > 0) triggerAction('shift_stance');
+            else triggerAction('jab');
+          }
+          swipeStartX = null;
+        }
+      });
+
+      canvas.addEventListener('pointerup', () => { swipeStartX = null; });
+      canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
 
       // Button listeners
       const btnJab = document.getElementById('btn-jab');

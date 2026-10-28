@@ -580,6 +580,72 @@
         ctx.restore();
       }
 
+      // Direct Canvas Touch & Drag Controls
+      let swipeStartX = null;
+      let swipeStartY = null;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        if (MetalCarnage.isOver(state)) {
+          initGame();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        swipeStartX = x;
+        swipeStartY = y;
+
+        const p = state.player;
+        const dx = x - p.x;
+        const dy = y - p.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist > 80) {
+          handleAction('accelerate');
+        } else if (dist < 30) {
+          handleAction('fire_cannons');
+        } else {
+          // Steer towards tap
+          const angle = Math.atan2(dy, dx);
+          let diff = angle - p.angle;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          if (diff > 0.3) handleAction('steer_right');
+          else if (diff < -0.3) handleAction('steer_left');
+          else handleAction('accelerate');
+        }
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (swipeStartX === null || MetalCarnage.isOver(state)) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        const dx = x - swipeStartX;
+        const dy = y - swipeStartY;
+        if (Math.hypot(dx, dy) > 28) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            handleAction(dx > 0 ? 'steer_right' : 'steer_left');
+          } else {
+            handleAction(dy > 0 ? 'reverse' : 'accelerate');
+          }
+          swipeStartX = x;
+          swipeStartY = y;
+        }
+      });
+
+      canvas.addEventListener('pointerup', () => { swipeStartX = null; swipeStartY = null; });
+      canvas.addEventListener('pointercancel', () => { swipeStartX = null; swipeStartY = null; });
+
+      // Continuous 60 FPS animation loop
+      function animLoop() {
+        render();
+        requestAnimationFrame(animLoop);
+      }
+      requestAnimationFrame(animLoop);
+
       // Action Handlers
       const btnGas = document.getElementById('btnGas');
       if (btnGas) btnGas.onclick = () => handleAction('accelerate');

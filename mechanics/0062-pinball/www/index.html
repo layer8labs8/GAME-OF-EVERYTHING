@@ -351,14 +351,49 @@
         render();
       }
 
-      // Physics loop ticker (lets physics play out automatically if in motion)
-      setInterval(() => {
-        if (!state.done && !state.inPlunger) {
-          step(state, 'wait');
+      // Direct Canvas Touch Controls
+      canvas.addEventListener('pointerdown', (e) => {
+        if (state.done) {
+          state = createState(Math.floor(Math.random() * 100000) + 1);
           updateUI();
-          render();
+          return;
         }
-      }, 50);
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        if (x > 260 && state.inPlunger) {
+          handleAction('launch');
+        } else if (x < canvas.width / 2) {
+          handleAction('flip_left');
+        } else {
+          handleAction('flip_right');
+        }
+      });
+
+      // 60 FPS RequestAnimationFrame Physics Loop
+      let lastTime = performance.now();
+      let physAccum = 0;
+
+      function animLoop(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+
+        if (!state.done && !state.inPlunger) {
+          physAccum += dt;
+          while (physAccum >= 0.05 && !state.done && !state.inPlunger) {
+            physAccum -= 0.05;
+            step(state, 'wait');
+            updateUI();
+          }
+        }
+
+        render();
+        requestAnimationFrame(animLoop);
+      }
+      requestAnimationFrame(animLoop);
 
       // Event Listeners
       const launchBtn = document.getElementById('btn-launch');

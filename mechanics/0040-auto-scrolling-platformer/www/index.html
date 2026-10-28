@@ -473,6 +473,64 @@
         ctx.restore();
       }
 
+      // Direct Canvas Touch & Drag Controls
+      let swipeStartX = null;
+      let swipeStartY = null;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        if (MagmaSurge.isOver(state)) {
+          initGame();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        swipeStartX = x;
+        swipeStartY = y;
+
+        const px = (state.player.x / 100) * canvas.width;
+        if (y < 200) {
+          if (state.player.grapples > 0) handleAction('grapple_up');
+          else handleAction('jump');
+        } else if (x > px + 30) {
+          handleAction('move_right');
+        } else if (x < px - 30) {
+          handleAction('move_left');
+        } else {
+          handleAction('jump');
+        }
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (swipeStartX === null || MagmaSurge.isOver(state)) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        const dx = x - swipeStartX;
+        const dy = y - swipeStartY;
+        if (Math.hypot(dx, dy) > 28) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > 0) handleAction('dash_right');
+            else handleAction('dash_left');
+          } else {
+            if (dy < 0) handleAction('jump');
+          }
+          swipeStartX = null;
+        }
+      });
+
+      canvas.addEventListener('pointerup', () => { swipeStartX = null; swipeStartY = null; });
+      canvas.addEventListener('pointercancel', () => { swipeStartX = null; swipeStartY = null; });
+
+      // Continuous 60 FPS animation loop
+      function animLoop() {
+        render();
+        requestAnimationFrame(animLoop);
+      }
+      requestAnimationFrame(animLoop);
+
       // Action Handlers
       const btnLeft = document.getElementById('btnLeft');
       if (btnLeft) btnLeft.onclick = () => handleAction('move_left');

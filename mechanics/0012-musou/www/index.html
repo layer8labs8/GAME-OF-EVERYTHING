@@ -419,10 +419,65 @@
         ctx.fill();
         ctx.restore();
 
-        if (fxList.length > 0) {
-          requestAnimationFrame(render);
-        }
+        requestAnimationFrame(render);
       }
+
+      // Direct Canvas Touch and Swipe Controls
+      let swipeStartX = null;
+      let swipeStartY = null;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        if (DynastyCleave.isOver(state)) {
+          state = DynastyCleave.createState(Date.now() % 100000);
+          fxList = [];
+          updateUI();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = 400 / rect.width;
+        const scaleY = 400 / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        swipeStartX = x;
+        swipeStartY = y;
+
+        const p = state.player;
+        const dx = x - p.x;
+        const dy = y - p.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (p.musouGauge >= 100 && dist < 40) {
+          triggerAction('musou_rampage');
+        } else if (dist < 70) {
+          triggerAction('wide_cleave');
+        } else {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            triggerAction(dx > 0 ? 'move_e' : 'move_w');
+          } else {
+            triggerAction(dy > 0 ? 'move_s' : 'move_n');
+          }
+        }
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (swipeStartX === null || DynastyCleave.isOver(state)) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (400 / rect.width);
+        const y = (e.clientY - rect.top) * (400 / rect.height);
+        const dx = x - swipeStartX;
+        const dy = y - swipeStartY;
+        if (Math.hypot(dx, dy) > 35) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            triggerAction(dx > 0 ? 'dash' : 'move_w');
+          } else {
+            triggerAction(dy > 0 ? 'move_s' : 'move_n');
+          }
+          swipeStartX = null;
+        }
+      });
+
+      canvas.addEventListener('pointerup', () => { swipeStartX = null; });
+      canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
 
       // Button listeners
       const btnUp = document.getElementById('btn-up');

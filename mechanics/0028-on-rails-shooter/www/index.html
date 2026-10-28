@@ -567,6 +567,61 @@
         ctx.restore();
       }
 
+      // Direct Canvas Touch & Drag Crosshair Controls
+      let swipeStartX = null;
+      let swipeStartY = null;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        if (RailPhantom.isOver(state)) {
+          initGame();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        swipeStartX = x;
+        swipeStartY = y;
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const targetGridX = Math.max(-1, Math.min(1, Math.round((x - cx) / 70)));
+        const targetGridY = Math.max(-1, Math.min(1, Math.round((y - (cy - 20)) / 60)));
+
+        if (targetGridX > state.player.x) handleAction('move_right');
+        else if (targetGridX < state.player.x) handleAction('move_left');
+        else if (targetGridY > state.player.y) handleAction('move_down');
+        else if (targetGridY < state.player.y) handleAction('move_up');
+        else handleAction('fire_blaster');
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (swipeStartX === null || RailPhantom.isOver(state)) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        const dx = x - swipeStartX;
+        const dy = y - swipeStartY;
+        if (Math.abs(dx) > 35) {
+          handleAction(dx > 0 ? 'move_right' : 'move_left');
+          swipeStartX = x;
+        } else if (Math.abs(dy) > 35) {
+          handleAction(dy > 0 ? 'move_down' : 'move_up');
+          swipeStartY = y;
+        }
+      });
+
+      canvas.addEventListener('pointerup', () => { swipeStartX = null; swipeStartY = null; });
+      canvas.addEventListener('pointercancel', () => { swipeStartX = null; swipeStartY = null; });
+
+      // Continuous 60 FPS Animation Loop
+      function animLoop() {
+        render();
+        requestAnimationFrame(animLoop);
+      }
+      requestAnimationFrame(animLoop);
+
       // Action Handlers
       const btnUp = document.getElementById('btnUp');
       if (btnUp) btnUp.onclick = () => handleAction('move_up');

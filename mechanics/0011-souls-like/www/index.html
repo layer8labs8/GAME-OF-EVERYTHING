@@ -393,7 +393,84 @@
       }
     }
 
-    render();
+    // Touch / Swipe bindings on Canvas
+    let swipeStartX = null;
+    let swipeStartY = null;
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = 400 / rect.width;
+      const scaleY = 320 / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      swipeStartX = x;
+      swipeStartY = y;
+
+      if (x > 200) {
+        // Tapped Boss side
+        if (state.boss.staggered > 0) triggerAction('visceral_strike');
+        else if (y < 160) triggerAction('heavy_thrust');
+        else triggerAction('light_slash');
+      } else {
+        // Tapped Player side
+        if (state.player.hp < 40 && state.player.flasks > 0) triggerAction('heal');
+        else if (state.boss.windup > 0) triggerAction('parry');
+        else triggerAction('dodge_roll');
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (swipeStartX === null || logic.isOver(state)) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (400 / rect.width);
+      const y = (e.clientY - rect.top) * (320 / rect.height);
+      const dx = x - swipeStartX;
+      const dy = y - swipeStartY;
+      if (Math.abs(dx) > 30) {
+        if (dx > 0) triggerAction('heavy_thrust');
+        else triggerAction('dodge_roll');
+        swipeStartX = null;
+      } else if (Math.abs(dy) > 30) {
+        if (dy < 0) triggerAction('parry');
+        else triggerAction('block');
+        swipeStartX = null;
+      }
+    });
+
+    canvas.addEventListener('pointerup', () => { swipeStartX = null; });
+    canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
+
+    // 60 FPS RequestAnimationFrame Loop
+    let last = performance.now();
+    let embers = [];
+    for (let i = 0; i < 20; i++) {
+      embers.push({ x: Math.random() * 400, y: Math.random() * 320, vy: -15 - Math.random() * 25, sz: 1 + Math.random() * 2 });
+    }
+
+    function frame(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      render();
+
+      // Ambient Embers in Cathedral
+      ctx.fillStyle = '#f59e0b';
+      for (const emb of embers) {
+        emb.y += emb.vy * dt;
+        if (emb.y < 0) { emb.y = 320; emb.x = Math.random() * 400; }
+        ctx.beginPath();
+        ctx.arc(emb.x, emb.y, emb.sz, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   </script>
 </body>
 </html>

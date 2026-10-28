@@ -1,615 +1,338 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Wilderness Craft - Open World Survival</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      background-color: #04130d;
-      color: #e2e8f0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 8px;
-    }
-    header {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 12px;
-      background: #092317;
-      border: 1px solid #14532d;
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    h1 {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #4ade80;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .badge {
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: #14532d;
-      color: #86efac;
-      font-weight: 600;
-    }
-    #game-container {
-      width: 100%;
-      max-width: 640px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 4/3;
-      background: #061a12;
-      border: 1px solid #166534;
-      border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-      image-rendering: pixelated;
-    }
-    .vitals-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      width: 100%;
-    }
-    .vital-card {
-      background: #092317;
-      border: 1px solid #14532d;
-      padding: 4px 6px;
-      border-radius: 6px;
-      text-align: center;
-    }
-    .vital-title {
-      font-size: 0.65rem;
-      color: #86efac;
-      text-transform: uppercase;
-    }
-    .vital-val {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-top: 1px;
-    }
-    .resources-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      background: #071c13;
-      border: 1px solid #134e4a;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 0.72rem;
-      color: #cbd5e1;
-      justify-content: space-around;
-    }
-    .res-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-    }
-    .log-box {
-      background: #081d14;
-      border: 1px solid #15803d;
-      border-left: 4px solid #22c55e;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 0.78rem;
-      color: #e2e8f0;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-    }
-    .actions-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 6px;
-      margin-top: 2px;
-    }
-    .btn {
-      background: #0f3925;
-      border: 1px solid #15803d;
-      color: #e2e8f0;
-      padding: 8px 6px;
-      font-family: inherit;
-      font-size: 0.72rem;
-      border-radius: 6px;
-      cursor: pointer;
-      text-transform: uppercase;
-      font-weight: 600;
-      transition: all 0.15s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-    .btn:hover {
-      background: #14532d;
-      border-color: #4ade80;
-      color: #fff;
-    }
-    .btn:active {
-      transform: scale(0.97);
-    }
-    .btn-craft {
-      background: #1e3a5f;
-      border-color: #2563eb;
-      color: #93c5fd;
-    }
-    .btn-craft:hover {
-      background: #1d4ed8;
-      border-color: #60a5fa;
-    }
-    .btn-gold {
-      background: #78350f;
-      border-color: #d97706;
-      color: #fde68a;
-    }
-    .btn-gold:hover {
-      background: #b45309;
-      border-color: #f59e0b;
-    }
-    .footer-bar {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 6px;
-      width: 100%;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#071b12">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Wilderness Craft</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #071b12; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>🌲 Wilderness Craft</h1>
-    <div>
-      <span id="turn-badge" class="badge">DAY 0 / 120</span>
-      <span id="score-badge" class="badge" style="background:#854d0e; color:#fef08a;">0 PTS</span>
-    </div>
-  </header>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-  <div id="game-container">
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+const W = 360;
+const H = 640;
+let scale = 1;
 
-    <div class="vitals-grid">
-      <div class="vital-card">
-        <div class="vital-title">Health</div>
-        <div id="vital-health" class="vital-val" style="color: #4ade80;">100%</div>
-      </div>
-      <div class="vital-card">
-        <div class="vital-title">Hunger</div>
-        <div id="vital-hunger" class="vital-val" style="color: #fb923c;">90%</div>
-      </div>
-      <div class="vital-card">
-        <div class="vital-title">Thirst</div>
-        <div id="vital-thirst" class="vital-val" style="color: #38bdf8;">90%</div>
-      </div>
-      <div class="vital-card">
-        <div class="vital-title">Stamina</div>
-        <div id="vital-stamina" class="vital-val" style="color: #facc15;">100%</div>
-      </div>
-    </div>
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * scale + 'px';
+  canvas.style.height = H * scale + 'px';
+  canvas.width = Math.round(W * scale * dpr);
+  canvas.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
 
-    <div id="resources-panel" class="resources-bar">
-      <!-- Injected dynamically -->
-    </div>
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
-    <div id="game-log" class="log-box">
-      Washed ashore on Coastal Beach. Gather supplies and build shelter before dark.
-    </div>
+let best = 0;
+try { best = +localStorage.getItem('goe-0164-best') || 0; } catch (e) {}
 
-    <div id="actions-panel" class="actions-grid">
-      <!-- Injected dynamically -->
-    </div>
+let state = createState(Date.now());
+let floaters = [];
+let animTimer = 0;
+let overAt = 0;
 
-    <div class="footer-bar">
-      <div id="structures-summary" style="font-size:0.7rem; color:#86efac;">Camp: Open Wilderness</div>
-      <button id="bot-toggle-btn" class="btn" style="padding: 4px 10px; font-size: 0.68rem;" onclick="window.toggleBot()">BOT: OFF</button>
-    </div>
-  </div>
+function restart() {
+  state = createState(Date.now());
+  floaters = [];
+  overAt = 0;
+}
 
-  <script src="logic.js"></script>
-  <script>
-    let state = createState(Date.now ? Date.now() : 12345);
-    let botRunning = false;
-    let botInterval = null;
+const BIOME_LABELS = [
+  'Coastal Beach',
+  'Pine Forest',
+  'Granite Mountain Ridge',
+  'Ancient Ruins'
+];
 
-    // Web Audio Synthesizer for Wilderness FX
-    let audioCtx = null;
-    function playSfx(type) {
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const t = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+function performAction(act) {
+  if (isOver(state)) return;
+  const legals = legalActions(state);
+  if (!legals.includes(act)) return;
 
-        if (type === 'chop') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(180, t);
-          osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
-          gain.gain.setValueAtTime(0.4, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
-          osc.start(t);
-          osc.stop(t + 0.12);
-        } else if (type === 'mine') {
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(420, t);
-          osc.frequency.exponentialRampToValueAtTime(120, t + 0.08);
-          gain.gain.setValueAtTime(0.3, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-          osc.start(t);
-          osc.stop(t + 0.1);
-        } else if (type === 'craft') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(320, t);
-          osc.frequency.setValueAtTime(480, t + 0.1);
-          osc.frequency.setValueAtTime(640, t + 0.2);
-          gain.gain.setValueAtTime(0.2, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
-          osc.start(t);
-          osc.stop(t + 0.35);
-        } else if (type === 'drink') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(500, t);
-          osc.frequency.exponentialRampToValueAtTime(300, t + 0.15);
-          gain.gain.setValueAtTime(0.25, t);
-          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-          osc.start(t);
-          osc.stop(t + 0.2);
-        }
-      } catch (e) {}
+  const oldWood = state.wood;
+  const oldStone = state.stone;
+  const res = step(state, act);
+
+  if (act.includes('chop')) {
+    floaters.push({ text: '+WOOD', x: 90, y: 220, t: 0, color: '#f59e0b' });
+  } else if (act.includes('mine')) {
+    floaters.push({ text: '+STONE / ORE', x: 270, y: 240, t: 0, color: '#94a3b8' });
+  } else if (act.includes('hunt')) {
+    floaters.push({ text: '+RAW MEAT', x: 180, y: 200, t: 0, color: '#ef4444' });
+  } else if (act.includes('build')) {
+    floaters.push({ text: 'STRUCTURE BUILT!', x: 180, y: 320, t: 0, color: '#10b981' });
+  } else if (act.includes('eat')) {
+    floaters.push({ text: '+HEALTH & HUNGER', x: 180, y: 320, t: 0, color: '#f59e0b' });
+  } else if (act.includes('drink')) {
+    floaters.push({ text: '+HYDRATION', x: 180, y: 320, t: 0, color: '#38bdf8' });
+  }
+
+  if (isOver(state)) {
+    overAt = performance.now();
+    const sc = score(state);
+    if (sc > best) {
+      best = sc;
+      try { localStorage.setItem('goe-0164-best', best); } catch (e) {}
     }
+  }
+}
 
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+// Action button hitboxes on canvas
+const BTNS = [
+  { id: 'chop', label: '🪓 CHOP TREES', action: 'action:chop_trees', x: 20, y: 460, w: 100, h: 44, col: '#d97706' },
+  { id: 'mine', label: '⛏ MINE ROCK', action: 'action:mine_rock_and_ore', x: 130, y: 460, w: 100, h: 44, col: '#64748b' },
+  { id: 'hunt', label: '🏹 HUNT BEASTS', action: 'action:hunt_wildlife', x: 240, y: 460, w: 100, h: 44, col: '#ef4444' },
 
-    function render() {
-      // Vitals & Status
-      document.getElementById('turn-badge').textContent = 'CYCLE ' + state.turns + ' / ' + state.maxTurns;
-      document.getElementById('score-badge').textContent = score(state) + ' PTS';
+  { id: 'gather', label: '🌾 GATHER FLINT', action: 'action:gather_fiber_and_flint', x: 20, y: 510, w: 100, h: 40, col: '#10b981' },
+  { id: 'eat', label: '🍖 EAT RATION', action: 'action:eat_cooked_ration', x: 130, y: 510, w: 100, h: 40, col: '#ea580c' },
+  { id: 'drink', label: '💧 DRINK WATER', action: 'action:drink_water', x: 240, y: 510, w: 100, h: 40, col: '#0284c7' },
 
-      const hEl = document.getElementById('vital-health');
-      hEl.textContent = state.health + '%';
-      hEl.style.color = state.health > 60 ? '#4ade80' : (state.health > 25 ? '#fbbf24' : '#ef4444');
+  { id: 'camp', label: '🔥 CAMPFIRE', action: 'action:build_structure:campfire', x: 20, y: 556, w: 75, h: 38, col: '#d97706' },
+  { id: 'shelter', label: '🛖 SHELTER', action: 'action:build_structure:shelter', x: 100, y: 556, w: 75, h: 38, col: '#b45309' },
+  { id: 'bench', label: '🛠 WORKBENCH', action: 'action:build_structure:workbench', x: 180, y: 556, w: 80, h: 38, col: '#475569' },
+  { id: 'beacon', label: '📡 BEACON', action: 'action:build_structure:signal_beacon', x: 265, y: 556, w: 75, h: 38, col: '#06b6d4' },
 
-      const hungEl = document.getElementById('vital-hunger');
-      hungEl.textContent = state.hunger + '%';
-      hungEl.style.color = state.hunger > 50 ? '#fb923c' : '#ef4444';
+  { id: 'travel', label: '🗺 TRAVEL NEXT BIOME', action: 'action:travel_to_biome:' + (state.biome + 1), x: 20, y: 600, w: 320, h: 34, col: '#059669' },
+];
 
-      const tEl = document.getElementById('vital-thirst');
-      tEl.textContent = state.thirst + '%';
-      tEl.style.color = state.thirst > 50 ? '#38bdf8' : '#ef4444';
+function toLogical(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
+}
 
-      const stEl = document.getElementById('vital-stamina');
-      stEl.textContent = state.stamina + '%';
-
-      document.getElementById('game-log').textContent = state.gameMessage;
-
-      // Resources bar
-      const resPanel = document.getElementById('resources-panel');
-      resPanel.innerHTML = `
-        <span class="res-pill">🪵 Wood: <b>${state.wood}</b></span>
-        <span class="res-pill">🪨 Stone: <b>${state.stone}</b></span>
-        <span class="res-pill">🌾 Fiber: <b>${state.fiber}</b></span>
-        <span class="res-pill">⛏️ Flint: <b>${state.flint}</b></span>
-        <span class="res-pill">⛓️ Ore: <b>${state.ironOre}</b></span>
-        <span class="res-pill">🔩 Ingots: <b>${state.ironIngots}</b></span>
-        <span class="res-pill">🥩 Meat: <b>${state.rawMeat}</b></span>
-        <span class="res-pill">🍖 Rations: <b>${state.cookedRations}</b></span>
-        <span class="res-pill">💧 Water: <b>${state.purifiedWater}</b></span>
-      `;
-
-      let structuresList = [];
-      if (state.hasCampfire) structuresList.push('Campfire');
-      if (state.hasWorkbench) structuresList.push('Workbench');
-      if (state.hasShelter) structuresList.push('Shelter');
-      if (state.hasSmelter) structuresList.push('Smelter');
-      if (state.hasIronTools) structuresList.push('Iron Tools');
-      if (state.hasSignalBeacon) structuresList.push('Signal Beacon');
-
-      document.getElementById('structures-summary').textContent =
-        'Structures: [' + (structuresList.length ? structuresList.join(', ') : 'None') + ']';
-
-      // Canvas Rendering
-      const w = canvas.width;
-      const h = canvas.height;
-
-      // Sky & Horizon
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.6);
-      const biomeColors = [
-        ['#0ea5e9', '#38bdf8'], // Coast
-        ['#064e3b', '#047857'], // Forest
-        ['#334155', '#64748b'], // Mountain
-        ['#581c87', '#9333ea']  // Ancient Ruins
-      ];
-      const curCol = biomeColors[state.biome] || biomeColors[0];
-      skyGrad.addColorStop(0, curCol[0]);
-      skyGrad.addColorStop(1, curCol[1]);
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, w, h * 0.6);
-
-      // Mountains in background
-      ctx.fillStyle = '#062c20';
-      ctx.beginPath();
-      ctx.moveTo(0, h * 0.6);
-      ctx.lineTo(w * 0.25, h * 0.35);
-      ctx.lineTo(w * 0.5, h * 0.6);
-      ctx.lineTo(w * 0.75, h * 0.3);
-      ctx.lineTo(w, h * 0.6);
-      ctx.fill();
-
-      // Terrain Ground
-      const groundGrad = ctx.createLinearGradient(0, h * 0.6, 0, h);
-      groundGrad.addColorStop(0, '#14532d');
-      groundGrad.addColorStop(1, '#052e16');
-      ctx.fillStyle = groundGrad;
-      ctx.fillRect(0, h * 0.6, w, h * 0.4);
-
-      // Shoreline water in Coastal biome
-      if (state.biome === 0) {
-        ctx.fillStyle = 'rgba(14, 165, 233, 0.45)';
-        ctx.fillRect(0, h * 0.85, w, h * 0.15);
-      }
-
-      // Biome Badge on Canvas
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('BIOME ' + state.biome + ': ' + BIOME_NAMES[state.biome].toUpperCase(), 16, 28);
-
-      // Draw Campfire
-      if (state.hasCampfire) {
-        ctx.fillStyle = '#78350f';
-        ctx.fillRect(w * 0.4 - 15, h * 0.75, 30, 8);
-        ctx.fillStyle = '#f59e0b';
-        ctx.beginPath();
-        ctx.arc(w * 0.4, h * 0.73, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fef08a';
-        ctx.beginPath();
-        ctx.arc(w * 0.4, h * 0.73, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Campfire', w * 0.4, h * 0.8);
-      }
-
-      // Draw Workbench
-      if (state.hasWorkbench) {
-        ctx.fillStyle = '#92400e';
-        ctx.fillRect(w * 0.25 - 20, h * 0.72, 40, 16);
-        ctx.fillStyle = '#b45309';
-        ctx.fillRect(w * 0.25 - 16, h * 0.74, 32, 10);
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Workbench', w * 0.25, h * 0.8);
-      }
-
-      // Draw Shelter
-      if (state.hasShelter) {
-        ctx.fillStyle = '#854d0e';
-        ctx.beginPath();
-        ctx.moveTo(w * 0.75, h * 0.65);
-        ctx.lineTo(w * 0.75 - 35, h * 0.78);
-        ctx.lineTo(w * 0.75 + 35, h * 0.78);
-        ctx.fill();
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Shelter', w * 0.75, h * 0.82);
-      }
-
-      // Draw Smelter
-      if (state.hasSmelter) {
-        ctx.fillStyle = '#475569';
-        ctx.fillRect(w * 0.6 - 15, h * 0.7, 30, 24);
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(w * 0.6 - 6, h * 0.78, 12, 10);
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Smelter', w * 0.6, h * 0.84);
-      }
-
-      // Draw Signal Beacon
-      if (state.hasSignalBeacon) {
-        ctx.strokeStyle = '#facc15';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(w * 0.85, h * 0.78);
-        ctx.lineTo(w * 0.85, h * 0.5);
-        ctx.stroke();
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(w * 0.85, h * 0.5, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fde047';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('BEACON READY', w * 0.85, h * 0.46);
-      }
-
-      // Game Over Overlay
-      if (isOver(state)) {
-        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.88)' : 'rgba(69, 10, 10, 0.9)';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(state.victory ? 'ISLAND EXTRACTION COMPLETE!' : 'SURVIVAL FAILURE - FALLEN', w / 2, h / 2 - 20);
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Final Survival Score: ' + score(state), w / 2, h / 2 + 15);
-      }
-
-      updateActions();
-    }
-
-    function updateActions() {
-      const panel = document.getElementById('actions-panel');
-      if (isOver(state)) {
-        panel.innerHTML = '<button class="btn btn-gold" onclick="window.restartGame()">NEW SURVIVAL JOURNEY</button>';
-        return;
-      }
-
-      const actions = legalActions(state);
-      let html = '';
-
-      for (const act of actions) {
-        let cls = 'btn';
-        let label = act;
-        let sub = '';
-
-        if (act === 'action:gather_fiber_and_flint') {
-          label = '🌾 Gather Beach Materials';
-          sub = '+Fiber, +Flint (0 Sta)';
-        } else if (act === 'action:chop_trees') {
-          label = '🪓 Chop Timber';
-          sub = '+Wood (-15 Sta)';
-        } else if (act === 'action:mine_rock_and_ore') {
-          label = '⛏️ Mine Rock & Ore';
-          sub = '+Stone/Ore (-20 Sta)';
-        } else if (act === 'action:hunt_wildlife') {
-          label = '🏹 Hunt Wildlife';
-          sub = '+Meat (-20 Sta)';
-        } else if (act === 'action:drink_water') {
-          label = '💧 Drink Fresh Water';
-          sub = '+45 Thirst, +20 Sta';
-        } else if (act === 'action:eat_cooked_ration') {
-          label = '🍖 Eat Cooked Ration';
-          sub = '+45 Hunger, +20 HP';
-        } else if (act === 'action:cook_rations') {
-          label = '🍳 Cook Meat Skewers';
-          sub = 'Campfire Cooking';
-        } else if (act === 'action:purify_water') {
-          label = '🔥 Boil Fresh Water';
-          sub = 'Campfire (+2 Water)';
-        } else if (act === 'action:craft_campfire') {
-          cls += ' btn-craft';
-          label = '🔥 Craft Campfire';
-          sub = '4 Wood, 3 Stone';
-        } else if (act === 'action:craft_workbench') {
-          cls += ' btn-craft';
-          label = '🔨 Craft Workbench';
-          sub = '8 Wood, 2 Flint';
-        } else if (act === 'action:craft_shelter') {
-          cls += ' btn-craft';
-          label = '⛺ Build Shelter';
-          sub = '15 Wood, 8 Fiber';
-        } else if (act === 'action:craft_smelter') {
-          cls += ' btn-craft';
-          label = '🏭 Build Blast Smelter';
-          sub = '14 Stone, 10 Wood';
-        } else if (act === 'action:smelt_iron') {
-          cls += ' btn-craft';
-          label = '🔩 Smelt Refined Iron';
-          sub = '2 Ore, 2 Wood';
-        } else if (act === 'action:upgrade_tools_to_iron') {
-          cls += ' btn-gold';
-          label = '⚔️ Forge Iron Tools';
-          sub = '4 Ingots (2x Harvest)';
-        } else if (act === 'action:craft_signal_beacon') {
-          cls += ' btn-gold';
-          label = '📡 Build Rescue Beacon';
-          sub = 'Ancient Ruins';
-        } else if (act === 'action:rest_at_shelter') {
-          label = '💤 Rest & Sleep';
-          sub = state.hasShelter ? '+60 Sta, +15 HP' : '+30 Sta, +5 HP';
-        } else if (act.startsWith('action:travel_to_biome:')) {
-          const b = parseInt(act.split(':')[2], 10);
-          label = '🧭 Travel to ' + BIOME_NAMES[b];
-          sub = '-20 Stamina';
-        } else if (act === 'action:escape_wilderness') {
-          cls += ' btn-gold';
-          label = '🚀 Trigger Rescue Extraction!';
-          sub = 'Victory';
-        }
-
-        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
-      }
-
-      panel.innerHTML = html;
-    }
-
-    window.triggerAction = function(act) {
-      if (isOver(state)) return;
-      if (act.includes('chop')) playSfx('chop');
-      else if (act.includes('mine')) playSfx('mine');
-      else if (act.includes('craft') || act.includes('upgrade')) playSfx('craft');
-      else if (act.includes('drink')) playSfx('drink');
-
-      step(state, act);
-      render();
-    };
-
-    window.restartGame = function() {
-      state = createState(Date.now ? Date.now() : 12345);
-      render();
-    };
-
-    window.toggleBot = function() {
-      botRunning = !botRunning;
-      document.getElementById('bot-toggle-btn').textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
-      document.getElementById('bot-toggle-btn').style.background = botRunning ? '#15803d' : '#0f3925';
-
-      if (botRunning) {
-        botInterval = setInterval(() => {
-          if (isOver(state)) {
-            state = createState(Date.now ? Date.now() : 9999);
-            render();
-            return;
-          }
-          const acts = legalActions(state);
-          if (acts.length > 0) {
-            let choice = acts[0];
-            if (acts.includes('action:escape_wilderness')) choice = 'action:escape_wilderness';
-            else if (acts.includes('action:craft_signal_beacon')) choice = 'action:craft_signal_beacon';
-            else if (acts.includes('action:upgrade_tools_to_iron')) choice = 'action:upgrade_tools_to_iron';
-            else if (acts.includes('action:drink_water') && state.thirst < 60) choice = 'action:drink_water';
-            else if (acts.includes('action:eat_cooked_ration') && state.hunger < 60) choice = 'action:eat_cooked_ration';
-            else if (acts.includes('action:craft_shelter')) choice = 'action:craft_shelter';
-            else if (acts.includes('action:craft_workbench')) choice = 'action:craft_workbench';
-            else if (acts.includes('action:craft_campfire')) choice = 'action:craft_campfire';
-            else if (acts.includes('action:rest_at_shelter') && state.stamina < 30) choice = 'action:rest_at_shelter';
-            else if (acts.includes('action:chop_trees') && state.wood < 20) choice = 'action:chop_trees';
-            else if (acts.includes('action:mine_rock_and_ore')) choice = 'action:mine_rock_and_ore';
-            window.triggerAction(choice);
-          }
-        }, 350);
+canvas.addEventListener('pointerdown', (e) => {
+  const p = toLogical(e);
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) restart();
+    return;
+  }
+  // Check action buttons
+  for (const b of BTNS) {
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+      // Dynamic travel biome action check
+      if (b.id === 'travel') {
+        performAction('action:travel_to_biome:' + (state.biome + 1));
       } else {
-        clearInterval(botInterval);
+        performAction(b.action);
       }
-    };
-
-    render();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      return;
     }
-  </script>
+  }
+
+  // Tapping natural scene elements directly:
+  if (p.y < 450) {
+    if (p.x < 130) performAction('action:chop_trees');
+    else if (p.x > 230) performAction('action:mine_rock_and_ore');
+    else if (p.y < 230) performAction('action:hunt_wildlife');
+    else performAction('action:gather_fiber_and_flint');
+  }
+});
+
+addEventListener('keydown', (e) => {
+  if (isOver(state)) {
+    if ((e.key === ' ' || e.key === 'Enter') && performance.now() - overAt > 400) restart();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  if (k === '1' || k === 'c') performAction('action:chop_trees');
+  else if (k === '2' || k === 'm') performAction('action:mine_rock_and_ore');
+  else if (k === '3' || k === 'h') performAction('action:hunt_wildlife');
+  else if (k === 'g') performAction('action:gather_fiber_and_flint');
+  else if (k === 'e') performAction('action:eat_cooked_ration');
+  else if (k === 'd') performAction('action:drink_water');
+  else if (k === 'b') performAction('action:build_structure:shelter');
+  else if (k === 't') performAction('action:travel_to_biome:' + (state.biome + 1));
+});
+
+function draw(dt) {
+  animTimer += dt;
+
+  // Sky & Biome Backdrop
+  ctx.fillStyle = state.biome === 0 ? '#0284c7' :
+                  state.biome === 1 ? '#064e3b' :
+                  state.biome === 2 ? '#334155' : '#451a03';
+  ctx.fillRect(0, 0, W, H);
+
+  // Ground Terrain (0..450)
+  ctx.fillStyle = state.biome === 0 ? '#eab308' :
+                  state.biome === 1 ? '#14532d' :
+                  state.biome === 2 ? '#475569' : '#78350f';
+  ctx.fillRect(0, 260, W, 190);
+
+  // Draw Scenery: Pine Trees on Left
+  const treeSway = Math.sin(animTimer * 2) * 3;
+  ctx.fillStyle = '#15803d';
+  ctx.beginPath();
+  ctx.moveTo(70 + treeSway, 140);
+  ctx.lineTo(105, 260);
+  ctx.lineTo(35, 260);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#78350f';
+  ctx.fillRect(65, 260, 10, 20);
+
+  // Draw Boulders / Ore Vein on Right
+  ctx.fillStyle = '#64748b';
+  ctx.beginPath();
+  ctx.arc(280, 270, 32, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = '#94a3b8';
+  ctx.beginPath();
+  ctx.arc(260, 275, 18, Math.PI, 0);
+  ctx.fill();
+
+  // Campfire if built
+  if (state.hasCampfire) {
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(180, 280, 10 + Math.sin(animTimer * 10) * 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(180, 280, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Shelter if built
+  if (state.hasShelter) {
+    ctx.fillStyle = '#b45309';
+    ctx.beginPath();
+    ctx.moveTo(130, 210);
+    ctx.lineTo(165, 270);
+    ctx.lineTo(95, 270);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Player Survivor (Center)
+  const px = 180;
+  const py = 320;
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath();
+  ctx.arc(px, py - 18, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(px - 7, py - 9, 14, 22);
+
+  // Top Header HUD
+  ctx.fillStyle = 'rgba(7, 27, 18, 0.95)';
+  ctx.fillRect(0, 0, W, 52);
+
+  ctx.fillStyle = '#34d399';
+  ctx.font = 'bold 14px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(BIOME_LABELS[state.biome].toUpperCase(), 12, 22);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#facc15';
+  ctx.fillText('BUILT: ' + state.structuresBuilt + ' 🛖', W - 12, 22);
+
+  // Resource Inventory Counters
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.fillStyle = '#fde047';
+  ctx.textAlign = 'left';
+  ctx.fillText('🪵 ' + state.wood + '  🪨 ' + state.stone + '  ⛏ ' + state.ironOre, 12, 42);
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.textAlign = 'right';
+  ctx.fillText('HP ' + state.health + '%  🍖 ' + state.hunger + '  💧 ' + state.thirst, W - 12, 42);
+
+  // Floating text
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 35 * dt;
+    f.t += dt;
+    if (f.t > 0.8) {
+      floaters.splice(i, 1);
+      continue;
+    }
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  }
+
+  // Draw Control Deck
+  ctx.fillStyle = '#071810';
+  ctx.fillRect(0, 450, W, 190);
+  ctx.fillStyle = '#059669';
+  ctx.fillRect(0, 448, W, 2);
+
+  const legals = legalActions(state);
+  for (const b of BTNS) {
+    const isTravel = b.id === 'travel';
+    const actStr = isTravel ? 'action:travel_to_biome:' + (state.biome + 1) : b.action;
+    const isLegal = legals.includes(actStr);
+
+    ctx.fillStyle = isLegal ? b.col : '#13281c';
+    rrect(b.x, b.y, b.w, b.h, 5);
+    ctx.fill();
+    ctx.strokeStyle = isLegal ? 'rgba(255,255,255,0.3)' : '#1f3d2b';
+    ctx.lineWidth = 1.5;
+    rrect(b.x, b.y, b.w, b.h, 5);
+    ctx.stroke();
+
+    ctx.fillStyle = isLegal ? '#ffffff' : '#64748b';
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+  }
+  ctx.textBaseline = 'alphabetic';
+
+  // Game over overlay
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(7, 27, 18, 0.95)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = state.victory ? '#10b981' : '#ef4444';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.victory ? 'RESCUE SIGNAL SENT!' : 'PERISHED IN WILD', W / 2, H / 2 - 40);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Score: ' + score(state) + '  (Best: ' + best + ')', W / 2, H / 2);
+    ctx.fillText('Biome: ' + BIOME_LABELS[state.biome] + '  Structures: ' + state.structuresBuilt, W / 2, H / 2 + 28);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.fillText('Tap to craft again', W / 2, H / 2 + 70);
+  }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>

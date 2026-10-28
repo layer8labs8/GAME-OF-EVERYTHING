@@ -343,7 +343,82 @@
       }
     }
 
-    render();
+    // Direct Canvas Touch and Swipe Controls
+    let swipeStartX = null;
+    let swipeStartY = null;
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (logic.isOver(state)) {
+        state = logic.createState(Math.floor(Math.random() * 100000));
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = 360 / rect.width;
+      const scaleY = 360 / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      swipeStartX = x;
+      swipeStartY = y;
+
+      const p = state.player;
+      const tx = Math.floor(x / 36);
+      const ty = Math.floor(y / 36);
+      const dx = tx - p.x;
+      const dy = ty - p.y;
+
+      // Check if tapping an enemy directly
+      const enemyOnTile = state.enemies.find(en => en.x === tx && en.y === ty);
+      if (enemyOnTile) {
+        if (Math.abs(dx) + Math.abs(dy) === 1) {
+          const dir = dx === 1 ? 'e' : dx === -1 ? 'w' : dy === 1 ? 's' : 'n';
+          lastFacing = dir;
+          triggerAction(`punch_${dir}`);
+          return;
+        } else if (p.ammo > 0) {
+          const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'e' : 'w') : (dy > 0 ? 's' : 'n');
+          lastFacing = dir;
+          triggerAction(`shoot_${dir}`);
+          return;
+        }
+      }
+
+      if (dx === 0 && dy === 0) {
+        triggerAction('wait');
+      } else if (Math.abs(dx) > Math.abs(dy)) {
+        tryMoveOrPunch(dx > 0 ? 'e' : 'w');
+      } else {
+        tryMoveOrPunch(dy > 0 ? 's' : 'n');
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (swipeStartX === null || logic.isOver(state)) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (360 / rect.width);
+      const y = (e.clientY - rect.top) * (360 / rect.height);
+      const dx = x - swipeStartX;
+      const dy = y - swipeStartY;
+      if (Math.hypot(dx, dy) > 25) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          tryMoveOrPunch(dx > 0 ? 'e' : 'w');
+        } else {
+          tryMoveOrPunch(dy > 0 ? 's' : 'n');
+        }
+        swipeStartX = null;
+      }
+    });
+
+    canvas.addEventListener('pointerup', () => { swipeStartX = null; });
+    canvas.addEventListener('pointercancel', () => { swipeStartX = null; });
+
+    // 60 FPS requestAnimationFrame Loop
+    let last = performance.now();
+    function frame(now) {
+      last = now;
+      render();
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   </script>
 </body>
 </html>
