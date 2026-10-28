@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <radialGradient id="carnageBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2a0808" />
+      <stop offset="60%" stop-color="#140202" />
+      <stop offset="100%" stop-color="#050000" />
+    </radialGradient>
+    <linearGradient id="flameGrad" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#f97316" />
+      <stop offset="50%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#fef08a" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#carnageBg)" />
+  <!-- Tire treads -->
+  <rect x="130" y="240" width="45" height="140" rx="10" fill="#27272a" stroke="#52525b" stroke-width="4" />
+  <rect x="337" y="240" width="45" height="140" rx="10" fill="#27272a" stroke="#52525b" stroke-width="4" />
+  <!-- Armored Car Chassis -->
+  <polygon points="210,130 302,130 340,360 172,360" fill="#dc2626" stroke="#f87171" stroke-width="6" />
+  <!-- Windshield -->
+  <polygon points="225,180 287,180 305,250 207,250" fill="#0f172a" stroke="#38bdf8" stroke-width="4" />
+  <!-- Twin Vulcan Cannons -->
+  <rect x="180" y="100" width="16" height="60" rx="3" fill="#64748b" stroke="#cbd5e1" stroke-width="2" />
+  <rect x="316" y="100" width="16" height="60" rx="3" fill="#64748b" stroke="#cbd5e1" stroke-width="2" />
+  <!-- Nitro Flames Behind -->
+  <polygon points="230,360 256,430 240,370" fill="url(#flameGrad)" />
+  <polygon points="282,360 256,430 272,370" fill="url(#flameGrad)" />
+  <circle cx="256" cy="400" r="16" fill="#fef08a" />
+</svg>

@@ -1836,9 +1836,11 @@
       "slug": "combat-racing",
       "name": "Combat Racing",
       "family": "Racing",
-      "status": "idea",
-      "bot": false,
-      "source": "steam-tag"
+      "status": "playable",
+      "bot": true,
+      "source": "steam-tag",
+      "title": "Nitro Carnage",
+      "levels": "endless"
     },
     {
       "id": "0174",

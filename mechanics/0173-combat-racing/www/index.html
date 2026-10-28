@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nitro Carnage - Combat Racing</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #050202;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 8px;
+    }
+    header {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: #180505;
+      border: 1px solid #7f1d1d;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ef4444;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #3f1010;
+      color: #fca5a5;
+      font-weight: 600;
+    }
+    #game-container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4/3;
+      background: #090303;
+      border: 2px solid #991b1b;
+      border-radius: 8px;
+      box-shadow: 0 4px 25px rgba(239, 68, 68, 0.3);
+    }
+    .vitals-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .vital-card {
+      background: #140404;
+      border: 1px solid #450a0a;
+      padding: 4px 6px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .vital-title {
+      font-size: 0.62rem;
+      color: #f87171;
+      text-transform: uppercase;
+    }
+    .vital-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+    .log-box {
+      background: #140404;
+      border: 1px solid #7f1d1d;
+      border-left: 4px solid #ef4444;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: #f4f4f5;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .btn {
+      background: #1f0606;
+      border: 1px solid #7f1d1d;
+      color: #f4f4f5;
+      padding: 8px 6px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .btn:hover {
+      background: #3f0d0d;
+      border-color: #ef4444;
+      color: #fff;
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .btn-fire {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      color: #fef2f2;
+    }
+    .btn-fire:hover {
+      background: #991b1b;
+    }
+    .btn-nitro {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #f0f9ff;
+    }
+    .btn-nitro:hover {
+      background: #0284c7;
+    }
+    .btn-steer {
+      border-color: #f59e0b;
+      color: #fde68a;
+    }
+    .btn-steer:hover {
+      background: #451a03;
+    }
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔥 Nitro Carnage</h1>
+    <div>
+      <span id="turn-badge" class="badge">0 / 100 KM</span>
+      <span id="score-badge" class="badge" style="background:#7f1d1d; color:#fef2f2;">0 PTS</span>
+    </div>
+  </header>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+
+    <div class="vitals-grid">
+      <div class="vital-card">
+        <div class="vital-title">Armor Hull</div>
+        <div id="val-hull" class="vital-val" style="color: #ef4444;">100%</div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-title">Nitro Boost</div>
+        <div id="val-nitro" class="vital-val" style="color: #38bdf8;">80%</div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-title">Vulcan Ammo</div>
+        <div id="val-vulcan" class="vital-val" style="color: #fbbf24;">24</div>
+      </div>
+      <div class="vital-card">
+        <div class="vital-title">Rivals Wrecked</div>
+        <div id="val-wrecks" class="vital-val" style="color: #10b981;">0 / 2</div>
+      </div>
+    </div>
+
+    <div id="game-log" class="log-box">
+      Engines roaring on the Wasteland Highway. Eliminate rivals and cross 100km finish line.
+    </div>
+
+    <div id="actions-panel" class="actions-grid">
+      <!-- Injected dynamically -->
+    </div>
+
+    <div class="footer-bar">
+      <div id="rival-summary" style="font-size:0.7rem; color:#f87171;">Rival: Scrap Raider Buggy (40 HP)</div>
+      <button id="bot-toggle-btn" class="btn" style="padding: 4px 10px; font-size: 0.68rem;" onclick="window.toggleBot()">BOT: OFF</button>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+    let state = createState(Date.now ? Date.now() : 12345);
+    let botRunning = false;
+    let botInterval = null;
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function playSfx(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'cannon') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(180, t);
+          osc.frequency.exponentialRampToValueAtTime(30, t + 0.12);
+          gain.gain.setValueAtTime(0.35, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+          osc.start(t);
+          osc.stop(t + 0.15);
+        } else if (type === 'missile') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(90, t);
+          osc.frequency.exponentialRampToValueAtTime(20, t + 0.35);
+          gain.gain.setValueAtTime(0.5, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+          osc.start(t);
+          osc.stop(t + 0.4);
+        } else if (type === 'nitro') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(250, t);
+          osc.frequency.linearRampToValueAtTime(600, t + 0.3);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+          osc.start(t);
+          osc.stop(t + 0.35);
+        } else if (type === 'steer') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, t);
+          osc.frequency.exponentialRampToValueAtTime(70, t + 0.08);
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+          osc.start(t);
+          osc.stop(t + 0.1);
+        }
+      } catch (e) {}
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let roadOffset = 0;
+
+    function render() {
+      // Status badges
+      document.getElementById('turn-badge').textContent = state.raceDistance + ' / ' + RACE_FINISH_KM + ' KM';
+      document.getElementById('score-badge').textContent = score(state) + ' PTS';
+      document.getElementById('game-log').textContent = state.gameMessage;
+
+      const hEl = document.getElementById('val-hull');
+      hEl.textContent = state.hull + '%';
+      hEl.style.color = state.hull > 50 ? '#ef4444' : '#f87171';
+
+      document.getElementById('val-nitro').textContent = state.nitro + '%';
+      document.getElementById('val-vulcan').textContent = state.vulcanRounds;
+      document.getElementById('val-wrecks').textContent = state.rivalsWrecked + ' / 2 ' + (state.rivalsWrecked >= 2 ? '✓' : '');
+
+      if (state.rival) {
+        document.getElementById('rival-summary').textContent =
+          'Rival: ' + state.rival.name + ' (' + state.rival.hp + '/' + state.rival.maxHp + ' HP, ' + state.rival.dist + 'm ahead)';
+      } else {
+        document.getElementById('rival-summary').textContent = 'Track Clear: Cruising to Checkered Flag';
+      }
+
+      // Canvas Rendering
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const horizonY = h * 0.35;
+
+      ctx.fillStyle = '#0f0404';
+      ctx.fillRect(0, 0, w, h);
+
+      // Blood-orange apocalyptic sky
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+      skyGrad.addColorStop(0, '#450a0a');
+      skyGrad.addColorStop(0.6, '#7f1d1d');
+      skyGrad.addColorStop(1, '#ea580c');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, w, horizonY);
+
+      // Distant jagged mountains
+      ctx.fillStyle = '#1c0505';
+      ctx.beginPath();
+      ctx.moveTo(0, horizonY);
+      ctx.lineTo(w * 0.2, horizonY - 40);
+      ctx.lineTo(w * 0.45, horizonY - 15);
+      ctx.lineTo(w * 0.7, horizonY - 50);
+      ctx.lineTo(w, horizonY);
+      ctx.fill();
+
+      // Wasteland Highway 3D Perspective
+      const roadTopW = 100;
+      const roadBottomW = 500;
+
+      ctx.fillStyle = '#18181b';
+      ctx.beginPath();
+      ctx.moveTo(cx - roadTopW / 2, horizonY);
+      ctx.lineTo(cx + roadTopW / 2, horizonY);
+      ctx.lineTo(cx + roadBottomW / 2, h);
+      ctx.lineTo(cx - roadBottomW / 2, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // Road curbs
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Lane dividers
+      roadOffset = (roadOffset + (state.boostActiveTurns > 0 ? 16 : 8)) % 40;
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([20, 20]);
+      ctx.lineDashOffset = -roadOffset;
+
+      // Divider 1 (between lane 0 and 1)
+      ctx.beginPath();
+      ctx.moveTo(cx - roadTopW / 6, horizonY);
+      ctx.lineTo(cx - roadBottomW / 6, h);
+      ctx.stroke();
+
+      // Divider 2 (between lane 1 and 2)
+      ctx.beginPath();
+      ctx.moveTo(cx + roadTopW / 6, horizonY);
+      ctx.lineTo(cx + roadBottomW / 6, h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw Rival Car Ahead if present
+      if (state.rival) {
+        const r = state.rival;
+        const normDist = Math.max(0.15, Math.min(1.0, 1 - r.dist / 60));
+        const ry = horizonY + (h - horizonY) * normDist * 0.65;
+        const rCurW = roadTopW + (roadBottomW - roadTopW) * normDist * 0.65;
+        const rLaneW = rCurW / 3;
+        const rx = cx - rCurW / 2 + r.lane * rLaneW + rLaneW / 2;
+        const carSize = 18 + normDist * 28;
+
+        // Rival Vehicle Body
+        ctx.fillStyle = '#71717a';
+        ctx.fillRect(rx - carSize / 2, ry - carSize / 2, carSize, carSize);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(rx - carSize / 2, ry - carSize / 2, carSize, carSize);
+
+        // Rival HP Bar
+        const barW = Math.max(30, carSize * 1.4);
+        ctx.fillStyle = '#27272a';
+        ctx.fillRect(rx - barW / 2, ry - carSize / 2 - 10, barW, 6);
+        ctx.fillStyle = '#ef4444';
+        const fillW = (r.hp / r.maxHp) * barW;
+        ctx.fillRect(rx - barW / 2, ry - carSize / 2 - 10, fillW, 6);
+      }
+
+      // Draw Player Armored Vehicle in Current Lane
+      const py = h - 60;
+      const curRoadW = roadBottomW * 0.9;
+      const pLaneW = curRoadW / 3;
+      const px = cx - curRoadW / 2 + state.lane * pLaneW + pLaneW / 2;
+
+      // Chassis
+      ctx.fillStyle = state.boostActiveTurns > 0 ? '#38bdf8' : '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(px, py - 32);
+      ctx.lineTo(px + 24, py + 22);
+      ctx.lineTo(px - 24, py + 22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Wheels
+      ctx.fillStyle = '#27272a';
+      ctx.fillRect(px - 28, py - 18, 8, 18);
+      ctx.fillRect(px + 20, py - 18, 8, 18);
+      ctx.fillRect(px - 28, py + 6, 8, 18);
+      ctx.fillRect(px + 20, py + 6, 8, 18);
+
+      // Nitro exhaust flames
+      if (state.boostActiveTurns > 0) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.moveTo(px - 10, py + 22);
+        ctx.lineTo(px, py + 48);
+        ctx.lineTo(px + 10, py + 22);
+        ctx.fill();
+      }
+
+      // Game Over Screen
+      if (isOver(state)) {
+        ctx.fillStyle = state.victory ? 'rgba(6, 78, 59, 0.9)' : 'rgba(69, 10, 10, 0.9)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(state.victory ? 'ROAD CHAMPION VICTORY!' : 'WRECKED AND ANNIHILATED', cx, cy - 20);
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Final Combat Score: ' + score(state), cx, cy + 15);
+      }
+
+      updateActions();
+    }
+
+    function updateActions() {
+      const panel = document.getElementById('actions-panel');
+      if (isOver(state)) {
+        panel.innerHTML = '<button class="btn btn-fire" onclick="window.restartGame()">NEW WASTELAND DERBY</button>';
+        return;
+      }
+
+      const actions = legalActions(state);
+      let html = '';
+
+      for (const act of actions) {
+        let cls = 'btn';
+        let label = act;
+        let sub = '';
+
+        if (act === 'action:cruise_forward') {
+          label = '🏎️ Cruise Forward';
+          sub = 'Scavenge Supplies';
+        } else if (act === 'action:shift_lane:left') {
+          cls += ' btn-steer';
+          label = '◀ Swerve Left';
+          sub = 'Evade / Target Lane';
+        } else if (act === 'action:shift_lane:right') {
+          cls += ' btn-steer';
+          label = '▶ Swerve Right';
+          sub = 'Evade / Target Lane';
+        } else if (act === 'action:fire_vulcan_cannon') {
+          cls += ' btn-fire';
+          label = '💥 Twin Vulcan Cannons';
+          sub = '-2 Ammo (Direct Strike)';
+        } else if (act === 'action:launch_homing_missile') {
+          cls += ' btn-fire';
+          label = '🚀 Homing Missile';
+          sub = '45 Damage (-1 Missile)';
+        } else if (act === 'action:burn_nitro_boost') {
+          cls += ' btn-nitro';
+          label = '⚡ Burn Nitro Boost';
+          sub = 'Mach Surge (-20 Nitro)';
+        } else if (act === 'action:deploy_oil_slick') {
+          label = '🛢️ Deploy Oil Slick';
+          sub = 'Crash Tailgater';
+        } else if (act === 'action:repair_armor_nanites') {
+          label = '🔧 Armor Repair';
+          sub = '+30 Hull (-15 Nitro)';
+        }
+
+        html += '<button class="' + cls + '" onclick="window.triggerAction(\'' + act + '\')"><span>' + label + '</span>' + (sub ? '<span style="font-size:0.62rem;opacity:0.8;">' + sub + '</span>' : '') + '</button>';
+      }
+
+      panel.innerHTML = html;
+    }
+
+    window.triggerAction = function(act) {
+      if (isOver(state)) return;
+      if (act.includes('vulcan')) playSfx('cannon');
+      else if (act.includes('missile')) playSfx('missile');
+      else if (act.includes('nitro')) playSfx('nitro');
+      else if (act.includes('shift')) playSfx('steer');
+
+      step(state, act);
+      render();
+    };
+
+    window.restartGame = function() {
+      state = createState(Date.now ? Date.now() : 12345);
+      render();
+    };
+
+    window.toggleBot = function() {
+      botRunning = !botRunning;
+      document.getElementById('bot-toggle-btn').textContent = botRunning ? 'BOT: ON' : 'BOT: OFF';
+      document.getElementById('bot-toggle-btn').style.background = botRunning ? '#ef4444' : '#1f0606';
+
+      if (botRunning) {
+        botInterval = setInterval(() => {
+          if (isOver(state)) {
+            state = createState(Date.now ? Date.now() : 9999);
+            render();
+            return;
+          }
+          const acts = legalActions(state);
+          if (acts.length > 0) {
+            let choice = acts[0];
+            if (acts.includes('action:launch_homing_missile') && state.rival && state.rival.hp >= 40) {
+              choice = 'action:launch_homing_missile';
+            } else if (acts.includes('action:fire_vulcan_cannon') && state.rival) {
+              choice = 'action:fire_vulcan_cannon';
+            } else if (acts.includes('action:repair_armor_nanites') && state.hull <= 60) {
+              choice = 'action:repair_armor_nanites';
+            } else if (acts.includes('action:burn_nitro_boost')) {
+              choice = 'action:burn_nitro_boost';
+            } else {
+              choice = 'action:cruise_forward';
+            }
+            window.triggerAction(choice);
+          }
+        }, 250);
+      } else {
+        clearInterval(botInterval);
+      }
+    };
+
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
