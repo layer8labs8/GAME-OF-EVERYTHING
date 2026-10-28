@@ -1880,8 +1880,10 @@
       "slug": "creature-collector",
       "name": "Creature Collector",
       "family": "Other",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "none",
+      "title": "Beast Tamer Arena",
       "source": "steam-tag"
     },
     {
