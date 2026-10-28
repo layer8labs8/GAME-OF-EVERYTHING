@@ -1869,8 +1869,10 @@
       "slug": "flight",
       "name": "Flight",
       "family": "Racing",
-      "status": "idea",
-      "bot": false,
+      "status": "playable",
+      "bot": true,
+      "levels": "none",
+      "title": "Aero Ace",
       "source": "steam-tag"
     },
     {
