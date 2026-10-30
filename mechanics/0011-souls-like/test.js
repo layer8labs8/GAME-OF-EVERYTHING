@@ -1,124 +1,179 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const logic = require('./www/logic.js');
+const L = require('./www/logic.js');
 
-test('createState initializes knight, 3 flasks, and Ember Lord boss', () => {
-  const state = logic.createState(42);
-  assert.equal(state.player.hp, 100);
-  assert.equal(state.player.stamina, 100);
-  assert.equal(state.player.flasks, 3);
-  assert.equal(state.boss.hp, 250);
-  assert.equal(state.boss.phase, 1);
-  assert.equal(logic.isOver(state), false);
-  assert.equal(logic.score(state), 0);
+// Advance the duel for `seconds` with the same held input, in 1/60 s frames.
+function run(state, seconds, input) {
+  const frames = Math.round(seconds * 60);
+  for (let i = 0; i < frames; i++) L.tick(state, 1 / 60, i === 0 ? input : Object.assign({}, input, { action: null }));
+  return state;
+}
+
+function quietBoss(state) {
+  state.boss.mode = 'idle';
+  state.boss.cooldown = 99;
+}
+
+test('createState places the knight and the Ember Lord in the arena', () => {
+  const s = L.createState(42);
+  assert.equal(s.player.hp, 100);
+  assert.equal(s.player.flasks, 3);
+  assert.equal(s.boss.hp, 420);
+  assert.ok(s.player.x < s.boss.x);
+  assert.equal(L.isOver(s), false);
+  assert.equal(L.score(s), 0);
 });
 
-test('heavy_thrust consumes 30 stamina, deals 32 damage and 35 poise damage', () => {
-  const state = logic.createState(42);
-  const res = logic.step(state, 'heavy_thrust');
-  assert.equal(state.boss.hp, 218);
-  assert.equal(state.boss.poise, 65);
-  assert.equal(typeof res.reward, 'number');
-  assert.equal(typeof res.done, 'boolean');
-});
-
-test('depleting poise triggers boss stagger opening for visceral strike', () => {
-  const state = logic.createState(42);
-  state.boss.poise = 20;
-
-  logic.step(state, 'heavy_thrust');
-  assert.ok(state.boss.staggered > 0);
-  assert.ok(logic.legalActions(state).includes('visceral_strike'));
-
-  const hpBeforeVisceral = state.boss.hp;
-  logic.step(state, 'visceral_strike');
-  assert.equal(state.boss.hp, hpBeforeVisceral - 65);
-});
-
-test('dodge_roll evades telegraphed boss attack safely', () => {
-  const state = logic.createState(42);
-  state.boss.windup = 2; // Leap slam windup
-
-  logic.step(state, 'dodge_roll');
-  assert.equal(state.player.hp, 100); // 0 damage taken
-  assert.equal(state.boss.windup, 0);
-});
-
-test('parry deflects telegraphed strike and damages poise', () => {
-  const state = logic.createState(42);
-  state.boss.windup = 1;
-  const initialPoise = state.boss.poise;
-
-  logic.step(state, 'parry');
-  assert.equal(state.player.hp, 100);
-  assert.equal(state.boss.poise, initialPoise - 50);
-});
-
-test('block mitigates 75% incoming damage', () => {
-  const state = logic.createState(42);
-  state.boss.windup = 1; // 20 damage cleave
-
-  logic.step(state, 'block');
-  assert.equal(state.player.hp, 95); // 20 * 0.25 = 5 damage taken
-});
-
-test('heal consumes 1 flask and restores 40 HP', () => {
-  const state = logic.createState(42);
-  state.player.hp = 50;
-
-  logic.step(state, 'heal');
-  assert.equal(state.player.hp, 90);
-  assert.equal(state.player.flasks, 2);
-});
-
-test('boss reaching 125 HP triggers Phase 2 transformation', () => {
-  const state = logic.createState(42);
-  state.boss.hp = 130;
-
-  logic.step(state, 'heavy_thrust');
-  assert.ok(state.boss.hp <= 125);
-  assert.equal(state.boss.phase, 2);
-});
-
-test('slaying boss achieves victory', () => {
-  const state = logic.createState(42);
-  state.boss.hp = 10;
-
-  logic.step(state, 'light_slash');
-  assert.equal(state.boss.hp, 0);
-  assert.equal(state.won, true);
-  assert.equal(logic.isOver(state), true);
-  assert.equal(logic.legalActions(state).length, 0);
-});
-
-test('depleting player HP triggers defeat', () => {
-  const state = logic.createState(42);
-  state.player.hp = 15;
-  state.boss.windup = 2; // 30 damage leap slam
-
-  logic.step(state, 'rest');
-  assert.equal(state.player.hp, 0);
-  assert.equal(state.lost, true);
-  assert.equal(logic.isOver(state), true);
-});
-
-test('illegal action throws without mutating state', () => {
-  const state = logic.createState(42);
-  state.player.flasks = 0;
-  assert.throws(() => logic.step(state, 'heal'), /Illegal action/);
-  assert.equal(state.player.flasks, 0);
-});
-
-test('same seed and actions yield strictly deterministic state', () => {
-  const actions = ['heavy_thrust', 'dodge_roll', 'light_slash', 'rest', 'parry'];
-  const s1 = logic.createState(777);
-  const s2 = logic.createState(777);
-
-  for (const act of actions) {
-    if (logic.legalActions(s1).includes(act)) {
-      logic.step(s1, act);
-      logic.step(s2, act);
-    }
+test('time flows without input: the boss telegraphs and attacks on its own', () => {
+  const s = L.createState(7);
+  let telegraphed = false;
+  for (let i = 0; i < 60 * 6 && !telegraphed; i++) {
+    L.tick(s, 1 / 60, {});
+    if (s.events.some((e) => e.type === 'telegraph')) telegraphed = true;
   }
-  assert.deepEqual(s1, s2);
+  assert.ok(telegraphed, 'boss should start an attack by itself');
+  run(s, 10, {});
+  assert.ok(s.player.hp < 100, 'an idle knight gets hit');
+});
+
+test('holding move walks the knight continuously and respects the arena', () => {
+  const s = L.createState(1);
+  quietBoss(s);
+  const x0 = s.player.x;
+  run(s, 0.5, { move: -1 });
+  assert.ok(s.player.x < x0 - 50);
+  run(s, 5, { move: -1 });
+  assert.ok(s.player.x >= 30);
+});
+
+test('light attack lands after its windup only when the boss is in range', () => {
+  const s = L.createState(3);
+  quietBoss(s);
+  s.player.x = s.boss.x - 60;
+  L.tick(s, 1 / 60, { action: 'light' });
+  assert.equal(s.boss.hp, 420, 'no damage on the first frame');
+  run(s, 0.3, {});
+  assert.equal(s.boss.hp, 420 - L.MOVES.light.dmg);
+
+  const far = L.createState(3);
+  quietBoss(far);
+  far.player.x = far.boss.x - 200;
+  L.tick(far, 1 / 60, { action: 'light' });
+  run(far, 0.5, {});
+  assert.equal(far.boss.hp, 420);
+});
+
+test('attacks spend stamina, which regenerates over time', () => {
+  const s = L.createState(5);
+  quietBoss(s);
+  s.player.x = s.boss.x - 60;
+  L.tick(s, 1 / 60, { action: 'heavy' });
+  assert.ok(s.player.stamina <= 70.5);
+  run(s, 3, {});
+  assert.equal(Math.round(s.player.stamina), 100);
+});
+
+test('rolling through a cleave gives invulnerability frames', () => {
+  const s = L.createState(9);
+  const b = s.boss;
+  s.player.x = b.x - 60;
+  b.mode = 'windup';
+  b.attack = 'cleave';
+  b.modeT = L.ATTACKS.cleave.windup - 0.05;
+  b.facing = -1;
+  b.struck = false;
+  L.tick(s, 1 / 60, { action: 'roll', move: -1 });
+  run(s, 0.3, {});
+  assert.equal(s.player.hp, 100);
+});
+
+test('a timed parry deflects the blow and breaks boss poise', () => {
+  const s = L.createState(11);
+  const b = s.boss;
+  s.player.x = b.x - 60;
+  b.mode = 'windup';
+  b.attack = 'cleave';
+  b.modeT = L.ATTACKS.cleave.windup - 0.05;
+  b.facing = -1;
+  b.poise = 40;
+  L.tick(s, 1 / 60, { action: 'parry' });
+  run(s, 0.15, {});
+  assert.equal(s.player.hp, 100);
+  assert.equal(b.mode, 'stagger');
+});
+
+test('blocking cuts damage and drains stamina', () => {
+  const s = L.createState(13);
+  const b = s.boss;
+  s.player.x = b.x - 60;
+  b.mode = 'windup';
+  b.attack = 'cleave';
+  b.modeT = L.ATTACKS.cleave.windup - 0.02;
+  b.facing = -1;
+  run(s, 0.2, { block: true });
+  assert.equal(s.player.hp, 100 - Math.ceil(L.ATTACKS.cleave.dmg * 0.25));
+  assert.ok(s.player.stamina < 90);
+});
+
+test('a staggered boss takes a triple critical hit', () => {
+  const s = L.createState(15);
+  quietBoss(s);
+  s.boss.mode = 'stagger';
+  s.boss.modeT = 0;
+  s.player.x = s.boss.x - 60;
+  L.tick(s, 1 / 60, { action: 'light' });
+  run(s, 0.3, {});
+  assert.equal(s.boss.hp, 420 - L.MOVES.light.dmg * 3);
+});
+
+test('heal drinks a flask after a short animation', () => {
+  const s = L.createState(17);
+  quietBoss(s);
+  s.player.hp = 30;
+  L.tick(s, 1 / 60, { action: 'heal' });
+  assert.equal(s.player.hp, 30);
+  run(s, 1, {});
+  assert.equal(s.player.hp, 70);
+  assert.equal(s.player.flasks, 2);
+});
+
+test('half health starts phase two; zero health wins the duel', () => {
+  const s = L.createState(19);
+  quietBoss(s);
+  s.player.x = s.boss.x - 60;
+  s.boss.hp = 220;
+  L.tick(s, 1 / 60, { action: 'light' });
+  run(s, 0.3, {});
+  assert.equal(s.boss.phase, 2);
+  s.boss.hp = 5;
+  s.boss.cooldown = 99;
+  L.tick(s, 1 / 60, { action: 'light' });
+  run(s, 0.4, {});
+  assert.equal(s.won, true);
+  assert.equal(L.isOver(s), true);
+});
+
+test('bot interface: illegal actions throw without changing state, games terminate', () => {
+  const s = L.createState(21);
+  const before = JSON.stringify(s);
+  assert.throws(() => L.step(s, 'fly'));
+  assert.equal(JSON.stringify(s), before);
+  let guard = 0;
+  while (!L.isOver(s) && guard++ < 5000) L.step(s, 'wait');
+  assert.equal(L.isOver(s), true);
+  assert.equal(s.lost, true);
+});
+
+test('same seed and same inputs give the same duel', () => {
+  const a = L.createState(99);
+  const b = L.createState(99);
+  const seq = ['right', 'light', 'wait', 'block', 'roll', 'heavy', 'wait', 'parry'];
+  for (let i = 0; i < 300; i++) {
+    const act = seq[i % seq.length];
+    if (L.isOver(a)) break;
+    const pick = L.legalActions(a).includes(act) ? act : 'wait';
+    L.step(a, pick);
+    L.step(b, pick);
+  }
+  assert.equal(JSON.stringify(a), JSON.stringify(b));
 });
