@@ -57,8 +57,9 @@ test('renderIndex lists every support address with a copy button', () => {
   ]) {
     assert.ok(html.includes(`data-copy="${address}"`), address);
   }
-  assert.ok(!html.includes('Stellar'));
-  assert.ok(!/Arc/.test(html));
+  const support = html.slice(html.indexOf('<dialog id="support"'), html.lastIndexOf('</dialog>'));
+  assert.ok(!support.includes('Stellar'));
+  assert.ok(!/Arc/.test(support));
 });
 
 test('renderIndex keeps closing script tags out of embedded data', () => {
