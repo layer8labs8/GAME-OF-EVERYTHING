@@ -54,10 +54,11 @@ test('renderIndex lists every support address with a copy button', () => {
     'bc1qcvdafsre6tlfpsdnv2s4ltwvy9tlgkjj6ag4gu',
     'Fv9k74qakg1L7ehMaJ3SBXxVbTKg2WuM5AjW2KLM3nVH',
     'TJVfPm5wJnKjD5ZzBRhMXtzB1aF17Kbyuz',
-    'GDMW2AZQYRCAG3B6GRG7JVRSPZO7SBGV24PNZ76DNQLEDZOM6S6O7RH2',
   ]) {
     assert.ok(html.includes(`data-copy="${address}"`), address);
   }
+  assert.ok(!html.includes('Stellar'));
+  assert.ok(!/Arc/.test(html));
 });
 
 test('renderIndex keeps closing script tags out of embedded data', () => {

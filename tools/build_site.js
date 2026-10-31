@@ -66,11 +66,10 @@ const FAMILY_COLORS = {
 const FEATURED = ['court-rally', 'snake', 'shard-breaker', 'sokoban', 'orbit-defenders', 'tower-defense'];
 
 const SUPPORT = [
-  { network: 'Ethereum, Arbitrum, Arc, BNB Chain, Base, OP, Polygon', address: '0x7C524d172F2bf750e3f7b4Df0339B3fFb09F9ADb' },
+  { network: 'Ethereum (ERC20), BNB Chain (BEP20), Base, Arbitrum, Optimism, Polygon', address: '0x7C524d172F2bf750e3f7b4Df0339B3fFb09F9ADb' },
   { network: 'Bitcoin', address: 'bc1qcvdafsre6tlfpsdnv2s4ltwvy9tlgkjj6ag4gu' },
   { network: 'Solana', address: 'Fv9k74qakg1L7ehMaJ3SBXxVbTKg2WuM5AjW2KLM3nVH' },
-  { network: 'Tron', address: 'TJVfPm5wJnKjD5ZzBRhMXtzB1aF17Kbyuz' },
-  { network: 'Stellar', address: 'GDMW2AZQYRCAG3B6GRG7JVRSPZO7SBGV24PNZ76DNQLEDZOM6S6O7RH2' },
+  { network: 'Tron (TRC20)', address: 'TJVfPm5wJnKjD5ZzBRhMXtzB1aF17Kbyuz' },
 ];
 
 const familyColor = (family) => FAMILY_COLORS[family] || FAMILY_COLORS.Other;
@@ -328,7 +327,7 @@ ${entries.map(renderCard).join('\n')}
 <h2 id="support-title">Support the project</h2>
 <p>If this project helped you, I'm really glad. If you'd like to support it, you can send a crypto tip below. If not, that's completely okay.</p>
 ${SUPPORT.map(renderWallet).join('\n')}
-<p class="note">Send only on a network listed next to the address. Crypto payments can't be reversed, so check it before you send.</p>
+<p class="note">Your wallet or exchange will ask you to choose a network. Pick one listed above and use the address next to it. Crypto payments can't be reversed, so check before you send.</p>
 </dialog>
 <script id="data" type="application/json">${data}</script>
 <script>
