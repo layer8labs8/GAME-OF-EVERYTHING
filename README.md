@@ -72,6 +72,8 @@ You can help without being an expert:
 
 [Pick a starter issue](https://github.com/layer8labs8/GAME-OF-EVERYTHING/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22), then follow [CONTRIBUTING.md](CONTRIBUTING.md).
 
+Want to support the project another way? You can [send a crypto tip](https://layer8labs8.github.io/GAME-OF-EVERYTHING/#support).
+
 Games use original names, art, and levels. Rules and ideas can be shared, but another game's name, art, or text can't be copied. See [docs/LEGAL.md](docs/LEGAL.md).
 
 ## Progress

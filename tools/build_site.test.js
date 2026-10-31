@@ -47,6 +47,19 @@ test('renderIndex escapes registry text', () => {
   assert.ok(!html.includes('<b>Title</b>'));
 });
 
+test('renderIndex lists every support address with a copy button', () => {
+  const html = renderIndex(loadEntries());
+  for (const address of [
+    '0x7C524d172F2bf750e3f7b4Df0339B3fFb09F9ADb',
+    'bc1qcvdafsre6tlfpsdnv2s4ltwvy9tlgkjj6ag4gu',
+    'Fv9k74qakg1L7ehMaJ3SBXxVbTKg2WuM5AjW2KLM3nVH',
+    'TJVfPm5wJnKjD5ZzBRhMXtzB1aF17Kbyuz',
+    'GDMW2AZQYRCAG3B6GRG7JVRSPZO7SBGV24PNZ76DNQLEDZOM6S6O7RH2',
+  ]) {
+    assert.ok(html.includes(`data-copy="${address}"`), address);
+  }
+});
+
 test('renderIndex keeps closing script tags out of embedded data', () => {
   const html = renderIndex([{
     id: '9999',

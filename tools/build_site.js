@@ -65,6 +65,14 @@ const FAMILY_COLORS = {
 };
 const FEATURED = ['court-rally', 'snake', 'shard-breaker', 'sokoban', 'orbit-defenders', 'tower-defense'];
 
+const SUPPORT = [
+  { network: 'Ethereum, Arbitrum, Arc, BNB Chain, Base, OP, Polygon', address: '0x7C524d172F2bf750e3f7b4Df0339B3fFb09F9ADb' },
+  { network: 'Bitcoin', address: 'bc1qcvdafsre6tlfpsdnv2s4ltwvy9tlgkjj6ag4gu' },
+  { network: 'Solana', address: 'Fv9k74qakg1L7ehMaJ3SBXxVbTKg2WuM5AjW2KLM3nVH' },
+  { network: 'Tron', address: 'TJVfPm5wJnKjD5ZzBRhMXtzB1aF17Kbyuz' },
+  { network: 'Stellar', address: 'GDMW2AZQYRCAG3B6GRG7JVRSPZO7SBGV24PNZ76DNQLEDZOM6S6O7RH2' },
+];
+
 const familyColor = (family) => FAMILY_COLORS[family] || FAMILY_COLORS.Other;
 
 function renderCard(entry) {
@@ -83,6 +91,13 @@ function renderCard(entry) {
     <div class="links"><a href="${entry.spec}">How it works</a><a href="${entry.code}">Code</a></div>
   </div>
 </li>`;
+}
+
+function renderWallet(wallet) {
+  return `<div class="wallet">
+  <div><strong>${escapeHtml(wallet.network)}</strong><code>${escapeHtml(wallet.address)}</code></div>
+  <button type="button" class="copy" data-copy="${escapeHtml(wallet.address)}" aria-label="Copy ${escapeHtml(wallet.network)} address">Copy</button>
+</div>`;
 }
 
 function renderFeatured(entry) {
@@ -148,7 +163,7 @@ img { display: block; }
 .brand b:nth-child(3) { background: #7cc4ff; }
 .brand b:nth-child(4) { background: #3ddc97; }
 .top nav { display: flex; gap: 8px; }
-.ghost { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.ghost { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--text); font: 600 14px system-ui, sans-serif; text-decoration: none; cursor: pointer; }
 .ghost:hover { background: var(--panel-2); }
 .hero { display: grid; grid-template-columns: 1.05fr .95fr; align-items: center; gap: 40px; padding-top: 36px; padding-bottom: 56px; }
 h1 { margin: 0; font-size: clamp(42px, 7vw, 76px); font-weight: 900; line-height: .98; letter-spacing: -.035em; }
@@ -211,7 +226,17 @@ dialog::backdrop { background: #030610d9; backdrop-filter: blur(4px); }
 .side h2 { margin: 0; padding-right: 36px; font-size: 22px; }
 .side p { margin: 0; color: var(--muted); font-size: 14px; }
 .side .links { flex-direction: column; gap: 8px; margin-top: auto; }
-#close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--text); font-size: 20px; cursor: pointer; }
+#support { width: min(580px, calc(100vw - 24px)); height: auto; max-height: calc(100dvh - 24px); padding: 26px 22px 22px; overflow-y: auto; background: var(--panel); }
+#support h2 { padding-right: 44px; }
+#support p { margin: 0 0 16px; color: var(--muted); }
+#support .note { margin: 16px 0 0; font-size: 14px; }
+.wallet { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.wallet div { flex: 1; min-width: 0; }
+.wallet strong { display: block; margin-bottom: 3px; font-size: 14px; }
+.wallet code { display: block; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.copy { flex: none; min-width: 72px; min-height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--text); font: 700 14px system-ui, sans-serif; cursor: pointer; }
+.copy:hover { border-color: var(--accent); }
+.close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--text); font-size: 20px; cursor: pointer; }
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 12px; padding-bottom: 40px; }
   .mosaic a:nth-child(n+13) { display: none; }
@@ -220,7 +245,7 @@ dialog::backdrop { background: #030610d9; backdrop-filter: blur(4px); }
   .side h2 { padding: 0; font-size: 18px; }
   .side p { display: none; }
   .side .links { flex-direction: row; margin-top: 0; }
-  dialog { width: 100vw; max-width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+  #player { width: 100vw; max-width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
 }
 @media (max-width: 560px) {
   #games { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -243,7 +268,7 @@ body:has(dialog[open]) { overflow: hidden; }
 <div class="wrap">
 <header class="top">
 <a class="brand" href="./"><i aria-hidden="true"><b></b><b></b><b></b><b></b></i>Game of Everything</a>
-<nav aria-label="Project links"><a class="ghost" href="${REPO_URL}">GitHub</a></nav>
+<nav aria-label="Project links"><button type="button" class="ghost" data-support>Support</button><a class="ghost" href="${REPO_URL}">GitHub</a></nav>
 </header>
 <section class="hero">
 <div>
@@ -282,12 +307,12 @@ ${entries.map(renderCard).join('\n')}
 <section class="help">
 <h2>Help build it</h2>
 <p>Add a new game, make one feel better, or explain a mechanic in plain words. Small changes are welcome, and there are starter tasks ready to pick up.</p>
-<a class="btn main" href="${REPO_URL}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22">See starter tasks</a>
+<div class="cta"><a class="btn main" href="${REPO_URL}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22">See starter tasks</a><button type="button" class="btn alt" data-support>Support the project</button></div>
 </section>
 <footer>Free and open source under the MIT license.</footer>
 </div>
 <dialog id="player" aria-label="Game player">
-<button type="button" id="close" aria-label="Close game">×</button>
+<button type="button" class="close" id="close" aria-label="Close game">×</button>
 <div class="player">
 <iframe id="frame" title="Game" allow="autoplay; fullscreen"></iframe>
 <aside class="side">
@@ -297,6 +322,13 @@ ${entries.map(renderCard).join('\n')}
 <div class="links"><a id="p-spec" href="#">How it works</a><a id="p-code" href="#">See the code</a><a id="p-open" href="#">Open full page</a></div>
 </aside>
 </div>
+</dialog>
+<dialog id="support" aria-labelledby="support-title">
+<button type="button" class="close" id="support-close" aria-label="Close">×</button>
+<h2 id="support-title">Support the project</h2>
+<p>Game of Everything is free. If you enjoy it, a crypto tip helps keep it going.</p>
+${SUPPORT.map(renderWallet).join('\n')}
+<p class="note">Send only on a network listed next to the address. Crypto payments can't be reversed, so check it before you send.</p>
 </dialog>
 <script id="data" type="application/json">${data}</script>
 <script>
@@ -361,10 +393,24 @@ document.getElementById('random').addEventListener('click', () => {
   openGame(games[Math.floor(Math.random() * games.length)].dir);
 });
 document.getElementById('close').addEventListener('click', () => player.close());
+const support = document.getElementById('support');
+document.querySelectorAll('[data-support]').forEach((button) => button.addEventListener('click', () => support.showModal()));
+document.getElementById('support-close').addEventListener('click', () => support.close());
+document.querySelectorAll('.copy').forEach((button) => button.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(button.dataset.copy);
+    button.textContent = 'Copied';
+  } catch {
+    button.textContent = 'Select it';
+    getSelection().selectAllChildren(button.parentElement.querySelector('code'));
+  }
+  setTimeout(() => { button.textContent = 'Copy'; }, 1600);
+}));
 player.addEventListener('close', closeGame);
 update();
 const linked = location.hash.match(/^#play=(.+)$/);
 if (linked) openGame(decodeURIComponent(linked[1]));
+if (location.hash === '#support') support.showModal();
 </script>
 </body>
 </html>
