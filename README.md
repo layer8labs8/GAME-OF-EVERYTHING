@@ -8,7 +8,7 @@ Open one, play it, then read exactly how it's built. No install, no account, and
 
 [![Play now](https://img.shields.io/badge/%E2%96%B6%20%20Play%20now-ffd166?style=for-the-badge&labelColor=ffd166&logoColor=000000)](https://layer8labs8.github.io/GAME-OF-EVERYTHING/)
 [![Add a game](https://img.shields.io/badge/Add%20a%20game-7cc4ff?style=for-the-badge)](https://github.com/layer8labs8/GAME-OF-EVERYTHING/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-[![Star this repo](https://img.shields.io/github/stars/layer8labs8/GAME-OF-EVERYTHING?style=for-the-badge&label=Star&color=3ddc97)](https://github.com/layer8labs8/GAME-OF-EVERYTHING)
+[![Star this repo](https://img.shields.io/badge/Star%20this%20repo-3ddc97?style=for-the-badge)](https://github.com/layer8labs8/GAME-OF-EVERYTHING/stargazers)
 
 </div>
 
