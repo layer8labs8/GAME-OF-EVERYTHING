@@ -1,5 +1,16 @@
 # Contributing
 
+Thanks for helping! You don't need to know the whole project. Most changes touch one game folder.
+
+## Ways to help
+
+- **Improve a game:** add sound, levels, controls, or a better feel.
+- **Add a new game:** follow the steps below, and use your own name, art, and levels.
+- **Make it clearer:** explain a mechanic in plain words in its `SPEC.md`.
+- **Report a problem:** open an issue with the game name and what happened.
+
+New here? Start with a [good first issue](https://github.com/layer8labs8/GAME-OF-EVERYTHING/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22), and leave a comment so nobody else picks it up.
+
 ## Setup
 
 ```bash

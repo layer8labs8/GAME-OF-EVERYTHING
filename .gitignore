@@ -13,6 +13,7 @@ secrets/
 # dependencies and build output
 node_modules/
 build/
+_site/
 *.apk
 *.aab
 

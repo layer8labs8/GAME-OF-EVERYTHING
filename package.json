@@ -13,6 +13,7 @@
     "levels:check": "node tools/check_levels.js",
     "bots:check": "node tools/check_bots.js",
     "playable:check": "node tools/check_playable.js",
+    "site": "node tools/build_site.js",
     "status": "node tools/make_status.js",
     "status:check": "node tools/make_status.js --check",
     "secrets": "node tools/check_no_secrets.js --all",
