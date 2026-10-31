@@ -47,6 +47,20 @@ test('renderIndex escapes registry text', () => {
   assert.ok(!html.includes('<b>Title</b>'));
 });
 
+test('renderIndex keeps closing script tags out of embedded data', () => {
+  const html = renderIndex([{
+    id: '9999',
+    dir: '9999-test',
+    title: 'Test',
+    mechanic: 'Test',
+    family: 'Puzzle',
+    summary: '</script><script>alert(1)</script>',
+    spec: 'spec',
+    code: 'code',
+  }]);
+  assert.ok(!html.includes('</script><script>alert(1)'));
+});
+
 test('buildSite copies every playable mechanic and links to it', () => {
   const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'goe-site-')), 'site');
   const entries = buildSite(out);
