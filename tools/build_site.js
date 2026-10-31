@@ -326,7 +326,7 @@ ${entries.map(renderCard).join('\n')}
 <dialog id="support" aria-labelledby="support-title">
 <button type="button" class="close" id="support-close" aria-label="Close">×</button>
 <h2 id="support-title">Support the project</h2>
-<p>Game of Everything is free. If you enjoy it, a crypto tip helps keep it going.</p>
+<p>If this project helped you, I'm really glad. If you'd like to support it, you can send a crypto tip below. If not, that's completely okay.</p>
 ${SUPPORT.map(renderWallet).join('\n')}
 <p class="note">Send only on a network listed next to the address. Crypto payments can't be reversed, so check it before you send.</p>
 </dialog>

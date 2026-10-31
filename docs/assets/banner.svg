@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 520" width="1280" height="520" role="img" aria-label="Game of Everything: 179 tiny games to play, learn from, and build on">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#101a3a"/><stop offset=".55" stop-color="#0b1020"/><stop offset="1" stop-color="#2b2470"/></linearGradient>
+<radialGradient id="glow" cx=".78" cy=".35" r=".6"><stop offset="0" stop-color="#6c5ce7" stop-opacity=".5"/><stop offset="1" stop-color="#6c5ce7" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1280" height="520" fill="url(#bg)"/>
+<rect width="1280" height="520" fill="url(#glow)"/>
+<g font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+<text x="64" y="200" fill="#f4f6fc" font-size="92" font-weight="800" letter-spacing="-3">Game of</text>
+<text x="64" y="296" fill="#ffd166" font-size="92" font-weight="800" letter-spacing="-3">Everything</text>
+<text x="66" y="356" fill="#c4cce2" font-size="28" font-weight="500">179 tiny games to play, learn from,</text>
+<text x="66" y="394" fill="#c4cce2" font-size="28" font-weight="500">and build on.</text>
+</g>
+<g transform="rotate(-4 722.0 108.0)"><rect x="653" y="39" width="138" height="138" rx="24" fill="#ff6b6b" opacity=".55"/><rect x="656" y="42" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c0"><rect x="656" y="42" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c0)"><svg x="656" y="42" width="132" height="132" viewBox="0 0 512 512"><rect width="512" height="512" fill="#0b1020"/><rect x="156" y="84" width="200" height="28" rx="14" fill="#ff6b6b"/><circle cx="288" cy="256" r="28" fill="#ffd43b"/><rect x="136" y="400" width="200" height="28" rx="14" fill="#4fd1c5"/></svg></g></g>
+<g transform="rotate(-4 870.0 108.0)"><rect x="801" y="39" width="138" height="138" rx="24" fill="#7cc4ff" opacity=".55"/><rect x="804" y="42" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c1"><rect x="804" y="42" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c1)"><svg x="804" y="42" width="132" height="132" viewBox="0 0 512 512"><rect width="512" height="512" fill="#0b1020"/><path d="M128 360 H288 V256 H192 V152 H336" fill="none" stroke="#4fd1c5" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/><circle cx="400" cy="152" r="26" fill="#ff6b6b"/></svg></g></g>
+<g transform="rotate(-4 1018.0 108.0)"><rect x="949" y="39" width="138" height="138" rx="24" fill="#ffd166" opacity=".55"/><rect x="952" y="42" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c2"><rect x="952" y="42" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c2)"><svg x="952" y="42" width="132" height="132" viewBox="0 0 512 512"><rect width="512" height="512" fill="#0b1020"/><rect x="84" y="96" width="104" height="44" rx="10" fill="#ff6b6b"/><rect x="204" y="96" width="104" height="44" rx="10" fill="#ffa94d"/><rect x="324" y="96" width="104" height="44" rx="10" fill="#ffd43b"/><rect x="84" y="156" width="104" height="44" rx="10" fill="#69db7c"/><rect x="324" y="156" width="104" height="44" rx="10" fill="#4dabf7"/><circle cx="256" cy="284" r="24" fill="#ffffff"/><rect x="146" y="400" width="220" height="30" rx="15" fill="#4fd1c5"/></svg></g></g>
+<g transform="rotate(-4 1166.0 108.0)"><rect x="1097" y="39" width="138" height="138" rx="24" fill="#3ddc97" opacity=".55"/><rect x="1100" y="42" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c3"><rect x="1100" y="42" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c3)"><svg x="1100" y="42" width="132" height="132" viewBox="0 0 512 512"><rect width="512" height="512" fill="#0b1020"/><rect x="64" y="64" width="384" height="384" rx="36" fill="#182340" stroke="#2d3b5e" stroke-width="24"/><circle cx="352" cy="256" r="34" fill="none" stroke="#ffd43b" stroke-width="14"/><rect x="206" y="206" width="100" height="100" rx="16" fill="#f08c00"/><circle cx="138" cy="256" r="38" fill="#4fd1c5"/></svg></g></g>
+<g transform="rotate(-4 740.0 256.0)"><rect x="671" y="187" width="138" height="138" rx="24" fill="#ff6b6b" opacity=".55"/><rect x="674" y="190" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c4"><rect x="674" y="190" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c4)"><svg x="674" y="190" width="132" height="132" viewBox="0 0 512 512"><rect width="512" height="512" fill="#0b1020"/><circle cx="256" cy="256" r="150" fill="none" stroke="#3b4a7a" stroke-width="14"/><circle cx="256" cy="256" r="58" fill="#7cc4ff"/><path d="M256 62l44 92h-88z" fill="#ffd166"/><rect x="246" y="150" width="20" height="44" rx="8" fill="#ffd166"/><circle cx="402" cy="256" r="22" fill="#ff6b6b"/><circle cx="110" cy="256" r="22" fill="#ff6b6b"/><circle cx="256" cy="406" r="22" fill="#ff6b6b"/></svg></g></g>
+<g transform="rotate(-4 888.0 256.0)"><rect x="819" y="187" width="138" height="138" rx="24" fill="#7cc4ff" opacity=".55"/><rect x="822" y="190" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c5"><rect x="822" y="190" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c5)"><svg x="822" y="190" width="132" height="132" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#0b1020"/>
+  <rect x="36" y="44" width="56" height="56" rx="6" fill="#334155" stroke="#475569" stroke-width="4"/>
+  <polygon points="64,22 88,44 40,44" fill="#38bdf8"/>
+  <circle cx="64" cy="72" r="12" fill="#0284c7"/>
+</svg></g></g>
+<g transform="rotate(-4 1036.0 256.0)"><rect x="967" y="187" width="138" height="138" rx="24" fill="#ffd166" opacity=".55"/><rect x="970" y="190" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c6"><rect x="970" y="190" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c6)"><svg x="970" y="190" width="132" height="132" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#0b1020"/>
+  <polygon points="64,24 100,64 64,104 28,64" fill="#ff4d6d" stroke="#c9184a" stroke-width="4"/>
+  <circle cx="54" cy="54" r="8" fill="#ffffff" opacity="0.45"/>
+  <polygon points="64,40 84,64 64,88 44,64" fill="#ff758f"/>
+</svg></g></g>
+<g transform="rotate(-4 1184.0 256.0)"><rect x="1115" y="187" width="138" height="138" rx="24" fill="#3ddc97" opacity=".55"/><rect x="1118" y="190" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c7"><rect x="1118" y="190" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c7)"><svg x="1118" y="190" width="132" height="132" viewBox="0 0 512 512"><rect width="512" height="512" fill="#0b1020"/><rect x="206" y="136" width="100" height="100" rx="18" fill="#b197fc"/><rect x="100" y="242" width="100" height="100" rx="18" fill="#b197fc"/><rect x="206" y="242" width="100" height="100" rx="18" fill="#b197fc"/><rect x="312" y="242" width="100" height="100" rx="18" fill="#b197fc"/></svg></g></g>
+<g transform="rotate(-4 722.0 404.0)"><rect x="653" y="335" width="138" height="138" rx="24" fill="#ff6b6b" opacity=".55"/><rect x="656" y="338" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c8"><rect x="656" y="338" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c8)"><svg x="656" y="338" width="132" height="132" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#0b1020"/>
+  <rect x="24" y="90" width="80" height="14" rx="3" fill="#1e293b"/>
+  <rect x="24" y="90" width="80" height="4" rx="2" fill="#22c55e"/>
+  <rect x="52" y="54" width="24" height="32" rx="6" fill="#38bdf8" stroke="#0284c7" stroke-width="3"/>
+  <circle cx="66" cy="64" r="4" fill="#ffffff"/>
+  <circle cx="86" cy="38" r="8" fill="#fbbf24"/>
+</svg></g></g>
+<g transform="rotate(-4 870.0 404.0)"><rect x="801" y="335" width="138" height="138" rx="24" fill="#7cc4ff" opacity=".55"/><rect x="804" y="338" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c9"><rect x="804" y="338" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c9)"><svg x="804" y="338" width="132" height="132" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#07090e"/>
+  <!-- Crypt Arch -->
+  <path d="M28 108 L28 54 Q64 18 100 54 L100 108 Z" fill="#111827" stroke="#374151" stroke-width="4"/>
+  <!-- Glowing Runes / Stairs -->
+  <polygon points="64,48 76,64 64,80 52,64" fill="#a855f7"/>
+  <circle cx="64" cy="64" r="5" fill="#f3e8ff"/>
+  <path d="M44 94 L84 94" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M50 102 L78 102" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+</svg></g></g>
+<g transform="rotate(-4 1018.0 404.0)"><rect x="949" y="335" width="138" height="138" rx="24" fill="#ffd166" opacity=".55"/><rect x="952" y="338" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c10"><rect x="952" y="338" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c10)"><svg x="952" y="338" width="132" height="132" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#0b1020"/>
+  <rect x="44" y="24" width="40" height="80" rx="10" fill="#ef4444" stroke="#b91c1c" stroke-width="4"/>
+  <rect x="50" y="44" width="28" height="34" rx="4" fill="#0f172a"/>
+  <rect x="52" y="48" width="24" height="8" rx="2" fill="#38bdf8"/>
+  <rect x="36" y="32" width="6" height="18" rx="2" fill="#020617"/>
+  <rect x="86" y="32" width="6" height="18" rx="2" fill="#020617"/>
+  <rect x="36" y="78" width="6" height="18" rx="2" fill="#020617"/>
+  <rect x="86" y="78" width="6" height="18" rx="2" fill="#020617"/>
+</svg></g></g>
+<g transform="rotate(-4 1166.0 404.0)"><rect x="1097" y="335" width="138" height="138" rx="24" fill="#3ddc97" opacity=".55"/><rect x="1100" y="338" width="132" height="132" rx="21" fill="#0b1020"/><clipPath id="c11"><rect x="1100" y="338" width="132" height="132" rx="21"/></clipPath><g clip-path="url(#c11)"><svg x="1100" y="338" width="132" height="132" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="26" fill="#0f172a"/>
+  <!-- Soil Mound -->
+  <path d="M16 100 Q64 74 112 100 L112 116 Q64 120 16 116 Z" fill="#78350f"/>
+  <!-- Stems -->
+  <path d="M64 90 Q62 50 64 24" stroke="#22c55e" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M64 64 Q44 48 36 54 Q44 72 64 68" fill="#16a34a"/>
+  <path d="M64 54 Q84 38 92 44 Q84 62 64 58" fill="#16a34a"/>
+  <!-- Wheat / Fruit Top -->
+  <ellipse cx="64" cy="22" rx="10" ry="14" fill="#facc15"/>
+  <ellipse cx="54" cy="28" rx="8" ry="10" fill="#eab308"/>
+  <ellipse cx="74" cy="28" rx="8" ry="10" fill="#eab308"/>
+</svg></g></g>
+</svg>
