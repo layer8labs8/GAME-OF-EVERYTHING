@@ -11,7 +11,7 @@
 
 </div>
 
-> **Early and private.** 37 mechanics are playable today across Action, Puzzle, Shooter, Platformer, Cards & Board, Strategy, RPG, Roguelike, Adventure, Simulation, Survival, Racing, Idle, and Rhythm families (35 with full bot interfaces and automated multi-seed simulation checks). Everything else is a registry entry waiting to be written. This README says what exists and what is planned, and tries not to blur the two.
+> **Early.** 37 mechanics are playable today across Action, Puzzle, Shooter, Platformer, Cards & Board, Strategy, RPG, Roguelike, Adventure, Simulation, Survival, Racing, Idle, and Rhythm families (35 with full bot interfaces and automated multi-seed simulation checks). Everything else is a registry entry waiting to be written. This README says what exists and what is planned, and tries not to blur the two.
 
 ## Why
 
@@ -102,4 +102,4 @@ docs/            vision, architecture, mechanic spec, pipeline, roadmap, legal n
 
 ## License
 
-[MIT](LICENSE). This is a placeholder choice while the repository is private; revisit before making it public.
+[MIT](LICENSE).

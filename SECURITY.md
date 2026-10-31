@@ -15,4 +15,4 @@
 
 ## Reporting
 
-This is a private project. Tell the repository owner directly.
+Use **Report a vulnerability** on the Security tab, and please do not open a public issue.
