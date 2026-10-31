@@ -1,6 +1,6 @@
 # 0139-open-world: Wilds of Eldoria
 
-An open-world adventure inspired by The Legend of Zelda: Breath of the Wild and Skyrim. Players explore a non-linear realm (Highland Plateau, Whispering Forest, Arid Canyon, Storm Peaks), activating regional towers, solving ancient Shrines of Light, forging restorative meals, pulling the legendary Sunforged Blade, and vanquishing Zephyros the Storm Sovereign.
+An open-world adventure. Players explore a non-linear realm (Highland Plateau, Whispering Forest, Arid Canyon, Storm Peaks), activating regional towers, solving ancient Shrines of Light, forging restorative meals, pulling the legendary Sunforged Blade, and vanquishing Zephyros the Storm Sovereign.
 
 ## Core Pillars & Mechanics
 

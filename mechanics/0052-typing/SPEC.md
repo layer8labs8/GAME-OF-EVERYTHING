@@ -1,6 +1,6 @@
 # 0052: Typing - Cipher Cascade
 
-A high-speed cyber-defense typing action puzzle game inspired by classics like *ZType* and *The Typing of the Dead*. Hostile encrypted data packets descent through cyberspace channels toward the player's core firewall. By typing exact keystrokes, the player locks on to incoming threats, discharges beam lasers, chains combo streaks, and deploys EMP bursts to safeguard the server network.
+A high-speed cyber-defense typing action puzzle game. Hostile encrypted data packets descent through cyberspace channels toward the player's core firewall. By typing exact keystrokes, the player locks on to incoming threats, discharges beam lasers, chains combo streaks, and deploys EMP bursts to safeguard the server network.
 
 ## Core Rules
 

@@ -1,6 +1,6 @@
 # 0164-open-world-survival-craft: Wilderness Craft
 
-An expansive open-world survival crafting simulation inspired by *Valheim*, *Rust*, and *The Forest*. Players are cast upon an uncharted primordial archipelago across four biomes, harvesting natural raw materials, crafting essential survival tools and fortified workstations, hunting wildlife, managing metabolic vitals, and assembling an extraction signal beacon atop the ancient ruins.
+An expansive open-world survival crafting simulation. Players are cast upon an uncharted primordial archipelago across four biomes, harvesting natural raw materials, crafting essential survival tools and fortified workstations, hunting wildlife, managing metabolic vitals, and assembling an extraction signal beacon atop the ancient ruins.
 
 ## Core Pillars & Mechanics
 

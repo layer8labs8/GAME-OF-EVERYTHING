@@ -1,6 +1,6 @@
 # 0177-creature-collector: Beast Tamer Arena
 
-A turn-based creature collection and arena battler inspired by *Pokemon* and classic monster tamers. Players explore tall grass biomes to encounter, weaken, and capture elemental beasts using Tamer Spheres, level up their party roster through strategic combat, exploit elemental type advantages (Fire, Water, Grass, Electric), and defeat 3 regional Arena Leaders before conquering the Grand Champion dragon *Solarchon*.
+A turn-based creature collection and arena battler. Players explore tall grass biomes to encounter, weaken, and capture elemental beasts using Tamer Spheres, level up their party roster through strategic combat, exploit elemental type advantages (Fire, Water, Grass, Electric), and defeat 3 regional Arena Leaders before conquering the Grand Champion dragon *Solarchon*.
 
 ## Core Pillars & Mechanics
 

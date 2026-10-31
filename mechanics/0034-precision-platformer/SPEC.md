@@ -1,7 +1,7 @@
 # 0034 — Precision Platformer ("Chrono Leap")
 
 ## Concept
-A responsive, high-precision single-screen platformer inspired by classic momentum runners (*Celeste*, *Super Meat Boy*). Master tight aerial physics, wall rebounds, and 8-way directional dashes to overcome treacherous spike chasms, retrieve celestial crystals, and reach the exit portal.
+A responsive, high-precision single-screen platformer. Master tight aerial physics, wall rebounds, and 8-way directional dashes to overcome treacherous spike chasms, retrieve celestial crystals, and reach the exit portal.
 
 ## Arena & Coordinates
 - 16x12 tile chamber (320x240 logical canvas coordinate system).

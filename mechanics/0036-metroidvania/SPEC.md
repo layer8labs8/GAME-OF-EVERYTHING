@@ -1,7 +1,7 @@
 # 0036 - Metroidvania ("Chasm Crawler")
 
 ## Concept & Theme
-A non-linear subterranean exploration platformer inspired by Metroid and Castlevania. Exploring the ancient alien citadel beneath Planet Phaeton, operative Varia discovers high-tech ability upgrades (Double Jump, Missile Launcher, Phase Dash) that unlock gated pathways, breach blast doors, neutralize hostile biomechanical crawlers, and defeat the Core Guardian.
+A non-linear subterranean exploration platformer. Exploring the ancient alien citadel beneath Planet Phaeton, operative Varia discovers high-tech ability upgrades (Double Jump, Missile Launcher, Phase Dash) that unlock gated pathways, breach blast doors, neutralize hostile biomechanical crawlers, and defeat the Core Guardian.
 
 ## Bot Contract
 Exports deterministic functions:

@@ -1,7 +1,7 @@
 # 0013 - Time Slowdown ("Chrono Matrix")
 
 ## Concept & Theme
-A tactical turn-based action game inspired by Superhot where time progresses only when the player takes an action. Players navigate a high-contrast 10x10 tactical room, dodging incoming bullet trajectories, disarming red agents, and orchestrating fluid elimination sequences.
+A tactical turn-based action game where time progresses only when the player takes an action. Players navigate a high-contrast 10x10 tactical room, dodging incoming bullet trajectories, disarming red agents, and orchestrating fluid elimination sequences.
 
 ## Bot Contract
 Exports deterministic functions:

@@ -1,6 +1,6 @@
 # 0058: Time Manipulation Puzzle - Chronos Paradox
 
-A mind-bending cooperative chrono-puzzle inspired by *Braid* and *Cursor*10*. The player records timeline paths in a quantum facility, rewinds time to spawn past temporal echoes (Echo Clones), and synchronizes with past selves to hold pressure plates and bypass security gates to reach the exit portal.
+A mind-bending cooperative chrono-puzzle. The player records timeline paths in a quantum facility, rewinds time to spawn past temporal echoes (Echo Clones), and synchronizes with past selves to hold pressure plates and bypass security gates to reach the exit portal.
 
 ## Core Rules
 

@@ -1,6 +1,6 @@
 # 0137-dating-sim: Starcross Academy
 
-A classic Japanese-style Dating Simulation inspired by Tokimeki Memorial and Persona Social Links. Players manage daily schedules across 14 academic days leading to the Autumn Starlight Festival, balancing stats (Intellect, Charm, Athletics, Stress), purchasing romantic gifts, conversing with three distinct heroines, and making the pivotal festival confession.
+A classic Japanese-style Dating Simulation. Players manage daily schedules across 14 academic days leading to the Autumn Starlight Festival, balancing stats (Intellect, Charm, Athletics, Stress), purchasing romantic gifts, conversing with three distinct heroines, and making the pivotal festival confession.
 
 ## Core Pillars & Mechanics
 

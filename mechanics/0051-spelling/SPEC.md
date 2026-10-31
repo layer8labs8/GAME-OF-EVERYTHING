@@ -1,6 +1,6 @@
 # 0051: Spelling - Rune Scribe
 
-A word-crafting puzzle game inspired by *Spelling Bee*. The player steps into the circle of a mystical arcane scriptorium where a hexagonal hive of 7 letter runes glows with power. Words must be constructed using only these 7 runes, with the mandatory center rune anchored in every spell. Discovering longer words and the legendary 7-rune Pangram advances the player toward the Archmage rank before their ink runs dry.
+A word-crafting puzzle game. The player steps into the circle of a mystical arcane scriptorium where a hexagonal hive of 7 letter runes glows with power. Words must be constructed using only these 7 runes, with the mandatory center rune anchored in every spell. Discovering longer words and the legendary 7-rune Pangram advances the player toward the Archmage rank before their ink runs dry.
 
 ## Core Rules
 

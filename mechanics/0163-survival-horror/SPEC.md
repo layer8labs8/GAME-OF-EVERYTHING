@@ -1,6 +1,6 @@
 # 0163-survival-horror: Shadow Descent
 
-A tense atmospheric survival horror simulation inspired by Resident Evil, Silent Hill, and Signalis. Players wake inside the quarantined subterranean Blackwood Research Complex, managing extreme resource scarcity, flashlight batteries, elevated heart rates and sanity decay, chamber puzzles, and lethal bio-organic abominations across four interconnected sectors.
+A tense atmospheric survival horror simulation. Players wake inside the quarantined subterranean Blackwood Research Complex, managing extreme resource scarcity, flashlight batteries, elevated heart rates and sanity decay, chamber puzzles, and lethal bio-organic abominations across four interconnected sectors.
 
 ## Core Pillars & Mechanics
 

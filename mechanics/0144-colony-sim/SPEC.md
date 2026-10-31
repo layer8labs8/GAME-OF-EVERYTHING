@@ -1,6 +1,6 @@
 # 0144-colony-sim: Aegis Outpost
 
-A survival colony simulation inspired by RimWorld, Frostpunk, and Oxygen Not Included. Players manage the life support, habitat infrastructure, resource reserves, and emotional wellbeing of frontier colonists striving to build a self-sustaining civilization on a hostile lunar exoplanet.
+A survival colony simulation. Players manage the life support, habitat infrastructure, resource reserves, and emotional wellbeing of frontier colonists striving to build a self-sustaining civilization on a hostile lunar exoplanet.
 
 ## Core Pillars & Mechanics
 

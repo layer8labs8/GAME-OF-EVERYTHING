@@ -1,6 +1,6 @@
 # 0114-tactical-rpg: Strike Protocol: Tactical Vanguard
 
-An XCOM-inspired squad tactical RPG featuring 2-Action-Point economy, dynamic cover mechanics (Half/Full cover), reaction Overwatch ambushes, flanking/exposed critical vulnerabilities, and tactical loadouts.
+A squad tactical RPG featuring 2-Action-Point economy, dynamic cover mechanics (Half/Full cover), reaction Overwatch ambushes, flanking/exposed critical vulnerabilities, and tactical loadouts.
 
 ## Overview
 

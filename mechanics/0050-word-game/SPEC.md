@@ -1,6 +1,6 @@
 # 0050: Word Game - Word Forge
 
-A tactical grid-based word crafting puzzle game inspired by *Bookworm* and *Boggle*. Letters rest upon a $4 \times 4$ cascading grid. Players forge words by connecting horizontally, vertically, or diagonally adjacent letter tiles. As words are forged, tiles disintegrate, surviving tiles collapse downward under gravity, and fresh letters drop in from the reserve to form new combinations.
+A tactical grid-based word crafting puzzle game. Letters rest upon a $4 \times 4$ cascading grid. Players forge words by connecting horizontally, vertically, or diagonally adjacent letter tiles. As words are forged, tiles disintegrate, surviving tiles collapse downward under gravity, and fresh letters drop in from the reserve to form new combinations.
 
 ## Core Rules
 

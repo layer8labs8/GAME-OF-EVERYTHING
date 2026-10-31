@@ -1,6 +1,6 @@
 # 0146-life-sim: Metro Life
 
-A comprehensive modern life simulation inspired by The Sims, BitLife, and Jones in the Fast Lane. Players navigate adulthood across sequential calendar weeks, balancing career advancement, higher education, physical health, psychological happiness, and financial wealth to achieve professional fulfillment.
+A comprehensive modern life simulation. Players navigate adulthood across sequential calendar weeks, balancing career advancement, higher education, physical health, psychological happiness, and financial wealth to achieve professional fulfillment.
 
 ## Core Pillars & Mechanics
 

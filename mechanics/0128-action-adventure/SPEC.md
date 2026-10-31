@@ -1,6 +1,6 @@
 # 0128-action-adventure: Sunken Spire
 
-Classic Zelda-inspired top-down action-adventure featuring tool-gated world exploration, environmental puzzles (crystal switches, cracked walls, chasm posts), dungeon keys, and multi-stage boss encounters.
+Classic top-down action-adventure featuring tool-gated world exploration, environmental puzzles (crystal switches, cracked walls, chasm posts), dungeon keys, and multi-stage boss encounters.
 
 ## Core Pillars & Mechanics
 - **Tool-Gated Exploration**:

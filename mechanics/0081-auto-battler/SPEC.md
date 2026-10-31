@@ -1,6 +1,6 @@
 # 0081-auto-battler: Auto Battler Arena
 
-A tactical 8-round auto-battler inspired by *Teamfight Tactics* and *Auto Chess*. Build an economy, recruit heroes from a rotating shop, merge three duplicates into 2-star titans, assemble synergistic traits, and deploy your warband into automated combat against rival commanders.
+A tactical 8-round auto-battler. Build an economy, recruit heroes from a rotating shop, merge three duplicates into 2-star titans, assemble synergistic traits, and deploy your warband into automated combat against rival commanders.
 
 ## Core Rules & Features
 - **Commander Stats & Economy**:

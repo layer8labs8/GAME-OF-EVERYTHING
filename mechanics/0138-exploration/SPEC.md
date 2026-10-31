@@ -1,6 +1,6 @@
 # 0138-exploration: Abyssal Horizons
 
-An oceanic deep-sea exploration adventure inspired by Subnautica and Outer Wilds. Players pilot an advanced submersible across an uncharted 6x6 oceanic grid shrouded in deep-sea fog of war, managing battery energy, surveying alien biomes and hydrothermal vents, and cataloguing the Primordial Monolith buried in the abyssal trench.
+An oceanic deep-sea exploration adventure. Players pilot an advanced submersible across an uncharted 6x6 oceanic grid shrouded in deep-sea fog of war, managing battery energy, surveying alien biomes and hydrothermal vents, and cataloguing the Primordial Monolith buried in the abyssal trench.
 
 ## Core Pillars & Mechanics
 

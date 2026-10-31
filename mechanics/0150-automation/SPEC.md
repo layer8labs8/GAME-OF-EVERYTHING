@@ -1,6 +1,6 @@
 # 0150-automation: Conveyor Core
 
-A factory automation and logistics simulation inspired by Factorio, Mindustry, and Shapez. Players design, expand, and balance an autonomous industrial grid featuring automated conveyor belts, mineral extractors, electric smelters, and robotic assemblers to manufacture complex micro-electronics and quantum processors.
+A factory automation and logistics simulation. Players design, expand, and balance an autonomous industrial grid featuring automated conveyor belts, mineral extractors, electric smelters, and robotic assemblers to manufacture complex micro-electronics and quantum processors.
 
 ## Core Pillars & Mechanics
 

@@ -1,6 +1,6 @@
 # 0168-incremental: Quantum Forge Incremental
 
-An exponential multi-tiered incremental simulation inspired by *Universal Paperclips*, *Antimatter Dimensions*, and *Cookie Clicker*. Players begin by harvesting subatomic matter, constructing tiered particle accelerators and quantum computers, executing quantum inversions to accumulate Entangled Cubits, and powering a Singularity Engine to trigger Universal Genesis.
+An exponential multi-tiered incremental simulation. Players begin by harvesting subatomic matter, constructing tiered particle accelerators and quantum computers, executing quantum inversions to accumulate Entangled Cubits, and powering a Singularity Engine to trigger Universal Genesis.
 
 ## Core Pillars & Mechanics
 

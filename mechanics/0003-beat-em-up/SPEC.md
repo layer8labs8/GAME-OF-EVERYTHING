@@ -1,7 +1,7 @@
 # 0003 — Beat 'Em Up ("Street Brawler")
 
 ## Concept
-A classic 2.5D side-scrolling street brawler inspired by arcade legends (*Streets of Rage*, *Final Fight*). Navigate depth lanes, execute punch combos, jump kicks, and explosive flaming dragon uppercuts to neutralize syndicates and reclaim the city.
+A classic 2.5D side-scrolling street brawler. Navigate depth lanes, execute punch combos, jump kicks, and explosive flaming dragon uppercuts to neutralize syndicates and reclaim the city.
 
 ## Arena & Depth Lanes
 - 2.5D street corridor (horizontal X: `[20..340]`, 3 discrete depth lanes: `0` [background], `1` [midground], `2` [foreground]).

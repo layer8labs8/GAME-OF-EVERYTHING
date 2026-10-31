@@ -1,6 +1,6 @@
 # 0165-sandbox: Physics Toybox
 
-A creative elemental particle physics sandbox simulation inspired by *The Powder Toy*, *Sandspiel*, and *Falling Sand*. Players manipulate matter, fluid dynamics, thermodynamics, combustion, and electrical conduction across a 2D cellular automaton canvas to unlock complex alchemy reactions and complete four grand sandbox milestones.
+A creative elemental particle physics sandbox simulation. Players manipulate matter, fluid dynamics, thermodynamics, combustion, and electrical conduction across a 2D cellular automaton canvas to unlock complex alchemy reactions and complete four grand sandbox milestones.
 
 ## Core Pillars & Mechanics
 

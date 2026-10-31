@@ -1,6 +1,6 @@
 # 0160-time-management: Grand Hotel Rush
 
-A fast-paced multi-station hospitality and queue orchestration simulation inspired by Diner Dash and Hotel Giant. Players act as General Manager of the bustling Grand Hotel, coordinating front-desk keycard check-ins, bellhop luggage deliveries, gourmet room-service trays, and rapid housekeeping turnovers while maintaining guest satisfaction across strict patience timers.
+A fast-paced multi-station hospitality and queue orchestration simulation. Players act as General Manager of the bustling Grand Hotel, coordinating front-desk keycard check-ins, bellhop luggage deliveries, gourmet room-service trays, and rapid housekeeping turnovers while maintaining guest satisfaction across strict patience timers.
 
 ## Core Pillars & Mechanics
 

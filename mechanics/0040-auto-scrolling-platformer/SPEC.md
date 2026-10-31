@@ -1,6 +1,6 @@
 # 0040: Auto-Scrolling Platformer - Magma Surge
 
-A vertical auto-scrolling platformer where the player ascends an active volcanic shaft while molten lava continuously rises from beneath. Inspired by vertical escape stages in classic platformers like *Super Mario Bros 3*, *Sonic the Hedgehog*, and *Spelunky*.
+A vertical auto-scrolling platformer where the player ascends an active volcanic shaft while molten lava continuously rises from beneath.
 
 ## Core Rules
 

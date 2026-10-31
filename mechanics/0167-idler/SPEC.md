@@ -1,6 +1,6 @@
 # 0167-idler: Stellar Reactor Idler
 
-A strategic sci-fi idle automation and thermal management simulation inspired by *Reactor Idle*, *Kittens Game*, and *Antimatter Dimensions*. Players engineer a planetary fusion reactor network, balancing energy output, neutron enrichment, cryogenic coolant cycles, and quantum prestige collapses to power a full Dyson Sphere.
+A strategic sci-fi idle automation and thermal management simulation. Players engineer a planetary fusion reactor network, balancing energy output, neutron enrichment, cryogenic coolant cycles, and quantum prestige collapses to power a full Dyson Sphere.
 
 ## Core Pillars & Mechanics
 

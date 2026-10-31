@@ -1,6 +1,6 @@
 # 0152-medical-sim: Trauma Ward
 
-An intense surgical and emergency room simulation inspired by Trauma Center: Under the Knife and Surgeon Simulator. Players take on the role of Chief Trauma Surgeon, monitoring patient vitals (Heart Rate, Blood Pressure, Stability), executing precision four-phase operations (Anesthesia, Incision, Hemostasis/Suction, Organ Repair, Suturing), and administering emergency resuscitation to save lives under pressure.
+An intense surgical and emergency room simulation. Players take on the role of Chief Trauma Surgeon, monitoring patient vitals (Heart Rate, Blood Pressure, Stability), executing precision four-phase operations (Anesthesia, Incision, Hemostasis/Suction, Organ Repair, Suturing), and administering emergency resuscitation to save lives under pressure.
 
 ## Core Pillars & Mechanics
 

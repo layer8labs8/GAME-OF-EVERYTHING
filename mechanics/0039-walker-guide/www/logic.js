@@ -1,4 +1,4 @@
-// Logic module for 0039-lemmings-style (Lemming Brigade)
+// Logic module for 0039-lemmings-style (Walker Guide)
 // Pure deterministic turn-based puzzle strategy platformer
 
 const MAP_WIDTH = 20;

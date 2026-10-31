@@ -1,6 +1,6 @@
 # 0159-hunting: Wilderness Stalker
 
-A strategic big-game hunting and wilderness tracking simulation inspired by theHunter: Call of the Wild and Way of the Hunter. Players embark as a seasoned ranger navigating four wilderness elevations (Valley Marshes, Pine Ridges, Glacial Peaks, and Sacred Tundra), reading wind direction, utilizing binoculars and animal callers, masking scent, stalking into optimal rifle range, and taking clean vital shots to claim ethical trophies.
+A strategic big-game hunting and wilderness tracking simulation. Players embark as a seasoned ranger navigating four wilderness elevations (Valley Marshes, Pine Ridges, Glacial Peaks, and Sacred Tundra), reading wind direction, utilizing binoculars and animal callers, masking scent, stalking into optimal rifle range, and taking clean vital shots to claim ethical trophies.
 
 ## Core Pillars & Mechanics
 

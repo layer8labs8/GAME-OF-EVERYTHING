@@ -1,6 +1,6 @@
 # 0124-traditional-roguelike: Rogue's Descent
 
-Classic turn-based grid roguelike inspired by Rogue and NetHack, adhering strictly to Berlin Interpretation tenets: permadeath, grid-based turn synchronization, hunger management, dynamic line-of-sight field of view, unidentified magical potions and scrolls, and the quest for the Amulet of Yendor.
+Classic turn-based grid roguelike, adhering strictly to Berlin Interpretation tenets: permadeath, grid-based turn synchronization, hunger management, dynamic line-of-sight field of view, unidentified magical potions and scrolls, and the quest for the Amulet of Yendor.
 
 ## Tenets & Mechanics
 - **Grid & Turn Synchronization**: 10x10 tile dungeon map. Every player action advances the world clock by 1 turn, triggering monster reactions.

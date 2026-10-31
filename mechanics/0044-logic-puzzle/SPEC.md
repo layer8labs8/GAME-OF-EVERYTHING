@@ -1,7 +1,7 @@
 # 0044 - Logic Puzzle ("Circuit Relay")
 
 ## Concept & Theme
-A cybernetic circuit grid deduction puzzle inspired by classical Lights Out and boolean network relays. Engineers reconfigure corrupted power nodes in a superconducting mainframe matrix. Toggling a node inverts its quantum state and pulses energy along connected conduit traces to invert all orthogonally adjacent relays.
+A cybernetic circuit grid deduction puzzle. Engineers reconfigure corrupted power nodes in a superconducting mainframe matrix. Toggling a node inverts its quantum state and pulses energy along connected conduit traces to invert all orthogonally adjacent relays.
 
 ## Bot Contract
 Exports deterministic functions:

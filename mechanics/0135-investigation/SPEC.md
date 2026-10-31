@@ -1,6 +1,6 @@
 # 0135-investigation: Crime Scene Reconstruction
 
-A forensic investigation simulation inspired by Return of the Obra Dinn, CSI, and forensic trace reconstruction. Players examine a high-security vault breach crime scene using specialized forensic tools (UV Luminol, Spectrometer, Ballistics Laser, Cipher Decoder), collect trace evidence, sequence the chronological timeline of events, and compile the definitive reconstruction report.
+A forensic investigation simulation. Players examine a high-security vault breach crime scene using specialized forensic tools (UV Luminol, Spectrometer, Ballistics Laser, Cipher Decoder), collect trace evidence, sequence the chronological timeline of events, and compile the definitive reconstruction report.
 
 ## Core Mechanics
 

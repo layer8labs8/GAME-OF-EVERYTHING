@@ -1,6 +1,6 @@
 # 0158-fishing: Ocean Trawler
 
-A nautical commercial fishing and open-sea angling simulation inspired by Dredge and Fishing: Barents Sea. Players captain a sturdy commercial fishing trawler exploring four oceanic zones (Shallow Estuary, Coastal Reef, Continental Shelf, and Abyssal Trench), managing marine diesel, hull seaworthiness, fish sonar, bait supplies, refrigerated holds, and auctioning catches at Port Haven.
+A nautical commercial fishing and open-sea angling simulation. Players captain a sturdy commercial fishing trawler exploring four oceanic zones (Shallow Estuary, Coastal Reef, Continental Shelf, and Abyssal Trench), managing marine diesel, hull seaworthiness, fish sonar, bait supplies, refrigerated holds, and auctioning catches at Port Haven.
 
 ## Core Pillars & Mechanics
 

@@ -1,6 +1,6 @@
 # 0061: Hacking Puzzle - Cyber Breach
 
-A tactical cyber-infiltration puzzle inspired by *Cyberpunk 2077* (Breach Protocol) and *Deus Ex*. The operative infiltrates a corporate subnet by routing through a $5 \times 5$ hexadecimal code matrix, alternating between horizontal row and vertical column selections to reconstruct target daemon sequences within a restricted memory buffer.
+A tactical cyber-infiltration puzzle. The operative infiltrates a corporate subnet by routing through a $5 \times 5$ hexadecimal code matrix, alternating between horizontal row and vertical column selections to reconstruct target daemon sequences within a restricted memory buffer.
 
 ## Core Rules
 

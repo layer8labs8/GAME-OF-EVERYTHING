@@ -1,6 +1,6 @@
 # 0161-pet-care: Paws & Whiskers
 
-A heartfelt pet rescue sanctuary and animal companionship simulation inspired by Nintendogs and Petz. Players direct a cozy animal rehabilitation haven, attending to puppies, kittens, bunnies, and parrots through nourishing feedings, bubble baths, grooming, playtime fetch, veterinary wellness checkups, and finding warm forever homes through adoptions.
+A heartfelt pet rescue sanctuary and animal companionship simulation. Players direct a cozy animal rehabilitation haven, attending to puppies, kittens, bunnies, and parrots through nourishing feedings, bubble baths, grooming, playtime fetch, veterinary wellness checkups, and finding warm forever homes through adoptions.
 
 ## Core Pillars & Mechanics
 

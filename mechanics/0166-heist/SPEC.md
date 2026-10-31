@@ -1,6 +1,6 @@
 # 0166-heist: Vault Infiltrator
 
-A high-stakes tactical heist simulation inspired by *Payday*, *Monaco: What's Yours Is Mine*, and *Ocean's Eleven*. Players orchestrate an elite crew of thieves infiltrating the First Federal Reserve across four security rings, looping CCTV feeds, neutralizing guards, thermal-drilling the titanium vault, bagging millions in gold and diamonds, and escaping into the getaway van before SWAT sweeps the facility.
+A high-stakes tactical heist simulation. Players orchestrate an elite crew of thieves infiltrating the First Federal Reserve across four security rings, looping CCTV feeds, neutralizing guards, thermal-drilling the titanium vault, bagging millions in gold and diamonds, and escaping into the getaway van before SWAT sweeps the facility.
 
 ## Core Pillars & Mechanics
 

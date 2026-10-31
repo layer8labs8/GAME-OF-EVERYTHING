@@ -1,6 +1,6 @@
 # 0038: Side Scroller - Cyber Ronin
 
-A fast-paced 16-bit action side-scrolling platformer inspired by classics like *Shinobi*, *Strider*, and *Mega Man X*. The player controls an agile cyber-ninja traversing a multi-tiered neo-tokyo factory sector with katana slashes, ranged shurikens, wall kicks, phase dashes, and a climactic confrontation against the Goliath Forge Mech boss.
+A fast-paced 16-bit action side-scrolling platformer. The player controls an agile cyber-ninja traversing a multi-tiered neo-tokyo factory sector with katana slashes, ranged shurikens, wall kicks, phase dashes, and a climactic confrontation against the Goliath Forge Mech boss.
 
 ## Core Rules
 

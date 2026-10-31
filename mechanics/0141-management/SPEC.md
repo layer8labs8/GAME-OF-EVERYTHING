@@ -1,6 +1,6 @@
 # 0141-management: Apex Clinic
 
-A comprehensive healthcare facility management simulation inspired by Theme Hospital and Two Point Hospital. Players oversee hospital operations (Triage, Radiology, Pharmacy, Surgery), manage professional staff (Doctors, Nurses, Orderlies), balance operating budgets, maintain clinical hygiene, and maximize reputation by curing patient queues.
+A comprehensive healthcare facility management simulation. Players oversee hospital operations (Triage, Radiology, Pharmacy, Surgery), manage professional staff (Doctors, Nurses, Orderlies), balance operating budgets, maintain clinical hygiene, and maximize reputation by curing patient queues.
 
 ## Core Pillars & Mechanics
 

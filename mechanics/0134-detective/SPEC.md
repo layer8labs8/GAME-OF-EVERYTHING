@@ -1,6 +1,6 @@
 # 0134-detective: Murder at Midnight
 
-A classic Victorian murder mystery deduction game inspired by Agatha Christie, Sherlock Holmes, and Ace Attorney. Lord Reginald Sterling is murdered in his manor study. Players examine crime scene clues, interrogate suspects, expose contradictory alibis using gathered physical evidence, and deliver the final indictment against the true culprit.
+A classic Victorian murder mystery deduction game. Lord Reginald Sterling is murdered in his manor study. Players examine crime scene clues, interrogate suspects, expose contradictory alibis using gathered physical evidence, and deliver the final indictment against the true culprit.
 
 ## Core Mechanics
 

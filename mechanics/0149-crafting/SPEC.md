@@ -1,6 +1,6 @@
 # 0149-crafting: Rune & Anvil
 
-A fantasy crafting and smithing simulation inspired by Minecraft, Atelier, and Blacksmith Simulator. Players operate the Royal Forge, smelting raw ores, hewing timber, prospecting mana crystals, and executing multi-tier recipes to synthesize legendary masterwork armaments and regalia.
+A fantasy crafting and smithing simulation. Players operate the Royal Forge, smelting raw ores, hewing timber, prospecting mana crystals, and executing multi-tier recipes to synthesize legendary masterwork armaments and regalia.
 
 ## Core Pillars & Mechanics
 

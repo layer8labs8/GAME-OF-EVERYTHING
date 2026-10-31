@@ -7,8 +7,8 @@ Time box: 30 minutes. Wall time: 23.6 minutes. Writer: `nvidia/nemotron-3-ultra-
 | Mechanic | Result | Designer | Writer calls | Rejected patches | Seconds | Designer tokens | Writer tokens | Note |
 |---|---|---|---|---|---|---|---|---|
 | 0016-snake | failed | nemotron-3-ultra-550b-a55b | 1 | 0 | 310 | 4243 | 8000 | writer reply had no code block |
-| 0017-pong | failed | nemotron-3-ultra-550b-a55b | 5 | 4 | 484 | 6794 | 21962 | not ok 1 - createState returns correct initial state |
-| 0018-breakout | error |  | 0 | 0 | 303 | 0 | 0 | nemotron-3-ultra-550b-a55b: Request timed out. |
+| 0017-court-rally | failed | nemotron-3-ultra-550b-a55b | 5 | 4 | 484 | 6794 | 21962 | not ok 1 - createState returns correct initial state |
+| 0018-shard-breaker | error |  | 0 | 0 | 303 | 0 | 0 | nemotron-3-ultra-550b-a55b: Request timed out. |
 | 0019-whack-a-mole | failed | nemotron-3-ultra-550b-a55b | 1 | 0 | 290 | 7513 | 8000 | writer reply had no code block |
 | 0021-tap-timing | error |  | 0 | 0 | 301 | 0 | 0 | nemotron-3-ultra-550b-a55b: Request timed out. |
 | 0020-one-button-jumper | design-failed | nemotron-3-ultra-550b-a55b | 0 | 0 | 272 | 9000 | 0 | designer reply had no SPEC/TESTS layout |

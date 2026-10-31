@@ -1,6 +1,6 @@
 # 0142-resource-management: Star Foundry
 
-A sci-fi industrial resource management and logistics simulation inspired by Factorio and Satisfactory. Players oversee an orbital manufacturing platform, orchestrating supply chains across raw asteroid harvesting (Ore, Gas), advanced industrial refining (Alloys, Polymers, Circuits), energy grid infrastructure (Solar Arrays), and fulfilling lucrative galactic trade quotas.
+A sci-fi industrial resource management and logistics simulation. Players oversee an orbital manufacturing platform, orchestrating supply chains across raw asteroid harvesting (Ore, Gas), advanced industrial refining (Alloys, Polymers, Circuits), energy grid infrastructure (Solar Arrays), and fulfilling lucrative galactic trade quotas.
 
 ## Core Pillars & Mechanics
 

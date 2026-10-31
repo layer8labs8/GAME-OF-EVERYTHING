@@ -1,6 +1,6 @@
 # 0178-score-attack: Arcade Blast
 
-A fast-paced neon arcade score-attack game inspired by classic high-score chasers (*Geometry Wars*, *Pac-Man Championship Edition*, *Bejeweled Blitz*). Players blast high-value gemstone targets, sustain relentless combo multipliers, manage an adrenaline frenzy meter, and dodge explosive hazard skulls to breach the legendary 75,000-point Platinum Trophy threshold before the arcade clock expires.
+A fast-paced neon arcade score-attack game. Players blast high-value gemstone targets, sustain relentless combo multipliers, manage an adrenaline frenzy meter, and dodge explosive hazard skulls to breach the legendary 75,000-point Platinum Trophy threshold before the arcade clock expires.
 
 ## Core Pillars & Mechanics
 

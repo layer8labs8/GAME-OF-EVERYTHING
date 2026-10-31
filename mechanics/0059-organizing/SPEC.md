@@ -1,6 +1,6 @@
 # 0059: Organizing - Tidy Bento
 
-A cozy and satisfying spatial packing puzzle inspired by Japanese culinary arrangement (*inbento*, *A Little to the Left*). The player organizes diverse geometric bento delicacies into compartmentalized lunchboxes, rotating and arranging polyomino ingredients to achieve a harmonious, perfectly packed bento.
+A cozy and satisfying spatial packing puzzle. The player organizes diverse geometric bento delicacies into compartmentalized lunchboxes, rotating and arranging polyomino ingredients to achieve a harmonious, perfectly packed bento.
 
 ## Core Rules
 

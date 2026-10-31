@@ -1,7 +1,7 @@
 # 0026 - Side-scrolling Shooter ("Aero Striker")
 
 ## Concept & Theme
-A high-velocity horizontal side-scrolling space shoot-'em-up inspired by arcade classics like Gradius and R-Type. Piloting the experimental aero-space fighter *Aero Striker*, players traverse treacherous asteroid corridors, destroy hostile enemy squadrons, deploy tracking torpedoes, activate kinetic deflector shields, and engage the massive Void Dreadnought flagship.
+A high-velocity horizontal side-scrolling space shoot-'em-up. Piloting the experimental aero-space fighter *Aero Striker*, players traverse treacherous asteroid corridors, destroy hostile enemy squadrons, deploy tracking torpedoes, activate kinetic deflector shields, and engage the massive Void Dreadnought flagship.
 
 ## Bot Contract
 Exports deterministic functions:

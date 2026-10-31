@@ -1,6 +1,6 @@
 # 0148-cooking: Bistro Rush
 
-A fast-paced culinary restaurant simulation inspired by Overcooked and Cook, Serve, Delicious!. Players take on the role of Executive Chef, managing kitchen stations (Chopping Board, Searing Skillet, Plating Counter), juggling incoming dinner tickets, maintaining hygiene, balancing cooking timers to avoid burnt food, and aiming for Michelin three-star distinction.
+A fast-paced culinary restaurant simulation. Players take on the role of Executive Chef, managing kitchen stations (Chopping Board, Searing Skillet, Plating Counter), juggling incoming dinner tickets, maintaining hygiene, balancing cooking timers to avoid burnt food, and aiming for Michelin three-star distinction.
 
 ## Core Pillars & Mechanics
 

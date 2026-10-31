@@ -1,7 +1,7 @@
 # 0014 - 2D Fighting ("Clash of Titans")
 
 ## Concept & Theme
-A technical 1v1 side-view fighting arena inspired by classic competitive fighting games. Two martial arts masters engage in high-stakes hand-to-hand dueling featuring footsies, high/low guard blocks, fireball zoning, anti-air dragon uppercuts, and cinematic super arts.
+A technical 1v1 side-view fighting arena. Two martial arts masters engage in high-stakes hand-to-hand dueling featuring footsies, high/low guard blocks, fireball zoning, anti-air dragon uppercuts, and cinematic super arts.
 
 ## Bot Contract
 Exports deterministic functions:

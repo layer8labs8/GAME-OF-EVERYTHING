@@ -56,8 +56,8 @@ Logic with tests or better: 179 / 179 · Bot interface: 177 / 179 · Data levels
 | 0014 | 2D Fighting | playable | endless | yes | steam-tag |
 | 0015 | Combat | playable | endless | yes | steam-tag |
 | 0016 | Snake (Neon Serpent) | playable | endless | yes | classic |
-| 0017 | Pong (Court Rally) | playable | none | yes | classic |
-| 0018 | Breakout (Shard Breaker) | playable | endless | yes | classic |
+| 0017 | Court Rally (Court Rally) | playable | none | yes | classic |
+| 0018 | Shard Breaker (Shard Breaker) | playable | endless | yes | classic |
 | 0019 | Whack-a-Mole (Burrow Bonk) | playable | endless | yes | classic |
 | 0020 | One-Button Jumper (Roof Jumper) | playable | endless | yes | classic |
 | 0021 | Tap Timing (Pulse Lock) | playable | endless | yes | classic |
@@ -112,7 +112,7 @@ Logic with tests or better: 179 / 179 · Bot interface: 177 / 179 · Data levels
 | 0028 | On-Rails Shooter | playable | endless | yes | steam-tag |
 | 0029 | Vehicular Combat | playable | endless | yes | steam-tag |
 | 0030 | Bubble Shooter (Orb Popper) | playable | none | yes | classic |
-| 0031 | Space Invaders (Cosmic Invaders) | playable | endless | yes | classic |
+| 0031 | Orbit Defenders (Orbit Defenders) | playable | endless | yes | classic |
 | 0032 | Tank Battle (Iron Tracks) | playable | endless | yes | classic |
 
 ### Platformer
@@ -125,7 +125,7 @@ Logic with tests or better: 179 / 179 · Bot interface: 177 / 179 · Data levels
 | 0036 | Metroidvania | playable | endless | yes | steam-tag |
 | 0037 | Collectathon | playable | endless | yes | steam-tag |
 | 0038 | Side Scroller | playable | endless | yes | steam-tag |
-| 0039 | Lemmings-style | playable | endless | yes | steam-tag |
+| 0039 | Walker Guide | playable | endless | yes | steam-tag |
 | 0040 | Auto-Scrolling Platformer | playable | endless | yes | classic |
 
 ### Cards & Board
@@ -280,7 +280,7 @@ Logic with tests or better: 179 / 179 · Bot interface: 177 / 179 · Data levels
 | 0172 | Racing (Speedway Rush) | playable | none | yes | steam-tag |
 | 0173 | Combat Racing (Nitro Carnage) | playable | endless | yes | steam-tag |
 | 0174 | Driving (Highway Hauler) | playable | endless | yes | steam-tag |
-| 0175 | Hill Climb Racing (Peak Climber) | playable | endless | yes | classic |
+| 0175 | Peak Climber (Peak Climber) | playable | endless | yes | classic |
 | 0176 | Flight (Aero Ace) | playable | none | yes | steam-tag |
 
 ### Other

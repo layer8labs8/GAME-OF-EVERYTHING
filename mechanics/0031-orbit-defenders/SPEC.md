@@ -1,4 +1,4 @@
-# 0031-space-invaders: Cosmic Invaders
+# 0031-space-invaders: Orbit Defenders
 
 Classic fixed-shooter arcade recreation with marching alien fleets, destructible defensive bunkers, accelerating march tempo, descending invasion waves, and bonus mystery saucers.
 

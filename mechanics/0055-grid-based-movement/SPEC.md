@@ -1,6 +1,6 @@
 # 0055: Grid-Based Movement - Crypt Step
 
-A tactical dungeon crawler puzzle inspired by classic turn-based grid games (*Chip's Challenge*, *Desktop Dungeons*, *DROD*). The player navigates grid-based chambers filled with locked doors, pressure plates, sliding boulders, chasm pits, patrol sentries, and golden treasures to reach the exit stairs.
+A tactical dungeon crawler puzzle. The player navigates grid-based chambers filled with locked doors, pressure plates, sliding boulders, chasm pits, patrol sentries, and golden treasures to reach the exit stairs.
 
 ## Core Rules
 

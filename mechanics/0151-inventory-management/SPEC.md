@@ -1,6 +1,6 @@
 # 0151-inventory-management: Grid Hauler
 
-A spatial inventory and backpack management simulation inspired by Backpack Hero and Resident Evil Attache Case. Players assume the role of an expedition Quartermaster, organizing grid slots, optimizing item placement synergies (adjacent mana buffs, weapon orientations), managing weight limits, and outfitting an adventurer to conquer dungeon chambers.
+A spatial inventory and backpack management simulation. Players assume the role of an expedition Quartermaster, organizing grid slots, optimizing item placement synergies (adjacent mana buffs, weapon orientations), managing weight limits, and outfitting an adventurer to conquer dungeon chambers.
 
 ## Core Pillars & Mechanics
 

@@ -1,6 +1,6 @@
 # 0075: Roguelike Deckbuilder - Spire Crawl
 
-An intense, turn-based roguelike dungeon deckbuilder inspired by *Slay the Spire*. Players ascend a treacherous multi-floor spire, drafting potent attack and skill cards, monitoring telegraphed enemy intents, managing energy, block, and status effects to defeat elite monsters and topple the Spire Boss.
+An intense, turn-based roguelike dungeon deckbuilder. Players ascend a treacherous multi-floor spire, drafting potent attack and skill cards, monitoring telegraphed enemy intents, managing energy, block, and status effects to defeat elite monsters and topple the Spire Boss.
 
 ## Core Rules
 

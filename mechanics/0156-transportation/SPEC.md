@@ -1,6 +1,6 @@
 # 0156-transportation: Transit Flow
 
-A regional logistics and multimodal transportation network simulation inspired by Transport Fever and Mini Metro. Players act as Chief Logistics Director, laying rail tracks and express highways, managing freight train fleets and delivery trucks, routing supply chains between urban and industrial hubs, and clearing regional bottlenecks to fulfill transport contracts.
+A regional logistics and multimodal transportation network simulation. Players act as Chief Logistics Director, laying rail tracks and express highways, managing freight train fleets and delivery trucks, routing supply chains between urban and industrial hubs, and clearing regional bottlenecks to fulfill transport contracts.
 
 ## Core Pillars & Mechanics
 

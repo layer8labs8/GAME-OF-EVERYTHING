@@ -1,6 +1,6 @@
 # 0171-music-based-procedural-generation: Beat Odyssey
 
-A rhythm-driven procedural highway racer inspired by *Audiosurf*, *Beat Hazard*, and *Thumper*. An audio waveform engine procedurally synthesizes frequency spectra (Bass, Mid, Treble) and BPM measure intensity from the game seed, mapping audio energy into track gradients, harmonic score rings, and sonic distortion barriers across a three-lane synthesizer grid.
+A rhythm-driven procedural highway racer. An audio waveform engine procedurally synthesizes frequency spectra (Bass, Mid, Treble) and BPM measure intensity from the game seed, mapping audio energy into track gradients, harmonic score rings, and sonic distortion barriers across a three-lane synthesizer grid.
 
 ## Core Pillars & Mechanics
 

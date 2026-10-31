@@ -1,6 +1,6 @@
 # 0173-combat-racing: Nitro Carnage
 
-A high-speed vehicular combat racer inspired by *Twisted Metal*, *WipEout*, and *Death Rally*. Armed vehicles battle along a post-apocalyptic super-highway across three lanes, evading road hazards, exchanging kinetic vulcan cannon fire, launching heat-seeking missiles, deploying slick oil traps, and burning nitrous boost to reach the 100km checkered flag in first place.
+A high-speed vehicular combat racer. Armed vehicles battle along a post-apocalyptic super-highway across three lanes, evading road hazards, exchanging kinetic vulcan cannon fire, launching heat-seeking missiles, deploying slick oil traps, and burning nitrous boost to reach the 100km checkered flag in first place.
 
 ## Core Pillars & Mechanics
 

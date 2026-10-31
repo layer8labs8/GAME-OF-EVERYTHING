@@ -1,6 +1,6 @@
 # 0175-hill-climb-racing: Peak Climber
 
-A 2D physics-based hill climbing simulation inspired by Fingersoft's classic *Hill Climb Racing*. Players drive a rugged 4x4 off-road jeep across steep, rolling, and treacherous mountainous terrain, balancing throttle, brake, pitch orientation, and fuel consumption to scale a 1,000m summit without flipping upside down.
+A 2D physics-based hill climbing simulation. Players drive a rugged 4x4 off-road jeep across steep, rolling, and treacherous mountainous terrain, balancing throttle, brake, pitch orientation, and fuel consumption to scale a 1,000m summit without flipping upside down.
 
 ## Core Pillars & Mechanics
 

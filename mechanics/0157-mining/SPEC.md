@@ -1,6 +1,6 @@
 # 0157-mining: Subterranean Core
 
-An industrial geological excavation and shaft mining simulation inspired by Motherload and SteamWorld Dig. Players command a heavy mechanized borehole drilling rig descending through geological strata (Shallow Clay, Sedimentary Bedrock, Volcanic Basalt, and Lithospheric Core), managing fuel, drill bit durability, shaft structural supports, cargo capacity, and mineral smelting at the surface depot.
+An industrial geological excavation and shaft mining simulation. Players command a heavy mechanized borehole drilling rig descending through geological strata (Shallow Clay, Sedimentary Bedrock, Volcanic Basalt, and Lithospheric Core), managing fuel, drill bit durability, shaft structural supports, cargo capacity, and mineral smelting at the surface depot.
 
 ## Core Pillars & Mechanics
 

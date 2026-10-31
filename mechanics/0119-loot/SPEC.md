@@ -1,6 +1,6 @@
 # 0119-loot: Vault Hunter: Abyssal Relics
 
-A Diablo-inspired loot-driven action RPG featuring procedural weapon/armor drops across 4 rarity tiers (Common, Rare, Epic, Legendary), item prefix/suffix affixes, equipment salvage and blacksmith upgrading, and vault guardian boss encounters.
+A loot-driven action RPG featuring procedural weapon/armor drops across 4 rarity tiers (Common, Rare, Epic, Legendary), item prefix/suffix affixes, equipment salvage and blacksmith upgrading, and vault guardian boss encounters.
 
 ## Overview
 

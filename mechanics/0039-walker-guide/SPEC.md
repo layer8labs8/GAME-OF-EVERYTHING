@@ -1,6 +1,6 @@
-# 0039: Lemmings-style - Lemming Brigade
+# 0039: Walker Guide
 
-A discrete, turn-based puzzle strategy platformer inspired by the classic *Lemmings*. The player commands an autonomous brigade of marching minions navigating treacherous caverns filled with sheer drops, lethal hazard pits, and obstacle barriers. By assigning specialized tools—floaters, blockers, builders, diggers, miners, and bombers—the player alters terrain and pathing to rescue the required quota of minions into the exit vortex.
+A discrete, turn-based puzzle strategy platformer. The player commands an autonomous brigade of marching minions navigating treacherous caverns filled with sheer drops, lethal hazard pits, and obstacle barriers. By assigning specialized tools—floaters, blockers, builders, diggers, miners, and bombers—the player alters terrain and pathing to rescue the required quota of minions into the exit vortex.
 
 ## Core Rules
 

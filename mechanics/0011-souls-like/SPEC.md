@@ -1,7 +1,7 @@
 # 0011 - Souls-like ("Ashen Knight")
 
 ## Concept & Theme
-A grimdark, precision combat boss duel inspired by Soulsborne titles. An Ashen Champion confronts the fearsome Ember Lord inside a desecrated sanctuary. Victory demands disciplined stamina management, timed dodge rolls with invulnerability frames, strategic poise breaks, and measured healing flask usage.
+A grimdark, precision combat boss duel. An Ashen Champion confronts the fearsome Ember Lord inside a desecrated sanctuary. Victory demands disciplined stamina management, timed dodge rolls with invulnerability frames, strategic poise breaks, and measured healing flask usage.
 
 ## Bot Contract
 Exports deterministic functions:

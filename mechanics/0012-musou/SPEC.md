@@ -1,7 +1,7 @@
 # 0012 - Musou ("Dynasty Cleave")
 
 ## Concept & Theme
-An expansive one-versus-many crowd combat arena inspired by the Musou genre. A legendary frontline general armed with a heavy crescent halberd cleaves through marching battalions of enemy conscripts, archers, and vanguard officers across battle zones.
+An expansive one-versus-many crowd combat arena. A legendary frontline general armed with a heavy crescent halberd cleaves through marching battalions of enemy conscripts, archers, and vanguard officers across battle zones.
 
 ## Bot Contract
 Exports deterministic functions:

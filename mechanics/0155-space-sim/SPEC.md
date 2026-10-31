@@ -1,6 +1,6 @@
 # 0155-space-sim: Void Navigator
 
-An orbital navigation and deep-space pilot simulation inspired by Kerbal Space Program and Elite Dangerous. Players command an exploration vessel navigating celestial bodies, managing Newtonian delta-v burns, deflector shield power distribution, planetary surface scanning, orbital station docking, and asteroid mining to reach the distant Galactic Gateway.
+An orbital navigation and deep-space pilot simulation. Players command an exploration vessel navigating celestial bodies, managing Newtonian delta-v burns, deflector shield power distribution, planetary surface scanning, orbital station docking, and asteroid mining to reach the distant Galactic Gateway.
 
 ## Core Pillars & Mechanics
 

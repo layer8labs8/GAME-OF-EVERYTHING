@@ -1,6 +1,6 @@
 # 0132-text-based: Kingdom of Text
 
-A classic text-based fantasy RPG inspired by early MUDs, SanctuaryRPG, and Kingdom of Loathing. Players manage character stats, navigate narrative realms (Town of Oakhaven, Darkwood Forest, Shadow Crypt, Wyrm Peak), engage in tactical turn-based text combat, acquire gear upgrades, brew potions, and conquer the Ancient Wyrm to save the realm.
+A classic text-based fantasy RPG. Players manage character stats, navigate narrative realms (Town of Oakhaven, Darkwood Forest, Shadow Crypt, Wyrm Peak), engage in tactical turn-based text combat, acquire gear upgrades, brew potions, and conquer the Ancient Wyrm to save the realm.
 
 ## Core Mechanics
 

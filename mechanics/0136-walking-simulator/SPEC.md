@@ -1,6 +1,6 @@
 # 0136-walking-simulator: Solitary Echoes
 
-An atmospheric narrative exploration experience inspired by Dear Esther, Firewatch, and What Remains of Edith Finch. Players embark on a contemplative journey across the mist-shrouded Isle of Orford, traversing coastal trails, abandoned homesteads, whispering pine groves, and cliffside overlooks to restore memory fragments and activate the abandoned Starlight Observatory.
+An atmospheric narrative exploration experience. Players embark on a contemplative journey across the mist-shrouded Isle of Orford, traversing coastal trails, abandoned homesteads, whispering pine groves, and cliffside overlooks to restore memory fragments and activate the abandoned Starlight Observatory.
 
 ## Core Pillars & Mechanics
 

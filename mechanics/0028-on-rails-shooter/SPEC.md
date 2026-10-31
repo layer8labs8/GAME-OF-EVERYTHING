@@ -1,6 +1,6 @@
 # 0028: On-Rails Shooter - Rail Phantom
 
-A fast-paced on-rails space shooter inspired by classics like *Star Fox* and *Panzer Dragoon*. The player's starfighter hurtles forward through a 3D neon hyper-conduit while the player aims, fires blasters, locks on with homing missiles, executes defensive barrel rolls, and manages heat and energy reserves.
+A fast-paced on-rails space shooter. The player's starfighter hurtles forward through a 3D neon hyper-conduit while the player aims, fires blasters, locks on with homing missiles, executes defensive barrel rolls, and manages heat and energy reserves.
 
 ## Core Rules
 

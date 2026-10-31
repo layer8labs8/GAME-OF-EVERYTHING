@@ -1,6 +1,6 @@
 # 0037: Collectathon - Relic Rush
 
-A 3D-inspired open-exploration platformer collectathon reminiscent of *Banjo-Kazooie*, *Super Mario 64*, and *A Hat in Time*. The explorer traverses a multi-tiered floating sky citadel to gather 5 ancient Celestial Relics, dozens of glowing Sky Gems, and movement-enhancing abilities.
+A 3D-inspired open-exploration platformer collectathon. The explorer traverses a multi-tiered floating sky citadel to gather 5 ancient Celestial Relics, dozens of glowing Sky Gems, and movement-enhancing abilities.
 
 ## Core Rules
 

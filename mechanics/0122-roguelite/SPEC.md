@@ -1,6 +1,6 @@
 # 0122-roguelite: Nether Ascendance
 
-A Hades-inspired roguelite dungeon crawler featuring permanent meta-progression across runs, persistent Nether Essence currency, Death Defiance revivals, divine boons, and underworld escape chambers.
+A roguelite dungeon crawler featuring permanent meta-progression across runs, persistent Nether Essence currency, Death Defiance revivals, divine boons, and underworld escape chambers.
 
 ## Overview
 

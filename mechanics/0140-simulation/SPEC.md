@@ -1,6 +1,6 @@
 # 0140-simulation: Biosphere Genesis
 
-A planetary terraforming and ecological simulation inspired by SimEarth, Terra Nil, and Spore. Players regulate atmospheric equilibria (Temperature, Oxygen, Moisture, Carbon Dioxide), deploy terraforming catalysts (comet impacts, cyanobacteria seeding, volcanic thermal vents, orbital sunshades), evolve life stages from barren rock to complex terrestrial biospheres, and stabilize a self-sustaining planetary paradise.
+A planetary terraforming and ecological simulation. Players regulate atmospheric equilibria (Temperature, Oxygen, Moisture, Carbon Dioxide), deploy terraforming catalysts (comet impacts, cyanobacteria seeding, volcanic thermal vents, orbital sunshades), evolve life stages from barren rock to complex terrestrial biospheres, and stabilize a self-sustaining planetary paradise.
 
 ## Core Pillars & Mechanics
 

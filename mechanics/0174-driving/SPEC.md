@@ -1,6 +1,6 @@
 # 0174-driving: Highway Hauler
 
-A realistic commercial transport and precision highway driving simulation inspired by *Euro Truck Simulator 2* and *American Truck Simulator*. Players captain an 18-wheel heavy freight semi-truck along a 100km interstate corridor, managing transmission gear ratios, throttle and service braking, fuel conservation, driver fatigue, highway traffic merges, and fragile high-value cargo integrity.
+A realistic commercial transport and precision highway driving simulation. Players captain an 18-wheel heavy freight semi-truck along a 100km interstate corridor, managing transmission gear ratios, throttle and service braking, fuel conservation, driver fatigue, highway traffic merges, and fragile high-value cargo integrity.
 
 ## Core Pillars & Mechanics
 

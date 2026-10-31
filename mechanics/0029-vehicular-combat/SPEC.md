@@ -1,6 +1,6 @@
 # 0029: Vehicular Combat - Metal Carnage
 
-An arena-based demolition vehicular combat game inspired by *Twisted Metal*, *Vigilante 8*, and *Crossout*. The player pilots an armored battle-rig equipped with twin autocannons, swivel rockets, deployable proximity mines, nitro thrusters, and a spiked cowcatcher ramming bumper inside an enclosed wasteland arena.
+An arena-based demolition vehicular combat game. The player pilots an armored battle-rig equipped with twin autocannons, swivel rockets, deployable proximity mines, nitro thrusters, and a spiked cowcatcher ramming bumper inside an enclosed wasteland arena.
 
 ## Core Rules
 

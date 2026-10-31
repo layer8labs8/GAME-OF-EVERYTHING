@@ -1,6 +1,6 @@
 # 0060: Programming Puzzle - Robo Script
 
-A logic and algorithm design puzzle inspired by *Lightbot*, *RoboZZle*, and *Human Resource Machine*. The player constructs an automated routine using a compact instruction buffer to guide a micro-rover across circuit board chambers, jumping over bus chasms and illuminating memory nodes.
+A logic and algorithm design puzzle. The player constructs an automated routine using a compact instruction buffer to guide a micro-rover across circuit board chambers, jumping over bus chasms and illuminating memory nodes.
 
 ## Core Rules
 

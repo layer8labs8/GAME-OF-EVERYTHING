@@ -1,6 +1,6 @@
 # 0147-shop-keeper: Arcane Emporium
 
-A fantasy merchant shopkeeper simulation inspired by Recettear: An Item Shop's Tale and Moonlighter. Players operate an adventurer item shop in a bustling fantasy citadel, balancing wholesale procurement, shelf inventory, customer requests, bargaining margins, shop renovations, and guild taxes to build a flourishing commercial empire.
+A fantasy merchant shopkeeper simulation. Players operate an adventurer item shop in a bustling fantasy citadel, balancing wholesale procurement, shelf inventory, customer requests, bargaining margins, shop renovations, and guild taxes to build a flourishing commercial empire.
 
 ## Core Pillars & Mechanics
 

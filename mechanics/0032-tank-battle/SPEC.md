@@ -1,7 +1,7 @@
 # 0032 — Tank Battle ("Iron Tracks")
 
 ## Concept
-Tactical top-down armor combat simulator inspired by classic arcade tank warfare. Command an armored tank to defend your forward headquarters (HQ Eagle) from incoming waves of hostile mechanized tanks while navigating a destructible maze of brick barricades and indestructible steel barriers.
+Tactical top-down armor combat simulator. Command an armored tank to defend your forward headquarters (HQ Eagle) from incoming waves of hostile mechanized tanks while navigating a destructible maze of brick barricades and indestructible steel barriers.
 
 ## Arena & Coordinates
 - Discrete 10x10 battle arena.

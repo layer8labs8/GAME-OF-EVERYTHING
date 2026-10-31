@@ -1,7 +1,7 @@
 # 0006 — Bullet Hell ("Danmaku Veil")
 
 ## Concept
-A micro-hitbox curtain-fire aerial shooter inspired by classic *Touhou* and *DoDonPachi* danmaku titles. Thread through intricate geometric bullet spirals, graze hazardous projectiles to charge the celestial bomb meter, and vanquish the Crimson Core flagship.
+A micro-hitbox curtain-fire aerial shooter. Thread through intricate geometric bullet spirals, graze hazardous projectiles to charge the celestial bomb meter, and vanquish the Crimson Core flagship.
 
 ## Arena & Kinematics
 - Vertical combat corridor (360 width x 500 height logical playfield).

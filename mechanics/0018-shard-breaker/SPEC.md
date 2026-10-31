@@ -1,4 +1,4 @@
-# Shard Breaker (0018 — Breakout)
+# Shard Breaker (0018)
 
 ## Rules
 Deflect an energy sphere with a bottom paddle (`y = 414`) inside a `312 × 440` chamber to shatter 5 rows of 8 crystal shards.

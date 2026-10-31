@@ -1,6 +1,6 @@
 # 0115-party-based-rpg: Guild Expedition: Darkest Depths
 
-A Darkest Dungeon-inspired 4-hero party-based RPG featuring strict rank formation positioning, dual HP/Stress morale management, class synergy combos, affliction crises, and a multi-chamber dungeon expedition.
+A 4-hero party-based RPG featuring strict rank formation positioning, dual HP/Stress morale management, class synergy combos, affliction crises, and a multi-chamber dungeon expedition.
 
 ## Overview
 
