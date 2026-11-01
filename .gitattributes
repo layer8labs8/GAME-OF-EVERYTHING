@@ -3,3 +3,6 @@
 *.jpg binary
 *.ogg binary
 *.mp3 binary
+
+# Each game keeps its code in a script tag, so count these pages as JavaScript
+mechanics/**/www/index.html linguist-language=JavaScript
