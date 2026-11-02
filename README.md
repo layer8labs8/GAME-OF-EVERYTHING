@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://layer8labs8.github.io/GAME-OF-EVERYTHING/"><img src="docs/assets/banner.svg" alt="Game of Everything: 179 tiny games to play, learn from, and build on" width="100%"></a>
+<a href="https://layer8labs8.github.io/GAME-OF-EVERYTHING/"><img src="docs/assets/banner.svg" alt="Game of Everything: 186 tiny games to play, learn from, and build on" width="100%"></a>
 
 ### Ever wondered how your favorite kind of game actually works?
 
@@ -37,7 +37,7 @@ Click any game. It opens right in your browser.
 </tr>
 </table>
 
-<p align="center"><b><a href="https://layer8labs8.github.io/GAME-OF-EVERYTHING/">See all 179 games</a></b></p>
+<p align="center"><b><a href="https://layer8labs8.github.io/GAME-OF-EVERYTHING/">See all 186 games</a></b></p>
 
 <p align="center"><a href="https://layer8labs8.github.io/GAME-OF-EVERYTHING/"><img src="docs/assets/site.png" alt="The Game of Everything website, showing a grid of games" width="90%"></a></p>
 
@@ -111,16 +111,16 @@ If this project helped you, I'm really glad. If you'd like to support it, you ca
 <summary>Project progress</summary>
 
 <!-- STATUS:START -->
-**Playable: 179 / 179** `████████████████████████`
+**Playable: 186 / 186** `████████████████████████`
 
-Logic with tests or better: 179 / 179 · Bot interface: 179 / 179 · Data levels: 6
+Logic with tests or better: 186 / 186 · Bot interface: 186 / 186 · Data levels: 6
 
 | Stage | Mechanics |
 |---|---|
 | idea | 0 |
 | spec | 0 |
 | logic | 0 |
-| playable | 179 |
+| playable | 186 |
 | polished | 0 |
 | shipped | 0 |
 

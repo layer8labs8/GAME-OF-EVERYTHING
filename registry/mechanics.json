@@ -1969,6 +1969,83 @@
       "levels": "none",
       "title": "Speed Chrono",
       "source": "steam-tag"
+    },
+    {
+      "id": "0180",
+      "slug": "tic-tac-toe",
+      "name": "Tic-Tac-Toe",
+      "title": "Three Stones",
+      "family": "Cards & Board",
+      "status": "playable",
+      "levels": "none",
+      "bot": true,
+      "source": "classic"
+    },
+    {
+      "id": "0181",
+      "slug": "four-in-a-row",
+      "name": "Four in a Row",
+      "title": "Tower Four",
+      "family": "Cards & Board",
+      "status": "playable",
+      "levels": "none",
+      "bot": true,
+      "source": "classic"
+    },
+    {
+      "id": "0182",
+      "slug": "dots-and-boxes",
+      "name": "Dots and Boxes",
+      "title": "Box Claim",
+      "family": "Cards & Board",
+      "status": "playable",
+      "levels": "none",
+      "bot": true,
+      "source": "classic"
+    },
+    {
+      "id": "0183",
+      "slug": "mancala",
+      "name": "Mancala",
+      "title": "Seed Bowls",
+      "family": "Cards & Board",
+      "status": "playable",
+      "levels": "none",
+      "bot": true,
+      "source": "classic"
+    },
+    {
+      "id": "0184",
+      "slug": "reversi",
+      "name": "Reversi",
+      "title": "Flip Field",
+      "family": "Cards & Board",
+      "status": "playable",
+      "levels": "none",
+      "bot": true,
+      "source": "classic"
+    },
+    {
+      "id": "0185",
+      "slug": "nonogram",
+      "name": "Nonogram",
+      "title": "Hidden Picture",
+      "family": "Puzzle",
+      "status": "playable",
+      "levels": "none",
+      "bot": true,
+      "source": "classic"
+    },
+    {
+      "id": "0186",
+      "slug": "peg-jump",
+      "name": "Peg Jump",
+      "title": "Last Peg",
+      "family": "Puzzle",
+      "status": "playable",
+      "levels": "none",
+      "bot": true,
+      "source": "classic"
     }
   ]
 }

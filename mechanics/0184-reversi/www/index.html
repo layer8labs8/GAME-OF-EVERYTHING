@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>Flip Field</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; margin: 0 auto; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="logic.js"></script>
+<script>
+const { createState, legalActions, step, isOver, score } = GameLogic;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 360;
+const H = 640;
+const BLUE = '#7cc4ff';
+const RED = '#ff7b7b';
+const BEST_KEY = 'goe-0184-best';
+
+let view = 1;
+let state = createState(Date.now() % 2147483647);
+let overAt = 0;
+let best = 0;
+try { best = +localStorage.getItem(BEST_KEY) || 0; } catch (e) {}
+
+function cell(x, y, w, color, h) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h === undefined ? w : h);
+}
+
+function disc(x, y, r, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+const CELL = 42;
+const X0 = 12;
+const Y0 = 160;
+function drawBoard() {
+  const legal = legalActions(state);
+  for (let i = 0; i < 64; i++) {
+    const x = X0 + (i % 8) * CELL;
+    const y = Y0 + Math.floor(i / 8) * CELL;
+    cell(x + 1, y + 1, CELL - 2, '#1f2a4a');
+    if (state.board[i]) disc(x + CELL / 2, y + CELL / 2, 16, state.board[i] === 1 ? BLUE : RED);
+    else if (legal.includes(i)) disc(x + CELL / 2, y + CELL / 2, 4, '#ffd166');
+  }
+}
+function hit(x, y) {
+  const c = Math.floor((x - X0) / CELL);
+  const r = Math.floor((y - Y0) / CELL);
+  return c >= 0 && c < 8 && r >= 0 && r < 8 ? r * 8 + c : null;
+}
+function endText() {
+  const mine = score(state);
+  const theirs = state.board.filter((v) => v === 2).length;
+  return mine > theirs ? 'You win!' : mine === theirs ? 'A draw' : 'The computer wins';
+}
+
+function draw() {
+  ctx.fillStyle = '#0b1020';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#e8ecf5';
+  ctx.font = 'bold 26px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText("Flip Field", W / 2, 56);
+  ctx.fillStyle = '#c4cce2';
+  ctx.font = '16px system-ui, sans-serif';
+  ctx.fillText('Score ' + score(state) + '   Best ' + best, W / 2, 86);
+  drawBoard();
+  if (isOver(state)) {
+    ctx.fillStyle = 'rgba(11,16,32,0.82)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#e8ecf5';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText(endText(), W / 2, H / 2 - 16);
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText('Tap to play again', W / 2, H / 2 + 24);
+  }
+}
+
+function resize() {
+  view = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = W * view + 'px';
+  canvas.style.height = H * view + 'px';
+  canvas.width = Math.round(W * view * dpr);
+  canvas.height = Math.round(H * view * dpr);
+  ctx.setTransform(view * dpr, 0, 0, view * dpr, 0, 0);
+  draw();
+}
+addEventListener('resize', resize);
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (isOver(state)) {
+    if (performance.now() - overAt > 400) {
+      state = createState(Date.now() % 2147483647);
+      draw();
+    }
+    return;
+  }
+  const rect = canvas.getBoundingClientRect();
+  const action = hit((e.clientX - rect.left) / view, (e.clientY - rect.top) / view);
+  if (action !== null && legalActions(state).includes(action)) {
+    step(state, action);
+    if (isOver(state)) {
+      overAt = performance.now();
+      if (score(state) > best) {
+        best = score(state);
+        try { localStorage.setItem(BEST_KEY, best); } catch (e2) {}
+      }
+    }
+  }
+  draw();
+});
+
+resize();
+
+const inApk = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+if (!inApk && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
