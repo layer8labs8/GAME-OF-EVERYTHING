@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oceantrawler-v2';
+const CACHE_NAME = 'oceantrawler-v3';
 const ASSETS = [
   './',
   './index.html',

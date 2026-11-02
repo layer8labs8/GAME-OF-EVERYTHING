@@ -1,4 +1,5 @@
 (function (root) {
+  const CAMPAIGN = [{"name":"First Look","goal":"Find all 8 pairs in 20 turns","deck":[1,5,3,6,1,7,2,6,4,2,0,5,4,3,7,0],"turns":20},{"name":"Warm Up","goal":"Find all 8 pairs in 19 turns","deck":[6,0,2,0,7,4,1,4,1,3,5,5,7,6,2,3],"turns":19},{"name":"Quick Eyes","goal":"Find all 8 pairs in 18 turns","deck":[4,6,0,7,5,2,4,1,3,7,5,6,1,3,0,2],"turns":18},{"name":"Steady Hands","goal":"Find all 8 pairs in 17 turns","deck":[0,4,5,2,7,0,7,3,6,3,1,4,2,5,6,1],"turns":17},{"name":"Sharp Mind","goal":"Find all 8 pairs in 16 turns","deck":[2,5,2,4,1,0,6,7,3,7,1,4,0,5,6,3],"turns":16},{"name":"No Waste","goal":"Find all 8 pairs in 15 turns","deck":[6,0,1,7,0,7,4,3,5,3,4,2,5,6,2,1],"turns":15},{"name":"Close Call","goal":"Find all 8 pairs in 14 turns","deck":[0,3,2,1,4,5,7,2,6,1,6,5,3,0,7,4],"turns":14},{"name":"Tight Turns","goal":"Find all 8 pairs in 13 turns","deck":[6,4,3,0,2,7,2,7,1,4,1,3,6,5,0,5],"turns":13},{"name":"Perfect Recall","goal":"Find all 8 pairs in 12 turns","deck":[0,1,7,3,4,2,7,6,4,5,1,6,5,3,0,2],"turns":12},{"name":"Memory Master","goal":"Find all 8 pairs in 11 turns","deck":[5,7,1,0,5,3,0,7,4,1,2,2,6,3,4,6],"turns":11}];
   // mulberry32 PRNG
   function createRNG(seed) {
     let state = (seed >>> 0) || 1;
@@ -13,7 +14,7 @@
     };
   }
 
-  function createState(seed) {
+  function createState(seed, level) {
     const rng = createRNG(seed);
     const symbols = [];
     for (let v = 0; v < 8; v++) {
@@ -23,14 +24,15 @@
       const j = Math.floor(rng.next() * (i + 1));
       [symbols[i], symbols[j]] = [symbols[j], symbols[i]];
     }
-    const grid = symbols.map((symbol) => ({
+    const deck = level ? level.deck : symbols;
+    const grid = deck.map((symbol) => ({
       symbol,
       faceUp: false,
       matched: false,
     }));
     return {
       grid,
-      turnsLeft: 20,
+      turnsLeft: level ? level.turns : 20,
       firstFlip: null,
       stepCount: 0,
       rng: rng.getState(),
@@ -102,7 +104,11 @@
     return base + bonus;
   }
 
-  const api = { createState, legalActions, step, isOver, score };
+  function isWon(state) {
+    return state.grid.every((card) => card.matched);
+  }
+
+  const api = { CAMPAIGN, createState, legalActions, step, isOver, isWon, score };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GameLogic = api;
 })(typeof self !== 'undefined' ? self : globalThis);

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'conveyorcore-v2';
+const CACHE_NAME = 'conveyorcore-v3';
 const ASSETS = [
   './',
   './index.html',

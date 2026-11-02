@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coreminer-v2';
+const CACHE_NAME = 'coreminer-v3';
 const ASSETS = [
   './',
   './index.html',

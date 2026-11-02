@@ -1,4 +1,5 @@
 (function (root) {
+  const CAMPAIGN = [{"name":"Soft Pop","goal":"Clear every orb in 40 shots","grid":[3,1,1,2,3,1,2,2,1,2,2,3,1,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3000,"shots":40,"dropEvery":40},{"name":"Clear Sky","goal":"Clear every orb in 39 shots","grid":[3,1,2,1,3,3,1,2,3,3,1,1,1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3008,"shots":39,"dropEvery":40},{"name":"Three Rows","goal":"Clear every orb in 38 shots","grid":[1,2,1,1,3,2,3,2,1,1,2,3,2,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3017,"shots":38,"dropEvery":30},{"name":"Rising Roof","goal":"Clear every orb in 37 shots","grid":[3,3,2,1,2,2,2,2,1,1,2,2,3,1,3,3,2,2,2,1,2,2,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3022,"shots":37,"dropEvery":30},{"name":"Colour Mix","goal":"Clear every orb in 36 shots","grid":[4,3,2,2,3,2,2,3,4,1,4,2,3,2,1,3,1,1,2,2,4,3,4,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3044,"shots":36,"dropEvery":26},{"name":"Heavy Top","goal":"Clear every orb in 35 shots","grid":[2,1,2,3,3,2,2,2,2,3,4,2,4,1,4,3,3,3,2,2,4,3,3,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3057,"shots":35,"dropEvery":24},{"name":"Quick Hands","goal":"Clear every orb in 34 shots","grid":[1,1,1,3,3,3,4,2,4,3,2,3,1,3,1,2,3,4,2,2,2,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3101,"shots":34,"dropEvery":22},{"name":"Low Ceiling","goal":"Clear every orb in 33 shots","grid":[2,3,3,3,3,4,1,1,2,1,2,2,2,1,2,3,4,4,3,1,3,2,2,1,2,4,2,1,3,4,2,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3049,"shots":33,"dropEvery":20},{"name":"Crowded Sky","goal":"Clear every orb in 32 shots","grid":[2,1,4,4,1,1,2,1,1,3,2,1,1,3,3,1,2,4,4,3,2,1,1,2,4,4,1,1,4,1,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3088,"shots":32,"dropEvery":18},{"name":"Final Burst","goal":"Clear every orb in 31 shots","grid":[1,1,1,1,1,1,1,1,1,4,4,1,1,3,3,3,1,1,2,4,2,1,2,3,2,4,2,4,4,2,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"rng":3079,"shots":31,"dropEvery":16}];
   const COLS = 8;
   const ROWS = 10;
   const CELLS = COLS * ROWS;
@@ -37,13 +38,14 @@
     return n;
   }
 
-  function createState(seed) {
+  function createState(seed, level) {
     const state = {
       grid: new Array(CELLS).fill(0),
       currentOrb: 1,
       nextOrb: 2,
-      shotsLeft: MAX_SHOTS,
-      shotsUntilDrop: CEILING_INTERVAL,
+      shotsLeft: level ? level.shots : MAX_SHOTS,
+      shotsUntilDrop: level ? level.dropEvery : CEILING_INTERVAL,
+      dropEvery: level ? level.dropEvery : CEILING_INTERVAL,
       points: 0,
       lastPopped: 0,
       lastDropped: 0,
@@ -51,6 +53,14 @@
       stepCount: 0,
       rng: (seed >>> 0) || 1,
     };
+
+    if (level) {
+      state.grid = level.grid.slice();
+      state.rng = level.rng;
+      state.currentOrb = rollOrb(state);
+      state.nextOrb = rollOrb(state);
+      return state;
+    }
 
     // Fill initial 3 rows
     for (let r = 0; r < 3; r++) {
@@ -214,7 +224,7 @@
     // Advance ceiling timer
     state.shotsUntilDrop -= 1;
     if (state.shotsUntilDrop <= 0) {
-      state.shotsUntilDrop = CEILING_INTERVAL;
+      state.shotsUntilDrop = state.dropEvery;
       for (let r = ROWS - 1; r >= 1; r--) {
         for (let c = 0; c < COLS; c++) {
           state.grid[r * COLS + c] = state.grid[(r - 1) * COLS + c];
@@ -243,7 +253,11 @@
     return state.points;
   }
 
-  const api = { COLS, ROWS, CELLS, NUM_COLORS, ANGLES, cellPos, createState, legalActions, step, isOver, score };
+  function isWon(state) {
+    return state.won;
+  }
+
+  const api = { CAMPAIGN, COLS, ROWS, CELLS, NUM_COLORS, ANGLES, cellPos, createState, legalActions, step, isOver, isWon, score };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GameLogic = api;
 })(typeof self !== 'undefined' ? self : globalThis);

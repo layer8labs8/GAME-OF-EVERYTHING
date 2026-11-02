@@ -1,4 +1,4 @@
-const CACHE_NAME = 'forensic-reconstruction-v2';
+const CACHE_NAME = 'forensic-reconstruction-v3';
 const ASSETS = [
   './',
   './index.html',

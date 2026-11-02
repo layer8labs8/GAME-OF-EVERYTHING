@@ -1,4 +1,4 @@
-const CACHE = 'goe-0026-side-scrolling-shooter-v2';
+const CACHE = 'goe-0026-side-scrolling-shooter-v3';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

@@ -38,3 +38,7 @@ Subset of affordable build/upgrade commands plus `'wait'` (`[]` when game is ove
 
 ## Score
 `state.points`
+
+## Levels
+
+The game has ten levels that get harder step by step, listed in `levels.json` and `CAMPAIGN` in `www/logic.js`. `createState(seed, level)` loads one, and `createState(seed)` still plays the classic game. `solver.js` proves each level can be finished through the real rules. Beating a level unlocks the next.

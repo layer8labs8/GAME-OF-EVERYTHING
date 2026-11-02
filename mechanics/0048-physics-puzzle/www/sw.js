@@ -1,4 +1,4 @@
-const CACHE = 'goe-0048-physics-puzzle-v2';
+const CACHE = 'goe-0048-physics-puzzle-v3';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

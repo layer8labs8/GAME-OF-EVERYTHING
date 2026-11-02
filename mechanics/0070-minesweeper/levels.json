@@ -1,0 +1,207 @@
+{
+  "schema": 1,
+  "mechanic": "minesweeper",
+  "levels": [
+    {
+      "id": "001",
+      "name": "Open Field",
+      "difficulty": 1,
+      "data": {
+        "goal": "Clear the grid. 5 mines, no guessing needed",
+        "mines": [
+          10,
+          23,
+          40,
+          43,
+          45
+        ],
+        "first": 8
+      },
+      "par": 15,
+      "solution": "8@D<8;330388753"
+    },
+    {
+      "id": "002",
+      "name": "Safe Steps",
+      "difficulty": 1,
+      "data": {
+        "goal": "Clear the grid. 5 mines, no guessing needed",
+        "mines": [
+          11,
+          21,
+          24,
+          36,
+          46
+        ],
+        "first": 1
+      },
+      "par": 18,
+      "solution": "6:???4110235577344"
+    },
+    {
+      "id": "003",
+      "name": "Light Mines",
+      "difficulty": 2,
+      "data": {
+        "goal": "Clear the grid. 6 mines, no guessing needed",
+        "mines": [
+          8,
+          9,
+          20,
+          25,
+          26,
+          33
+        ],
+        "first": 45
+      },
+      "par": 10,
+      "solution": ">D:7000005"
+    },
+    {
+      "id": "004",
+      "name": "Careful Path",
+      "difficulty": 2,
+      "data": {
+        "goal": "Clear the grid. 6 mines, no guessing needed",
+        "mines": [
+          5,
+          15,
+          26,
+          28,
+          35,
+          41
+        ],
+        "first": 31
+      },
+      "par": 11,
+      "solution": "64631341466"
+    },
+    {
+      "id": "005",
+      "name": "Narrow Gaps",
+      "difficulty": 3,
+      "data": {
+        "goal": "Clear the grid. 7 mines, no guessing needed",
+        "mines": [
+          4,
+          17,
+          22,
+          29,
+          40,
+          41,
+          46
+        ],
+        "first": 13
+      },
+      "par": 15,
+      "solution": "I@;>@@822344877"
+    },
+    {
+      "id": "006",
+      "name": "Tight Spots",
+      "difficulty": 3,
+      "data": {
+        "goal": "Clear the grid. 7 mines, no guessing needed",
+        "mines": [
+          19,
+          23,
+          24,
+          27,
+          38,
+          44,
+          48
+        ],
+        "first": 9
+      },
+      "par": 15,
+      "solution": "16:355573455766"
+    },
+    {
+      "id": "007",
+      "name": "Minefield",
+      "difficulty": 4,
+      "data": {
+        "goal": "Clear the grid. 8 mines, no guessing needed",
+        "mines": [
+          4,
+          7,
+          8,
+          13,
+          17,
+          18,
+          35,
+          37
+        ],
+        "first": 32
+      },
+      "par": 18,
+      "solution": "@DFC91000<===55141"
+    },
+    {
+      "id": "008",
+      "name": "Deep Grid",
+      "difficulty": 4,
+      "data": {
+        "goal": "Clear the grid. 8 mines, no guessing needed",
+        "mines": [
+          12,
+          16,
+          36,
+          37,
+          38,
+          41,
+          45,
+          47
+        ],
+        "first": 3
+      },
+      "par": 18,
+      "solution": "555666500162777597"
+    },
+    {
+      "id": "009",
+      "name": "Danger Zone",
+      "difficulty": 5,
+      "data": {
+        "goal": "Clear the grid. 9 mines, no guessing needed",
+        "mines": [
+          14,
+          17,
+          24,
+          26,
+          27,
+          29,
+          44,
+          45,
+          48
+        ],
+        "first": 12
+      },
+      "par": 21,
+      "solution": "2122238888<<<7?569668"
+    },
+    {
+      "id": "010",
+      "name": "Full Alert",
+      "difficulty": 5,
+      "data": {
+        "goal": "Clear the grid. 10 mines, no guessing needed",
+        "mines": [
+          0,
+          1,
+          5,
+          8,
+          11,
+          14,
+          18,
+          24,
+          32,
+          46
+        ],
+        "first": 43
+      },
+      "par": 16,
+      "solution": "@??CHFGIF9922233"
+    }
+  ]
+}

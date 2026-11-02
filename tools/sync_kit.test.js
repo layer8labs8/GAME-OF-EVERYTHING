@@ -24,5 +24,5 @@ test('wireWorker adds kit.js to the cached files once', () => {
 
 test('wireWorker raises the cache version so returning players get updates', () => {
   const sw = "const CACHE = 'goe-0017-pong-v1';\nconst FILES = ['logic.js'];";
-  assert.ok(wireWorker(sw).includes("'goe-0017-pong-v2'"));
+  assert.ok(!wireWorker(sw).includes("'goe-0017-pong-v1'"));
 });

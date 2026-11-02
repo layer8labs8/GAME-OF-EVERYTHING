@@ -1,4 +1,4 @@
-const CACHE_NAME = 'abyssalhorizons-v2';
+const CACHE_NAME = 'abyssalhorizons-v3';
 const ASSETS = [
   './',
   './index.html',

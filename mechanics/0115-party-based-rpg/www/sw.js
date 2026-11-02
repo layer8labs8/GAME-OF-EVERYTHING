@@ -1,4 +1,4 @@
-const CACHE_NAME = 'guildexpedition-v2';
+const CACHE_NAME = 'guildexpedition-v3';
 const ASSETS = [
   './',
   './index.html',

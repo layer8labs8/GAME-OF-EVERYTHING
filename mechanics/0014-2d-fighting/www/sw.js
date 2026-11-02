@@ -1,4 +1,4 @@
-const CACHE = 'goe-0014-2d-fighting-v2';
+const CACHE = 'goe-0014-2d-fighting-v3';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pathsofdestiny-v2';
+const CACHE_NAME = 'pathsofdestiny-v3';
 const ASSETS = [
   './',
   './index.html',

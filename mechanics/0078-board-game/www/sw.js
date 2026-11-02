@@ -1,4 +1,4 @@
-const CACHE_NAME = 'royal-ludo-v2';
+const CACHE_NAME = 'royal-ludo-v3';
 const ASSETS = [
   './',
   './index.html',

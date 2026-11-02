@@ -1,4 +1,5 @@
 (function (root) {
+  const CAMPAIGN = [{"name":"First Sparks","goal":"Score 1580 in 20 moves","board":[5,2,2,1,2,3,4,3,2,1,1,3,5,4,3,3,4,5,1,4,3,5,1,5,2,5,4,5,2,1,5,4,4,3,2,2],"rng":2000,"moves":20,"target":1580},{"name":"Bright Start","goal":"Score 1620 in 20 moves","board":[1,3,3,4,1,5,1,3,1,1,5,2,4,4,2,1,5,4,2,4,3,5,2,1,2,2,4,3,5,5,3,5,1,5,4,4],"rng":2001,"moves":20,"target":1620},{"name":"Gem Rush","goal":"Score 2090 in 18 moves","board":[2,5,5,2,5,5,1,4,4,1,5,3,3,5,1,2,4,1,4,4,5,2,2,3,3,1,1,3,4,2,1,4,2,2,4,2],"rng":2002,"moves":18,"target":2090},{"name":"Chain Reaction","goal":"Score 1920 in 18 moves","board":[2,5,1,3,1,3,4,3,2,4,1,1,1,3,2,2,5,1,1,4,3,2,4,3,4,5,3,3,4,1,4,5,5,1,1,2],"rng":2003,"moves":18,"target":1920},{"name":"Crystal Run","goal":"Score 1720 in 16 moves","board":[2,4,5,4,4,1,4,1,5,2,2,4,5,4,1,3,4,2,2,5,5,1,3,5,5,2,4,2,2,4,2,4,2,1,4,2],"rng":2004,"moves":16,"target":1720},{"name":"Short Fuse","goal":"Score 2170 in 16 moves","board":[3,2,5,1,4,2,1,4,5,2,2,4,3,3,4,1,5,1,3,2,3,2,5,5,5,3,5,1,4,5,3,4,4,2,1,4],"rng":2005,"moves":16,"target":2170},{"name":"Deep Cuts","goal":"Score 1750 in 15 moves","board":[1,4,1,1,5,5,5,3,5,2,4,4,1,5,4,4,3,1,5,3,5,5,1,3,2,1,4,3,3,1,1,5,3,5,4,3],"rng":2006,"moves":15,"target":1750},{"name":"Prism Push","goal":"Score 1920 in 14 moves","board":[1,3,2,1,2,3,2,3,5,2,2,3,4,5,4,1,4,4,3,2,1,3,4,3,5,3,3,2,3,4,5,2,1,3,3,1],"rng":2007,"moves":14,"target":1920},{"name":"High Stakes","goal":"Score 1770 in 13 moves","board":[2,4,1,1,2,3,4,3,1,2,4,5,5,3,3,2,5,4,4,5,4,4,3,5,4,2,5,5,1,4,2,4,5,3,1,4],"rng":2008,"moves":13,"target":1770},{"name":"Final Cascade","goal":"Score 1560 in 12 moves","board":[1,1,5,5,3,3,2,3,3,2,2,1,2,4,4,1,1,4,1,3,3,2,1,3,2,5,2,4,4,3,3,2,1,2,2,1],"rng":2009,"moves":12,"target":1560}];
   const SIZE = 6;
   const CELLS = SIZE * SIZE;
   const GEM_TYPES = 5;
@@ -125,16 +126,23 @@
     return actions;
   }
 
-  function createState(seed) {
+  function createState(seed, level) {
     const state = {
       board: new Array(CELLS).fill(0),
-      movesLeft: START_MOVES,
+      movesLeft: level ? level.moves : START_MOVES,
+      target: level ? level.target : 0,
       points: 0,
       lastCleared: 0,
       lastCombo: 0,
       stepCount: 0,
       rng: (seed >>> 0) || 1,
     };
+
+    if (level) {
+      state.board = level.board.slice();
+      state.rng = level.rng;
+      return state;
+    }
 
     let attempts = 0;
     while (attempts < 50) {
@@ -155,8 +163,12 @@
     return state;
   }
 
+  function isWon(state) {
+    return state.target > 0 && state.points >= state.target;
+  }
+
   function isOver(state) {
-    return state.movesLeft <= 0;
+    return state.movesLeft <= 0 || isWon(state);
   }
 
   function step(state, action) {
@@ -215,7 +227,7 @@
     return state.points;
   }
 
-  const api = { SIZE, CELLS, GEM_TYPES, START_MOVES, findMatches, createState, legalActions, step, isOver, score };
+  const api = { CAMPAIGN, SIZE, CELLS, GEM_TYPES, START_MOVES, findMatches, createState, legalActions, step, isOver, isWon, score };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GameLogic = api;
 })(typeof self !== 'undefined' ? self : globalThis);

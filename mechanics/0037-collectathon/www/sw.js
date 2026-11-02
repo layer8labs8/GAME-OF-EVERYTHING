@@ -1,4 +1,4 @@
-const CACHE = 'goe-0037-collectathon-v2';
+const CACHE = 'goe-0037-collectathon-v3';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

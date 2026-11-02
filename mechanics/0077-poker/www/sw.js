@@ -1,4 +1,4 @@
-const CACHE_NAME = 'royal-holdem-v2';
+const CACHE_NAME = 'royal-holdem-v3';
 const ASSETS = [
   './',
   './index.html',

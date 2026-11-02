@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sunkenspire-v2';
+const CACHE_NAME = 'sunkenspire-v3';
 const ASSETS = [
   './',
   './index.html',

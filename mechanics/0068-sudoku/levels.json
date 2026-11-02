@@ -1,0 +1,286 @@
+{
+  "schema": 1,
+  "mechanic": "sudoku",
+  "levels": [
+    {
+      "id": "001",
+      "name": "Almost There",
+      "difficulty": 1,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          3,
+          0,
+          1,
+          2,
+          0,
+          2,
+          0,
+          0,
+          2,
+          1,
+          4,
+          3,
+          0,
+          3,
+          2,
+          0
+        ]
+      },
+      "par": 6,
+      "solution": "302330"
+    },
+    {
+      "id": "002",
+      "name": "Few Gaps",
+      "difficulty": 1,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          4,
+          1,
+          0,
+          3,
+          2,
+          0,
+          4,
+          0,
+          3,
+          0,
+          0,
+          0,
+          1,
+          4,
+          0,
+          2
+        ]
+      },
+      "par": 7,
+      "solution": "1201032"
+    },
+    {
+      "id": "003",
+      "name": "Open Row",
+      "difficulty": 2,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          2,
+          4,
+          0,
+          3,
+          0,
+          0,
+          0,
+          4,
+          0,
+          0,
+          3,
+          0,
+          3,
+          1,
+          0,
+          2
+        ]
+      },
+      "par": 8,
+      "solution": "00213103"
+    },
+    {
+      "id": "004",
+      "name": "Half Done",
+      "difficulty": 2,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          0,
+          3,
+          1,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          4,
+          0,
+          1,
+          1,
+          0,
+          4,
+          0
+        ]
+      },
+      "par": 9,
+      "solution": "310232112"
+    },
+    {
+      "id": "005",
+      "name": "Thin Clues",
+      "difficulty": 3,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          0,
+          4,
+          0,
+          0,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          2,
+          0,
+          0,
+          1
+        ]
+      },
+      "par": 10,
+      "solution": "0210330123"
+    },
+    {
+      "id": "006",
+      "name": "Quiet Corners",
+      "difficulty": 3,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          4,
+          4,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "par": 11,
+      "solution": "03211002123"
+    },
+    {
+      "id": "007",
+      "name": "Sparse",
+      "difficulty": 4,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          0,
+          0,
+          4,
+          0,
+          0,
+          3,
+          0,
+          0,
+          1,
+          2,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "par": 11,
+      "solution": "10231023231"
+    },
+    {
+      "id": "008",
+      "name": "Long Look",
+      "difficulty": 4,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          0,
+          0,
+          0,
+          4,
+          0,
+          1,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          1,
+          0,
+          0,
+          2
+        ]
+      },
+      "par": 11,
+      "solution": "21031213032"
+    },
+    {
+      "id": "009",
+      "name": "Bare Grid",
+      "difficulty": 5,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          0,
+          1,
+          0,
+          0,
+          4,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          4
+        ]
+      },
+      "par": 11,
+      "solution": "13220230112"
+    },
+    {
+      "id": "010",
+      "name": "Last Clue",
+      "difficulty": 5,
+      "data": {
+        "goal": "Fill the grid. Three mistakes end the level",
+        "givens": [
+          0,
+          0,
+          0,
+          0,
+          4,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          4,
+          1
+        ]
+      },
+      "par": 11,
+      "solution": "12030103122"
+    }
+  ]
+}

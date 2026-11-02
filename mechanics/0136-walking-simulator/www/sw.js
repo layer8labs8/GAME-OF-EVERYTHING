@@ -1,4 +1,4 @@
-const CACHE_NAME = 'solitaryechoes-v2';
+const CACHE_NAME = 'solitaryechoes-v3';
 const ASSETS = [
   './',
   './index.html',

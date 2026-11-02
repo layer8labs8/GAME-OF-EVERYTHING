@@ -1,4 +1,4 @@
-const CACHE_NAME = 'runeanvil-v2';
+const CACHE_NAME = 'runeanvil-v3';
 const ASSETS = [
   './',
   './index.html',

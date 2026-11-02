@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bistrorush-v2';
+const CACHE_NAME = 'bistrorush-v3';
 const ASSETS = [
   './',
   './index.html',

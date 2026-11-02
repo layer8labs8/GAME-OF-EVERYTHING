@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hexa-conduits-v2';
+const CACHE_NAME = 'hexa-conduits-v3';
 const ASSETS = [
   './',
   './index.html',

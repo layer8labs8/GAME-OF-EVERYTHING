@@ -1,4 +1,4 @@
-const CACHE = 'goe-0009-endless-runner-v2';
+const CACHE = 'goe-0009-endless-runner-v3';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

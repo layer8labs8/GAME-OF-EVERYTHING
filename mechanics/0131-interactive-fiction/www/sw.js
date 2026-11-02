@@ -1,4 +1,4 @@
-const CACHE_NAME = 'colossalvault-v2';
+const CACHE_NAME = 'colossalvault-v3';
 const ASSETS = [
   './',
   './index.html',

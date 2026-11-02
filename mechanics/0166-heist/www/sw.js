@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vault-infiltrator-v2';
+const CACHE_NAME = 'vault-infiltrator-v3';
 const ASSETS = [
   './',
   './index.html',

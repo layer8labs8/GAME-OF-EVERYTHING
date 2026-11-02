@@ -13,6 +13,7 @@
     #goe-start h1 { margin: 0 0 14px; font-size: 34px; letter-spacing: .5px; animation: goe-in .35s ease both; }
     #goe-start p { margin: 0 0 30px; max-width: 320px; font-size: 16px; line-height: 1.45; color: #c9d3ee; animation: goe-in .45s ease both; }
     #goe-start b { padding: 13px 34px; border-radius: 30px; background: #ffd166; color: #14182a; font-size: 18px; animation: goe-pulse 1.5s ease infinite; }
+    #goe-level { position: fixed; left: 50px; right: 8px; bottom: 12px; z-index: 40; pointer-events: none; text-align: center; color: #ffe680; font: 600 13px system-ui, sans-serif; text-shadow: 0 1px 3px #000; }
     #goe-mute { position: fixed; left: 8px; bottom: 8px; z-index: 40; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; font: 15px system-ui, sans-serif; }
   `;
 
@@ -38,6 +39,8 @@
   let words = [];
   let flash = 0;
   let recent = [];
+  let campaign = null;
+  let level = 0;
 
   const reduced = () => {
     try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
@@ -174,9 +177,46 @@
     blip(130, 230, 'sawtooth', 0.06);
   }
 
-  function finish(state) {
-    const won = state && (state.won === true || state.winner === 'player' || state.victory === true || state.result === 'win');
+  // Games that export CAMPAIGN get numbered levels; beating one unlocks the next.
+  function levelKey() {
+    return 'goe-level-' + (window.location ? window.location.pathname : '');
+  }
+
+  function showLevel() {
+    if (!campaign) return;
+    let chip = document.getElementById('goe-level');
+    if (!chip || chip.id !== 'goe-level') {
+      chip = document.createElement('div');
+      chip.id = 'goe-level';
+      document.body.appendChild(chip);
+    }
+    const entry = campaign.CAMPAIGN[level];
+    chip.textContent = 'Level ' + (level + 1) + '/' + campaign.CAMPAIGN.length + ' · ' + entry.goal;
+  }
+
+  function startCampaign(api) {
+    campaign = api;
+    try { level = Math.min(api.CAMPAIGN.length - 1, Math.max(0, Number(localStorage.getItem(levelKey())) || 0)); } catch (e) { level = 0; }
+    const make = api.createState;
+    api.createState = function (seed) {
+      const state = make(seed, api.CAMPAIGN[level]);
+      showLevel();
+      return state;
+    };
+  }
+
+  function levelUp() {
+    if (!campaign || level >= campaign.CAMPAIGN.length - 1) return;
+    level += 1;
+    try { localStorage.setItem(levelKey(), String(level)); } catch (e) { /* private window */ }
+    words.push({ text: 'Level ' + (level + 1) + ' unlocked', x: window.innerWidth / 2, y: window.innerHeight * 0.3, life: 2, size: 26, color: '#3ddc97' });
+    runFx();
+  }
+
+  function finish(api, state) {
+    const won = state && ((api.isWon && api.isWon(state)) || state.won === true || state.winner === 'player' || state.victory === true || state.result === 'win');
     if (won) {
+      levelUp();
       const w = window.innerWidth;
       for (let i = 0; i < 5; i++) burst(w * (0.15 + i * 0.175), window.innerHeight * 0.3, 22, ['#ffd166', '#3ddc97', '#7cc4ff', '#ff7b9c'], 4.5);
       tune([523, 659, 784, 1047], 120);
@@ -194,7 +234,7 @@
     if (delta > 0 || reward > 0) recent.push(now);
     if (reward < 0 || delta < 0) hurt();
     else if (delta > 0 && (!steady || delta >= 50)) pop(delta);
-    if (!wasOver && api.isOver(state)) finish(state);
+    if (!wasOver && api.isOver(state)) finish(api, state);
   }
 
   function wrap(api) {
@@ -214,6 +254,7 @@
     try {
       api.step = hooked;
       api.goeKit = true;
+      if (Array.isArray(api.CAMPAIGN) && api.CAMPAIGN.length && typeof api.createState === 'function') startCampaign(api);
     } catch (e) { /* read-only api: the game still runs, just without effects */ }
   }
 

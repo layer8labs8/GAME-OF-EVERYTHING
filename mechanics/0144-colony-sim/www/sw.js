@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aegisoutpost-v2';
+const CACHE_NAME = 'aegisoutpost-v3';
 const ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,5 @@
 (function (root) {
+  const CAMPAIGN = [{"name":"Open Field","goal":"Clear the grid. 5 mines, no guessing needed","mines":[10,23,40,43,45],"first":8},{"name":"Safe Steps","goal":"Clear the grid. 5 mines, no guessing needed","mines":[11,21,24,36,46],"first":1},{"name":"Light Mines","goal":"Clear the grid. 6 mines, no guessing needed","mines":[8,9,20,25,26,33],"first":45},{"name":"Careful Path","goal":"Clear the grid. 6 mines, no guessing needed","mines":[5,15,26,28,35,41],"first":31},{"name":"Narrow Gaps","goal":"Clear the grid. 7 mines, no guessing needed","mines":[4,17,22,29,40,41,46],"first":13},{"name":"Tight Spots","goal":"Clear the grid. 7 mines, no guessing needed","mines":[19,23,24,27,38,44,48],"first":9},{"name":"Minefield","goal":"Clear the grid. 8 mines, no guessing needed","mines":[4,7,8,13,17,18,35,37],"first":32},{"name":"Deep Grid","goal":"Clear the grid. 8 mines, no guessing needed","mines":[12,16,36,37,38,41,45,47],"first":3},{"name":"Danger Zone","goal":"Clear the grid. 9 mines, no guessing needed","mines":[14,17,24,26,27,29,44,45,48],"first":12},{"name":"Full Alert","goal":"Clear the grid. 10 mines, no guessing needed","mines":[0,1,5,8,11,14,18,24,32,46],"first":43}];
   const SIZE = 7;
   const CELLS = SIZE * SIZE;
   const MINES = 7;
@@ -40,18 +41,28 @@
     return counts;
   }
 
-  function createState(seed) {
+  function createState(seed, level) {
     const state = {
       mines: new Array(CELLS).fill(false),
       counts: new Array(CELLS).fill(0),
       revealed: new Array(CELLS).fill(false),
       revealedCount: 0,
+      mineCount: level ? level.mines.length : MINES,
       points: 0,
       outcome: 'playing',
       explodedCell: -1,
       stepCount: 0,
       rng: (seed >>> 0) || 1,
     };
+
+    if (level) {
+      for (const m of level.mines) state.mines[m] = true;
+      state.counts = computeCounts(state.mines);
+      step(state, level.first);
+      state.points = 0;
+      state.stepCount = 0;
+      return state;
+    }
 
     const indices = Array.from({ length: CELLS }, (_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
@@ -128,7 +139,7 @@
 
     state.revealedCount += newlyRevealed;
     let reward = newlyRevealed * 10;
-    if (state.revealedCount === CELLS - MINES) {
+    if (state.revealedCount === CELLS - state.mineCount) {
       state.outcome = 'won';
       reward += 100;
     }
@@ -140,7 +151,11 @@
     return state.points;
   }
 
-  const api = { SIZE, CELLS, MINES, neighbors, computeCounts, createState, legalActions, step, isOver, score };
+  function isWon(state) {
+    return state.outcome === 'won';
+  }
+
+  const api = { CAMPAIGN, SIZE, CELLS, MINES, neighbors, computeCounts, createState, legalActions, step, isOver, isWon, score };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GameLogic = api;
 })(typeof self !== 'undefined' ? self : globalThis);

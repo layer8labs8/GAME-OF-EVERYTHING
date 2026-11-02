@@ -1,4 +1,4 @@
-const CACHE_NAME = 'netherascendance-v2';
+const CACHE_NAME = 'netherascendance-v3';
 const ASSETS = [
   './',
   './index.html',

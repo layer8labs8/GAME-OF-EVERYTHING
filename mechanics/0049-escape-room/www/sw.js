@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cryptic-vault-v2';
+const CACHE_NAME = 'cryptic-vault-v3';
 const ASSETS = [
   './',
   './index.html',

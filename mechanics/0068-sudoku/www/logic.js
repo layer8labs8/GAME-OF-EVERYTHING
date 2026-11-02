@@ -1,4 +1,5 @@
 (function (root) {
+  const CAMPAIGN = [{"name":"Almost There","goal":"Fill the grid. Three mistakes end the level","givens":[3,0,1,2,0,2,0,0,2,1,4,3,0,3,2,0]},{"name":"Few Gaps","goal":"Fill the grid. Three mistakes end the level","givens":[4,1,0,3,2,0,4,0,3,0,0,0,1,4,0,2]},{"name":"Open Row","goal":"Fill the grid. Three mistakes end the level","givens":[2,4,0,3,0,0,0,4,0,0,3,0,3,1,0,2]},{"name":"Half Done","goal":"Fill the grid. Three mistakes end the level","givens":[0,3,1,2,0,0,0,0,0,4,0,1,1,0,4,0]},{"name":"Thin Clues","goal":"Fill the grid. Three mistakes end the level","givens":[0,4,0,0,3,2,0,0,0,0,0,3,2,0,0,1]},{"name":"Quiet Corners","goal":"Fill the grid. Three mistakes end the level","givens":[0,0,0,0,3,0,0,4,4,0,2,0,0,0,0,1]},{"name":"Sparse","goal":"Fill the grid. Three mistakes end the level","givens":[0,0,4,0,0,3,0,0,1,2,0,0,0,0,1,0]},{"name":"Long Look","goal":"Fill the grid. Three mistakes end the level","givens":[0,0,0,4,0,1,0,0,0,3,0,0,1,0,0,2]},{"name":"Bare Grid","goal":"Fill the grid. Three mistakes end the level","givens":[0,1,0,0,4,0,2,0,0,0,0,0,1,0,0,4]},{"name":"Last Clue","goal":"Fill the grid. Three mistakes end the level","givens":[0,0,0,0,4,0,3,0,0,0,0,0,0,2,4,1]}];
   const MAX_MISTAKES = 3;
   const MAX_STEPS = 80;
   const BASE = [
@@ -58,6 +59,19 @@
     return total;
   }
 
+  function solveBoard(board) {
+    const empty = board.indexOf(0);
+    if (empty === -1) return board;
+    for (let d = 1; d <= 4; d++) {
+      if (canUse(board, empty, d)) {
+        board[empty] = d;
+        if (solveBoard(board)) return board;
+        board[empty] = 0;
+      }
+    }
+    return null;
+  }
+
   function makeSolvedGrid(state) {
     const map = shuffle([1, 2, 3, 4], state);
     let g = BASE.map((row) => row.map((v) => map[v - 1]));
@@ -77,7 +91,7 @@
     return out;
   }
 
-  function createState(seed) {
+  function createState(seed, level) {
     const state = {
       board: [],
       given: [],
@@ -88,6 +102,12 @@
       stepCount: 0,
       rng: (seed >>> 0) || 1,
     };
+    if (level) {
+      state.board = level.givens.slice();
+      state.solution = solveBoard(level.givens.slice());
+      state.given = state.board.map((v) => v !== 0);
+      return state;
+    }
     const sol = makeSolvedGrid(state);
     const puzzle = sol.slice();
     const order = shuffle(Array.from({ length: 16 }, (_, i) => i), state);
@@ -152,7 +172,11 @@
     return state.points;
   }
 
-  const api = { MAX_MISTAKES, countSolutions, canUse, createState, legalActions, step, isOver, score };
+  function isWon(state) {
+    return state.solved;
+  }
+
+  const api = { CAMPAIGN, MAX_MISTAKES, countSolutions, canUse, createState, legalActions, step, isOver, isWon, score };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GameLogic = api;
 })(typeof self !== 'undefined' ? self : globalThis);

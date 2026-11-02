@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rune-scribe-v2';
+const CACHE_NAME = 'rune-scribe-v3';
 const ASSETS = [
   './',
   './index.html',

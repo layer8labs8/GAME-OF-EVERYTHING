@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nitro-carnage-v2';
+const CACHE_NAME = 'nitro-carnage-v3';
 const ASSETS = [
   './',
   './index.html',

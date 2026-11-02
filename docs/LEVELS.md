@@ -81,6 +81,10 @@ replay(data, moves)            // -> boolean   true when the moves solve the lev
 3. Read the diff: the new `par` and `solution` should look plausible for the puzzle.
 4. Run `npm run verify`.
 
+## Campaigns
+
+A game that exports `CAMPAIGN` (a list of level objects with a `goal` line) and `isWon(state)`, and accepts `createState(seed, level)`, gets numbered levels with no screen code: `www/kit.js` loads the current level, shows its goal, unlocks the next one on a win and remembers progress. Solvers can share `tools/level_search.js`, which plays the real rules. There a solution has one character per move, and `par` is the length of the solution the solver found. A beam search does not always find the shortest one.
+
 ## Reference implementation
 
 `mechanics/0043-sokoban` is the first mechanic with data levels: rules in `www/logic.js`, a breadth-first solver in `solver.js`, eight levels in `levels.json`, and tests in `test.js`.

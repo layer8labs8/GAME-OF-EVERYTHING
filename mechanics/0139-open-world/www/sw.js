@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wildsofeldoria-v2';
+const CACHE_NAME = 'wildsofeldoria-v3';
 const ASSETS = [
   './',
   './index.html',

@@ -1,6 +1,7 @@
 (function (root) {
+  const CAMPAIGN = [{"name":"Quiet Road","goal":"Survive 2 waves with 12 lives","gold":120,"hp":12,"waves":2,"creepHealth":0.6},{"name":"First Raid","goal":"Survive 2 waves with 12 lives","gold":110,"hp":12,"waves":2,"creepHealth":0.7},{"name":"Longer Night","goal":"Survive 3 waves with 10 lives","gold":100,"hp":10,"waves":3,"creepHealth":0.7},{"name":"Thin Walls","goal":"Survive 3 waves with 10 lives","gold":90,"hp":10,"waves":3,"creepHealth":0.8},{"name":"Three Fronts","goal":"Survive 3 waves with 8 lives","gold":80,"hp":8,"waves":3,"creepHealth":0.9},{"name":"Tough Hide","goal":"Survive 4 waves with 8 lives","gold":75,"hp":8,"waves":4,"creepHealth":0.9},{"name":"Fourth Wave","goal":"Survive 4 waves with 6 lives","gold":70,"hp":6,"waves":4,"creepHealth":1},{"name":"Lean Purse","goal":"Survive 4 waves with 6 lives","gold":65,"hp":6,"waves":4,"creepHealth":1},{"name":"Last Stand","goal":"Survive 5 waves with 5 lives","gold":60,"hp":5,"waves":5,"creepHealth":1},{"name":"The Long Siege","goal":"Survive 5 waves with 5 lives","gold":60,"hp":5,"waves":5,"creepHealth":1.1}];
   const MAX_WAVES = 5;
-  const MAX_STEPS = 500;
+  const MAX_STEPS = 1200;
   const START_GOLD = 60;
   const START_HP = 10;
 
@@ -46,12 +47,14 @@
     state.spawnTimer = 2;
   }
 
-  function createState(seed) {
+  function createState(seed, level) {
     const state = {
       slots: PLATFORMS.map(() => ({ type: 'empty', level: 1, cooldown: 0 })),
       creeps: [],
-      gold: START_GOLD,
-      citadelHp: START_HP,
+      gold: level ? level.gold : START_GOLD,
+      citadelHp: level ? level.hp : START_HP,
+      maxWaves: level ? level.waves : MAX_WAVES,
+      creepHealth: level ? level.creepHealth : 1,
       wave: 1,
       waveCreepsLeft: 0,
       spawnTimer: 0,
@@ -118,7 +121,7 @@
     if (state.waveCreepsLeft > 0) {
       state.spawnTimer -= 1;
       if (state.spawnTimer <= 0) {
-        const hp = 10 + state.wave * 6;
+        const hp = Math.round((10 + state.wave * 6) * state.creepHealth);
         state.creeps.push({
           id: state.stepCount * 100 + state.waveCreepsLeft,
           x: WAYPOINTS[0].x,
@@ -210,7 +213,7 @@
 
     // Advance waves
     if (state.waveCreepsLeft === 0 && state.creeps.length === 0 && state.citadelHp > 0) {
-      if (state.wave >= MAX_WAVES) {
+      if (state.wave >= state.maxWaves) {
         state.won = true;
         state.points += 500;
         reward += 500;
@@ -227,7 +230,11 @@
     return state.points;
   }
 
-  const api = { WAYPOINTS, PLATFORMS, TOWER_TYPES, UPGRADE_COST, createState, legalActions, step, isOver, score };
+  function isWon(state) {
+    return state.won;
+  }
+
+  const api = { CAMPAIGN, WAYPOINTS, PLATFORMS, TOWER_TYPES, UPGRADE_COST, createState, legalActions, step, isOver, isWon, score };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GameLogic = api;
 })(typeof self !== 'undefined' ? self : globalThis);

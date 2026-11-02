@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gridhauler-v2';
+const CACHE_NAME = 'gridhauler-v3';
 const ASSETS = [
   './',
   './index.html',

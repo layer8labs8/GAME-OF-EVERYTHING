@@ -1,4 +1,4 @@
-const CACHE_NAME = 'miniworkshop-v2';
+const CACHE_NAME = 'miniworkshop-v3';
 const ASSETS = [
   './',
   './index.html',

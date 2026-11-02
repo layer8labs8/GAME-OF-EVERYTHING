@@ -1,4 +1,4 @@
-const CACHE_NAME = 'biospheregenesis-v2';
+const CACHE_NAME = 'biospheregenesis-v3';
 const ASSETS = [
   './',
   './index.html',

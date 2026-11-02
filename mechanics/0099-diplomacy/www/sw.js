@@ -1,4 +1,4 @@
-const CACHE_NAME = 'diplomacy-v2';
+const CACHE_NAME = 'diplomacy-v3';
 const ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lemming-brigade-v2';
+const CACHE_NAME = 'lemming-brigade-v3';
 const ASSETS = [
   './',
   './index.html',

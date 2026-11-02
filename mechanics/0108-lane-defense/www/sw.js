@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lane-defense-v2';
+const CACHE_NAME = 'lane-defense-v3';
 const ASSETS = [
   './',
   './index.html',

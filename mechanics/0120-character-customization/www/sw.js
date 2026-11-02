@@ -1,4 +1,4 @@
-const CACHE_NAME = 'avatardestiny-v2';
+const CACHE_NAME = 'avatardestiny-v3';
 const ASSETS = [
   './',
   './index.html',

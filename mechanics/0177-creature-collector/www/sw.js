@@ -1,4 +1,4 @@
-const CACHE_NAME = 'beast-tamer-v2';
+const CACHE_NAME = 'beast-tamer-v3';
 const ASSETS = [
   './',
   './index.html',

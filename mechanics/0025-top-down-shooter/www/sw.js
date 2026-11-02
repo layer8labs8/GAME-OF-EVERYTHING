@@ -1,4 +1,4 @@
-const CACHE = 'goe-0025-top-down-shooter-v2';
+const CACHE = 'goe-0025-top-down-shooter-v3';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'roguesdescent-v2';
+const CACHE_NAME = 'roguesdescent-v3';
 const ASSETS = [
   './',
   './index.html',
