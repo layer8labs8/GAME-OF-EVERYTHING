@@ -141,3 +141,20 @@ test('same seed gives the same game', () => {
   };
   assert.deepEqual(run(), run());
 });
+
+test('bot API: every legal action can be played', () => {
+  const s = G.createState(4);
+  const actions = G.legalActions(s);
+  assert.ok(actions.length > 0);
+  const before = s.score;
+  const res = G.step(s, actions[0]);
+  assert.equal(res.reward, s.score - before);
+  assert.equal(res.done, G.isOver(s));
+  assert.throws(() => G.step(s, '9:9:9'), /illegal action/);
+});
+
+test('the state is plain JSON', () => {
+  const s = G.createState(4);
+  for (let i = 0; i < 10 && !G.isOver(s); i++) G.step(s, G.legalActions(s)[0]);
+  assert.deepEqual(JSON.parse(JSON.stringify(s)), s);
+});

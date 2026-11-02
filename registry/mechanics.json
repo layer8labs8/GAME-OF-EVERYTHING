@@ -9,7 +9,7 @@
       "family": "Action",
       "status": "playable",
       "levels": "endless",
-      "bot": false,
+      "bot": true,
       "source": "project"
     },
     {
@@ -20,7 +20,7 @@
       "family": "Puzzle",
       "status": "playable",
       "levels": "endless",
-      "bot": false,
+      "bot": true,
       "source": "project"
     },
     {

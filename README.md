@@ -113,7 +113,7 @@ If this project helped you, I'm really glad. If you'd like to support it, you ca
 <!-- STATUS:START -->
 **Playable: 179 / 179** `████████████████████████`
 
-Logic with tests or better: 179 / 179 · Bot interface: 177 / 179 · Data levels: 6
+Logic with tests or better: 179 / 179 · Bot interface: 179 / 179 · Data levels: 6
 
 | Stage | Mechanics |
 |---|---|

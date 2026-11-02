@@ -16,7 +16,7 @@
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
 <script>
-const { W, H, createState, step } = GameLogic;
+const { W, H, createState, advance } = GameLogic;
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
@@ -113,7 +113,7 @@ function frame(now) {
   if (keys.left) targetX = Math.max(0, targetX - 420 * dt);
   if (keys.right) targetX = Math.min(W, targetX + 420 * dt);
   const wasOver = state.over;
-  step(state, dt, targetX);
+  advance(state, dt, targetX);
   if (state.over && !wasOver) {
     overAt = performance.now();
     if (state.score > best) {

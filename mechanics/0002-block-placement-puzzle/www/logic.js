@@ -34,11 +34,13 @@
     [[0, 1], [1, 1], [2, 0], [2, 1]],
   ];
 
-  function mulberry32(a) {
-    return function () {
-      a |= 0;
-      a = (a + 0x6d2b79f5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+  const MAX_BOT_MOVES = 2000; // bots stop here; people play until the board is stuck
+
+  // Random numbers come from an integer in the state, so the state stays plain JSON.
+  function randomFor(s) {
+    return () => {
+      s.rng = (s.rng + 0x6d2b79f5) | 0;
+      let t = Math.imul(s.rng ^ (s.rng >>> 15), 1 | s.rng);
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
@@ -90,9 +92,9 @@
   }
 
   function createState(seed) {
-    const rand = mulberry32(seed);
-    const board = createBoard();
-    return { board, tray: drawTray(rand, board), score: 0, combo: 0, over: false, rand };
+    const s = { board: createBoard(), tray: [], score: 0, combo: 0, moves: 0, over: false, rng: seed | 0 };
+    s.tray = drawTray(randomFor(s), s.board);
+    return s;
   }
 
   function hasMove(s) {
@@ -127,12 +129,43 @@
     s.score += gain;
 
     s.tray[slot] = null;
-    if (s.tray.every((p) => p === null)) s.tray = drawTray(s.rand, s.board);
+    if (s.tray.every((p) => p === null)) s.tray = drawTray(randomFor(s), s.board);
     s.over = !hasMove(s);
     return { ok: true, cleared, gain, rows, cols };
   }
 
-  const api = { N, SHAPES, createBoard, bounds, canPlace, fitsAnywhere, drawTray, createState, hasMove, place };
+  function isOver(s) {
+    return s.over;
+  }
+
+  function legalActions(s) {
+    if (s.over) return [];
+    const actions = [];
+    s.tray.forEach((piece, slot) => {
+      if (!piece) return;
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          if (canPlace(s.board, SHAPES[piece.shape], r, c)) actions.push(`${slot}:${r}:${c}`);
+        }
+      }
+    });
+    return actions;
+  }
+
+  function step(s, action) {
+    if (!legalActions(s).includes(action)) throw new Error(`illegal action: ${JSON.stringify(action)}`);
+    const [slot, r, c] = action.split(':').map(Number);
+    const { gain } = place(s, slot, r, c);
+    s.moves += 1;
+    if (s.moves >= MAX_BOT_MOVES) s.over = true;
+    return { reward: gain, done: s.over };
+  }
+
+  function score(s) {
+    return s.score;
+  }
+
+  const api = { N, SHAPES, createBoard, bounds, canPlace, fitsAnywhere, drawTray, createState, hasMove, place, legalActions, step, isOver, score };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.BlockLogic = api;
 })(typeof self !== 'undefined' ? self : globalThis);
