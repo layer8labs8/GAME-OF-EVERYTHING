@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wildstalker-v4';
+const CACHE_NAME = 'wildstalker-v5';
 const ASSETS = [
   './',
   './index.html',

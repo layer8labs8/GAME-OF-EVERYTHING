@@ -1,4 +1,4 @@
-const CACHE = 'goe-0070-minesweeper-v4';
+const CACHE = 'goe-0070-minesweeper-v5';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rpg-v4';
+const CACHE_NAME = 'rpg-v5';
 const ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'spire-crawl-v4';
+const CACHE_NAME = 'spire-crawl-v5';
 const ASSETS = [
   './',
   './index.html',

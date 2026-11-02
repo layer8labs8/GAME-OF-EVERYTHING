@@ -1,4 +1,4 @@
-const CACHE = 'goe-0089-strategy-v4';
+const CACHE = 'goe-0089-strategy-v5';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

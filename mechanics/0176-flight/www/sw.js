@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aero-ace-v4';
+const CACHE_NAME = 'aero-ace-v5';
 const ASSETS = [
   './',
   './index.html',

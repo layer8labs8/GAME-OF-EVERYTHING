@@ -1,4 +1,4 @@
-const CACHE_NAME = 'echoesofstarlight-v4';
+const CACHE_NAME = 'echoesofstarlight-v5';
 const ASSETS = [
   './',
   './index.html',

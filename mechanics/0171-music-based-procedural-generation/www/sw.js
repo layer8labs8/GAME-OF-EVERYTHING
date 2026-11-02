@@ -1,4 +1,4 @@
-const CACHE_NAME = 'beat-odyssey-v4';
+const CACHE_NAME = 'beat-odyssey-v5';
 const ASSETS = [
   './',
   './index.html',

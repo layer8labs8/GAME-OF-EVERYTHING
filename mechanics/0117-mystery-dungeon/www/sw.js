@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mystery-dungeon-v4';
+const CACHE_NAME = 'mystery-dungeon-v5';
 const ASSETS = [
   './',
   './index.html',

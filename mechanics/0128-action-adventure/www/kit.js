@@ -3,6 +3,53 @@
 (function () {
   'use strict';
 
+  // Drawing helpers for game screens: GOE.art.tile(ctx, ...) and friends.
+  const rgb = (color) => {
+    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color);
+    return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [128, 128, 128];
+  };
+  const mix = (color, to, t) => 'rgb(' + rgb(color).map((v) => Math.round(v + (to - v) * t)).join(',') + ')';
+  const lighten = (color, t) => mix(color, 255, t);
+  const darken = (color, t) => mix(color, 0, t);
+
+  function roundPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function glow(ctx, x, y, r, color, alpha) {
+    const [cr, cg, cb] = rgb(color);
+    const g = ctx.createRadialGradient(x, y, Math.max(0.1, r * 0.1), x, y, r);
+    g.addColorStop(0, 'rgba(' + cr + ',' + cg + ',' + cb + ',' + (alpha === undefined ? 0.35 : alpha) + ')');
+    g.addColorStop(1, 'rgba(' + cr + ',' + cg + ',' + cb + ',0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+
+  function tile(ctx, x, y, w, h, r, color) {
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, lighten(color, 0.26));
+    g.addColorStop(0.55, color);
+    g.addColorStop(1, darken(color, 0.26));
+    ctx.fillStyle = g;
+    roundPath(ctx, x, y, w, h, r);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    roundPath(ctx, x + w * 0.09, y + h * 0.07, w * 0.82, h * 0.26, Math.min(r, h * 0.12));
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+    ctx.lineWidth = 1;
+    roundPath(ctx, x + 0.5, y + 0.5, w - 1, h - 1, r);
+    ctx.stroke();
+  }
+
+  window.GOE = { art: { lighten, darken, glow, tile, roundPath } };
+
   const CSS = `
     @keyframes goe-shake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-7px,3px); } 40% { transform: translate(6px,-4px); } 60% { transform: translate(-4px,-3px); } 80% { transform: translate(3px,4px); } }
     @keyframes goe-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .65; transform: scale(.97); } }
@@ -16,8 +63,8 @@
     #goe-start h1 { margin: 0 0 14px; font-size: 34px; letter-spacing: .5px; animation: goe-in .35s ease both; }
     #goe-start p { margin: 0 0 30px; max-width: 320px; font-size: 16px; line-height: 1.45; color: #c9d3ee; animation: goe-in .45s ease both; }
     #goe-start b { padding: 13px 34px; border-radius: 30px; background: #ffd166; color: #14182a; font-size: 18px; animation: goe-pulse 1.5s ease infinite; }
-    #goe-level { position: fixed; left: 50px; right: 8px; bottom: 12px; z-index: 40; pointer-events: none; text-align: center; color: #ffe680; font: 600 13px system-ui, sans-serif; text-shadow: 0 1px 3px #000; }
-    #goe-mute { position: fixed; left: 8px; bottom: 8px; z-index: 40; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; font: 15px system-ui, sans-serif; }
+    #goe-level { position: fixed; left: 36px; right: 8px; bottom: 8px; z-index: 40; pointer-events: none; text-align: center; color: #ffe680; font: 600 13px system-ui, sans-serif; text-shadow: 0 1px 3px #000; }
+    #goe-mute { position: fixed; left: 4px; bottom: 4px; z-index: 40; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,.45); color: #fff; font: 12px system-ui, sans-serif; opacity: .75; }
   `;
 
   const realRaf = window.requestAnimationFrame.bind(window);

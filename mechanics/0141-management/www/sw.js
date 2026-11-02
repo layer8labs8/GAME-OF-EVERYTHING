@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apexclinic-v4';
+const CACHE_NAME = 'apexclinic-v5';
 const ASSETS = [
   './',
   './index.html',

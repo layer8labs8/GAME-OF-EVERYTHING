@@ -1,4 +1,4 @@
-const CACHE_NAME = 'metrolife-v4';
+const CACHE_NAME = 'metrolife-v5';
 const ASSETS = [
   './',
   './index.html',

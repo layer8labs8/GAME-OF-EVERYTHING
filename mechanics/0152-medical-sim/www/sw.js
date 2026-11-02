@@ -1,4 +1,4 @@
-const CACHE_NAME = 'traumaward-v4';
+const CACHE_NAME = 'traumaward-v5';
 const ASSETS = [
   './',
   './index.html',

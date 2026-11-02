@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kingdomoftext-v4';
+const CACHE_NAME = 'kingdomoftext-v5';
 const ASSETS = [
   './',
   './index.html',

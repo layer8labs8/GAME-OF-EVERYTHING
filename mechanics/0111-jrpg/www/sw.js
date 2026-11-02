@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jrpg-v4';
+const CACHE_NAME = 'jrpg-v5';
 const ASSETS = [
   './',
   './index.html',

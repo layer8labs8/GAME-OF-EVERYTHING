@@ -1,4 +1,4 @@
-const CACHE_NAME = 'micro-blitz-v4';
+const CACHE_NAME = 'micro-blitz-v5';
 const ASSETS = [
   './',
   './index.html',

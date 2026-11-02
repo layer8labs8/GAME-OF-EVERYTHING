@@ -1,4 +1,4 @@
-const CACHE = 'goe-0022-shoot-em-up-v4';
+const CACHE = 'goe-0022-shoot-em-up-v5';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

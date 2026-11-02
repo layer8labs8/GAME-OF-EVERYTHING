@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ironsoul-v4';
+const CACHE_NAME = 'ironsoul-v5';
 const ASSETS = [
   './',
   './index.html',

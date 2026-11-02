@@ -66,12 +66,7 @@ function rrect(x, y, w, h, r) {
 
 function drawCell(x, y, s, color, alpha) {
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = color;
-  rrect(x + 1, y + 1, s - 2, s - 2, s * 0.18);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.28)';
-  rrect(x + s * 0.1, y + s * 0.1, s * 0.8, s * 0.32, s * 0.12);
-  ctx.fill();
+  GOE.art.tile(ctx, x + 1, y + 1, s - 2, s - 2, s * 0.18, color);
   ctx.globalAlpha = 1;
 }
 
@@ -184,6 +179,13 @@ function draw(dt) {
     const piece = state.tray[drag.slot];
     if (canPlace(state.board, SHAPES[piece.shape], d.r, d.c)) {
       target = d;
+      const trial = state.board.map((row) => row.slice());
+      for (const [dr, dc] of SHAPES[piece.shape]) trial[d.r + dr][d.c + dc] = 1;
+      ctx.fillStyle = 'rgba(255,230,128,0.2)';
+      for (let i = 0; i < N; i++) {
+        if (trial[i].every(Boolean)) ctx.fillRect(BX, BY + i * CELL, N * CELL, CELL);
+        if (trial.every((row) => row[i])) ctx.fillRect(BX + i * CELL, BY, CELL, N * CELL);
+      }
       drawPiece(piece, BX + d.c * CELL, BY + d.r * CELL, CELL, 0.35);
     }
   }

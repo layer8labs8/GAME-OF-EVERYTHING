@@ -1,4 +1,4 @@
-const CACHE = 'goe-0007-hack-and-slash-v4';
+const CACHE = 'goe-0007-hack-and-slash-v5';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

@@ -136,6 +136,7 @@ addEventListener('keydown', (e) => {
 });
 
 function drawMine(cx, cy) {
+  GOE.art.glow(ctx, cx, cy, 22, '#ff6b6b', 0.5);
   ctx.fillStyle = '#ff6b6b';
   ctx.beginPath();
   ctx.arc(cx, cy, 10, 0, Math.PI * 2);
@@ -195,7 +196,7 @@ function draw() {
   ctx.fillText(score(state), 26, 74);
   ctx.fillStyle = '#ff922b';
   ctx.textAlign = 'center';
-  ctx.fillText(Math.max(0, MINES - flagsUsed), W / 2, 74);
+  ctx.fillText(Math.max(0, state.mineCount - flagsUsed), W / 2, 74);
   ctx.fillStyle = '#4fd1c5';
   ctx.font = 'bold 22px system-ui, sans-serif';
   ctx.textAlign = 'right';
@@ -204,7 +205,7 @@ function draw() {
   ctx.fillStyle = '#8a93a8';
   ctx.font = '13px system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`Cleared ${state.revealedCount} / ${CELLS - MINES}`, W / 2, 108);
+  ctx.fillText(`Cleared ${state.revealedCount} / ${CELLS - state.mineCount}`, W / 2, 108);
 
   ctx.fillStyle = '#111a33';
   rrect(BX - 6, BY - 6, CELL * SIZE + 12, CELL * SIZE + 12, 14);
@@ -218,12 +219,17 @@ function draw() {
     const rev = state.revealed[i];
     const showMine = isOver(state) && state.mines[i];
 
-    if (i === state.explodedCell) ctx.fillStyle = '#5c1f2b';
-    else if (rev) ctx.fillStyle = '#141f3c';
-    else ctx.fillStyle = '#243666';
-
-    rrect(x + 2, y + 2, CELL - 4, CELL - 4, 7);
-    ctx.fill();
+    if (rev || i === state.explodedCell) {
+      ctx.fillStyle = i === state.explodedCell ? '#5c1f2b' : '#111a33';
+      rrect(x + 2, y + 2, CELL - 4, CELL - 4, 7);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      rrect(x + 2.5, y + 2.5, CELL - 5, CELL - 5, 7);
+      ctx.stroke();
+    } else {
+      GOE.art.tile(ctx, x + 2, y + 2, CELL - 4, CELL - 4, 7, '#34508f');
+    }
 
     if (i === cursor && !isOver(state)) {
       ctx.strokeStyle = '#4fd1c5';

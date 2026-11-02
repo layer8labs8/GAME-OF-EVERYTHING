@@ -1,4 +1,4 @@
-const CACHE_NAME = 'speed-chrono-v4';
+const CACHE_NAME = 'speed-chrono-v5';
 const ASSETS = [
   './',
   './index.html',

@@ -222,12 +222,15 @@ function draw() {
       const x = bx + c * cell;
       const y = by + r * cell;
       if (ch === '#') {
-        ctx.fillStyle = '#2d3b5e';
-        rrect(x + 1, y + 1, cell - 2, cell - 2, 6);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.12)';
-        rrect(x + 3, y + 3, cell - 6, Math.max(4, cell * 0.22), 4);
-        ctx.fill();
+        GOE.art.tile(ctx, x + 1, y + 1, cell - 2, cell - 2, 5, '#3b4a72');
+        ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 2, y + cell / 2);
+        ctx.lineTo(x + cell - 2, y + cell / 2);
+        ctx.moveTo(x + cell * ((r + c) % 2 ? 0.35 : 0.65), y + 2);
+        ctx.lineTo(x + cell * ((r + c) % 2 ? 0.35 : 0.65), y + cell / 2);
+        ctx.stroke();
         continue;
       }
       // Check if outside room (leading spaces)
@@ -236,33 +239,43 @@ function draw() {
       ctx.fill();
 
       if (ch === '.' || ch === '*' || ch === '+') {
+        GOE.art.glow(ctx, x + cell / 2, y + cell / 2, cell * 0.5, '#ffd43b', 0.3 + 0.1 * Math.sin(performance.now() / 300));
         ctx.strokeStyle = '#ffd43b';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.arc(x + cell / 2, y + cell / 2, cell * 0.22, 0, Math.PI * 2);
+        ctx.arc(x + cell / 2, y + cell / 2, cell * 0.2, 0, Math.PI * 2);
         ctx.stroke();
       }
 
       if (ch === '$' || ch === '*') {
         const onTarget = ch === '*';
-        ctx.fillStyle = onTarget ? '#51cf66' : '#f08c00';
-        rrect(x + 4, y + 4, cell - 8, cell - 8, 7);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-        ctx.lineWidth = 2;
-        rrect(x + 8, y + 8, cell - 16, cell - 16, 4);
+        if (onTarget) GOE.art.glow(ctx, x + cell / 2, y + cell / 2, cell * 0.7, '#51cf66', 0.4);
+        GOE.art.tile(ctx, x + 4, y + 4, cell - 8, cell - 8, 5, onTarget ? '#40a860' : '#b5763a');
+        ctx.strokeStyle = onTarget ? 'rgba(220,255,230,0.55)' : 'rgba(70,40,15,0.6)';
+        ctx.lineWidth = Math.max(2, cell * 0.06);
+        ctx.beginPath();
+        ctx.moveTo(x + 9, y + 9);
+        ctx.lineTo(x + cell - 9, y + cell - 9);
+        ctx.moveTo(x + cell - 9, y + 9);
+        ctx.lineTo(x + 9, y + cell - 9);
         ctx.stroke();
       }
 
       if (ch === '@' || ch === '+') {
-        ctx.fillStyle = '#4fd1c5';
+        const bob = Math.sin(performance.now() / 220) * cell * 0.02;
+        GOE.art.tile(ctx, x + cell * 0.26, y + cell * 0.46 + bob, cell * 0.48, cell * 0.42, cell * 0.12, '#3f8fd6');
+        ctx.fillStyle = '#ffd7ae';
         ctx.beginPath();
-        ctx.arc(x + cell / 2, y + cell / 2, cell * 0.34, 0, Math.PI * 2);
+        ctx.arc(x + cell / 2, y + cell * 0.34 + bob, cell * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#7a3e1d';
+        ctx.beginPath();
+        ctx.arc(x + cell / 2, y + cell * 0.28 + bob, cell * 0.22, Math.PI, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#0b1020';
         ctx.beginPath();
-        ctx.arc(x + cell * 0.4, y + cell * 0.44, 2.2, 0, Math.PI * 2);
-        ctx.arc(x + cell * 0.6, y + cell * 0.44, 2.2, 0, Math.PI * 2);
+        ctx.arc(x + cell * 0.42, y + cell * 0.36 + bob, Math.max(1.4, cell * 0.035), 0, Math.PI * 2);
+        ctx.arc(x + cell * 0.58, y + cell * 0.36 + bob, Math.max(1.4, cell * 0.035), 0, Math.PI * 2);
         ctx.fill();
       }
     }

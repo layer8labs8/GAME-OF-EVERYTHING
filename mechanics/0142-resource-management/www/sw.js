@@ -1,4 +1,4 @@
-const CACHE_NAME = 'starfoundry-v4';
+const CACHE_NAME = 'starfoundry-v5';
 const ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'highway-hauler-v4';
+const CACHE_NAME = 'highway-hauler-v5';
 const ASSETS = [
   './',
   './index.html',

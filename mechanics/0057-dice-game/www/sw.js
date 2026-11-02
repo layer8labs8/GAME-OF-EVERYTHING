@@ -1,4 +1,4 @@
-const CACHE_NAME = 'royal-dice-v4';
+const CACHE_NAME = 'royal-dice-v5';
 const ASSETS = [
   './',
   './index.html',

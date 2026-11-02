@@ -187,12 +187,8 @@ function draw() {
         continue;
       }
       const [fill, fg] = TILE_COLORS[v] || ['#b197fc', '#0b1020'];
-      ctx.fillStyle = fill;
-      rrect(x, y, CELL, CELL, 10);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.16)';
-      rrect(x + 4, y + 4, CELL - 8, 16, 6);
-      ctx.fill();
+      if (v >= 64) GOE.art.glow(ctx, x + CELL / 2, y + CELL / 2, CELL * (0.75 + Math.min(0.5, Math.log2(v) * 0.04)), fill.length === 7 ? fill : '#ffd43b', 0.45);
+      GOE.art.tile(ctx, x, y, CELL, CELL, 10, fill);
       ctx.fillStyle = fg;
       ctx.font = v >= 1000 ? 'bold 20px system-ui, sans-serif' : v >= 100 ? 'bold 24px system-ui, sans-serif' : 'bold 28px system-ui, sans-serif';
       ctx.textAlign = 'center';

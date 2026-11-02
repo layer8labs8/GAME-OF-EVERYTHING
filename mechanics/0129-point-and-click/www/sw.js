@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackwoodmanor-v4';
+const CACHE_NAME = 'blackwoodmanor-v5';
 const ASSETS = [
   './',
   './index.html',

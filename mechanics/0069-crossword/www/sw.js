@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lexicross-v4';
+const CACHE_NAME = 'lexicross-v5';
 const ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crypt-step-v4';
+const CACHE_NAME = 'crypt-step-v5';
 const ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'starcross-dating-v4';
+const CACHE_NAME = 'starcross-dating-v5';
 const ASSETS = [
   './',
   './index.html',

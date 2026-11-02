@@ -1,4 +1,4 @@
-const CACHE_NAME = 'genesisengine-v4';
+const CACHE_NAME = 'genesisengine-v5';
 const ASSETS = [
   './',
   './index.html',

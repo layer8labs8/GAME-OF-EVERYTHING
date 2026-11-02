@@ -197,6 +197,8 @@ addEventListener('keydown', (e) => {
   else if (e.key === 'r') restart();
 });
 
+const flipAmount = new Array(16).fill(0);
+
 function draw(dt) {
   if (mismatch) {
     mismatch.timer -= dt;
@@ -246,8 +248,15 @@ function draw(dt) {
     const card = state.grid[i];
     const preview = mismatch && (mismatch.a === i || mismatch.b === i);
     const up = card.faceUp || card.matched || preview;
+    flipAmount[i] += ((up ? 1 : 0) - flipAmount[i]) * Math.min(1, (dt || 0.016) * 13);
+    const turn = Math.abs(Math.cos(flipAmount[i] * Math.PI));
+    ctx.save();
+    ctx.translate(x + CARD / 2, 0);
+    ctx.scale(Math.max(0.03, turn), 1);
+    ctx.translate(-(x + CARD / 2), 0);
 
-    if (up) {
+    if (flipAmount[i] > 0.5) {
+      if (card.matched) GOE.art.glow(ctx, x + CARD / 2, y + CARD / 2, CARD * 0.75, '#38d9a9', 0.3);
       ctx.fillStyle = card.matched ? '#16313a' : preview ? '#362032' : '#1b2644';
       rrect(x, y, CARD, CARD, 12);
       ctx.fill();
@@ -257,21 +266,31 @@ function draw(dt) {
       ctx.stroke();
       drawSymbol(card.symbol, x + CARD / 2, y + CARD / 2, 22);
     } else {
-      ctx.fillStyle = '#24335a';
-      rrect(x, y, CARD, CARD, 12);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      rrect(x + 5, y + 5, CARD - 10, CARD * 0.34, 8);
-      ctx.fill();
-      ctx.strokeStyle = cursor === i ? '#4fd1c5' : '#334678';
+      GOE.art.tile(ctx, x, y, CARD, CARD, 12, '#3a4f8c');
+      ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+      ctx.lineWidth = 1;
+      for (let k = 1; k < 6; k++) {
+        ctx.beginPath();
+        ctx.moveTo(x + (CARD * k) / 6, y + 6);
+        ctx.lineTo(x + CARD - 6, y + CARD - (CARD * k) / 6);
+        ctx.moveTo(x + 6, y + (CARD * k) / 6);
+        ctx.lineTo(x + CARD - (CARD * k) / 6, y + CARD - 6);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = cursor === i ? '#4fd1c5' : 'rgba(255,255,255,0.3)';
       ctx.lineWidth = cursor === i ? 2.2 : 1.2;
-      rrect(x, y, CARD, CARD, 12);
+      rrect(x + 4, y + 4, CARD - 8, CARD - 8, 9);
       ctx.stroke();
-      ctx.fillStyle = '#4c6199';
+      ctx.fillStyle = '#ffd166';
       ctx.beginPath();
-      ctx.arc(x + CARD / 2, y + CARD / 2, 6, 0, Math.PI * 2);
+      ctx.moveTo(x + CARD / 2, y + CARD / 2 - 10);
+      ctx.lineTo(x + CARD / 2 + 8, y + CARD / 2);
+      ctx.lineTo(x + CARD / 2, y + CARD / 2 + 10);
+      ctx.lineTo(x + CARD / 2 - 8, y + CARD / 2);
+      ctx.closePath();
       ctx.fill();
     }
+    ctx.restore();
   }
 
   ctx.fillStyle = '#6c7793';

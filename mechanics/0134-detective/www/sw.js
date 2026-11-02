@@ -1,4 +1,4 @@
-const CACHE_NAME = 'murderatmidnight-v4';
+const CACHE_NAME = 'murderatmidnight-v5';
 const ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'realm-builder-v4';
+const CACHE_NAME = 'realm-builder-v5';
 const ASSETS = [
   './',
   './index.html',

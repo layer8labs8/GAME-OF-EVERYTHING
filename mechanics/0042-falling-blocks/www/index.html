@@ -67,12 +67,7 @@ function rrect(x, y, w, h, r) {
 
 function drawBlock(x, y, s, color, alpha) {
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = color;
-  rrect(x + 1, y + 1, s - 2, s - 2, 4);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.26)';
-  rrect(x + 2, y + 2, s - 4, Math.max(3, s * 0.25), 2);
-  ctx.fill();
+  GOE.art.tile(ctx, x + 1, y + 1, s - 2, s - 2, 4, color);
   ctx.globalAlpha = 1;
 }
 
@@ -181,7 +176,15 @@ function draw() {
     const gy = ghostY(state);
     const p = state.piece;
     for (const [dx, dy] of p.cells) {
-      drawBlock(BX + (p.x + dx) * CELL, BY + (gy + dy) * CELL, CELL, COLORS[p.color], 0.24);
+      ctx.strokeStyle = COLORS[p.color];
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.55;
+      rrect(BX + (p.x + dx) * CELL + 2, BY + (gy + dy) * CELL + 2, CELL - 4, CELL - 4, 4);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    for (const [dx, dy] of p.cells) {
+      GOE.art.glow(ctx, BX + (p.x + dx) * CELL + CELL / 2, BY + (p.y + dy) * CELL + CELL / 2, CELL, COLORS[p.color], 0.2);
     }
     for (const [dx, dy] of p.cells) {
       drawBlock(BX + (p.x + dx) * CELL, BY + (p.y + dy) * CELL, CELL, COLORS[p.color], 1);

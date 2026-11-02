@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-script-v4';
+const CACHE_NAME = 'robo-script-v5';
 const ASSETS = [
   './',
   './index.html',

@@ -23,7 +23,10 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
 const W = 360;
-const H = 640;
+const H = 808;
+// The road runs from y 30 to 610, so the map sits between the numbers and the build tray.
+const MAP_Y = 72;
+const TRAY_Y = 706;
 
 let scale = 1;
 function resize() {
@@ -94,7 +97,7 @@ canvas.addEventListener('pointerdown', (e) => {
   for (let i = 0; i < PLATFORMS.length; i++) {
     const plat = PLATFORMS[i];
     const dx = p.x - plat.x;
-    const dy = p.y - plat.y;
+    const dy = p.y - MAP_Y - plat.y;
     if (dx * dx + dy * dy <= 28 * 28) {
       selectedSlot = i;
       return;
@@ -102,14 +105,14 @@ canvas.addEventListener('pointerdown', (e) => {
   }
 
   // Build / Upgrade button tray at bottom
-  if (p.y >= 560 && p.y <= 620) {
+  if (p.y >= TRAY_Y && p.y <= TRAY_Y + 76) {
     const sl = state.slots[selectedSlot];
     if (sl.type === 'empty') {
-      if (p.x >= 20 && p.x <= 110) doAction(`build_ballista_${selectedSlot}`);
-      else if (p.x >= 125 && p.x <= 215) doAction(`build_cannon_${selectedSlot}`);
-      else if (p.x >= 230 && p.x <= 320) doAction(`build_frost_${selectedSlot}`);
+      if (p.x >= 20 && p.x <= 115) doAction(`build_ballista_${selectedSlot}`);
+      else if (p.x >= 125 && p.x <= 220) doAction(`build_cannon_${selectedSlot}`);
+      else if (p.x >= 230 && p.x <= 325) doAction(`build_frost_${selectedSlot}`);
     } else if (sl.level < 2) {
-      if (p.x >= 110 && p.x <= 250) doAction(`upgrade_${selectedSlot}`);
+      if (p.x >= 100 && p.x <= 260) doAction(`upgrade_${selectedSlot}`);
     }
   }
 });
@@ -133,6 +136,27 @@ addEventListener('keydown', (e) => {
   } else if (e.key === 'r') restart();
 });
 
+// The rules do not record shots, so find what each tower that fired this tick was aiming at.
+function recordShots(before) {
+  state.slots.forEach((sl, i) => {
+    if (sl.type === 'empty' || sl.cooldown !== TOWER_TYPES[sl.type].rate) return;
+    const plat = PLATFORMS[i];
+    const range = TOWER_TYPES[sl.type].range + (sl.level > 1 ? 20 : 0);
+    let target = null;
+    let most = -1;
+    for (const c of before) {
+      if (Math.hypot(c.x - plat.x, c.y - plat.y) > range) continue;
+      const wp = WAYPOINTS[c.pathIdx];
+      const progress = c.pathIdx * 1000 + Math.hypot(wp.x - c.x, wp.y - c.y);
+      if (progress > most) {
+        most = progress;
+        target = c;
+      }
+    }
+    if (target) beams.push({ x1: plat.x, y1: plat.y, x2: target.x, y2: target.y, type: sl.type, life: 1 });
+  });
+}
+
 let tickAcc = 0;
 function updateSim(dt) {
   tickAcc += dt;
@@ -140,29 +164,55 @@ function updateSim(dt) {
 
   while (tickAcc >= STEP_TIME && !isOver(state)) {
     tickAcc -= STEP_TIME;
+    const before = state.creeps.map((c) => ({ x: c.x, y: c.y, pathIdx: c.pathIdx }));
     doAction('wait');
+    recordShots(before);
   }
+  for (const b of beams) b.life -= dt * 5;
+  beams = beams.filter((b) => b.life > 0);
 }
 
 function draw() {
-  ctx.fillStyle = '#0f172a';
+  const ground = ctx.createLinearGradient(0, 0, 0, H);
+  ground.addColorStop(0, '#1d3a2a');
+  ground.addColorStop(1, '#14291f');
+  ctx.fillStyle = ground;
   ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(120,190,120,0.16)';
+  for (let i = 0; i < 110; i++) ctx.fillRect((i * 131) % W, 100 + (i * 197) % 600, 2, 5);
+
+  ctx.save();
+  ctx.translate(0, MAP_Y);
 
   // Winding Cobblestone Path
-  ctx.strokeStyle = '#334155';
-  ctx.lineWidth = 32;
+  ctx.strokeStyle = '#5a4a36';
+  ctx.lineWidth = 34;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
-  ctx.moveTo(WAYPOINTS[0].x, WAYPOINTS[0].y);
-  for (let i = 1; i < WAYPOINTS.length; i++) {
+  ctx.moveTo(WAYPOINTS[0].x, -MAP_Y);
+  for (let i = 0; i < WAYPOINTS.length; i++) {
     ctx.lineTo(WAYPOINTS[i].x, WAYPOINTS[i].y);
   }
   ctx.stroke();
 
-  ctx.strokeStyle = '#64748b';
-  ctx.lineWidth = 26;
+  ctx.strokeStyle = '#a08a68';
+  ctx.lineWidth = 27;
   ctx.stroke();
+  ctx.strokeStyle = 'rgba(70,55,35,0.35)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([3, 11]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // The citadel at the end of the road
+  const gate = WAYPOINTS[WAYPOINTS.length - 1];
+  GOE.art.tile(ctx, gate.x - 34, gate.y - 26, 68, 36, 3, '#7a869c');
+  for (const tx of [-34, -8, 18]) GOE.art.tile(ctx, gate.x + tx, gate.y - 36, 16, 14, 2, '#8d9ab2');
+  ctx.fillStyle = '#2b2118';
+  ctx.beginPath();
+  ctx.arc(gate.x, gate.y + 10, 11, Math.PI, Math.PI * 2);
+  ctx.fill();
 
   // Selected Range Indicator
   const selPlat = PLATFORMS[selectedSlot];
@@ -202,9 +252,27 @@ function draw() {
 
     if (sl.type !== 'empty') {
       // Tower Icon
-      ctx.fillStyle = TOWER_COLS[sl.type];
+      const color = TOWER_COLS[sl.type];
+      GOE.art.glow(ctx, plat.x, plat.y, 30, color, 0.28);
+      GOE.art.tile(ctx, plat.x - 14, plat.y - 12, 28, 26, 5, color);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      for (const tx of [-14, -3, 8]) ctx.fillRect(plat.x + tx, plat.y - 17, 6, 6);
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(plat.x, plat.y, 14, 0, Math.PI * 2);
+      if (sl.type === 'cannon') {
+        ctx.arc(plat.x, plat.y + 1, 6, 0, Math.PI * 2);
+      } else if (sl.type === 'frost') {
+        ctx.moveTo(plat.x, plat.y - 8);
+        ctx.lineTo(plat.x + 6, plat.y + 1);
+        ctx.lineTo(plat.x, plat.y + 10);
+        ctx.lineTo(plat.x - 6, plat.y + 1);
+      } else {
+        ctx.moveTo(plat.x - 7, plat.y + 7);
+        ctx.lineTo(plat.x + 7, plat.y - 7);
+        ctx.lineTo(plat.x + 7, plat.y - 1);
+        ctx.lineTo(plat.x - 3, plat.y + 9);
+      }
+      ctx.closePath();
       ctx.fill();
 
       // Level stars / pip
@@ -224,9 +292,21 @@ function draw() {
 
   // Creeps
   for (const c of state.creeps) {
-    ctx.fillStyle = c.slowed > 0 ? '#38bdf8' : '#ef4444';
+    const walk = Math.sin((c.x + c.y) * 0.35) * 1.5;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
-    ctx.arc(c.x, c.y, 11, 0, Math.PI * 2);
+    ctx.ellipse(c.x, c.y + 10, 9, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    GOE.art.tile(ctx, c.x - 9, c.y - 9 + walk, 18, 18, 8, c.slowed > 0 ? '#38bdf8' : '#d9534f');
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(c.x - 3.5, c.y - 2 + walk, 3, 0, Math.PI * 2);
+    ctx.arc(c.x + 3.5, c.y - 2 + walk, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.arc(c.x - 3.5, c.y - 1.5 + walk, 1.4, 0, Math.PI * 2);
+    ctx.arc(c.x + 3.5, c.y - 1.5 + walk, 1.4, 0, Math.PI * 2);
     ctx.fill();
 
     // HP Bar
@@ -237,7 +317,37 @@ function draw() {
     ctx.fillRect(c.x - 12, c.y - 18, 24 * hpRatio, 4);
   }
 
+  // Shots
+  for (const b of beams) {
+    const color = TOWER_COLS[b.type];
+    const t = 1 - b.life;
+    if (b.type === 'cannon') {
+      const bx = b.x1 + (b.x2 - b.x1) * t;
+      const by = b.y1 + (b.y2 - b.y1) * t;
+      GOE.art.glow(ctx, bx, by, 16, color, 0.9);
+      ctx.fillStyle = '#ffe2c2';
+      ctx.beginPath();
+      ctx.arc(bx, by, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.globalAlpha = b.life;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = b.type === 'frost' ? 4 : 2.5;
+      ctx.beginPath();
+      ctx.moveTo(b.x1, b.y1);
+      ctx.lineTo(b.x2, b.y2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      GOE.art.glow(ctx, b.x2, b.y2, 15, color, 0.7 * b.life);
+    }
+  }
+  ctx.restore();
+
   // HUD
+  ctx.fillStyle = '#0f1a2b';
+  ctx.fillRect(0, 0, W, 96);
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(0, 96, W, 1);
   ctx.fillStyle = '#8a93a8';
   ctx.font = '12px system-ui, sans-serif';
   ctx.textAlign = 'left';
@@ -253,7 +363,7 @@ function draw() {
   ctx.fillText(`${state.gold} g`, 20, 60);
   ctx.fillStyle = state.citadelHp <= 3 ? '#ef4444' : '#22c55e';
   ctx.textAlign = 'center';
-  ctx.fillText(`${state.citadelHp} / 10`, W / 2, 60);
+  ctx.fillText(`${state.citadelHp} lives`, W / 2, 60);
   ctx.fillStyle = '#38bdf8';
   ctx.font = 'bold 20px system-ui, sans-serif';
   ctx.textAlign = 'right';
@@ -262,59 +372,59 @@ function draw() {
   ctx.fillStyle = '#94a3b8';
   ctx.font = '13px system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`Wave ${state.wave} / 5   •   Score: ${score(state)}`, W / 2, 88);
+  ctx.fillText(`Wave ${state.wave} / ${state.maxWaves}   •   Score: ${score(state)}`, W / 2, 88);
 
   // Build / Upgrade Menu Tray at bottom
   ctx.fillStyle = '#1e293b';
-  rrect(12, 550, W - 24, 76, 14);
+  rrect(12, TRAY_Y, W - 24, 76, 14);
   ctx.fill();
 
   if (selSlot.type === 'empty') {
     // 3 Build Buttons
     const canBallista = state.gold >= 25;
     ctx.fillStyle = canBallista ? '#0284c7' : '#334155';
-    rrect(20, 560, 95, 56, 10);
+    rrect(20, TRAY_Y + 10, 95, 56, 10);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 12px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('BALLISTA', 67, 582);
+    ctx.fillText('BALLISTA', 67, TRAY_Y + 32);
     ctx.fillStyle = '#fbbf24';
-    ctx.fillText('25g', 67, 602);
+    ctx.fillText('25g', 67, TRAY_Y + 52);
 
     const canCannon = state.gold >= 40;
     ctx.fillStyle = canCannon ? '#c2410c' : '#334155';
-    rrect(125, 560, 95, 56, 10);
+    rrect(125, TRAY_Y + 10, 95, 56, 10);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('CANNON', 172, 582);
+    ctx.fillText('CANNON', 172, TRAY_Y + 32);
     ctx.fillStyle = '#fbbf24';
-    ctx.fillText('40g', 172, 602);
+    ctx.fillText('40g', 172, TRAY_Y + 52);
 
     const canFrost = state.gold >= 35;
     ctx.fillStyle = canFrost ? '#7e22ce' : '#334155';
-    rrect(230, 560, 95, 56, 10);
+    rrect(230, TRAY_Y + 10, 95, 56, 10);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('FROST', 277, 582);
+    ctx.fillText('FROST', 277, TRAY_Y + 32);
     ctx.fillStyle = '#fbbf24';
-    ctx.fillText('35g', 277, 602);
+    ctx.fillText('35g', 277, TRAY_Y + 52);
   } else if (selSlot.level < 2) {
     const canUp = state.gold >= UPGRADE_COST;
     ctx.fillStyle = canUp ? '#15803d' : '#334155';
-    rrect(100, 560, 160, 56, 10);
+    rrect(100, TRAY_Y + 10, 160, 56, 10);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 14px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`UPGRADE ${selSlot.type.toUpperCase()}`, 180, 584);
+    ctx.fillText(`UPGRADE ${selSlot.type.toUpperCase()}`, 180, TRAY_Y + 34);
     ctx.fillStyle = '#fbbf24';
-    ctx.fillText('30g', 180, 604);
+    ctx.fillText('30g', 180, TRAY_Y + 54);
   } else {
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 15px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('MAX LEVEL TOWER', W / 2, 595);
+    ctx.fillText('MAX LEVEL TOWER', W / 2, TRAY_Y + 45);
   }
 
   if (isOver(state)) {

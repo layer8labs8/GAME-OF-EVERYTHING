@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stained-glass-jigsaw-v4';
+const CACHE_NAME = 'stained-glass-jigsaw-v5';
 const ASSETS = [
   './',
   './index.html',

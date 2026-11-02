@@ -1,4 +1,4 @@
-const CACHE = 'goe-0035-puzzle-platformer-v4';
+const CACHE = 'goe-0035-puzzle-platformer-v5';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

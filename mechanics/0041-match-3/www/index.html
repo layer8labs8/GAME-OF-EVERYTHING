@@ -18,7 +18,7 @@
 <script src="logic.js"></script>
 <script src="kit.js"></script>
 <script>
-const { SIZE, CELLS, START_MOVES, createState, legalActions, step, isOver, score } = GameLogic;
+const { SIZE, CELLS, START_MOVES, createState, legalActions, step, isOver, score , isWon } = GameLogic;
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
@@ -244,9 +244,14 @@ function drawGem(type, cx, cy, rad) {
   const g = GEMS[type];
   if (!g) return;
 
-  ctx.fillStyle = g.color;
+  GOE.art.glow(ctx, cx, cy, rad * 1.5, g.color, 0.3);
+  const body = ctx.createLinearGradient(cx - rad, cy - rad, cx + rad, cy + rad);
+  body.addColorStop(0, GOE.art.lighten(g.color, 0.55));
+  body.addColorStop(0.5, g.color);
+  body.addColorStop(1, GOE.art.darken(g.color, 0.35));
+  ctx.fillStyle = body;
   ctx.strokeStyle = g.border;
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 2;
 
   ctx.beginPath();
   if (type === 1) {
@@ -279,10 +284,20 @@ function drawGem(type, cx, cy, rad) {
   ctx.fill();
   ctx.stroke();
 
-  // Internal specular highlight
-  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  // Facets and a highlight
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(cx - rad * 0.28, cy - rad * 0.28, rad * 0.25, 0, Math.PI * 2);
+  ctx.moveTo(cx - rad * 0.5, cy - rad * 0.1);
+  ctx.lineTo(cx, cy - rad * 0.55);
+  ctx.lineTo(cx + rad * 0.5, cy - rad * 0.1);
+  ctx.moveTo(cx - rad * 0.5, cy - rad * 0.1);
+  ctx.lineTo(cx, cy + rad * 0.5);
+  ctx.lineTo(cx + rad * 0.5, cy - rad * 0.1);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath();
+  ctx.arc(cx - rad * 0.3, cy - rad * 0.32, rad * 0.16, 0, Math.PI * 2);
   ctx.fill();
 }
 
@@ -331,7 +346,7 @@ function draw() {
     ctx.fillStyle = '#fbbf24';
     ctx.fillText(`COMBO x${state.lastCombo}! +${state.lastCleared} gems`, W / 2, 115);
   } else {
-    ctx.fillText('Swap adjacent gems to align 3 in a row', W / 2, 115);
+    ctx.fillText(state.target ? 'Reach ' + state.target + ' points' : 'Swap adjacent gems to align 3 in a row', W / 2, 115);
   }
 
   // Board frame
@@ -396,10 +411,10 @@ function draw() {
   if (isOver(state)) {
     ctx.fillStyle = 'rgba(11,16,32,0.85)';
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = isWon(state) ? '#69db7c' : '#fbbf24';
     ctx.font = 'bold 34px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Out of Moves!', W / 2, H / 2 - 32);
+    ctx.fillText(isWon(state) ? 'Level Complete!' : 'Out of Moves!', W / 2, H / 2 - 32);
     ctx.fillStyle = '#e8ecf5';
     ctx.font = '22px system-ui, sans-serif';
     ctx.fillText('Final Score: ' + score(state), W / 2, H / 2 + 8);

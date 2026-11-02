@@ -159,18 +159,32 @@ function draw() {
   ctx.arc(CX + CW / 2, CY + CH / 2, 36, 0, Math.PI * 2);
   ctx.stroke();
 
+  GOE.art.glow(ctx, CX + CW / 2, CY + 20, 150, '#ff6b6b', 0.12);
+  GOE.art.glow(ctx, CX + CW / 2, CY + CH - 20, 150, '#4fd1c5', 0.14);
+
   // AI paddle
-  ctx.fillStyle = '#ff6b6b';
-  rrect(CX + state.aiX - state.paddleW / 2, CY + AI_Y - 6, state.paddleW, 12, 6);
-  ctx.fill();
+  const aiLeft = CX + state.aiX - state.paddleW / 2;
+  GOE.art.glow(ctx, CX + state.aiX, CY + AI_Y, state.paddleW * 0.75, '#ff6b6b', 0.35);
+  GOE.art.tile(ctx, aiLeft, CY + AI_Y - 7, state.paddleW, 14, 7, '#ff6b6b');
 
   // Player paddle
-  ctx.fillStyle = '#4fd1c5';
-  rrect(CX + state.playerX - state.paddleW / 2, CY + PLAYER_Y - 6, state.paddleW, 12, 6);
-  ctx.fill();
+  const youLeft = CX + state.playerX - state.paddleW / 2;
+  GOE.art.glow(ctx, CX + state.playerX, CY + PLAYER_Y, state.paddleW * 0.75, '#4fd1c5', 0.35);
+  GOE.art.tile(ctx, youLeft, CY + PLAYER_Y - 7, state.paddleW, 14, 7, '#4fd1c5');
 
-  // Ball
-  ctx.fillStyle = '#ffd43b';
+  // Ball and its trail
+  trail.push({ x: CX + state.ball.x, y: CY + state.ball.y });
+  if (trail.length > 10) trail.shift();
+  trail.forEach((t, i) => {
+    ctx.globalAlpha = (i / trail.length) * 0.5;
+    ctx.fillStyle = '#ffd43b';
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, state.ball.r * (0.4 + (i / trail.length) * 0.6), 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  GOE.art.glow(ctx, CX + state.ball.x, CY + state.ball.y, state.ball.r * 3.4, '#ffd43b', 0.55);
+  ctx.fillStyle = '#fff4c2';
   ctx.beginPath();
   ctx.arc(CX + state.ball.x, CY + state.ball.y, state.ball.r, 0, Math.PI * 2);
   ctx.fill();
@@ -196,6 +210,7 @@ function draw() {
   }
 }
 
+const trail = [];
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);

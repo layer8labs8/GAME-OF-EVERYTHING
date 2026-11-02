@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aethelgard-v4';
+const CACHE_NAME = 'aethelgard-v5';
 const ASSETS = [
   './',
   './index.html',

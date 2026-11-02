@@ -1,4 +1,4 @@
-const CACHE_NAME = 'physics-toybox-v4';
+const CACHE_NAME = 'physics-toybox-v5';
 const ASSETS = [
   './',
   './index.html',
