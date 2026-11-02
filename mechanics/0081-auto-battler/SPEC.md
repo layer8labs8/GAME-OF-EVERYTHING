@@ -1,4 +1,4 @@
-# 0081-auto-battler: Auto Battler Arena
+# 0081-auto-battler: Bench Brawl
 
 A tactical 8-round auto-battler. Build an economy, recruit heroes from a rotating shop, merge three duplicates into 2-star titans, assemble synergistic traits, and deploy your warband into automated combat against rival commanders.
 

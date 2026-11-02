@@ -1,4 +1,4 @@
-// Pure deterministic simulation logic for 0090-4x (Galactic 4X: Stellar Dominion)
+// Pure deterministic simulation logic for 0090-4x (Stellar Dominion)
 
 const MAX_TURNS = 30;
 const EXPLORE_COST_ENERGY = 5;

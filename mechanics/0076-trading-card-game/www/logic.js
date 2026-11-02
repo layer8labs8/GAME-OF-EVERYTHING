@@ -1,4 +1,4 @@
-// Pure deterministic logic for 0076: Trading Card Game (Mythic TCG)
+// Pure deterministic logic for 0076: Trading Card Game (Aether Duels)
 
 const MAX_HERO_HP = 30;
 const MAX_MANA = 10;
@@ -119,7 +119,7 @@ function createState(seed = 1) {
     },
     done: false,
     won: false,
-    message: 'Welcome to Mythic TCG. Mana crystals crystalize!'
+    message: 'Welcome to Aether Duels. Mana crystals crystalize!'
   };
 
   state.player.deck = buildLibrary(state);

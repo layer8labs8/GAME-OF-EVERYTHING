@@ -1,4 +1,4 @@
-# 0079-chess: Classic Chess
+# 0079-chess: Ivory Gambit
 
 A pure, deterministic implementation of standard international chess played on an 8x8 board. The player commands the White army against an intelligent deterministic AI commander controlling Black.
 

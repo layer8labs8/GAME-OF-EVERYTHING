@@ -1,4 +1,4 @@
-# 0096-turn-based-tactics: X-Vanguard (Turn-Based Tactics)
+# 0096-turn-based-tactics: Iron Vanguard (Turn-Based Tactics)
 
 A turn-based squad tactics (TBT / XCOM-style) battle simulator played on an 8x8 urban combat grid with half/full cover mitigation, 2 Action Point (AP) economy, reactive Overwatch ambushes, flanking crits, and alien squad skirmishes.
 

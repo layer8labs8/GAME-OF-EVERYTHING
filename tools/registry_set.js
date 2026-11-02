@@ -38,5 +38,5 @@ const ordered = {};
 for (const key of ORDER) if (key in entry) ordered[key] = entry[key];
 for (const key of Object.keys(entry)) if (!(key in ordered)) ordered[key] = entry[key];
 registry.mechanics[index] = ordered;
-fs.writeFileSync(file, JSON.stringify(registry, null, 1) + '\n');
+fs.writeFileSync(file, JSON.stringify(registry, null, 2) + '\n');
 console.log(`updated ${ordered.id}-${ordered.slug}`);

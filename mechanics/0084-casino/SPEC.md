@@ -1,4 +1,4 @@
-# 0084-casino: Grand Casino Roulette
+# 0084-casino: Lucky Wheel
 
 A pure, deterministic simulation of classic European Roulette (single zero 0-36). Players manage a 500-chip bankroll across 25 spins, placing inside straight bets, even-money outside bets, and dozen proposition wagers to reach High-Roller VIP status (1,500 chips).
 

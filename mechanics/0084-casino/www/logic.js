@@ -25,7 +25,7 @@
       stepCount: 0,
       gameOver: false,
       winner: null,
-      log: ['Welcome to Grand Casino Roulette! Minimum bet is 25 chips.'],
+      log: ['Welcome to Lucky Wheel! Minimum bet is 25 chips.'],
       rngState: (seed >>> 0) || 12345,
     };
   }

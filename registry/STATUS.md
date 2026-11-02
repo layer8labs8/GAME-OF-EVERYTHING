@@ -46,15 +46,15 @@ Logic with tests or better: 179 / 179 · Bot interface: 177 / 179 · Data levels
 | 0004 | Boss Rush (Titan Trials) | playable | endless | yes | steam-tag |
 | 0005 | Bullet Heaven (Horde Survivor) | playable | endless | yes | steam-tag |
 | 0006 | Bullet Hell (Danmaku Veil) | playable | endless | yes | steam-tag |
-| 0007 | Hack and Slash | playable | endless | yes | steam-tag |
-| 0008 | Parkour | playable | endless | yes | steam-tag |
+| 0007 | Hack and Slash (Blade Mirage) | playable | endless | yes | steam-tag |
+| 0008 | Parkour (Rooftop Velocity) | playable | endless | yes | steam-tag |
 | 0009 | Endless Runner (Neon Sprint) | playable | endless | yes | steam-tag |
 | 0010 | Stealth (Shadow Infiltrator) | playable | endless | yes | steam-tag |
-| 0011 | Souls-like | playable | endless | yes | steam-tag |
-| 0012 | Musou | playable | endless | yes | steam-tag |
-| 0013 | Time Slowdown | playable | endless | yes | steam-tag |
-| 0014 | 2D Fighting | playable | endless | yes | steam-tag |
-| 0015 | Combat | playable | endless | yes | steam-tag |
+| 0011 | Souls-like (Ashen Knight) | playable | endless | yes | steam-tag |
+| 0012 | Musou (Dynasty Cleave) | playable | endless | yes | steam-tag |
+| 0013 | Time Slowdown (Chrono Matrix) | playable | endless | yes | steam-tag |
+| 0014 | 2D Fighting (Iron Bout) | playable | endless | yes | steam-tag |
+| 0015 | Combat (Brawler Strike) | playable | endless | yes | steam-tag |
 | 0016 | Snake (Neon Serpent) | playable | endless | yes | classic |
 | 0017 | Court Rally (Court Rally) | playable | none | yes | classic |
 | 0018 | Shard Breaker (Shard Breaker) | playable | endless | yes | classic |
@@ -70,32 +70,32 @@ Logic with tests or better: 179 / 179 · Bot interface: 177 / 179 · Data levels
 | 0041 | Match-3 (Gem Cascade) | playable | none | yes | steam-tag |
 | 0042 | Falling Blocks (Quad Drop) | playable | endless | yes | steam-tag |
 | 0043 | Sokoban (Crate Keeper) | playable | data | yes | steam-tag |
-| 0044 | Logic Puzzle | playable | data | yes | steam-tag |
-| 0045 | Hidden Object | playable | endless | yes | steam-tag |
-| 0046 | Mahjong | playable | endless | yes | steam-tag |
+| 0044 | Logic Puzzle (Circuit Relay) | playable | data | yes | steam-tag |
+| 0045 | Hidden Object (Relic Seeker) | playable | endless | yes | steam-tag |
+| 0046 | Mahjong (Jade Pairs) | playable | endless | yes | steam-tag |
 | 0047 | Solitaire (Klondike Solitaire) | playable | endless | yes | steam-tag |
-| 0048 | Physics Puzzle | playable | data | yes | steam-tag |
-| 0049 | Escape Room | playable | endless | yes | steam-tag |
-| 0050 | Word Game | playable | endless | yes | steam-tag |
-| 0051 | Spelling | playable | endless | yes | steam-tag |
-| 0052 | Typing | playable | endless | yes | steam-tag |
-| 0053 | Trivia | playable | endless | yes | steam-tag |
-| 0054 | Minigames Collection | playable | endless | yes | steam-tag |
-| 0055 | Grid-Based Movement | playable | endless | yes | steam-tag |
-| 0056 | Hex Grid Puzzle | playable | endless | yes | steam-tag |
-| 0057 | Dice Game | playable | endless | yes | steam-tag |
-| 0058 | Time Manipulation Puzzle | playable | endless | yes | steam-tag |
-| 0059 | Organizing | playable | endless | yes | steam-tag |
-| 0060 | Programming Puzzle | playable | endless | yes | steam-tag |
-| 0061 | Hacking Puzzle | playable | endless | yes | steam-tag |
-| 0062 | Pinball | playable | endless | yes | steam-tag |
+| 0048 | Physics Puzzle (Gravity Sling) | playable | data | yes | steam-tag |
+| 0049 | Escape Room (Cryptic Vault) | playable | endless | yes | steam-tag |
+| 0050 | Word Game (Word Forge) | playable | endless | yes | steam-tag |
+| 0051 | Spelling (Rune Scribe) | playable | endless | yes | steam-tag |
+| 0052 | Typing (Cipher Cascade) | playable | endless | yes | steam-tag |
+| 0053 | Trivia (Chronicle Quiz) | playable | endless | yes | steam-tag |
+| 0054 | Minigames Collection (Micro Blitz) | playable | endless | yes | steam-tag |
+| 0055 | Grid-Based Movement (Crypt Step) | playable | endless | yes | steam-tag |
+| 0056 | Hex Grid Puzzle (Hexa Conduits) | playable | endless | yes | steam-tag |
+| 0057 | Dice Game (Royal Dice) | playable | endless | yes | steam-tag |
+| 0058 | Time Manipulation Puzzle (Chronos Paradox) | playable | endless | yes | steam-tag |
+| 0059 | Organizing (Tidy Bento) | playable | endless | yes | steam-tag |
+| 0060 | Programming Puzzle (Robo Script) | playable | endless | yes | steam-tag |
+| 0061 | Hacking Puzzle (Cyber Breach) | playable | endless | yes | steam-tag |
+| 0062 | Pinball (Neon Pinball) | playable | endless | yes | steam-tag |
 | 0063 | Merge Puzzle (Power Tiles) | playable | endless | yes | classic |
 | 0064 | Sliding Puzzle (Tile Shift) | playable | data | yes | classic |
 | 0065 | Memory Match (Pair Recall) | playable | none | yes | classic |
-| 0066 | Jigsaw | playable | endless | yes | classic |
+| 0066 | Jigsaw (Stained Glass Jigsaw) | playable | endless | yes | classic |
 | 0067 | Pipe Connect (Flow Conduit) | playable | data | yes | classic |
 | 0068 | Sudoku (Number Box) | playable | none | yes | classic |
-| 0069 | Crossword | playable | endless | yes | classic |
+| 0069 | Crossword (LexiCross) | playable | endless | yes | classic |
 | 0070 | Minesweeper (Hazard Grid) | playable | none | yes | classic |
 | 0071 | Stack Tower (Sky Stacker) | playable | endless | yes | classic |
 
@@ -104,13 +104,13 @@ Logic with tests or better: 179 / 179 · Bot interface: 177 / 179 · Data levels
 | ID | Mechanic | Status | Levels | Bot | Source |
 |---|---|---|---|---|---|
 | 0022 | Shoot 'Em Up (Star Vanguard) | playable | none | yes | steam-tag |
-| 0023 | Arena Shooter | playable | endless | yes | steam-tag |
-| 0024 | Twin Stick Shooter | playable | endless | yes | steam-tag |
-| 0025 | Top-Down Shooter | playable | endless | yes | steam-tag |
-| 0026 | Side-Scrolling Shooter | playable | endless | yes | steam-tag |
-| 0027 | Looter Shooter | playable | endless | yes | steam-tag |
-| 0028 | On-Rails Shooter | playable | endless | yes | steam-tag |
-| 0029 | Vehicular Combat | playable | endless | yes | steam-tag |
+| 0023 | Arena Shooter (Crimson Arena) | playable | endless | yes | steam-tag |
+| 0024 | Twin Stick Shooter (Vortex Core) | playable | endless | yes | steam-tag |
+| 0025 | Top-Down Shooter (Shadow Breach) | playable | endless | yes | steam-tag |
+| 0026 | Side-Scrolling Shooter (Aero Striker) | playable | endless | yes | steam-tag |
+| 0027 | Looter Shooter (Rogue Armory) | playable | endless | yes | steam-tag |
+| 0028 | On-Rails Shooter (Rail Phantom) | playable | endless | yes | steam-tag |
+| 0029 | Vehicular Combat (Metal Carnage) | playable | endless | yes | steam-tag |
 | 0030 | Bubble Shooter (Orb Popper) | playable | none | yes | classic |
 | 0031 | Orbit Defenders (Orbit Defenders) | playable | endless | yes | classic |
 | 0032 | Tank Battle (Iron Tracks) | playable | endless | yes | classic |
@@ -121,47 +121,47 @@ Logic with tests or better: 179 / 179 · Bot interface: 177 / 179 · Data levels
 |---|---|---|---|---|---|
 | 0033 | 2D Platformer (Pixel Jumper) | playable | none | yes | steam-tag |
 | 0034 | Precision Platformer (Chrono Leap) | playable | endless | yes | steam-tag |
-| 0035 | Puzzle Platformer | playable | data | yes | steam-tag |
-| 0036 | Metroidvania | playable | endless | yes | steam-tag |
-| 0037 | Collectathon | playable | endless | yes | steam-tag |
-| 0038 | Side Scroller | playable | endless | yes | steam-tag |
-| 0039 | Walker Guide | playable | endless | yes | steam-tag |
-| 0040 | Auto-Scrolling Platformer | playable | endless | yes | classic |
+| 0035 | Puzzle Platformer (Portal Shift) | playable | data | yes | steam-tag |
+| 0036 | Metroidvania (Chasm Crawler) | playable | endless | yes | steam-tag |
+| 0037 | Collectathon (Relic Rush) | playable | endless | yes | steam-tag |
+| 0038 | Side Scroller (Cyber Ronin) | playable | endless | yes | steam-tag |
+| 0039 | Walker Guide (Walker Guide) | playable | endless | yes | steam-tag |
+| 0040 | Auto-Scrolling Platformer (Magma Surge) | playable | endless | yes | classic |
 
 ### Cards & Board
 
 | ID | Mechanic | Status | Levels | Bot | Source |
 |---|---|---|---|---|---|
-| 0072 | Card Game | playable | endless | yes | steam-tag |
+| 0072 | Card Game (Duel of Eights) | playable | endless | yes | steam-tag |
 | 0073 | Card Battler (Spell & Blade) | playable | endless | yes | steam-tag |
-| 0074 | Deckbuilding | playable | endless | yes | steam-tag |
-| 0075 | Roguelike Deckbuilder | playable | endless | yes | steam-tag |
-| 0076 | Trading Card Game | playable | endless | yes | steam-tag |
-| 0077 | Poker | playable | endless | yes | steam-tag |
-| 0078 | Board Game | playable | endless | yes | steam-tag |
-| 0079 | Chess | playable | endless | yes | steam-tag |
-| 0080 | Tabletop | playable | endless | yes | steam-tag |
-| 0081 | Auto Battler | playable | endless | yes | steam-tag |
-| 0082 | Social Deduction | playable | endless | yes | steam-tag |
-| 0083 | Party Game | playable | endless | yes | steam-tag |
-| 0084 | Casino | playable | endless | yes | steam-tag |
+| 0074 | Deckbuilding (Realm Builder) | playable | endless | yes | steam-tag |
+| 0075 | Roguelike Deckbuilder (Spire Crawl) | playable | endless | yes | steam-tag |
+| 0076 | Trading Card Game (Aether Duels) | playable | endless | yes | steam-tag |
+| 0077 | Poker (Royal Hold'em) | playable | endless | yes | steam-tag |
+| 0078 | Board Game (Royal Ludo) | playable | endless | yes | steam-tag |
+| 0079 | Chess (Ivory Gambit) | playable | endless | yes | steam-tag |
+| 0080 | Tabletop (Tabletop Skirmish) | playable | endless | yes | steam-tag |
+| 0081 | Auto Battler (Bench Brawl) | playable | endless | yes | steam-tag |
+| 0082 | Social Deduction (Shadow Council) | playable | endless | yes | steam-tag |
+| 0083 | Party Game (Party Frenzy) | playable | endless | yes | steam-tag |
+| 0084 | Casino (Lucky Wheel) | playable | endless | yes | steam-tag |
 | 0085 | Checkers (Crown Draughts) | playable | endless | yes | classic |
 | 0086 | Blackjack (Twenty-One) | playable | none | yes | classic |
-| 0087 | Dominoes | playable | endless | yes | classic |
-| 0088 | Backgammon | playable | endless | yes | classic |
+| 0087 | Dominoes (Bone Trail) | playable | endless | yes | classic |
+| 0088 | Backgammon (Point Race) | playable | endless | yes | classic |
 
 ### Strategy
 
 | ID | Mechanic | Status | Levels | Bot | Source |
 |---|---|---|---|---|---|
-| 0089 | Strategy | playable | endless | yes | steam-tag |
-| 0090 | 4X | playable | endless | yes | steam-tag |
-| 0091 | Grand Strategy | playable | endless | yes | steam-tag |
-| 0092 | Real-Time Strategy | playable | endless | yes | steam-tag |
-| 0093 | Action RTS | playable | endless | yes | steam-tag |
-| 0094 | Real-Time Tactics | playable | endless | yes | steam-tag |
-| 0095 | Turn-Based Strategy | playable | endless | yes | steam-tag |
-| 0096 | Turn-Based Tactics | playable | endless | yes | steam-tag |
+| 0089 | Strategy (Border Wars) | playable | endless | yes | steam-tag |
+| 0090 | 4X (Stellar Dominion) | playable | endless | yes | steam-tag |
+| 0091 | Grand Strategy (Continental Hegemony) | playable | endless | yes | steam-tag |
+| 0092 | Real-Time Strategy (Iron Siege) | playable | endless | yes | steam-tag |
+| 0093 | Action RTS (Battle Commander) | playable | endless | yes | steam-tag |
+| 0094 | Real-Time Tactics (Commando Strike) | playable | endless | yes | steam-tag |
+| 0095 | Turn-Based Strategy (Empire & Hexes) | playable | endless | yes | steam-tag |
+| 0096 | Turn-Based Tactics (Iron Vanguard) | playable | endless | yes | steam-tag |
 | 0097 | Tactical (Tactical Breach) | playable | endless | yes | steam-tag |
 | 0098 | Wargame (Operational Wargame) | playable | endless | yes | steam-tag |
 | 0099 | Diplomacy (Balance of Power) | playable | endless | yes | steam-tag |

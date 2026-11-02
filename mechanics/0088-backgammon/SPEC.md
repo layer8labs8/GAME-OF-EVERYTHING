@@ -1,4 +1,4 @@
-# 0088-backgammon: Classic Backgammon
+# 0088-backgammon: Point Race
 
 A pure, deterministic implementation of standard Backgammon for 2 players. White (Player) competes against Black (AI) across a 24-point board with two dice per turn, doubles granting 4 moves, hitting vulnerable single-checker blots to the bar, and bearing off 15 checkers to victory.
 

@@ -1,4 +1,4 @@
-// Pure deterministic simulation logic for 0096-turn-based-tactics (X-Vanguard TBT)
+// Pure deterministic simulation logic for 0096-turn-based-tactics (Iron Vanguard TBT)
 
 const MAX_ROUNDS = 20;
 const GRID_SIZE = 8;

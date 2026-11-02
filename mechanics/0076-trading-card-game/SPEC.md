@@ -1,4 +1,4 @@
-# 0076: Trading Card Game - Mythic TCG (Aether Duels)
+# 0076: Trading Card Game - Aether Duels (Aether Duels)
 
 A premier head-to-head trading card game in the tradition of *Hearthstone* and *Magic: The Gathering*. Duelists wield escalating mana crystals, summon mythical creatures with keywords (Taunt, Charge, Battlecry), cast decisive spells, and command battlefield minion trades to reduce the enemy champion to 0 Life.
 

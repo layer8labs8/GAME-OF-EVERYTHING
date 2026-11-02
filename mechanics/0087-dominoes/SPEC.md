@@ -1,4 +1,4 @@
-# 0087-dominoes: Classic Dominoes
+# 0087-dominoes: Bone Trail
 
 A pure, deterministic implementation of standard Double-Six Draw Dominoes. Two players (You and an AI opponent) are dealt 7 bone tiles from a 28-tile boneyard and match matching pip ends to shed their hands.
 

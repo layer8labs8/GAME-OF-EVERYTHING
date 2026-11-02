@@ -1,4 +1,4 @@
-// Pure deterministic simulation logic for 0089-strategy (Territory Strategy)
+// Pure deterministic simulation logic for 0089-strategy (Border Wars)
 
 const MAX_TURNS = 30;
 const RECRUIT_COST = 2;

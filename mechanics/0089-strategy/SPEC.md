@@ -1,4 +1,4 @@
-# 0089-strategy: Territory Strategy
+# 0089-strategy: Border Wars
 
 A grand wargame and territory conquest strategy game played across a connected realm of 9 strategic provinces with recruitment economy, tactical troop maneuvers, garrison defense, and deterministic siege combat.
 
