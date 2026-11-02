@@ -1,7 +1,11 @@
 // Level solver contract for 0048-physics-puzzle (see docs/LEVELS.md):
 //   validateLevel(data) -> array of problems, empty when well-formed
-//   solve(data, { maxStates }) -> { solvable: true | false | null, moves, statesVisited }
+//   solve(data, { maxStates }) -> { solvable: true | false | null, moves, states }
 //   replay(data, moves) -> true when moves solve the level
+// The search runs the real game rules from www/logic.js, so a rule change cannot silently break the levels.
+const L = require('./www/logic.js');
+
+const ACTIONS = { U: 'thrust_up', D: 'thrust_down', L: 'thrust_left', R: 'thrust_right', C: 'coast' };
 
 function validateLevel(data) {
   const problems = [];
@@ -35,163 +39,45 @@ function validateLevel(data) {
   return problems;
 }
 
-function simulateStep(level, state, actionChar) {
-  let vx = state.vx;
-  let vy = state.vy;
-  let fuel = state.fuel;
-  let collected = state.collected;
-  let x = state.x;
-  let y = state.y;
-
-  if (actionChar === 'U') {
-    if (fuel <= 0) return { ok: false, crashed: true };
-    vy--; fuel--;
-  } else if (actionChar === 'D') {
-    if (fuel <= 0) return { ok: false, crashed: true };
-    vy++; fuel--;
-  } else if (actionChar === 'L') {
-    if (fuel <= 0) return { ok: false, crashed: true };
-    vx--; fuel--;
-  } else if (actionChar === 'R') {
-    if (fuel <= 0) return { ok: false, crashed: true };
-    vx++; fuel--;
-  } else if (actionChar === 'C') {
-    // Coasting: no fuel cost
-  } else {
-    return { ok: false, crashed: true };
-  }
-
-  // Apply gravity wells
-  for (const w of (level.wells || [])) {
-    const dx = w.x - x;
-    const dy = w.y - y;
-    const dist = Math.max(Math.abs(dx), Math.abs(dy));
-    if (dist <= (w.range || 2)) {
-      if (dx > 0) vx++; else if (dx < 0) vx--;
-      if (dy > 0) vy++; else if (dy < 0) vy--;
-    }
-  }
-
-  vx = Math.max(-2, Math.min(2, vx));
-  vy = Math.max(-2, Math.min(2, vy));
-
-  if (vx === 0 && vy === 0) {
-    return { ok: false, crashed: fuel <= 0, stranded: true, nextState: { x, y, vx, vy, fuel, collected } };
-  }
-
-  const sub = Math.max(Math.abs(vx), Math.abs(vy));
-  const targetMask = (1 << level.beacons.length) - 1;
-  let won = false;
-
-  for (let s = 1; s <= sub; s++) {
-    const ix = Math.round(x + (vx * s) / sub);
-    const iy = Math.round(y + (vy * s) / sub);
-
-    if (ix < 0 || ix >= level.width || iy < 0 || iy >= level.height) {
-      return { ok: false, crashed: true };
-    }
-    for (const ast of (level.asteroids || [])) {
-      if (ast.x === ix && ast.y === iy) return { ok: false, crashed: true };
-    }
-    for (const w of (level.wells || [])) {
-      if (w.x === ix && w.y === iy) return { ok: false, crashed: true };
-    }
-
-    level.beacons.forEach((b, idx) => {
-      if (b.x === ix && b.y === iy) collected |= (1 << idx);
-    });
-
-    if (collected === targetMask && ix === level.goal.x && iy === level.goal.y) {
-      won = true;
-      break;
-    }
-  }
-
-  return {
-    ok: true,
-    won,
-    nextState: {
-      x: x + vx,
-      y: y + vy,
-      vx,
-      vy,
-      fuel,
-      collected
-    }
-  };
+function keyOf(s) {
+  return [s.probe.x, s.probe.y, s.vx, s.vy, s.fuel, s.collectedMask].join(',');
 }
 
 function solve(data, options = {}) {
   const maxStates = options.maxStates || 100000;
-  const queue = [{
-    x: data.probe.x,
-    y: data.probe.y,
-    vx: 0,
-    vy: 0,
-    fuel: data.maxFuel,
-    collected: 0,
-    moves: ''
-  }];
+  const start = L.createState(1, 0, data);
+  const queue = [{ state: start, moves: '' }];
+  const visited = new Set([keyOf(start)]);
 
-  const visited = new Set();
-  const key = (s) => s.x + ',' + s.y + ',' + s.vx + ',' + s.vy + ',' + s.fuel + ',' + s.collected;
-  visited.add(key(queue[0]));
-
-  while (queue.length > 0) {
-    if (visited.size > maxStates) {
-      return { solvable: null, moves: '', statesVisited: visited.size };
-    }
-
-    const cur = queue.shift();
-    const actions = [];
-    if (cur.fuel > 0) actions.push('U', 'D', 'L', 'R');
-    if (cur.vx !== 0 || cur.vy !== 0) actions.push('C');
-
-    for (const a of actions) {
-      const res = simulateStep(data, cur, a);
-      if (!res.ok) continue;
-
-      const nextMoves = cur.moves + a;
-      if (res.won) {
-        return { solvable: true, moves: nextMoves, statesVisited: visited.size };
-      }
-
-      const k = key(res.nextState);
-      if (!visited.has(k)) {
-        visited.add(k);
-        queue.push({
-          ...res.nextState,
-          moves: nextMoves
-        });
+  for (let head = 0; head < queue.length; head++) {
+    const { state, moves } = queue[head];
+    if (visited.size > maxStates) return { solvable: null, moves: null, states: visited.size };
+    const legal = L.legalActions(state);
+    for (const [letter, action] of Object.entries(ACTIONS)) {
+      if (!legal.includes(action)) continue;
+      const next = JSON.parse(JSON.stringify(state));
+      L.step(next, action);
+      const path = moves + letter;
+      if (next.won) return { solvable: true, moves: path, states: visited.size };
+      const key = keyOf(next);
+      if (!next.lost && !visited.has(key)) {
+        visited.add(key);
+        queue.push({ state: next, moves: path });
       }
     }
   }
-
-  return { solvable: false, moves: '', statesVisited: visited.size };
+  return { solvable: false, moves: null, states: visited.size };
 }
 
 function replay(data, moves) {
-  let state = {
-    x: data.probe.x,
-    y: data.probe.y,
-    vx: 0,
-    vy: 0,
-    fuel: data.maxFuel,
-    collected: 0
-  };
-
-  for (let i = 0; i < moves.length; i++) {
-    const res = simulateStep(data, state, moves[i]);
-    if (!res.ok) return false;
-    if (res.won && i === moves.length - 1) return true;
-    state = res.nextState;
+  if (typeof moves !== 'string') return false;
+  const state = L.createState(1, 0, data);
+  for (const letter of moves) {
+    const action = ACTIONS[letter];
+    if (!action || !L.legalActions(state).includes(action)) return false;
+    L.step(state, action);
   }
-  return false;
+  return state.won;
 }
 
-module.exports = {
-  validateLevel,
-  solve,
-  replay,
-  simulateStep
-};
+module.exports = { validateLevel, solve, replay };

@@ -1,4 +1,4 @@
-# 0014 - 2D Fighting ("Clash of Titans")
+# 0014 - 2D Fighting ("Iron Bout")
 
 ## Concept & Theme
 A technical 1v1 side-view fighting arena. Two martial arts masters engage in high-stakes hand-to-hand dueling featuring footsies, high/low guard blocks, fireball zoning, anti-air dragon uppercuts, and cinematic super arts.

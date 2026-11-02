@@ -65,6 +65,8 @@ replay(data, moves)            // -> boolean   true when the moves solve the lev
 - `validateLevel` reports a problem
 - the level is unsolvable, or too large for the solver to settle
 - `par` differs from the shortest solution, or `solution` is missing, has the wrong length or does not solve the level
+- `solver.js` does not load the real rules from `www/logic.js`
+- a level in `levels.json` is not in the game's own files, so players would never see it
 
 ## Authoring rules
 

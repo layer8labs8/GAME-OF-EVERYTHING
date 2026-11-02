@@ -72,6 +72,15 @@ function updateDoc(doc, solver) {
   }
 }
 
+// A verified level only counts if the player gets it: every array in level.data must be in the game's files.
+function missingFromGame(doc, source) {
+  const squash = (s) => s.replace(/[\s'"`]/g, '');
+  const text = squash(source);
+  return doc.levels
+    .filter((level) => Object.values(level.data || {}).some((v) => Array.isArray(v) && !text.includes(squash(JSON.stringify(v)))))
+    .map((level) => level.id);
+}
+
 function main() {
   const update = process.argv.includes('--update');
   const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'registry', 'mechanics.json'), 'utf8'));
@@ -94,6 +103,11 @@ function main() {
       fs.writeFileSync(levelsFile, JSON.stringify(doc, null, 2) + '\n');
     }
     errors.push(...checkLevelsDoc(doc, solver, m.slug).map((e) => `${label}: ${e}`));
+    if (!/www\/logic\.js/.test(fs.readFileSync(path.join(dir, 'solver.js'), 'utf8'))) {
+      errors.push(`${label}: solver.js must run the real rules from www/logic.js`);
+    }
+    const source = ['www/logic.js', 'www/index.html'].map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
+    for (const id of missingFromGame(doc, source)) errors.push(`${label}: level ${id} is in levels.json but not in the game`);
     mechanics += 1;
     levels += doc.levels.length;
   }
@@ -106,5 +120,5 @@ function main() {
   console.log(`levels ok: ${levels} level(s) in ${mechanics} mechanic(s)`);
 }
 
-module.exports = { checkLevelsDoc, updateDoc };
+module.exports = { checkLevelsDoc, updateDoc, missingFromGame };
 if (require.main === module) main();

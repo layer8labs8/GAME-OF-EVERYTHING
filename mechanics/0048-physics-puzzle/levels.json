@@ -391,8 +391,8 @@
           }
         ]
       },
-      "par": 18,
-      "solution": "RRCDCLLCUURCCCCRLC"
+      "par": 14,
+      "solution": "RRCDCLLRUCRRRC"
     },
     {
       "id": "010",
@@ -455,8 +455,8 @@
           }
         ]
       },
-      "par": 15,
-      "solution": "DCLURRDDLLLCUUC"
+      "par": 14,
+      "solution": "UUULDLDRLCRUUC"
     }
   ]
 }

@@ -36,6 +36,30 @@ test('contract_check accepts a pure, deterministic, terminating module', () => {
   }
 });
 
+test('contract_check flags an action that keeps the game open forever', () => {
+  const { dir, file } = writeTemp(`
+(function (root) {
+  function createState(seed) { return { count: 0, rng: seed >>> 0 }; }
+  function isOver(s) { return s.count >= 5; }
+  function legalActions(s) { return isOver(s) ? [] : ['wait', 'inc']; }
+  function step(s, a) {
+    if (!legalActions(s).includes(a)) throw new Error('illegal');
+    if (a === 'inc') s.count += 1;
+    return { reward: 1, done: isOver(s) };
+  }
+  function score(s) { return s.count; }
+  const api = { createState, legalActions, step, isOver, score };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.GameLogic = api;
+})(typeof self !== 'undefined' ? self : globalThis);
+`);
+  try {
+    assert.ok(checkLogicFile(file).some((f) => f.check === 'termination'));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('contract_check flags Math.random and missing exports', () => {
   const { dir, file } = writeTemp(`module.exports = { x: () => Math.random() };`);
   try {

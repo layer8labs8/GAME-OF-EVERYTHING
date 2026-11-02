@@ -11,11 +11,9 @@
   const MAX_STEPS = 60;
 
   const TILE_PAIRS_POOL = [
-    '1B', '2B', '3B', '4B', '5B', '6B',
-    '1C', '2C', '3C', '4C', '5C', '6C',
-    '1D', '2D', '3D', '4D',
-    'DR', 'DG'
-  ]; // 18 unique types -> 18 pairs = 36 tiles
+    '1B', '2B', '3B', '1C', '2C', '3C', '1D', 'DR', 'DG',
+    '1B', '2B', '3B', '1C', '2C', '3C', '1D', 'DR', 'DG'
+  ]; // 9 types used twice -> 18 pairs = 36 tiles, so a wrong match can block the board
 
   function nextRandom(state) {
     let s = (state.rng + 0x6d2b79f5) | 0;

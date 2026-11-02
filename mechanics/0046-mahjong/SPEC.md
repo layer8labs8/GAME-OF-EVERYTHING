@@ -5,7 +5,7 @@ A serene yet deeply strategic ancient tile-matching solitaire game. Hand-carved 
 
 ## Bot Contract
 Exports deterministic functions:
-- `createState(seed)`: Procedurally builds a multi-tiered solvable layout of paired tiles (36 tiles in 18 pairs).
+- `createState(seed)`: Procedurally builds a multi-tiered solvable layout of paired tiles (36 tiles in 18 pairs, nine symbols used twice, so a careless match can block the board).
 - `legalActions(state)`: Returns all valid `match_<id1>_<id2>` pairs where both tiles are currently unblocked ("free") and share the same suit/symbol.
 - `step(state, action)`: Mutates state in place, removes the matched pair, recalculates unblocked tiles, updates combo streak, and returns `{ reward, done }`.
 - `isOver(state)`: Returns true if all tiles are cleared (victory), no legal matching pairs remain (stalemate/loss), or step limit reached.

@@ -189,7 +189,7 @@ function resolveSpaceCombat(state, playerShips, alienShips, playerTech, alienTec
   };
 }
 
-function step(state, action) {
+function applyAction(state, action) {
   if (state.done) {
     throw new Error('Game is already over');
   }
@@ -476,6 +476,19 @@ function evaluateMaxTurnConclusion(state) {
     state.result = 'defeat';
     state.history.push('Campaign concluded. The Alien Empire dominates the cluster.');
   }
+}
+
+// Some actions never end a turn, so every game has a hard cap on total actions.
+const MAX_ACTIONS = 2000;
+
+function step(state, action) {
+  const result = applyAction(state, action);
+  state.actionCount = (state.actionCount || 0) + 1;
+  if (state.actionCount >= MAX_ACTIONS && !state.done) {
+    state.done = true;
+    result.done = true;
+  }
+  return result;
 }
 
 function isOver(state) {

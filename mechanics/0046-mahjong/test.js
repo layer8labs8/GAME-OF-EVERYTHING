@@ -9,14 +9,25 @@ test('createState initializes 36 tiles in 18 matching pairs', () => {
   assert.equal(logic.isOver(state), false);
   assert.equal(logic.score(state), 0);
 
-  // Verify all types come in exact pairs (count of each type is 2)
+  // Nine symbols are each used for two pairs, so a wrong match is possible
   const counts = {};
   for (const t of state.tiles) {
     counts[t.type] = (counts[t.type] || 0) + 1;
   }
+  assert.equal(Object.keys(counts).length, 9);
   for (const type of Object.keys(counts)) {
-    assert.equal(counts[type], 2, `Type ${type} must have exactly 2 tiles`);
+    assert.equal(counts[type], 4, `Type ${type} must have exactly 4 tiles`);
   }
+});
+
+test('careless matching can block the board', () => {
+  let blocked = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const state = logic.createState(seed);
+    while (!logic.isOver(state)) logic.step(state, logic.legalActions(state)[0]);
+    if (state.tiles.length > 0) blocked += 1;
+  }
+  assert.ok(blocked > 0);
 });
 
 test('isTileFree correctly identifies open tiles', () => {

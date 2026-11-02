@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { checkLevelsDoc, updateDoc } = require('./check_levels.js');
+const { checkLevelsDoc, updateDoc, missingFromGame } = require('./check_levels.js');
 
 const solver = {
   validateLevel: (d) => (d.bad ? ['bad data'] : []),
@@ -63,4 +63,11 @@ test('updateDoc fills par and solution from the solver', () => {
   assert.equal(d.levels[0].par, 2);
   assert.equal(d.levels[0].solution, 'RR');
   assert.deepEqual(check(d), []);
+});
+
+test('missingFromGame finds verified levels the game does not ship', () => {
+  const source = "const LEVELS = [{ grid: ['##', '@.'] }];";
+  const shipped = { id: '001', data: { grid: ['##', '@.'] } };
+  const lost = { id: '002', data: { grid: ['##', '.@'] } };
+  assert.deepEqual(missingFromGame({ levels: [shipped, lost] }, source), ['002']);
 });

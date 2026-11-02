@@ -149,6 +149,21 @@ function checkLogicFile(filePath) {
   if (!failures.length && finishedCount < SEEDS * 0.7) {
     fail('termination', `only ${finishedCount} of ${SEEDS} random games ended within ${MAX_STEPS} steps; the game needs a step limit`);
   }
+  // A player who repeats one action must not keep the game open forever.
+  if (!failures.length) {
+    for (const policy of ['first', 'last']) {
+      const state = L.createState(1);
+      try {
+        for (let i = 0; i < MAX_STEPS && !L.isOver(state); i++) {
+          const actions = L.legalActions(state);
+          L.step(state, policy === 'first' ? actions[0] : actions[actions.length - 1]);
+        }
+        if (!L.isOver(state)) fail('termination', `always picking the ${policy} legal action never ends the game; add a limit on total actions`);
+      } catch (e) {
+        fail('crash', `always picking the ${policy} legal action threw: ${e.message}`);
+      }
+    }
+  }
   return failures;
 }
 

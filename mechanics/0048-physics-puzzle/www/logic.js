@@ -123,13 +123,13 @@
     }
   ];
 
-  function createState(seed = 12345, levelIndex) {
+  function createState(seed = 12345, levelIndex, levelData) {
     const s = (typeof seed === 'number' ? seed : 12345) >>> 0 || 1;
     const lIdx = (levelIndex !== undefined && levelIndex !== null)
       ? Math.abs(levelIndex) % LEVELS.length
       : Math.abs(s) % LEVELS.length;
 
-    const lvl = LEVELS[lIdx];
+    const lvl = levelData || LEVELS[lIdx];
 
     return {
       rng: s,
