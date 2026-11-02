@@ -1,4 +1,4 @@
-const CACHE_NAME = 'political-sim-v3';
+const CACHE_NAME = 'political-sim-v4';
 const ASSETS = [
   './',
   './index.html',

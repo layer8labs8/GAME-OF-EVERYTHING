@@ -1,4 +1,4 @@
-const CACHE_NAME = 'strikeprotocol-v3';
+const CACHE_NAME = 'strikeprotocol-v4';
 const ASSETS = [
   './',
   './index.html',

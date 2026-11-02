@@ -1,4 +1,4 @@
-const CACHE = 'block-puzzle-v3';
+const CACHE = 'block-puzzle-v4';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

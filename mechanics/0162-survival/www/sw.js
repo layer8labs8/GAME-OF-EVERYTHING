@@ -1,4 +1,4 @@
-const CACHE = 'goe-0162-survival-v3';
+const CACHE = 'goe-0162-survival-v4';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

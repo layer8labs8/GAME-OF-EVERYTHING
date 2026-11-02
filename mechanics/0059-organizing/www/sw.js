@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tidy-bento-v3';
+const CACHE_NAME = 'tidy-bento-v4';
 const ASSETS = [
   './',
   './index.html',

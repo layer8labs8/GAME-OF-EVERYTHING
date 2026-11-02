@@ -1,4 +1,4 @@
-const CACHE = 'goe-0029-vehicular-combat-v3';
+const CACHE = 'goe-0029-vehicular-combat-v4';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

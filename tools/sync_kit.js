@@ -10,7 +10,7 @@ const KIT = fs.readFileSync(path.join(ROOT, 'platform', 'web', 'kit.js'));
 const LOGIC_TAG = /(<script\s+src=["']logic\.js["']\s*><\/script>)/i;
 const KIT_TAG = '<script src="kit.js"></script>';
 // Games are cached for offline play. Raise this whenever game files change, or returning players keep the old version.
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 
 function summaryOf(spec) {
   for (const raw of spec.split(/\r?\n/)) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mythic-tcg-v3';
+const CACHE_NAME = 'mythic-tcg-v4';
 const ASSETS = [
   './',
   './index.html',

@@ -72,20 +72,68 @@ function draw() {
   ctx.fillStyle = '#0b1020';
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = '#8a93a8';
+  for (let i = 0; i < 60; i++) {
+    const speed = 40 + (i % 4) * 45;
+    const sx = (i * 97) % W;
+    const sy = (i * 151 + state.time * speed) % H;
+    ctx.fillStyle = 'rgba(200,215,255,' + (0.25 + (i % 4) * 0.2) + ')';
+    ctx.fillRect(sx, sy, 1.5, 1 + (i % 4) * 2);
+  }
+
   for (const k of state.rocks) {
+    const spin = k.x * 0.1 + state.time * (k.vy * 0.004);
+    ctx.fillStyle = '#6b7280';
     ctx.beginPath();
-    ctx.arc(k.x, k.y, k.r, 0, Math.PI * 2);
+    for (let a = 0; a < 9; a++) {
+      const wobble = k.r * (0.82 + 0.2 * Math.sin(a * 2.4 + k.r));
+      const px = k.x + Math.cos(spin + (a / 9) * Math.PI * 2) * wobble;
+      const py = k.y + Math.sin(spin + (a / 9) * Math.PI * 2) * wobble;
+      if (a) ctx.lineTo(px, py);
+      else ctx.moveTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    ctx.beginPath();
+    ctx.arc(k.x - k.r * 0.28, k.y - k.r * 0.3, k.r * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.arc(k.x + k.r * 0.3, k.y + k.r * 0.22, k.r * 0.2, 0, Math.PI * 2);
+    ctx.arc(k.x - k.r * 0.2, k.y + k.r * 0.4, k.r * 0.13, 0, Math.PI * 2);
     ctx.fill();
   }
 
   const p = state.player;
-  ctx.fillStyle = '#4fd1c5';
+  const flame = 10 + Math.sin(state.time * 40) * 4;
+  const fire = ctx.createLinearGradient(0, p.y + p.r, 0, p.y + p.r + flame + 8);
+  fire.addColorStop(0, '#ffd166');
+  fire.addColorStop(1, 'rgba(255,107,53,0)');
+  ctx.fillStyle = fire;
   ctx.beginPath();
-  ctx.moveTo(p.x, p.y - p.r);
-  ctx.lineTo(p.x + p.r, p.y + p.r);
-  ctx.lineTo(p.x - p.r, p.y + p.r);
+  ctx.moveTo(p.x - 6, p.y + p.r - 2);
+  ctx.lineTo(p.x, p.y + p.r + flame + 8);
+  ctx.lineTo(p.x + 6, p.y + p.r - 2);
   ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#2bb5a8';
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y - 2);
+  ctx.lineTo(p.x + p.r + 5, p.y + p.r + 2);
+  ctx.lineTo(p.x, p.y + p.r - 3);
+  ctx.lineTo(p.x - p.r - 5, p.y + p.r + 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#7ff5e6';
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y - p.r - 4);
+  ctx.lineTo(p.x + 7, p.y + p.r - 2);
+  ctx.lineTo(p.x - 7, p.y + p.r - 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#0b3d3a';
+  ctx.beginPath();
+  ctx.arc(p.x, p.y + 1, 3.4, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = '#e8ecf5';

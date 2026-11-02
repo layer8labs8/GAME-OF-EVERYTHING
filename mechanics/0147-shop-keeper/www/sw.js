@@ -1,4 +1,4 @@
-const CACHE_NAME = 'arcaneemporium-v3';
+const CACHE_NAME = 'arcaneemporium-v4';
 const ASSETS = [
   './',
   './index.html',

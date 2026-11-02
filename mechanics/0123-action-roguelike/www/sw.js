@@ -1,4 +1,4 @@
-const CACHE_NAME = 'voidbreach-v3';
+const CACHE_NAME = 'voidbreach-v4';
 const ASSETS = [
   './',
   './index.html',

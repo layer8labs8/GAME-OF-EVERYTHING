@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cyber-breach-v3';
+const CACHE_NAME = 'cyber-breach-v4';
 const ASSETS = [
   './',
   './index.html',

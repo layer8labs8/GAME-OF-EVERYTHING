@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shadow-descent-v3';
+const CACHE_NAME = 'shadow-descent-v4';
 const ASSETS = [
   './',
   './index.html',

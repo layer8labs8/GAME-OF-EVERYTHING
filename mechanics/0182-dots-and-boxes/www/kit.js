@@ -7,6 +7,9 @@
     @keyframes goe-shake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-7px,3px); } 40% { transform: translate(6px,-4px); } 60% { transform: translate(-4px,-3px); } 80% { transform: translate(3px,4px); } }
     @keyframes goe-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .65; transform: scale(.97); } }
     @keyframes goe-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    canvas { filter: saturate(1.2) contrast(1.05); }
+    #goe-fx { filter: none; }
+    #goe-vignette { position: fixed; inset: 0; z-index: 15; pointer-events: none; background: radial-gradient(circle at 50% 45%, transparent 62%, rgba(0,0,0,.34) 100%); }
     button { transition: transform .08s ease, filter .08s ease; }
     button:active { transform: scale(.95); filter: brightness(1.25); }
     #goe-start { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px; box-sizing: border-box; text-align: center; color: #fff; font-family: system-ui, sans-serif; background: radial-gradient(circle at 50% 35%, rgba(36,48,92,.93), rgba(6,9,20,.97)); cursor: pointer; }
@@ -239,8 +242,8 @@
 
   function wrap(api) {
     if (!api || typeof api.step !== 'function' || typeof api.isOver !== 'function' || api.goeKit) return;
-    const original = api.step;
-    const hooked = function (state) {
+    // Screens may call step, or a real-time or direct version of it. All of them take the state first.
+    const hook = (original) => function (state) {
       let before = null;
       let wasOver = true;
       try {
@@ -252,7 +255,9 @@
       return res;
     };
     try {
-      api.step = hooked;
+      for (const name of ['step', 'advance', 'tick', 'place']) {
+        if (typeof api[name] === 'function') api[name] = hook(api[name]);
+      }
       api.goeKit = true;
       if (Array.isArray(api.CAMPAIGN) && api.CAMPAIGN.length && typeof api.createState === 'function') startCampaign(api);
     } catch (e) { /* read-only api: the game still runs, just without effects */ }
@@ -314,6 +319,10 @@
       } catch (e) { /* some window properties refuse to be read */ }
     }
     if (typeof window.step === 'function' && typeof window.isOver === 'function') wrap(window);
+
+    const vignette = document.createElement('div');
+    vignette.id = 'goe-vignette';
+    document.body.appendChild(vignette);
 
     const mute = document.createElement('button');
     mute.id = 'goe-mute';

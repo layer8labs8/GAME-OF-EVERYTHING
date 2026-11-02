@@ -1,4 +1,4 @@
-const CACHE_NAME = 'transitflow-v3';
+const CACHE_NAME = 'transitflow-v4';
 const ASSETS = [
   './',
   './index.html',

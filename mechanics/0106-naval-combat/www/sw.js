@@ -1,4 +1,4 @@
-const CACHE_NAME = 'naval-combat-v3';
+const CACHE_NAME = 'naval-combat-v4';
 const ASSETS = [
   './',
   './index.html',

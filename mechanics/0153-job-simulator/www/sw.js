@@ -1,4 +1,4 @@
-const CACHE_NAME = 'officemayhem-v3';
+const CACHE_NAME = 'officemayhem-v4';
 const ASSETS = [
   './',
   './index.html',

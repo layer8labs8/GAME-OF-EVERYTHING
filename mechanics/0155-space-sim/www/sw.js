@@ -1,4 +1,4 @@
-const CACHE_NAME = 'voidnav-v3';
+const CACHE_NAME = 'voidnav-v4';
 const ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'relic-seeker-v3';
+const CACHE_NAME = 'relic-seeker-v4';
 const ASSETS = [
   './',
   './index.html',

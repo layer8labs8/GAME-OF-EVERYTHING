@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wilderness-craft-v3';
+const CACHE_NAME = 'wilderness-craft-v4';
 const ASSETS = [
   './',
   './index.html',

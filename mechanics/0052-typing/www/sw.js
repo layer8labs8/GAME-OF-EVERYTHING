@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cipher-cascade-v3';
+const CACHE_NAME = 'cipher-cascade-v4';
 const ASSETS = [
   './',
   './index.html',

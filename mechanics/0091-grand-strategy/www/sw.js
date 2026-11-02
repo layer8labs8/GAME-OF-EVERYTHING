@@ -1,4 +1,4 @@
-const CACHE = 'goe-0091-grand-strategy-v3';
+const CACHE = 'goe-0091-grand-strategy-v4';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

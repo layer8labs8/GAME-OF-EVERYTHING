@@ -1,4 +1,4 @@
-const CACHE = 'goe-0033-2d-platformer-v3';
+const CACHE = 'goe-0033-2d-platformer-v4';
 const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {

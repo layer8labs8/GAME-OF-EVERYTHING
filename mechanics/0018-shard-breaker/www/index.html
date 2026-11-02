@@ -150,23 +150,73 @@ function draw() {
   rrect(CX, CY, CW, CH, 12);
   ctx.stroke();
 
+  ctx.fillStyle = 'rgba(200,215,255,0.5)';
+  for (let i = 0; i < 40; i++) {
+    const sx = (i * 73) % CW;
+    const sy = (i * 131 + performance.now() * (0.004 + (i % 3) * 0.003)) % CH;
+    ctx.fillRect(CX + sx, CY + sy, 1.5, 1.5);
+  }
+
   for (const br of state.bricks) {
-    ctx.fillStyle = ROW_COLORS[br.row % ROW_COLORS.length];
-    rrect(CX + br.x, CY + br.y, br.w, br.h, 4);
+    const color = ROW_COLORS[br.row % ROW_COLORS.length];
+    const bx = CX + br.x;
+    const by = CY + br.y;
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = color;
+    rrect(bx - 2, by - 2, br.w + 4, br.h + 4, 6);
     ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.28)';
-    rrect(CX + br.x + 2, CY + br.y + 2, br.w - 4, 4, 2);
+    ctx.globalAlpha = 1;
+    const shade = ctx.createLinearGradient(bx, by, bx, by + br.h);
+    shade.addColorStop(0, color);
+    shade.addColorStop(1, 'rgba(0,0,0,0.35)');
+    ctx.fillStyle = color;
+    rrect(bx, by, br.w, br.h, 4);
+    ctx.fill();
+    ctx.fillStyle = shade;
+    rrect(bx, by, br.w, br.h, 4);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.beginPath();
+    ctx.moveTo(bx + 3, by + 3);
+    ctx.lineTo(bx + br.w * 0.45, by + 3);
+    ctx.lineTo(bx + br.w * 0.3, by + br.h - 3);
+    ctx.lineTo(bx + 3, by + br.h - 3);
+    ctx.closePath();
     ctx.fill();
   }
 
+  const px = CX + state.paddleX - state.paddleW / 2;
+  const glow = ctx.createLinearGradient(px, 0, px + state.paddleW, 0);
+  glow.addColorStop(0, '#2bb5a8');
+  glow.addColorStop(0.5, '#b8fff5');
+  glow.addColorStop(1, '#2bb5a8');
+  ctx.globalAlpha = 0.25;
   ctx.fillStyle = '#4fd1c5';
-  rrect(CX + state.paddleX - state.paddleW / 2, CY + PADDLE_Y - 6, state.paddleW, 12, 6);
+  rrect(px - 4, CY + PADDLE_Y - 10, state.paddleW + 8, 20, 10);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = glow;
+  rrect(px, CY + PADDLE_Y - 6, state.paddleW, 12, 6);
   ctx.fill();
 
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(CX + state.ball.x, CY + state.ball.y, state.ball.r, 0, Math.PI * 2);
-  ctx.fill();
+  trail.push({ x: CX + state.ball.x, y: CY + state.ball.y });
+  if (trail.length > 10) trail.shift();
+  trail.forEach((t, i) => {
+    ctx.globalAlpha = (i / trail.length) * 0.45;
+    ctx.fillStyle = '#9fd8ff';
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, state.ball.r * (0.4 + (i / trail.length) * 0.6), 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  const bx2 = CX + state.ball.x;
+  const by2 = CY + state.ball.y;
+  const ballGlow = ctx.createRadialGradient(bx2, by2, 1, bx2, by2, state.ball.r * 3);
+  ballGlow.addColorStop(0, 'rgba(255,255,255,0.95)');
+  ballGlow.addColorStop(0.35, 'rgba(159,216,255,0.55)');
+  ballGlow.addColorStop(1, 'rgba(159,216,255,0)');
+  ctx.fillStyle = ballGlow;
+  ctx.fillRect(bx2 - state.ball.r * 3, by2 - state.ball.r * 3, state.ball.r * 6, state.ball.r * 6);
 
   ctx.fillStyle = '#6c7793';
   ctx.font = '13px system-ui, sans-serif';
@@ -187,6 +237,7 @@ function draw() {
   }
 }
 
+const trail = [];
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'peak-climber-v3';
+const CACHE_NAME = 'peak-climber-v4';
 const ASSETS = [
   './',
   './index.html',

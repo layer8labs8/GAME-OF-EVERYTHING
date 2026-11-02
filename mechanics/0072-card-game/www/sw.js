@@ -1,4 +1,4 @@
-const CACHE_NAME = 'duel-of-eights-v3';
+const CACHE_NAME = 'duel-of-eights-v4';
 const ASSETS = [
   './',
   './index.html',

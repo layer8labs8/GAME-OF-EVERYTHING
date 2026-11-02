@@ -1,4 +1,4 @@
-const CACHE_NAME = 'word-forge-v3';
+const CACHE_NAME = 'word-forge-v4';
 const ASSETS = [
   './',
   './index.html',
