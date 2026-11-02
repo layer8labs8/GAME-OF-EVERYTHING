@@ -185,6 +185,45 @@ function draw() {
   }
 }
 
+// Short sounds made in code, so the game stays offline and needs no audio files.
+let audio = null;
+let muted = false;
+try { muted = localStorage.getItem('goe-0018-muted') === '1'; } catch (e) {}
+
+function blip(freq, ms, type = 'square') {
+  if (muted) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const osc = audio.createOscillator();
+    const amp = audio.createGain();
+    const end = audio.currentTime + ms / 1000;
+    osc.type = type;
+    osc.frequency.value = freq;
+    amp.gain.setValueAtTime(0.05, audio.currentTime);
+    amp.gain.exponentialRampToValueAtTime(0.001, end);
+    osc.connect(amp);
+    amp.connect(audio.destination);
+    osc.start();
+    osc.stop(end);
+  } catch (e) {}
+}
+
+const muteButton = document.createElement('button');
+function showMute() {
+  muteButton.textContent = muted ? 'Sound off' : 'Sound on';
+}
+function toggleMute() {
+  muted = !muted;
+  try { localStorage.setItem('goe-0018-muted', muted ? '1' : '0'); } catch (e) {}
+  showMute();
+}
+muteButton.style.cssText = 'position:fixed;top:8px;right:8px;z-index:10;padding:6px 10px;border:0;border-radius:6px;background:rgba(0,0,0,0.55);color:#fff;font:12px system-ui,sans-serif';
+muteButton.onclick = toggleMute;
+showMute();
+document.body.appendChild(muteButton);
+addEventListener('keydown', (e) => { if (e.key === 'm' || e.key === 'M') toggleMute(); });
+
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -195,6 +234,9 @@ function frame(now) {
     while (accum >= stepDt && !isOver(state)) {
       accum -= stepDt;
       const res = step(state, pickAction());
+      if (res.reward >= 100) blip(990, 180);
+      else if (res.reward > 0) blip(660, 40);
+      else if (res.reward < 0) blip(160, 240, 'sawtooth');
       if (res.done) {
         overAt = performance.now();
         const sc = score(state);

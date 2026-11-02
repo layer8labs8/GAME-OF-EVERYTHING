@@ -71,6 +71,45 @@ function toLogical(e) {
   return { x: (e.clientX - rect.left) / scale, y: (e.clientY - rect.top) / scale };
 }
 
+// Short sounds made in code, so the game stays offline and needs no audio files.
+let audio = null;
+let muted = false;
+try { muted = localStorage.getItem('goe-0031-muted') === '1'; } catch (e) {}
+
+function blip(freq, ms, type = 'square') {
+  if (muted) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const osc = audio.createOscillator();
+    const amp = audio.createGain();
+    const end = audio.currentTime + ms / 1000;
+    osc.type = type;
+    osc.frequency.value = freq;
+    amp.gain.setValueAtTime(0.05, audio.currentTime);
+    amp.gain.exponentialRampToValueAtTime(0.001, end);
+    osc.connect(amp);
+    amp.connect(audio.destination);
+    osc.start();
+    osc.stop(end);
+  } catch (e) {}
+}
+
+const muteButton = document.createElement('button');
+function showMute() {
+  muteButton.textContent = muted ? 'Sound off' : 'Sound on';
+}
+function toggleMute() {
+  muted = !muted;
+  try { localStorage.setItem('goe-0031-muted', muted ? '1' : '0'); } catch (e) {}
+  showMute();
+}
+muteButton.style.cssText = 'position:fixed;top:8px;right:8px;z-index:10;padding:6px 10px;border:0;border-radius:6px;background:rgba(0,0,0,0.55);color:#fff;font:12px system-ui,sans-serif';
+muteButton.onclick = toggleMute;
+showMute();
+document.body.appendChild(muteButton);
+addEventListener('keydown', (e) => { if (e.key === 'm' || e.key === 'M') toggleMute(); });
+
 let leftHeld = false;
 let rightHeld = false;
 let fireHeld = false;
@@ -80,7 +119,10 @@ function doStep(act) {
   const legal = legalActions(state);
   const chosen = legal.includes(act) ? act : 'wait';
   try {
-    step(state, chosen);
+    const res = step(state, chosen);
+    if (chosen === 'fire') blip(740, 30);
+    if (res.reward >= 10) blip(440, 70);
+    else if (res.reward < 0) blip(140, 240, 'sawtooth');
     if (isOver(state)) {
       overAt = performance.now();
       const sc = score(state);
