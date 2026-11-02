@@ -1,5 +1,7 @@
 # 0003 — Beat 'Em Up ("Street Brawler")
 
+Walk down the street and punch, kick and throw your way through waves of thugs.
+
 ## Concept
 A classic 2.5D side-scrolling street brawler. Navigate depth lanes, execute punch combos, jump kicks, and explosive flaming dragon uppercuts to neutralize syndicates and reclaim the city.
 

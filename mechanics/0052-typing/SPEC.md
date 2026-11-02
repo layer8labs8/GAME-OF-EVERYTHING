@@ -1,5 +1,7 @@
 # 0052: Typing - Cipher Cascade
 
+Data packets fall down the screen. Type their codes before they land.
+
 A high-speed cyber-defense typing action puzzle game. Hostile encrypted data packets descent through cyberspace channels toward the player's core firewall. By typing exact keystrokes, the player locks on to incoming threats, discharges beam lasers, chains combo streaks, and deploys EMP bursts to safeguard the server network.
 
 ## Core Rules

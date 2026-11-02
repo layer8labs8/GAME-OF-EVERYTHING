@@ -1,5 +1,7 @@
 # Shard Breaker (0018)
 
+Bounce a ball off your paddle to smash every crystal, and don't let it fall.
+
 ## Rules
 Deflect an energy sphere with a bottom paddle (`y = 414`) inside a `312 × 440` chamber to shatter 5 rows of 8 crystal shards.
 - Actions move the paddle left (`'L'`), stay (`'S'`), or move right (`'R'`).

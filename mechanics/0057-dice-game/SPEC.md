@@ -1,5 +1,7 @@
 # 0057: Dice Game - Royal Dice
 
+Roll five dice, choose which to keep, and pick the best way to score them.
+
 A tactical dice strategy and probability management game based on classic *Yacht* and *Yahtzee*. Players roll five six-sided ivory dice, strategically toggle locks, utilize up to two re-rolls per round, and assign combinations into thirteen discrete scoring categories across upper and lower scorecard sections.
 
 ## Core Rules

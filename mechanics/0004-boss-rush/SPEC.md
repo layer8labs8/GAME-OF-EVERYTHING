@@ -1,5 +1,7 @@
 # 0004 — Boss Rush ("Titan Trials")
 
+Fight three giant bosses in a row, and save your stamina so you can dodge in time.
+
 ## Concept
 A high-stakes gladiatorial boss gauntlet pitting a solitary hero against 3 consecutive colossal titans. Features stamina management, telegraphed boss windups, precision parrying, invulnerability dodging, and tactical resource conservation.
 

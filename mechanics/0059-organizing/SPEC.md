@@ -1,5 +1,7 @@
 # 0059: Organizing - Tidy Bento
 
+Fit all the food pieces neatly into the bento box.
+
 A cozy and satisfying spatial packing puzzle. The player organizes diverse geometric bento delicacies into compartmentalized lunchboxes, rotating and arranging polyomino ingredients to achieve a harmonious, perfectly packed bento.
 
 ## Core Rules

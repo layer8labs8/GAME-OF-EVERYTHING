@@ -1,5 +1,7 @@
 # Crate Keeper (0043 — Sokoban)
 
+Push every crate onto a marked spot. You can only push, never pull, so plan ahead.
+
 ## Rules
 The keeper stands inside a walled room containing crates (`$`) and marked floor targets (`.`).
 - Stepping into floor (` `) or a target (`.`) moves the keeper (`@` on floor, `+` on target).

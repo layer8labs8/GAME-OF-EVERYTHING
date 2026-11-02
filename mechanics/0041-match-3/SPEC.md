@@ -1,5 +1,7 @@
 # Gem Cascade (0041 — Match-3)
 
+Swap two neighbouring gems to line up three or more of a kind and clear them.
+
 ## Rules
 Swap adjacent gems on a `6 × 6` grid (`36` tiles) containing 5 gem types (`1..5`) to align 3 or more matching gems in a horizontal or vertical line.
 - A swap is only legal if it immediately results in at least one match of 3 or more gems.

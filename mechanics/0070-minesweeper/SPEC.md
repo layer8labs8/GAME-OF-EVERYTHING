@@ -1,5 +1,7 @@
 # Hazard Grid (0070 — Minesweeper)
 
+Clear the grid without touching a mine. Numbers show how many mines are next to each tile.
+
 ## Rules
 Clear all safe tiles on a `7 × 7` grid (`49` cells) hiding `7` hazard mines without detonating any mine.
 - **First-Move Safety**: If the very first revealed cell (`revealedCount === 0`) contains a mine, that mine is relocated to the next free cell and neighbor counts are updated before revealing, guaranteeing a safe opening move.

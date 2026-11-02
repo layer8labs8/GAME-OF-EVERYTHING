@@ -1,5 +1,7 @@
 # 0006 — Bullet Hell ("Danmaku Veil")
 
+Fly through huge patterns of bullets. Your ship is tiny, so there is always a gap.
+
 ## Concept
 A micro-hitbox curtain-fire aerial shooter. Thread through intricate geometric bullet spirals, graze hazardous projectiles to charge the celestial bomb meter, and vanquish the Crimson Core flagship.
 

@@ -1,5 +1,7 @@
 # 0005-bullet-heaven: Horde Survivor
 
+Keep moving while your weapons fire on their own, and grow stronger as the monsters keep coming.
+
 Top-down arena bullet-heaven survivor featuring automated weapon firing, continuous monster hordes, XP gem collection, leveling and weapon evolution, and wave survival.
 
 ## State

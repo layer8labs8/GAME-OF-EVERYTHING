@@ -1,5 +1,7 @@
 # Quad Drop (0042 — Falling Blocks)
 
+Turn and place falling blocks to fill whole rows and clear them.
+
 ## Rules
 Arrange falling 4-cell polyominoes inside a `10 × 20` well (`x` in `0..9`, `y` in `0..19`).
 - Actions: `'left'`, `'right'`, `'rotate'`, `'down'`, `'drop'`.

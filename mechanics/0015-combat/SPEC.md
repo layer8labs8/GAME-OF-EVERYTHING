@@ -1,5 +1,7 @@
 # 0015 - Combat ("Brawler Strike")
 
+Step into an underground ring and beat your rival with well-timed hits.
+
 ## Concept & Theme
 A gritty martial arts hand-to-hand combat arena. Fighting in underground fight rings, players execute precise striking martial disciplines, dynamic stance switches (High Stance vs Low Stance), devastating grab-and-throw takedowns, tactical parry-counters, and crowd control against escalating rings of brawlers, kickboxers, and the reigning pit champion.
 

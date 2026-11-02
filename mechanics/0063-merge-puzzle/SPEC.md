@@ -1,5 +1,7 @@
 # Power Tiles (0063 — Merge Puzzle)
 
+Slide all the tiles one way. Equal numbers merge, so keep going for the biggest tile.
+
 ## Rules
 Slide numbered tiles across a `4 × 4` grid in one of four directions (`'U'`, `'D'`, `'L'`, `'R'`).
 - All non-zero tiles slide as far as possible in the chosen direction.

@@ -1,5 +1,7 @@
 # Number Box (0068 — Sudoku)
 
+Fill the grid with 1 to 4 so no number repeats in a row, column or box.
+
 ## Rules
 Complete a `4 × 4` grid with digits `1..4` so every row, every column, and every `2 × 2` corner box contains `1, 2, 3, 4` once each.
 - Each seeded puzzle has `7` given clues and `9` empty cells (`0`), verified during generation to have a **unique** solution.

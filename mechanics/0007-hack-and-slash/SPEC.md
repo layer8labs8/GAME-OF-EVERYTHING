@@ -1,5 +1,7 @@
 # 0007 - Hack and Slash ("Blade Mirage")
 
+Slash through waves of shadow enemies with fast sword combos.
+
 ## Concept & Theme
 A swift, fluid side-scrolling 2D combat arena where a cybernetic blade master confronts legions of corrupted shadow wraiths. The core loop revolves around chain combos, air juggles, high-speed dash strikes, and precision parries against telegraphed enemy assaults.
 

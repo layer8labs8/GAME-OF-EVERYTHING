@@ -1,5 +1,7 @@
 # 0054: Minigames Collection - Micro Blitz
 
+Play five tiny challenges in a row, each one over in seconds.
+
 A frantic, rapid-fire microgame gauntlet. The player faces a sequence of 5 distinct fast-action micro-challenges, each introduced with a bold imperative command ("DODGE!", "CATCH!", "PUMP!", "MATCH!", "DEFLECT!"). Players must execute precise actions under tight turn deadlines to survive the gauntlet with their lives intact.
 
 ## Core Rules

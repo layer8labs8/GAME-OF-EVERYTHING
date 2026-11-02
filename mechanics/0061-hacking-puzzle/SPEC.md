@@ -1,5 +1,7 @@
 # 0061: Hacking Puzzle - Cyber Breach
 
+Find a route through a small network and hack your way to the target.
+
 A tactical cyber-infiltration puzzle. The operative infiltrates a corporate subnet by routing through a $5 \times 5$ hexadecimal code matrix, alternating between horizontal row and vertical column selections to reconstruct target daemon sequences within a restricted memory buffer.
 
 ## Core Rules

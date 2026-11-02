@@ -1,5 +1,7 @@
 # 0069: Crossword - LexiCross
 
+Read the clues and fill in a small crossword.
+
 An elegant, scholar-themed mini crossword puzzle. Players decipher Across and Down vocabulary clues, placing intersecting letters into interlocking word grids across three escalating stages.
 
 ## Core Rules

@@ -1,5 +1,7 @@
 # 0011 - Souls-like ("Ashen Knight")
 
+Duel one tough boss. Learn its attacks, then dodge and parry at the right moment.
+
 ## Concept & Theme
 A grimdark, precision combat boss duel. An Ashen Champion confronts the fearsome Ember Lord inside a desecrated sanctuary. Victory demands disciplined stamina management, timed dodge rolls with invulnerability frames, strategic poise breaks, and measured healing flask usage.
 

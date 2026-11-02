@@ -1,5 +1,7 @@
 # Sky Stacker (0071 — Stack Tower)
 
+Drop each sliding block on top of the last one. Any overhang is cut off, so stack it straight.
+
 ## Rules
 Drop horizontally sweeping slabs onto the top of a rising tower.
 - Track width is `280`; the starting foundation slab sits at `x = 80, w = 120`.

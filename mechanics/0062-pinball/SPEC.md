@@ -1,5 +1,7 @@
 # 0062: Pinball - Neon Pinball
 
+Launch the ball and use the flippers to keep it in play and score points.
+
 A high-octane synthwave arcade pinball simulator with deterministic 2D physics. Players launch balls into an electric neon playfield featuring reactive round bumpers, angled slingshots, top rollover lanes, and responsive dual flippers.
 
 ## Core Rules

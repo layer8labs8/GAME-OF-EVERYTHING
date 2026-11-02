@@ -1,5 +1,7 @@
 # 0058: Time Manipulation Puzzle - Chronos Paradox
 
+Record a path, rewind time, then work with your past self to escape.
+
 A mind-bending cooperative chrono-puzzle. The player records timeline paths in a quantum facility, rewinds time to spawn past temporal echoes (Echo Clones), and synchronizes with past selves to hold pressure plates and bypass security gates to reach the exit portal.
 
 ## Core Rules

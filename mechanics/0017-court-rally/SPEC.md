@@ -1,5 +1,7 @@
 # Court Rally (0017)
 
+Move your paddle to return the ball, and get it past the computer's paddle to score.
+
 ## Rules
 Vertical court (`300 × 440`) pitting the player's bottom paddle (`y = 416`) against an automated top paddle (`y = 24`).
 - Each step moves the player's paddle left (`'L'`), stays (`'S'`), or moves right (`'R'`).

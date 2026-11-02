@@ -1,5 +1,7 @@
 # 0008 - Parkour ("Rooftop Velocity")
 
+Run across city rooftops and chain jumps, climbs and slides to keep your speed up.
+
 ## Concept & Theme
 A high-velocity urban freerunning and parkour game set across skyscraper rooftops. The runner chains wall climbs, hurdle vaults, low duct slides, and momentum speed boosts to traverse a hazardous urban skyline without losing velocity.
 

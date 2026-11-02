@@ -1,5 +1,7 @@
 # Flow Conduit (0067 — Pipe Connect)
 
+Rotate pipe pieces to connect the source to the drain.
+
 ## Rules
 Connect the fluid source at top-left cell `0` (`(0,0)`) to the drain at bottom-right cell `24` (`(4,4)`) on a `5 × 5` conduit grid within `55` rotations.
 - Each cell stores a 4-bit opening mask (`N=1`, `E=2`, `S=4`, `W=8`).

@@ -1,5 +1,7 @@
 # 0056: Hex Grid Puzzle - Hexa Conduits
 
+Rotate hexagon tiles to connect the energy across the board.
+
 A tactical sci-fi energy grid puzzle played on a 19-tile hexagonal field with axial coordinates. The player rotates hexagonal conduit cells to channel radiant plasma from the central Power Core to illuminate all peripheral Energy Relays.
 
 ## Core Rules

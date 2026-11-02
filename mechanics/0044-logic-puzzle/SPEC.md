@@ -1,5 +1,7 @@
 # 0044 - Logic Puzzle ("Circuit Relay")
 
+Tap a node to flip it and its neighbours, and power up the whole grid.
+
 ## Concept & Theme
 A cybernetic circuit grid deduction puzzle. Engineers reconfigure corrupted power nodes in a superconducting mainframe matrix. Toggling a node inverts its quantum state and pulses energy along connected conduit traces to invert all orthogonally adjacent relays.
 

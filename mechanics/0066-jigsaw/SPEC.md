@@ -1,5 +1,7 @@
 # 0066: Jigsaw - Stained Glass Jigsaw
 
+Put the pieces together to rebuild a stained glass picture.
+
 A tactile, aesthetic jigsaw puzzle celebrating artisanal stained-glass mosaics. Players assemble interlocking pieces featuring authentic tabs and blanks into a target frame, matching edge shapes and colorful chromatic glass segments to reconstruct the complete artwork.
 
 ## Core Rules

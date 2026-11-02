@@ -1,5 +1,7 @@
 # 0045: Hidden Object - Relic Seeker
 
+Search a cluttered room and find every hidden object on your list.
+
 An atmospheric Victorian study / curiosity cabinet hidden-object puzzle game. The player assumes the role of an antiquarian researcher searching cluttered chambers, open shelves, mahogany cabinets, and velvet curtains to find and catalog specific target relics before their investigation lamp runs out of oil.
 
 ## Core Rules

@@ -1,5 +1,7 @@
 # 0048: Physics Puzzle - Gravity Sling
 
+Steer a probe with small bursts of fuel, collect the beacons and reach the goal while gravity pulls you off course.
+
 A deterministic orbital physics puzzle where the player navigates a deep-space probe through gravitational anomalies, asteroid belts, and energy beacon waypoints to reach the warp gate.
 
 ## Core Rules

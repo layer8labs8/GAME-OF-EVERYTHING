@@ -1,5 +1,7 @@
 # 0049: Escape Room - Cryptic Vault
 
+You are locked in a vault. Find the clues, solve the puzzles and open the door.
+
 An immersive first-person discrete escape room puzzle. The player is trapped inside a high-security subterranean testing chamber with locked vault doors, an unpowered terminal, a secured wall safe, and hidden mechanical compartments. By inspecting room stations, uncovering hidden tools, decoding environmental ciphers, and routing electrical power, the player unlatches the vault door and escapes before life support terminates.
 
 ## Core Rules

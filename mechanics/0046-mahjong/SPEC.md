@@ -1,5 +1,7 @@
 # 0046 - Mahjong ("Jade Pairs")
 
+Match pairs of free tiles to clear the whole stack. A careless match can block you.
+
 ## Concept & Theme
 A serene yet deeply strategic ancient tile-matching solitaire game. Hand-carved bone and ivory tiles bearing classical Chinese symbols (Bamboo, Characters, Dots, Dragons, Winds) are arranged in layered pyramidal configurations. Operatives match and clear open pairs to dismantle the layout.
 

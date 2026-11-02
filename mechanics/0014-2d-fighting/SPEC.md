@@ -1,5 +1,7 @@
 # 0014 - 2D Fighting ("Iron Bout")
 
+A one-on-one fight. Use punches, kicks and blocks to drain the other fighter's health.
+
 ## Concept & Theme
 A technical 1v1 side-view fighting arena. Two martial arts masters engage in high-stakes hand-to-hand dueling featuring footsies, high/low guard blocks, fireball zoning, anti-air dragon uppercuts, and cinematic super arts.
 

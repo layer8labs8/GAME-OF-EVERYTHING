@@ -1,5 +1,7 @@
 # Neon Sprint (0009 — Endless Runner)
 
+Run down an endless three-lane road, switching lanes, jumping and sliding past obstacles.
+
 ## Rules
 Sprint down an endless neon cyber highway across 3 lanes (`Lanes 0, 1, 2`), jumping hurdles, sliding under laser beams, and dodging barricades.
 - **Actions**: `['left', 'right', 'jump', 'slide', 'wait']`.

@@ -1,5 +1,7 @@
 # 0060: Programming Puzzle - Robo Script
 
+Give a robot a short list of commands, then run it and watch it reach the goal.
+
 A logic and algorithm design puzzle. The player constructs an automated routine using a compact instruction buffer to guide a micro-rover across circuit board chambers, jumping over bus chasms and illuminating memory nodes.
 
 ## Core Rules

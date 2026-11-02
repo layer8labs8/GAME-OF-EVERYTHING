@@ -1,5 +1,7 @@
 # 0012 - Musou ("Dynasty Cleave")
 
+One hero against a whole army. Sweep through crowds of soldiers with big attacks.
+
 ## Concept & Theme
 An expansive one-versus-many crowd combat arena. A legendary frontline general armed with a heavy crescent halberd cleaves through marching battalions of enemy conscripts, archers, and vanguard officers across battle zones.
 

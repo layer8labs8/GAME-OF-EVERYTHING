@@ -1,5 +1,7 @@
 # 0013 - Time Slowdown ("Chrono Matrix")
 
+Time only moves when you move, so every step lets you plan around the danger.
+
 ## Concept & Theme
 A tactical turn-based action game where time progresses only when the player takes an action. Players navigate a high-contrast 10x10 tactical room, dodging incoming bullet trajectories, disarming red agents, and orchestrating fluid elimination sequences.
 

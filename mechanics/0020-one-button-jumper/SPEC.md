@@ -1,5 +1,7 @@
 # Roof Jumper (0020 — One-Button Jumper)
 
+Run along the rooftops and press one button to jump over every gap and obstacle.
+
 ## Rules
 Sprint across an endless skyline at `playerX = 64` while obstacles scroll left across a `320`-wide track.
 - Actions: `'run'` or `'jump'`.

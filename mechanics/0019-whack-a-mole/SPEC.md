@@ -1,5 +1,7 @@
 # Burrow Bonk (0019 — Whack-a-Mole)
 
+Critters pop out of holes. Tap them quickly before they hide again.
+
 ## Rules
 Nine burrows on a `3 × 3` grid (`0..8`) spawn critters over a `120`-step round with `3` lives:
 - `'mole'`: worth `10 + combo * 2` points when bonked; if its timer (`ttl`) expires first, `combo` resets to `0`.

@@ -1,5 +1,7 @@
 # 0047-solitaire: Klondike Solitaire
 
+Build the four suits from ace to king by moving cards between the columns.
+
 The quintessential 52-card patience puzzle featuring 7 tableau cascades, 4 suit foundation piles, stock-to-waste recycling, alternating color sequencing, and victory upon assembling all four suits.
 
 ## State

@@ -1,5 +1,7 @@
 # 0010 — Stealth ("Shadow Infiltrator")
 
+Sneak past the guards and stay out of their sight to reach your target.
+
 ## Concept
 Top-down tactical infiltration game. Sneak past patrolling security guards, avoid their illuminated vision cones, use acoustic pebble distractions to manipulate patrol routes, retrieve the encrypted data core, and escape via the extraction vent undetected.
 

@@ -1,3 +1,5 @@
+Flip two cards at a time and remember where they are, until you find every pair.
+
 ## Rules
 Memory Match is played on a 4×4 grid (16 cards) containing 8 pairs of distinct symbols (values 0–7). All cards start face down. The player has 20 turns. Each turn consists of flipping two cards sequentially:
 - First flip: choose a face‑down, unmatched card → it turns face up.

@@ -1,5 +1,7 @@
 # Neon Serpent (0016 — Snake)
 
+Steer a snake to eat food and grow longer, without hitting a wall or your own tail.
+
 ## Rules
 Control a growing serpent on a `12 × 16` grid (`x` in `0..11`, `y` in `0..15`).
 - The serpent starts at length 3 at `[(5,8), (4,8), (3,8)]` moving right (`'R'`).

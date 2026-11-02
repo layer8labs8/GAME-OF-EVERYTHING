@@ -1,5 +1,7 @@
 # Pulse Lock (0021 — Tap Timing)
 
+A needle swings across a bar. Tap when it is inside the target zone.
+
 ## Rules
 A needle sweeps back and forth across a `0..100` track toward a shifting target zone (`target`, `goodRadius`, `perfectRadius`).
 - `'wait'` advances the needle by `dir * speed`, reflecting off `0` and `100`. Waiting `160` consecutive steps without tapping causes a timeout miss (`lives -= 1`, `streak = 0`).

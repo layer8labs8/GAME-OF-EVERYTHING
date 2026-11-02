@@ -1,5 +1,7 @@
 # 0053: Trivia - Chronicle Quiz
 
+Answer ten multiple-choice questions on science, culture and more.
+
 A knowledge-testing quiz show puzzle game. The player navigates 10 multiple-choice trivia challenges spanning science, computing history, astronomy, and gaming lore. Players deploy strategic lifelines (50:50, Double Down, and Skip) while chaining consecutive correct answer multipliers to become the grand trivia champion before incurring 3 strikes.
 
 ## Core Rules

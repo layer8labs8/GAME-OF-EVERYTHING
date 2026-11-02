@@ -1,5 +1,7 @@
 # 0055: Grid-Based Movement - Crypt Step
 
+Move square by square through a dungeon, using keys and pressure plates to open the way.
+
 A tactical dungeon crawler puzzle. The player navigates grid-based chambers filled with locked doors, pressure plates, sliding boulders, chasm pits, patrol sentries, and golden treasures to reach the exit stairs.
 
 ## Core Rules
