@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Neon Serpent</title>
+<meta name="description" content="Steer a snake to eat food and grow longer, without hitting a wall or your own tail.">
 <style>
   html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { display: block; margin: 0 auto; touch-action: none; }
@@ -15,6 +16,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { W: GW, H: GH, createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

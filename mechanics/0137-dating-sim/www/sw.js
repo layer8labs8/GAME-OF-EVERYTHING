@@ -1,8 +1,8 @@
-const CACHE_NAME = 'starcross-dating-v1';
+const CACHE_NAME = 'starcross-dating-v2';
 const ASSETS = [
   './',
   './index.html',
-  './logic.js',
+  './logic.js', './kit.js',
   './manifest.json',
   './icon.svg'
 ];

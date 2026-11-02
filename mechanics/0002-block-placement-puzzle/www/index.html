@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Block Master</title>
+<meta name="description" content="Drag three blocks onto an 8 by 8 board and fill whole rows or columns to clear them. The game ends when none of your blocks fits anywhere.">
 <style>
   html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { display: block; margin: 0 auto; touch-action: none; }
@@ -15,6 +16,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { N, SHAPES, createState, place, canPlace, bounds } = BlockLogic;
 const canvas = document.getElementById('c');

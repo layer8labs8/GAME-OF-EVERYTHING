@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Harvest Haven</title>
+<meta name="description" content="Simulation farming game where players clear land, till soil, plant diverse crops, irrigate, harvest produce, trade at the local market, and manage daily stamina across seasons.">
 <style>
   html, body {
     margin: 0;
@@ -27,6 +28,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { MAX_DAYS, MAX_STEPS, MAX_ENERGY, CROPS, createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

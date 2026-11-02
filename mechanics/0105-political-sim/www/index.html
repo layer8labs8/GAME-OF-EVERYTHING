@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Statecraft: Political Simulator</title>
+<meta name="description" content="A political leadership and legislative policy simulator where the player acts as the Head of State, balancing factional interests (Workers, Capitalists, Patriots, Reformists), mana">
   <link rel="manifest" href="manifest.json">
   <style>
     * {
@@ -226,6 +227,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Date.now() & 0xffff);
     const canvas = document.getElementById('view');

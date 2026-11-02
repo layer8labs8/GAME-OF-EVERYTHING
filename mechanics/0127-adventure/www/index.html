@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Isle of Whispers</title>
+<meta name="description" content="Classic narrative adventure game featuring interconnected island locations, environmental item puzzles, dialogue clues, quest progression, and lighthouse beacon signaling.">
 <style>
   html, body {
     margin: 0;
@@ -27,6 +28,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { MAX_STEPS, ROOM_DATA, createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

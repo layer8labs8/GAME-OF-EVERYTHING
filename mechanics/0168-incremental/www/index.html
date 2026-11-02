@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Quantum Forge</title>
+<meta name="description" content="An exponential multi-tiered incremental simulation. Players begin by harvesting subatomic matter, constructing tiered particle accelerators and quantum computers, executing quantum">
 <style>
   html, body { margin: 0; height: 100%; background: #09071a; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; font-family: system-ui, -apple-system, sans-serif; }
   canvas { display: block; margin: 0 auto; touch-action: none; }
@@ -15,6 +16,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');

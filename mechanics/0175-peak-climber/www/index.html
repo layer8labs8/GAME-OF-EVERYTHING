@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>Peak Climber</title>
+<meta name="description" content="A 2D physics-based hill climbing simulation. Players drive a rugged 4x4 off-road jeep across steep, rolling, and treacherous mountainous terrain, balancing throttle, brake, pitch o">
 <style>
   html, body { margin: 0; height: 100%; background: #03080e; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { display: block; margin: 0 auto; touch-action: none; }
@@ -15,6 +16,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
@@ -64,45 +66,6 @@ function getTerrainY(worldX) {
   return 360 - (Math.sin(worldX * 0.04) * 45 + Math.sin(worldX * 0.015) * 35);
 }
 
-// Short sounds made in code, so the game stays offline and needs no audio files.
-let audio = null;
-let muted = false;
-try { muted = localStorage.getItem('goe-0175-muted') === '1'; } catch (e) {}
-
-function blip(freq, ms, type = 'square') {
-  if (muted) return;
-  try {
-    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === 'suspended') audio.resume();
-    const osc = audio.createOscillator();
-    const amp = audio.createGain();
-    const end = audio.currentTime + ms / 1000;
-    osc.type = type;
-    osc.frequency.value = freq;
-    amp.gain.setValueAtTime(0.05, audio.currentTime);
-    amp.gain.exponentialRampToValueAtTime(0.001, end);
-    osc.connect(amp);
-    amp.connect(audio.destination);
-    osc.start();
-    osc.stop(end);
-  } catch (e) {}
-}
-
-const muteButton = document.createElement('button');
-function showMute() {
-  muteButton.textContent = muted ? 'Sound off' : 'Sound on';
-}
-function toggleMute() {
-  muted = !muted;
-  try { localStorage.setItem('goe-0175-muted', muted ? '1' : '0'); } catch (e) {}
-  showMute();
-}
-muteButton.style.cssText = 'position:fixed;top:8px;right:8px;z-index:10;padding:6px 10px;border:0;border-radius:6px;background:rgba(0,0,0,0.55);color:#fff;font:12px system-ui,sans-serif';
-muteButton.onclick = toggleMute;
-showMute();
-document.body.appendChild(muteButton);
-addEventListener('keydown', (e) => { if (e.key === 'm' || e.key === 'M') toggleMute(); });
-
 function performAction(act) {
   if (isOver(state)) return;
   const legals = legalActions(state);
@@ -111,9 +74,6 @@ function performAction(act) {
   const oldCoins = state.coins;
   const oldFuel = state.fuel;
   const res = step(state, act);
-  if (state.coins > oldCoins) blip(880, 60);
-  if (act.includes('upgrade')) blip(660, 120);
-  if (res.done) blip(160, 300, 'sawtooth');
 
   if (act.includes('gas')) {
     floaters.push({ text: 'GAS +' + state.velocity + 'm/s', x: 180, y: 260, t: 0, color: '#10b981' });

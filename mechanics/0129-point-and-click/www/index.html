@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Blackwood Manor - Point and Click</title>
+<meta name="description" content="Classic 90s LucasArts/SCUMM-style point-and-click adventure game featuring verb-driven hotspot interactions (Look, Pick Up, Use, Talk), room navigation across an eerie Victorian es">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#8b5cf6">
   <style>
@@ -289,6 +290,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Math.floor(Math.random() * 1000000));
     const canvas = document.getElementById('manor-canvas');

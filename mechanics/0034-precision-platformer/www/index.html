@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Chrono Leap</title>
+<meta name="description" content="A responsive, high-precision single-screen platformer. Master tight aerial physics, wall rebounds, and 8-way directional dashes to overcome treacherous spike chasms, retrieve celes">
 <style>
   html, body { margin: 0; height: 100%; background: #090d16; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { display: block; margin: 0 auto; touch-action: none; }
@@ -15,6 +16,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { GRID_W, GRID_H, createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Klondike Solitaire</title>
+<meta name="description" content="Build the four suits from ace to king by moving cards between the columns.">
 <style>
   html, body {
     margin: 0;
@@ -27,6 +28,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { SUITS, getColor, createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

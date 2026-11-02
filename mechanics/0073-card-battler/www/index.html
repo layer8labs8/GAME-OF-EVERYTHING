@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Spell & Blade</title>
+<meta name="description" content="Turn-based tactical deck card battler featuring energy management, telegraphed enemy intents, block defense mechanics, card drafting, and 3 progressive dungeon encounters.">
 <style>
   html, body {
     margin: 0;
@@ -27,6 +28,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { CARDS, createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

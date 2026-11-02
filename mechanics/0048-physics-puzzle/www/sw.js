@@ -1,5 +1,5 @@
-const CACHE = 'goe-0048-physics-puzzle-v1';
-const FILES = ['./', 'index.html', 'logic.js', 'manifest.json', 'icon.svg'];
+const CACHE = 'goe-0048-physics-puzzle-v2';
+const FILES = ['./', 'index.html', 'logic.js', 'kit.js', 'manifest.json', 'icon.svg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)));

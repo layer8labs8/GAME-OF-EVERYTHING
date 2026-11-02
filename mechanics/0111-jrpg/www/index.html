@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Crystal Echoes: JRPG</title>
+<meta name="description" content="A classic turn-based Japanese RPG (JRPG) combat simulator featuring a 3-member party (Warrior, Black Mage, White Mage), elemental affinity exploitation (Fire, Blizzard, Thunder), S">
   <link rel="manifest" href="manifest.json">
   <style>
     * {
@@ -199,6 +200,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Date.now() & 0xffff);
     const canvas = document.getElementById('view');

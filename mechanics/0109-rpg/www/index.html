@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Hero's Quest: Classic RPG</title>
+<meta name="description" content="A classic turn-based role-playing game (RPG) featuring character attribute progression, equipment upgrades, spellcasting, inventory management, and an epic 5-zone monster gauntlet ">
   <link rel="manifest" href="manifest.json">
   <style>
     * {
@@ -222,6 +223,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Date.now() & 0xffff);
     const canvas = document.getElementById('view');

@@ -1,8 +1,8 @@
-const CACHE_NAME = 'royal-dice-v1';
+const CACHE_NAME = 'royal-dice-v2';
 const ASSETS = [
   './',
   './index.html',
-  './logic.js',
+  './logic.js', './kit.js',
   './manifest.json',
   './icon.svg'
 ];

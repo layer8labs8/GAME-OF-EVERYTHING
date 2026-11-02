@@ -1,8 +1,8 @@
-const CACHE_NAME = 'genesisengine-v1';
+const CACHE_NAME = 'genesisengine-v2';
 const ASSETS = [
   './',
   './index.html',
-  './logic.js',
+  './logic.js', './kit.js',
   './manifest.json',
   './icon.svg'
 ];

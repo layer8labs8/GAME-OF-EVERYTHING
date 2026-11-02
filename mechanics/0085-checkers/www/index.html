@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Crown Draughts</title>
+<meta name="description" content="Classic 8x8 draughts / checkers featuring mandatory capture jumps, king crowning, multi-jump sequences, and a deterministic heuristic AI opponent.">
 <style>
   html, body {
     margin: 0;
@@ -27,6 +28,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { MAX_STEPS, createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

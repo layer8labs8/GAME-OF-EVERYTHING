@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Frost Outpost</title>
+<meta name="description" content="Deterministic survival simulation where players maintain an arctic outpost against lethal blizzards, sub-zero hypothermia, predator attacks, and dwindling fuel before rescue arrive">
 <style>
   html, body {
     margin: 0;
@@ -27,6 +28,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { MAX_DAYS, MAX_STEPS, createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Ironclad Broadside: Naval Combat</title>
+<meta name="description" content="A tactical naval combat simulator featuring line-of-battle maneuvering, directional firing arcs (bow chaser, port broadside, starboard broadside), wind dynamics, and armor plating ">
   <link rel="manifest" href="manifest.json">
   <style>
     * {
@@ -192,6 +193,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Date.now() & 0xffff);
     const canvas = document.getElementById('view');

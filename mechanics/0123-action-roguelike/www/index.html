@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Void Breach - Action Roguelike</title>
+<meta name="description" content="A fast-paced bullet hell action roguelike featuring omnidirectional shooting, tactical dodge rolling with invulnerability frames, active reload, procedural chamber waves, and stack">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#7928ca">
   <style>
@@ -353,6 +354,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Math.floor(Math.random() * 1000000));
     let currentMode = 'move'; // 'move', 'shoot', 'dash'

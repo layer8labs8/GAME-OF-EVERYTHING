@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sunken Spire - Action-Adventure</title>
+<meta name="description" content="Classic top-down action-adventure featuring tool-gated world exploration, environmental puzzles (crystal switches, cracked walls, chasm posts), dungeon keys, and multi-stage boss e">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#10b981">
   <style>
@@ -322,6 +323,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Math.floor(Math.random() * 1000000));
     let currentMode = 'move'; // 'move', 'boomerang', 'bomb', 'hookshot', 'unlock'

@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Abyssal Crypt</title>
+<meta name="description" content="Turn-based tactical roguelike featuring procedural floor layouts, permadeath, enemy combat AI, relic draft synergies, and 5 depths of dungeon progression.">
 <style>
   html, body {
     margin: 0;
@@ -27,6 +28,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { GRID_SIZE, MAX_FLOORS, createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

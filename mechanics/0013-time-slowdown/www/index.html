@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Chrono Matrix - Time Slowdown</title>
+<meta name="description" content="Time only moves when you move, so every step lets you plan around the danger.">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0d0e15">
   <link rel="manifest" href="manifest.json">
@@ -146,6 +147,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});

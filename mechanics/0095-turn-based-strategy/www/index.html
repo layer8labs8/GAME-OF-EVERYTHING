@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Empire & Hexes</title>
+<meta name="description" content="A classic 4X-lite turn-based strategy (TBS) empire builder played across a 6x6 hexagonal grid map with city production queues, terrain defense modifiers, unit movement allowances, ">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest.json">
   <style>
@@ -160,6 +161,7 @@
   <div id="game-over-banner"></div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     (function() {
       let state = createState(Date.now() & 0xffff);

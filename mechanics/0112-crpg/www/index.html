@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Grimoire & Steel: CRPG</title>
+<meta name="description" content="A classic computer role-playing game (CRPG) tactical combat simulator featuring an Action Point (AP) economy, 6x6 grid positioning, environmental surface combos (Oil + Fire, Water ">
   <link rel="manifest" href="manifest.json">
   <style>
     * {
@@ -209,6 +210,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Date.now() & 0xffff);
     const canvas = document.getElementById('view');

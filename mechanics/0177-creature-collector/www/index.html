@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>Beast Tamer Arena</title>
+<meta name="description" content="A turn-based creature collection and arena battler. Players explore tall grass biomes to encounter, weaken, and capture elemental beasts using Tamer Spheres, level up their party r">
 <style>
   html, body { margin: 0; height: 100%; background: #061220; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { display: block; margin: 0 auto; touch-action: none; }
@@ -15,6 +16,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');

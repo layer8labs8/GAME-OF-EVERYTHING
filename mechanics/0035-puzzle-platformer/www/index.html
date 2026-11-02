@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Portal Shift</title>
+<meta name="description" content="A precision puzzle platformer where a diminutive robotics engineer navigates test chambers filled with weighted alloy crates, floor pressure switches, and magnetic security barrier">
 <style>
   html, body { margin: 0; height: 100%; background: #070c16; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { display: block; margin: 0 auto; touch-action: none; }
@@ -15,6 +16,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const logic = window.PortalShift || window.GameLogic;
 const { DEFAULT_LEVELS, createState, legalActions, step, isOver, score } = logic;

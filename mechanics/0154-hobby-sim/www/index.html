@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Miniature Workshop - Hobby Sim</title>
+<meta name="description" content="A tactile, creative tabletop miniature painting and scale model kit building simulation. Players take the role of an aspiring model kit artisan at their cozy hobby workbench, snipp">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#10b981">
   <style>
@@ -229,6 +230,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Math.floor(Date.now() % 1000000));
     const canvas = document.getElementById('gameCanvas');

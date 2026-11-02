@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Hidden Picture</title>
+<meta name="description" content="Use the number clues to work out which squares to fill. When every row and column matches, a small picture appears.">
 <style>
   html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { display: block; margin: 0 auto; touch-action: none; }
@@ -15,6 +16,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

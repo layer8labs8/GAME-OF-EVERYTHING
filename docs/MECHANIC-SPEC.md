@@ -18,6 +18,10 @@ mechanics/0002-block-placement-puzzle/
 
 The folder name is `<id>-<slug>` and must match an entry in `registry/mechanics.json`.
 
+## Shared game feel
+
+Every game loads `www/kit.js`, a copy of `platform/web/kit.js`. It adds a start screen so real-time games wait for the player, sound, particles, floating score text, screen shake, a win effect and a mute button. It only reacts to `step`, `score` and `isOver`, so a game gets all of this just by following the bot interface. After editing the kit, run `npm run kit`, and raise `CACHE_VERSION` in `tools/sync_kit.js` whenever game files change, or returning players keep the old version.
+
 ## Status ladder
 
 | Status | Meaning | Files required |

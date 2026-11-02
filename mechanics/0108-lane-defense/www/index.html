@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Lane Bastion: Lane Defense</title>
+<meta name="description" content="A tactical multi-lane tower defense and creep mitigation strategy game. The player fortifies three distinct battlefield lanes (Top, Mid, Bottom) against advancing waves of monstrou">
   <link rel="manifest" href="manifest.json">
   <style>
     * {
@@ -199,6 +200,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Date.now() & 0xffff);
     const canvas = document.getElementById('view');

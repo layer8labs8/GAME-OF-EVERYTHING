@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <title>Seed Bowls</title>
+<meta name="description" content="Scoop up the seeds from one bowl and drop them one by one around the board. Collect more seeds in your store than the computer.">
 <style>
   html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
   canvas { display: block; margin: 0 auto; touch-action: none; }
@@ -15,6 +16,7 @@
 <body>
 <canvas id="c"></canvas>
 <script src="logic.js"></script>
+<script src="kit.js"></script>
 <script>
 const { createState, legalActions, step, isOver, score } = GameLogic;
 const canvas = document.getElementById('c');

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Iron Bout - 2D Fighting</title>
+<meta name="description" content="A one-on-one fight. Use punches, kicks and blocks to drain the other fighter's health.">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#120808">
   <link rel="manifest" href="manifest.json">
@@ -130,6 +131,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});

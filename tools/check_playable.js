@@ -262,6 +262,10 @@ function checkPlayableDir(dir) {
     const ctx = vm.createContext(win);
     const logicSrc = fs.readFileSync(path.join(www, 'logic.js'), 'utf8');
     vm.runInContext(logicSrc, ctx, { filename: 'logic.js', timeout: 2000 });
+    const kitPath = path.join(www, 'kit.js');
+    if (fs.existsSync(kitPath)) {
+      vm.runInContext(fs.readFileSync(kitPath, 'utf8'), ctx, { filename: 'kit.js', timeout: 2000 });
+    }
     for (let i = 0; i < inlineScripts.length; i++) {
       vm.runInContext(inlineScripts[i], ctx, { filename: `index.html#script${i + 1}`, timeout: 2000 });
     }

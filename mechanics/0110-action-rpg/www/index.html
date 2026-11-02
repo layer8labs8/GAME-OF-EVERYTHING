@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Blade & Spell: Action RPG</title>
+<meta name="description" content="An action-oriented role-playing combat simulator featuring real-time spatial maneuvering on an 8x8 dungeon arena, stamina-managed dodge rolls, melee slash combos, arcane spellcasti">
   <link rel="manifest" href="manifest.json">
   <style>
     * {
@@ -205,6 +206,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Date.now() & 0xffff);
     const canvas = document.getElementById('view');

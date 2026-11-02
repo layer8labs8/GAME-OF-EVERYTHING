@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Rogue's Descent - Traditional Roguelike</title>
+<meta name="description" content="Classic turn-based grid roguelike, adhering strictly to Berlin Interpretation tenets: permadeath, grid-based turn synchronization, hunger management, dynamic line-of-sight field of">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#d97706">
   <style>
@@ -329,6 +330,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Math.floor(Math.random() * 1000000));
     const canvas = document.getElementById('dungeon-canvas');

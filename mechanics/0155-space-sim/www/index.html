@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Void Navigator - Space Sim</title>
+<meta name="description" content="An orbital navigation and deep-space pilot simulation. Players command an exploration vessel navigating celestial bodies, managing Newtonian delta-v burns, deflector shield power d">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0284c7">
   <style>
@@ -248,6 +249,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Math.floor(Date.now() % 1000000));
     const canvas = document.getElementById('gameCanvas');

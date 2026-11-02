@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sector Domination: Territory Capture</title>
+<meta name="description" content="A grand turn-based territorial conquest and frontline expansion simulator. Players command regional garrisons across a 5x5 strategic sector theater, deploying reinforcements, forti">
   <link rel="manifest" href="manifest.json">
   <style>
     * {
@@ -186,6 +187,7 @@
   </div>
 
   <script src="logic.js"></script>
+<script src="kit.js"></script>
   <script>
     let state = createState(Date.now() & 0xffff);
     const canvas = document.getElementById('view');
